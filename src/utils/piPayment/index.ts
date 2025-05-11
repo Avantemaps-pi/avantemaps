@@ -1,11 +1,9 @@
-export { approvePayment };
-// Export all payment-related utilities from this index file
+import { approvePayment, executeSubscriptionPayment } from './payments';
 
-// Export types
-export type { PaymentResult, SubscriptionFrequency } from './types';
-
-// Export payment functions
-export { executeSubscriptionPayment } from './payments';
+export { approvePayment, executeSubscriptionPayment };
 
 // Export pricing functions
 export { getSubscriptionPrice } from './pricing';
+
+// Export types
+export type { PaymentResult, SubscriptionFrequency } from './types';
