@@ -1,6 +1,6 @@
-import { approvePayment, executeSubscriptionPayment } from './payments';
+import { executeSubscriptionPayment } from './payments';
 
-export { approvePayment, executeSubscriptionPayment };
+export { executeSubscriptionPayment };
 
 // Export pricing functions
 export { getSubscriptionPrice } from './pricing';
