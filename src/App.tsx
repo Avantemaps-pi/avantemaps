@@ -30,7 +30,7 @@ import Analytics from "./pages/Analytics";
 import { initializePiNetwork } from "./utils/piNetwork";
 import { checkForIncompletePayments } from "./utils/piPayment/payments";
 
-// 🆕 Extend window for TypeScript
+// Extend window for TypeScript
 declare global {
   interface Window {
     Pi: any;
@@ -46,10 +46,9 @@ const SessionManager = () => {
 
 const App = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // 🆕 Add loading state
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading duration (e.g. data, assets)
     const timer = setTimeout(() => setIsLoading(false), 2000);
     return () => clearTimeout(timer);
   }, []);
@@ -88,7 +87,6 @@ const App = () => {
   }, []);
 
   if (isLoading) {
-    // 🆕 Loading screen UI
     return (
       <div style={{
         position: 'fixed',
@@ -103,7 +101,7 @@ const App = () => {
         zIndex: 9999
       }}>
         <img
-          src="/AvanteMapsIcon.png"
+          src="/lovable-uploads/Avante Maps ICON (2).png"
           alt="Loading..."
           style={{
             width: '150px',
