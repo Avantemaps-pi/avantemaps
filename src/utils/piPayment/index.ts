@@ -1,4 +1,4 @@
-
+export { approvePayment };
 // Export all payment-related utilities from this index file
 
 // Export types
