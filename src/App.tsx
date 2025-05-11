@@ -1,5 +1,4 @@
-import React from 'react';
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -47,23 +46,24 @@ const SessionManager = () => {
 
 const App = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // 🆕 Add loading state
 
   useEffect(() => {
-    // Initialize Pi SDK with better error handling
+    // Simulate loading duration (e.g. data, assets)
+    const timer = setTimeout(() => setIsLoading(false), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     const initPiSdk = async () => {
       try {
         console.log("Initializing Pi SDK...");
-        
-        // Use our improved initialization utility
         const success = await initializePiNetwork();
-        
         if (success) {
           console.log("Pi SDK initialized successfully in App.tsx");
-          // Check for incomplete payments after SDK is initialized
           const incompletePayment = checkForIncompletePayments();
           if (incompletePayment && !incompletePayment.status.developer_completed) {
             console.log("Found incomplete payment that needs handling:", incompletePayment);
-            // You can show a UI to the user or handle it automatically 
           }
         } else {
           console.warn("Pi SDK initialization failed in App.tsx");
@@ -72,7 +72,6 @@ const App = () => {
         console.error("Error initializing Pi SDK:", err);
       }
     };
-
     initPiSdk();
   }, []);
 
@@ -87,7 +86,43 @@ const App = () => {
       localStorage.setItem('colorScheme', 'light');
     }
   }, []);
-  
+
+  if (isLoading) {
+    // 🆕 Loading screen UI
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: '#8000ff',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 9999
+      }}>
+        <img
+          src="/AvanteMapsIcon.png"
+          alt="Loading..."
+          style={{
+            width: '150px',
+            height: '150px',
+            animation: 'spin 2s linear infinite'
+          }}
+        />
+        <style>
+          {`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}
+        </style>
+      </div>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
