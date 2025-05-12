@@ -30,7 +30,13 @@ import Pricing from "./pages/Pricing";
 import Analytics from "./pages/Analytics";
 import { initializePiNetwork } from "./utils/piNetwork";
 import { checkForIncompletePayments } from "./utils/piPayment/payments";
-// ... (all your imports remain the same)
+
+const queryClient = new QueryClient();
+
+const SessionManager = () => {
+  useSessionRestoration();
+  return null;
+};
 
 const App = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
