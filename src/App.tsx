@@ -84,6 +84,7 @@ const App = () => {
         height: '100vh',
         backgroundColor: '#8000ff',
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 9999,
