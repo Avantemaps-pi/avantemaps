@@ -30,20 +30,7 @@ import Pricing from "./pages/Pricing";
 import Analytics from "./pages/Analytics";
 import { initializePiNetwork } from "./utils/piNetwork";
 import { checkForIncompletePayments } from "./utils/piPayment/payments";
-
-// Extend window for TypeScript
-declare global {
-  interface Window {
-    Pi: any;
-  }
-}
-
-const queryClient = new QueryClient();
-
-const SessionManager = () => {
-  useSessionRestoration();
-  return null;
-};
+// ... (all your imports remain the same)
 
 const App = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -99,7 +86,7 @@ const App = () => {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        zIndex: 9999
+        zIndex: 9999,
       }}>
         <img
           src="/lovable-uploads/Avante Maps ICON (2).png"
@@ -107,14 +94,18 @@ const App = () => {
           style={{
             width: '150px',
             height: '150px',
-            animation: 'spin 2s linear infinite'
+            animation: 'pulse 2s infinite ease-in-out',
           }}
         />
+        <p style={{ color: 'white', fontSize: '1.2rem', marginTop: '20px' }}>
+          Loading Avante Maps...
+        </p>
         <style>
           {`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
+            @keyframes pulse {
+              0% { transform: scale(1); opacity: 1; }
+              50% { transform: scale(1.1); opacity: 0.9; }
+              100% { transform: scale(1); opacity: 1; }
             }
           `}
         </style>
@@ -162,3 +153,4 @@ const App = () => {
 };
 
 export default App;
+
