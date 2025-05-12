@@ -35,7 +35,7 @@ const Contact = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm">+1 (555) 123-4567</p>
+              <p className="text-sm">+27 (68) 342-2444</p>
               <p className="text-xs text-muted-foreground mt-1">Mon-Fri, 9am-5pm PST</p>
             </CardContent>
           </Card>
@@ -49,7 +49,7 @@ const Contact = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm">123 Pi Street</p>
-              <p className="text-xs text-muted-foreground mt-1">San Francisco, CA 94103</p>
+              <p className="text-xs text-muted-foreground mt-1">Pietermaritzburg, KZN 3201</p>
             </CardContent>
           </Card>
         </div>
