@@ -31,6 +31,7 @@ Coming Sooon
 ✔ Introduce **Business Analytics & Insights**.  
 ✔ Expand **marketing & outreach** for businesses listed on Avante Maps.  
 ✔ Develop **NFT-based business cards** for digital identity.  
+✔ Expend Avante Maps to include a Gamefied experienc for users.
 
 ## 📜 License  
 
