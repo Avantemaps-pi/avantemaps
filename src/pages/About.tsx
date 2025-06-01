@@ -21,11 +21,7 @@ const About = () => {
           <CardHeader>
            <CardTitle className="text-xl font-semibold flex items-center gap-2">
               <div className="bg-white from-primary to-secondary p-2 rounded-md">
-                <img
-                  src="/lovable-uploads/Avante Maps icon.svg"
-                  alt="Avante Maps Icon"
-                  className="h-10 w-10"
-                />
+                <img src="/lovable-uploads/Avante-Maps-icon.svg" alt="Avante Maps Icon" className="h-10 w-10" />
               </div>
               Our Mission
             </CardTitle>
