@@ -125,8 +125,8 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
                 <FormMessage />
               </FormItem>
             )}
-           </div>
           />
+        </div>
         <FormField
           control={form.control}
           name="apartment"
