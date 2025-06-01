@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import LeafletMap from '@/components/map/LeafletMap';
 import { useBusinessData } from '@/hooks/useBusinessData';
 import AddBusinessButton from '@/components/map/buttons/AddBusinessButton';
@@ -7,10 +9,12 @@ import { Button } from '@/components/ui/button';
 import SearchBar from '@/components/map/SearchBar';
 import { useSidebar } from '@/components/ui/sidebar';
 import AvanteMapLogo from '@/components/layout/header/AvanteMapLogo';
-import AppSidebar from '@/components/layout/AppSidebar'; // ✅ Import the sidebar
+import AppSidebar from '@/components/layout/AppSidebar';
+import PlaceCardSEO from '@/components/seo/PlaceCardSEO';
 import '../styles/map.css';
 
 const Index = () => {
+  const location = useLocation();
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const { places = [], filteredPlaces = [], isLoading = false, handleSearch } = useBusinessData();
   const { setOpenMobile } = useSidebar();
@@ -30,9 +34,29 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Handle shared place URLs
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedPlaceId = urlParams.get('place');
+    const stateSelectedPlaceId = location.state?.selectedPlaceId;
+    
+    if (sharedPlaceId) {
+      setSelectedPlace(sharedPlaceId);
+    } else if (stateSelectedPlaceId) {
+      setSelectedPlace(stateSelectedPlaceId);
+    }
+  }, [location]);
+
+  // Find the selected place for SEO
+  const selectedPlaceData = [...places, ...filteredPlaces].find(place => place.id === selectedPlace);
+
   return (
     <div className="w-full h-screen relative overflow-hidden">
-      {/* ✅ Add the AppSidebar */}
+      {/* SEO metadata for shared place */}
+      {selectedPlaceData && (
+        <PlaceCardSEO place={selectedPlaceData} isActive={true} />
+      )}
+
       <AppSidebar />
 
       <LeafletMap
