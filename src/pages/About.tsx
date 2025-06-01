@@ -19,7 +19,7 @@ const About = () => {
 
         <Card className="material-card">
           <CardHeader>
-           <CardTitle className="text-xl font-semibold flex items-center gap-2">
+           <CardTitle className="text-xl font-semibold flex items-center">
               <div className="bg-white from-primary to-secondary p-2 rounded-md">
                 <img
                   src="/lovable-uploads/Avante Maps icon.svg"
