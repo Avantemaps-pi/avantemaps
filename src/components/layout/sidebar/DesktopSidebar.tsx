@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/auth';
+import { SubscriptionTier } from '@/utils/piNetwork';
 import {
   Sidebar,
   SidebarContent,
@@ -45,9 +46,9 @@ const DesktopSidebar = ({
     if (!user?.subscriptionTier) return 'Individual';
     
     switch (user.subscriptionTier) {
-      case 'small_business':
+      case SubscriptionTier.SMALL_BUSINESS:
         return 'Small Business';
-      case 'enterprise':
+      case SubscriptionTier.ORGANIZATION:
         return 'Enterprise';
       default:
         return 'Individual';
