@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +14,7 @@ const VerificationInfo = () => {
   const navigate = useNavigate();
 
   return (
-    <AppLayout title="Verification & Certification">
+    <AppLayout title="Verification & Certification" showMenuButton={false}>
       <div className="flex-1 p-4">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">

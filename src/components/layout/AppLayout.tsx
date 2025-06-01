@@ -1,61 +1,25 @@
 
-import React, { ReactNode } from 'react';
-import { Toaster } from '@/components/ui/sonner';
-import PageHeader from '@/components/layout/PageHeader';
+import React from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AppSidebar from './AppSidebar';
+import PageHeader from './PageHeader';
 
 interface AppLayoutProps {
-  children: ReactNode;
+  children: React.ReactNode;
   title?: string;
-  withHeader?: boolean;
-  fullHeight?: boolean;
-  fullWidth?: boolean;
-  hideSidebar?: boolean;
-  onSearch?: (searchTerm: string) => void;
-  showSearch?: boolean;
-  className?: string;
-  backButton?: boolean;
-  onBackClick?: () => void;
+  showMenuButton?: boolean;
 }
 
-const AppLayout: React.FC<AppLayoutProps> = ({ 
-  children, 
-  title,
-  withHeader = true, 
-  fullHeight = false,
-  fullWidth = false,
-  hideSidebar = false,
-  onSearch,
-  showSearch = false,
-  className = '',
-  backButton = false,
-  onBackClick
-}) => {
-  const contentClasses = `flex flex-col ${fullHeight ? 'h-screen' : 'min-h-screen'} ${fullWidth ? 'w-full' : 'max-w-7xl mx-auto'} ${className}`;
-  
+const AppLayout = ({ children, title, showMenuButton = true }: AppLayoutProps) => {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        {!hideSidebar && <AppSidebar />}
-        
-        <div className={contentClasses}>
-          {withHeader && (
-            <PageHeader 
-              title={title} 
-              hideSidebar={hideSidebar} 
-              onSearch={onSearch}
-              showSearch={showSearch}
-              backButton={backButton}
-              onBackClick={onBackClick}
-            />
-          )}
-          
-          <main className="flex-1 w-full overflow-auto">
+      <div className="min-h-screen flex w-full bg-gray-50">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <PageHeader title={title} showMenuButton={showMenuButton} />
+          <main className="flex-1 overflow-y-auto">
             {children}
           </main>
-          
-          <Toaster />
         </div>
       </div>
     </SidebarProvider>
