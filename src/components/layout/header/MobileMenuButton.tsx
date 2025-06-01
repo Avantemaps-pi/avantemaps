@@ -8,8 +8,12 @@ interface MobileMenuButtonProps {
   onClick?: () => void;
 }
 
-const MobileMenuButton = ({ onClick }: MobileMenuButtonProps) => {
-  const { setOpenMobile } = useSidebar();
+const MobileMenuButton = ({
+  onClick
+}: MobileMenuButtonProps) => {
+  const {
+    setOpenMobile
+  } = useSidebar();
   
   const handleClick = () => {
     setOpenMobile(true);
@@ -17,15 +21,8 @@ const MobileMenuButton = ({ onClick }: MobileMenuButtonProps) => {
   };
   
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="md:hidden"
-      onClick={handleClick}
-      aria-label="Open menu"
-    >
+    <Button variant="ghost" size="icon" onClick={handleClick} className="mr-2">
       <Menu className="h-5 w-5" />
-      <span className="sr-only">Toggle menu</span>
     </Button>
   );
 };

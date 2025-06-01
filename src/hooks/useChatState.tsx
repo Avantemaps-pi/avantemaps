@@ -16,19 +16,94 @@ export function useChatState() {
     { id: 2, text: "Hi there! How can I help with Avante Maps today?", sender: "support", timestamp: "10:32 AM" },
   ]);
   const [chatMode, setChatMode] = useState<ChatMode>("ai");
+  const [awaitingVerificationConfirmation, setAwaitingVerificationConfirmation] = useState(false);
+  const [awaitingBusinessSelection, setAwaitingBusinessSelection] = useState(false);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim()) {
+      // Handle verification confirmation responses
+      if (awaitingVerificationConfirmation) {
+        if (message.toLowerCase().includes('yes') || message.toLowerCase() === 'y') {
+          sendVerificationRequest('verification');
+          setAwaitingVerificationConfirmation(false);
+          setMessage("");
+          return;
+        } else if (message.toLowerCase().includes('no') || message.toLowerCase() === 'n') {
+          const cancelMessage = {
+            id: messages.length + 1,
+            text: "Verification request cancelled.",
+            sender: "support",
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+          setMessages([...messages, cancelMessage]);
+          setAwaitingVerificationConfirmation(false);
+          setMessage("");
+          return;
+        }
+      }
+
+      // Handle business selection for certification
+      if (awaitingBusinessSelection) {
+        // Mock business selection logic
+        const businessName = message.trim();
+        const selectionMessage = {
+          id: messages.length + 1,
+          text: `Selected business: ${businessName}`,
+          sender: "user",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        setMessages([...messages, selectionMessage]);
+        
+        setTimeout(() => {
+          const responseMessage = {
+            id: messages.length + 2,
+            text: `Certification request for "${businessName}" has been received. Our team will review your application and get back to you shortly.`,
+            sender: "support",
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+          setMessages(prev => [...prev, responseMessage]);
+        }, 1000);
+        
+        setAwaitingBusinessSelection(false);
+        setMessage("");
+        return;
+      }
+      
       // Check for special commands
       if (message.includes('/verification')) {
-        sendVerificationRequest('verification');
+        // Show verification confirmation message
+        const confirmationMessage = {
+          id: messages.length + 1,
+          text: "Are you sure you want to request a new verification check? Yes | No",
+          sender: "support",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages([...messages, confirmationMessage]);
+        setAwaitingVerificationConfirmation(true);
         setMessage("");
         return;
       }
       
       if (message.includes('/certification')) {
-        sendVerificationRequest('certification');
+        // Show business selection for certification
+        const businessSelectionMessage = {
+          id: messages.length + 1,
+          text: "Please select which business you'd like to certify:",
+          sender: "support",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        const businessOptionsMessage = {
+          id: messages.length + 2,
+          text: "Available businesses:\n• Your Restaurant Name\n• Your Shop Name\n• Your Service Business\n\nPlease type the name of the business you want to certify:",
+          sender: "support",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        setMessages([...messages, businessSelectionMessage, businessOptionsMessage]);
+        setAwaitingBusinessSelection(true);
         setMessage("");
         return;
       }
