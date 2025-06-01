@@ -70,7 +70,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
           </DialogClose>
           
           <div className="w-20 h-20 rounded-full bg-gradient-to-r from-primary to-purple-500 flex items-center justify-center mb-6">
-            <img src="/lovable-uploads/Avante-Maps-icon.svg" alt="Pi Logo" className="w-7 h-7" />
+            <img src="/lovable-uploads/Avante-Maps-icon.svg" alt="Pi Logo" className="w-17 h-17" />
           </div>
           
           <DialogTitle className="text-2xl mb-4 text-center font-bold">
