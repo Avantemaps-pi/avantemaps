@@ -107,7 +107,6 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
             name="streetAddress"
@@ -126,7 +125,6 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
               </FormItem>
             )}
           />
-        </div>
         <FormField
           control={form.control}
           name="apartment"
@@ -140,7 +138,6 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
             name="state"
@@ -167,7 +164,6 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
               </FormItem>
             )}
           />
-        </div>
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button 
