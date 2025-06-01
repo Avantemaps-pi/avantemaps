@@ -1,50 +1,61 @@
 
-import React from 'react';
+import React, { ReactNode } from 'react';
+import { Toaster } from '@/components/ui/sonner';
+import PageHeader from '@/components/layout/PageHeader';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AppSidebar from './AppSidebar';
-import PageHeader from './PageHeader';
 
 interface AppLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
   title?: string;
-  showMenuButton?: boolean;
-  backButton?: boolean;
-  onBackClick?: () => void;
   withHeader?: boolean;
   fullHeight?: boolean;
-  hideSidebar?: boolean;
   fullWidth?: boolean;
+  hideSidebar?: boolean;
+  onSearch?: (searchTerm: string) => void;
+  showSearch?: boolean;
   className?: string;
+  backButton?: boolean;
+  onBackClick?: () => void;
 }
 
-const AppLayout = ({ 
+const AppLayout: React.FC<AppLayoutProps> = ({ 
   children, 
-  title, 
-  showMenuButton = true,
-  backButton = false,
-  onBackClick,
-  withHeader = true,
-  fullHeight = true,
+  title,
+  withHeader = true, 
+  fullHeight = false,
+  fullWidth = false,
   hideSidebar = false,
-  fullWidth = true,
-  className = ""
-}: AppLayoutProps) => {
+  onSearch,
+  showSearch = false,
+  className = '',
+  backButton = false,
+  onBackClick
+}) => {
+  const contentClasses = `flex flex-col ${fullHeight ? 'h-screen' : 'min-h-screen'} ${fullWidth ? 'w-full' : 'max-w-7xl mx-auto'} ${className}`;
+  
   return (
     <SidebarProvider>
-      <div className={`min-h-screen flex w-full bg-gray-50 ${className}`}>
+      <div className="flex min-h-screen w-full">
         {!hideSidebar && <AppSidebar />}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        
+        <div className={contentClasses}>
           {withHeader && (
             <PageHeader 
               title={title} 
-              showMenuButton={showMenuButton && !hideSidebar}
+              hideSidebar={hideSidebar} 
+              onSearch={onSearch}
+              showSearch={showSearch}
               backButton={backButton}
               onBackClick={onBackClick}
             />
           )}
-          <main className={`flex-1 ${fullHeight ? 'overflow-y-auto' : ''}`}>
+          
+          <main className="flex-1 w-full overflow-auto">
             {children}
           </main>
+          
+          <Toaster />
         </div>
       </div>
     </SidebarProvider>

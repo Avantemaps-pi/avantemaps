@@ -1,12 +1,10 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/auth';
 import { ChatMode } from '@/components/chat/ChatInterface';
 
 export function useChatState() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Array<{
     id: number;
@@ -18,39 +16,19 @@ export function useChatState() {
     { id: 2, text: "Hi there! How can I help with Avante Maps today?", sender: "support", timestamp: "10:32 AM" },
   ]);
   const [chatMode, setChatMode] = useState<ChatMode>("ai");
-  const [awaitingVerificationConfirmation, setAwaitingVerificationConfirmation] = useState(false);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim()) {
-      // Handle verification confirmation responses
-      if (awaitingVerificationConfirmation) {
-        if (message.toLowerCase().includes('yes')) {
-          sendVerificationRequest('verification');
-          setAwaitingVerificationConfirmation(false);
-        } else if (message.toLowerCase().includes('no')) {
-          const cancelMessage = {
-            id: messages.length + 1,
-            text: "Verification request cancelled.",
-            sender: "support",
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          };
-          setMessages(prev => [...prev, cancelMessage]);
-          setAwaitingVerificationConfirmation(false);
-        }
-        setMessage("");
-        return;
-      }
-      
       // Check for special commands
       if (message.includes('/verification')) {
-        showVerificationConfirmation();
+        sendVerificationRequest('verification');
         setMessage("");
         return;
       }
       
       if (message.includes('/certification')) {
-        showBusinessSelectionForCertification();
+        sendVerificationRequest('certification');
         setMessage("");
         return;
       }
@@ -88,36 +66,6 @@ export function useChatState() {
       
       setMessage("");
     }
-  };
-
-  const showVerificationConfirmation = () => {
-    const confirmationMessage = {
-      id: messages.length + 1,
-      text: "Are you sure you want to request a new verification check? Yes | No",
-      sender: "support",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    
-    setMessages(prev => [...prev, confirmationMessage]);
-    setAwaitingVerificationConfirmation(true);
-  };
-
-  const showBusinessSelectionForCertification = () => {
-    // Mock registered businesses - in a real app, this would come from the user's data
-    const mockBusinesses = [
-      "Downtown Coffee Shop",
-      "Main Street Bakery",
-      "Tech Solutions LLC"
-    ];
-
-    const businessListMessage = {
-      id: messages.length + 1,
-      text: `Please select which business you'd like to certify:\n\n${mockBusinesses.map((business, index) => `${index + 1}. ${business}`).join('\n')}`,
-      sender: "support",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    
-    setMessages(prev => [...prev, businessListMessage]);
   };
 
   const handleChatModeChange = (value: string) => {
