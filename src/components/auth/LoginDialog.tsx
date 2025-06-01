@@ -69,7 +69,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
             <span className="sr-only">Close</span>
           </DialogClose>
           
-          <div className="w-20 h-20 rounded-full bg-gradient-to-r from-primary to-purple-500 flex items-center justify-center mb-6">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6">
             <img src="/lovable-uploads/Avante-Maps-icon.svg" alt="Pi Logo" className="w-17 h-17" />
           </div>
           
