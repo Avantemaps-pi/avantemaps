@@ -24,7 +24,7 @@ const About = () => {
                 <img
                   src="/lovable-uploads/Avante Maps icon.svg"
                   alt="Avante Maps Icon"
-                  className="h-7 w-7"
+                  className="h-6 w-6"
                 />
               </div>
               Our Mission
