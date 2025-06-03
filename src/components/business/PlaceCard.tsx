@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import { Place } from '@/data/mockPlaces';
@@ -15,6 +15,7 @@ import PlaceCardWebsiteButton from './PlaceCardWebsiteButton';
 import PlaceCardDetails from './PlaceCardDetails';
 import { useBookmark } from '@/hooks/useBookmark';
 import { useSharePlace } from '@/hooks/useSharePlace';
+import ImageCarousel from './ImageCarousel';
 
 interface PlaceCardProps {
   place: Place;
@@ -35,6 +36,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Use our custom hooks
   const { isBookmarked, handleBookmarkToggle } = useBookmark({
@@ -70,22 +72,49 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
     .filter(Boolean)
     .slice(0, 2); // Limit to 2 categories
 
+  // Create an array of images (for now using single image, but ready for multiple)
+  const images = place.image ? [place.image] : [];
+
   return (
     <Card 
       key={place.id} 
       className={`material-card card-hover ${className || 'w-full'} place-card-container`}
     >
-      <PlaceCardImage 
-        image={place.image} 
-        name={place.name} 
-        onClick={handlePlaceClick}
-      >
-        <PlaceCardActions 
-          isBookmarked={isBookmarked} 
-          onBookmarkToggle={handleBookmarkToggle} 
-          onShare={handleShare} 
-        />
-      </PlaceCardImage>
+      {images.length > 0 ? (
+        <div className="relative">
+          <PlaceCardImage 
+            image={images[currentImageIndex]} 
+            name={place.name} 
+            onClick={handlePlaceClick}
+          >
+            <PlaceCardActions 
+              isBookmarked={isBookmarked} 
+              onBookmarkToggle={handleBookmarkToggle} 
+              onShare={handleShare} 
+            />
+          </PlaceCardImage>
+          
+          {images.length > 1 && (
+            <ImageCarousel 
+              images={images}
+              currentIndex={currentImageIndex}
+              onImageChange={setCurrentImageIndex}
+            />
+          )}
+        </div>
+      ) : (
+        <PlaceCardImage 
+          image={place.image} 
+          name={place.name} 
+          onClick={handlePlaceClick}
+        >
+          <PlaceCardActions 
+            isBookmarked={isBookmarked} 
+            onBookmarkToggle={handleBookmarkToggle} 
+            onShare={handleShare} 
+          />
+        </PlaceCardImage>
+      )}
       
       <CardHeader className="pb-0 px-3 pt-3">
         <PlaceCardTitle name={place.name} onClick={handlePlaceClick} />
