@@ -44,7 +44,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Avante Maps Support</h3>
-          <ChatModeToggle chatMode={chatMode} onChatModeChange={onChatModeChange} />
+          <ChatModeToggle mode={chatMode} onModeChange={onChatModeChange} />
         </div>
         
         {/* Menu Options */}
@@ -65,23 +65,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((msg) => (
-            <ChatMessage 
-              key={msg.id} 
-              id={msg.id}
-              text={msg.text}
-              sender={msg.sender}
-              timestamp={msg.timestamp}
-            />
+            <ChatMessage key={msg.id} message={msg} />
           ))}
         </div>
       </ScrollArea>
 
       <div className="p-4 border-t">
         <ChatInput
-          value={message}
-          onChange={setMessage}
-          onSubmit={handleSendMessage}
-          onAttachmentClick={handleAttachmentOption}
+          message={message}
+          setMessage={setMessage}
+          onSendMessage={handleSendMessage}
+          onAttachmentOption={handleAttachmentOption}
           showAttachmentIcon={showAttachmentIcon}
         />
       </div>
