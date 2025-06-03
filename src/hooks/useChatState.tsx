@@ -19,47 +19,6 @@ export function useChatState() {
   const [awaitingVerificationConfirmation, setAwaitingVerificationConfirmation] = useState(false);
   const [awaitingBusinessSelection, setAwaitingBusinessSelection] = useState(false);
 
-  // Auto-send message for menu options
-  const sendMenuOptionMessage = (option: string) => {
-    const menuMessage = {
-      id: messages.length + 1,
-      text: option,
-      sender: "user",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    
-    setMessages(prev => [...prev, menuMessage]);
-    
-    // Add automated response based on the option
-    setTimeout(() => {
-      let responseText = "";
-      switch(option.toLowerCase()) {
-        case "verification":
-          responseText = "I can help you with business verification. Would you like me to start the verification process for your business?";
-          break;
-        case "certification":
-          responseText = "Business certification helps establish trust with customers. Which business would you like to certify?";
-          break;
-        case "support":
-          responseText = "I'm here to provide support! What specific issue can I help you with today?";
-          break;
-        case "feedback":
-          responseText = "We value your feedback! Please share your thoughts about Avante Maps and how we can improve.";
-          break;
-        default:
-          responseText = `You selected: ${option}. How can I assist you with this?`;
-      }
-      
-      const responseMessage = {
-        id: messages.length + 2,
-        text: responseText,
-        sender: "support",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, responseMessage]);
-    }, 1000);
-  };
-
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim()) {
@@ -253,7 +212,6 @@ export function useChatState() {
     handleSendMessage,
     handleChatModeChange,
     handleAttachmentOption,
-    sendVerificationRequest,
-    sendMenuOptionMessage
+    sendVerificationRequest
   };
 }

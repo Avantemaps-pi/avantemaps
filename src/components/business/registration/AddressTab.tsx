@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { useFormContext } from 'react-hook-form';
 import { FormValues } from './formSchema';
-import { supabase } from '@/integrations/supabase/client';
+import { GOOGLE_MAPS_API_KEY } from '@/components/map/mapConfig';
 
 interface AddressTabProps {
   onNext: () => void;
@@ -16,7 +16,7 @@ interface AddressTabProps {
 
 declare global {
   interface Window {
-    L: any;
+    google: any;
   }
 }
 
@@ -24,147 +24,78 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
   const form = useFormContext<FormValues>();
   const autocompleteRef = useRef<HTMLInputElement>(null);
   
-  // Load LocationIQ autocomplete
+  // Load Google Maps script with Places API
   useEffect(() => {
-    const initializeAutocomplete = async () => {
-      try {
-        // Get the LocationIQ token from Supabase secrets
-        const { data, error } = await supabase.functions.invoke('get-locationiq-token');
+    // Check if script is already loaded
+    const googleMapsScriptId = 'google-maps-script';
+    
+    // Function to initialize autocomplete
+    const initializeAutocomplete = () => {
+      if (autocompleteRef.current && window.google && window.google.maps && window.google.maps.places) {
+        const autocomplete = new window.google.maps.places.Autocomplete(
+          autocompleteRef.current,
+          { types: ['address'] }
+        );
         
-        if (error) {
-          console.error('Error getting LocationIQ token:', error);
-          return;
-        }
-        
-        const locationiqToken = data?.token;
-        if (!locationiqToken) {
-          console.warn('LocationIQ token not found');
-          return;
-        }
-
-        // Load Leaflet if not already loaded
-        if (!window.L) {
-          const leafletScript = document.createElement('script');
-          leafletScript.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-          leafletScript.onload = () => setupAutocomplete(locationiqToken);
-          document.head.appendChild(leafletScript);
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          if (!place.geometry) {
+            // User entered the name of a Place that was not suggested
+            return;
+          }
           
-          const leafletCSS = document.createElement('link');
-          leafletCSS.rel = 'stylesheet';
-          leafletCSS.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-          document.head.appendChild(leafletCSS);
-        } else {
-          setupAutocomplete(locationiqToken);
-        }
-      } catch (error) {
-        console.error('Error initializing autocomplete:', error);
+          // Get address components
+          const addressComponents = place.address_components;
+          let street = '';
+          let state = '';
+          let zipCode = '';
+          
+          for (const component of addressComponents) {
+            const componentType = component.types[0];
+            
+            switch (componentType) {
+              case 'street_number':
+                street = component.long_name;
+                break;
+              case 'route':
+                street += ' ' + component.long_name;
+                break;
+              case 'administrative_area_level_1':
+                state = component.long_name;
+                break;
+              case 'postal_code':
+                zipCode = component.long_name;
+                break;
+            }
+          }
+          
+          // Update form values
+          form.setValue('streetAddress', street.trim());
+          form.setValue('state', state);
+          form.setValue('zipCode', zipCode);
+        });
       }
     };
 
-    const setupAutocomplete = (token: string) => {
-      if (!autocompleteRef.current) return;
-
-      let timeout: NodeJS.Timeout;
-      const suggestionsList = document.createElement('div');
-      suggestionsList.className = 'absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto';
-      suggestionsList.style.display = 'none';
+    if (!document.getElementById(googleMapsScriptId) && !window.google) {
+      const script = document.createElement('script');
+      script.id = googleMapsScriptId;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
       
-      // Insert after the input field
-      autocompleteRef.current.parentNode?.insertBefore(suggestionsList, autocompleteRef.current.nextSibling);
-
-      const handleInput = (e: Event) => {
-        const query = (e.target as HTMLInputElement).value;
-        
-        clearTimeout(timeout);
-        
-        if (query.length < 3) {
-          suggestionsList.style.display = 'none';
-          return;
-        }
-
-        timeout = setTimeout(async () => {
-          try {
-            const response = await fetch(
-              `https://api.locationiq.com/v1/autocomplete.php?key=${token}&q=${encodeURIComponent(query)}&format=json&limit=5&countrycodes=us`
-            );
-            
-            if (!response.ok) return;
-            
-            const data = await response.json();
-            
-            suggestionsList.innerHTML = '';
-            
-            if (data.length === 0) {
-              suggestionsList.style.display = 'none';
-              return;
-            }
-
-            data.forEach((place: any) => {
-              const item = document.createElement('div');
-              item.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm';
-              item.textContent = place.display_name;
-              
-              item.addEventListener('click', () => {
-                // Parse the address components
-                const addressParts = place.display_name.split(', ');
-                let street = '';
-                let state = '';
-                let zipCode = '';
-                
-                // Try to extract components from the display name
-                if (addressParts.length >= 3) {
-                  street = addressParts[0];
-                  const lastPart = addressParts[addressParts.length - 1];
-                  const secondLastPart = addressParts[addressParts.length - 2];
-                  
-                  // Look for zip code pattern (5 digits)
-                  const zipMatch = lastPart.match(/\b(\d{5})\b/);
-                  if (zipMatch) {
-                    zipCode = zipMatch[1];
-                  }
-                  
-                  // Look for state (usually 2 letter abbreviation)
-                  const stateMatch = secondLastPart.match(/\b([A-Z]{2})\b/);
-                  if (stateMatch) {
-                    state = stateMatch[1];
-                  }
-                }
-                
-                // Update form values
-                form.setValue('streetAddress', street);
-                if (state) form.setValue('state', state);
-                if (zipCode) form.setValue('zipCode', zipCode);
-                
-                suggestionsList.style.display = 'none';
-              });
-              
-              suggestionsList.appendChild(item);
-            });
-            
-            suggestionsList.style.display = 'block';
-          } catch (error) {
-            console.error('Error fetching suggestions:', error);
-          }
-        }, 300);
-      };
-
-      const handleClickOutside = (e: Event) => {
-        if (!suggestionsList.contains(e.target as Node) && e.target !== autocompleteRef.current) {
-          suggestionsList.style.display = 'none';
-        }
-      };
-
-      autocompleteRef.current.addEventListener('input', handleInput);
-      document.addEventListener('click', handleClickOutside);
-
-      return () => {
-        autocompleteRef.current?.removeEventListener('input', handleInput);
-        document.removeEventListener('click', handleClickOutside);
-        suggestionsList.remove();
-      };
+      // Use onload event instead of callback
+      script.onload = initializeAutocomplete;
+      
+      document.head.appendChild(script);
+    } else if (window.google && window.google.maps && window.google.maps.places) {
+      // If script is already loaded, initialize autocomplete directly
+      initializeAutocomplete();
+    }
+    
+    return () => {
+      // Clean up if needed
     };
-
-    initializeAutocomplete();
   }, [form]);
 
   return (
@@ -176,7 +107,6 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="relative">
           <FormField
             control={form.control}
             name="streetAddress"
@@ -195,7 +125,6 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
               </FormItem>
             )}
           />
-        </div>
         <FormField
           control={form.control}
           name="apartment"
@@ -209,32 +138,32 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="state"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>State / Province</FormLabel>
-              <FormControl>
-                <Input placeholder="California" {...field} disabled={disabled} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="zipCode"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Postal / Zip Code</FormLabel>
-              <FormControl>
-                <Input placeholder="94103" {...field} disabled={disabled} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="state"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>State / Province</FormLabel>
+                <FormControl>
+                  <Input placeholder="California" {...field} disabled={disabled} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="zipCode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Postal / Zip Code</FormLabel>
+                <FormControl>
+                  <Input placeholder="94103" {...field} disabled={disabled} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button 
