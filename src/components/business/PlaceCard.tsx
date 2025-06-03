@@ -69,15 +69,15 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
     }
     
     // If hours is an object, format it nicely
-    const today = new Date().toLocaleLowerCase().slice(0, 3); // get day like 'mon', 'tue', etc
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     const daysMapping: Record<string, string> = {
-      'mon': 'monday',
-      'tue': 'tuesday', 
-      'wed': 'wednesday',
-      'thu': 'thursday',
-      'fri': 'friday',
-      'sat': 'saturday',
-      'sun': 'sunday'
+      'monday': 'monday',
+      'tuesday': 'tuesday', 
+      'wednesday': 'wednesday',
+      'thursday': 'thursday',
+      'friday': 'friday',
+      'saturday': 'saturday',
+      'sunday': 'sunday'
     };
     
     const fullDayName = daysMapping[today];
