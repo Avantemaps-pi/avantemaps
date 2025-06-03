@@ -1,14 +1,12 @@
-
 import React from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
 const PrivacyPolicy = () => {
-  return (
-    <AppLayout title="Privacy Policy">
+  return <AppLayout title="Privacy Policy">
       <div className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 animate-fade-in">
         <div className="space-y-4">
+          
           <p className="text-muted-foreground"><strong>Effective Date:</strong> April 13, 2025</p>
         </div>
 
@@ -105,8 +103,6 @@ const PrivacyPolicy = () => {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
-  );
+    </AppLayout>;
 };
-
 export default PrivacyPolicy;
