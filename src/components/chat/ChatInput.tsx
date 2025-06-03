@@ -6,27 +6,27 @@ import { Send, Paperclip } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 
 const ChatInput: React.FC<{
-  value: string;
-  onChange: (value: string) => void;
-  onSubmit: () => void;
-  onAttachmentClick?: () => void;
+  message: string;
+  setMessage: (message: string) => void;
+  onSendMessage: () => void;
+  onAttachmentOption?: () => void;
   placeholder?: string;
   disabled?: boolean;
   showAttachmentIcon?: boolean;
 }> = ({
-  value,
-  onChange,
-  onSubmit,
-  onAttachmentClick,
+  message,
+  setMessage,
+  onSendMessage,
+  onAttachmentOption,
   placeholder = 'Type a message...',
   disabled = false,
-  showAttachmentIcon = true  // Changed back to true as default
+  showAttachmentIcon = true
 }) => {
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (value.trim()) {
-        onSubmit();
+      if (message.trim()) {
+        onSendMessage();
       }
     }
   };
@@ -39,8 +39,8 @@ const ChatInput: React.FC<{
       
       <div className="relative flex-1">
         <Textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className="min-h-[80px] pr-20 resize-none"
@@ -48,12 +48,12 @@ const ChatInput: React.FC<{
         />
         
         <div className="absolute right-3 bottom-3 flex space-x-2">
-          {showAttachmentIcon && onAttachmentClick && (
+          {showAttachmentIcon && onAttachmentOption && (
             <Button
               type="button"
               size="icon"
               variant="ghost"
-              onClick={onAttachmentClick}
+              onClick={onAttachmentOption}
               className="h-8 w-8"
               disabled={disabled}
             >
@@ -64,9 +64,9 @@ const ChatInput: React.FC<{
           <Button
             type="button"
             size="icon"
-            onClick={onSubmit}
+            onClick={onSendMessage}
             className="h-8 w-8 bg-primary text-primary-foreground"
-            disabled={!value.trim() || disabled}
+            disabled={!message.trim() || disabled}
           >
             <Send className="h-5 w-5" />
             <span className="sr-only">Send message</span>
