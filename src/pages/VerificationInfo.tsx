@@ -29,7 +29,7 @@ const VerificationInfo = () => {
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle className="h-6 w-6 text-green-500" />
-                  <CardTitle className="text-xl">Verification</CardTitle>
+                  <CardTitle className="text-xl">Verification</CardTitle> <span className="text-lg">(Free)<span/>
                 </div>
                 <CardDescription>
                   Proof of Business Existence
@@ -63,7 +63,7 @@ const VerificationInfo = () => {
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Shield className="h-6 w-6 text-blue-500" />
-                    <CardTitle className="text-xl">Certification</CardTitle>
+                    <CardTitle className="text-xl">Certification</CardTitle><span className="text-lg">(Free)<span/>
                   </div>
                   <CardDescription>
                     Proof of Business Legitimacy
