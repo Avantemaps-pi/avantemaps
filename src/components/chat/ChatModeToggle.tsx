@@ -2,7 +2,7 @@
 import React from 'react';
 import { Radio, Bot } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { ChatMode } from '@/types/chat';
+import { ChatMode } from './ChatInterface';
 
 interface ChatModeToggleProps {
   chatMode: ChatMode;
