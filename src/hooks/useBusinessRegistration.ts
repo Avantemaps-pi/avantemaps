@@ -89,7 +89,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      if (!user?.id) {
+      if (!user?.uid) {
         toast.error('You must be logged in to register a business.');
         return;
       }
@@ -108,7 +108,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       // Prepare business data for insertion
       const businessData = {
         name: values.businessName,
-        owner_id: user.id,
+        owner_id: user.uid,
         location: fullAddress,
         description: values.businessDescription,
         category: values.businessTypes.length > 0 ? values.businessTypes[0] : 'Other',

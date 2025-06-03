@@ -17,15 +17,25 @@ interface PlaceCardProps {
     address: string;
     rating?: number;
     category?: string;
-    hours?: string;
+    hours?: string | Record<string, string>;
     website?: string;
     distance?: string;
   };
   onPlaceClick: (placeId: string) => void;
   className?: string;
+  showDetails?: boolean;
+  isBookmarked?: boolean;
+  onRemove?: (id: string) => void;
 }
 
-const PlaceCard: React.FC<PlaceCardProps> = ({ place, onPlaceClick, className }) => {
+const PlaceCard: React.FC<PlaceCardProps> = ({ 
+  place, 
+  onPlaceClick, 
+  className,
+  showDetails = false,
+  isBookmarked = false,
+  onRemove
+}) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Use images array if available, otherwise fall back to single image
@@ -49,6 +59,38 @@ const PlaceCard: React.FC<PlaceCardProps> = ({ place, onPlaceClick, className })
       window.open(place.website, '_blank');
     }
   };
+
+  // Format hours for display
+  const getDisplayHours = () => {
+    if (!place.hours) return undefined;
+    
+    if (typeof place.hours === 'string') {
+      return place.hours;
+    }
+    
+    // If hours is an object, format it nicely
+    const today = new Date().toLocaleLowerCase().slice(0, 3); // get day like 'mon', 'tue', etc
+    const daysMapping: Record<string, string> = {
+      'mon': 'monday',
+      'tue': 'tuesday', 
+      'wed': 'wednesday',
+      'thu': 'thursday',
+      'fri': 'friday',
+      'sat': 'saturday',
+      'sun': 'sunday'
+    };
+    
+    const fullDayName = daysMapping[today];
+    if (fullDayName && place.hours[fullDayName]) {
+      return `Today: ${place.hours[fullDayName]}`;
+    }
+    
+    // Fallback to first available hours
+    const firstDay = Object.keys(place.hours)[0];
+    return firstDay ? place.hours[firstDay] : undefined;
+  };
+
+  const displayHours = getDisplayHours();
 
   return (
     <Card className={cn(
@@ -102,10 +144,10 @@ const PlaceCard: React.FC<PlaceCardProps> = ({ place, onPlaceClick, className })
               )}
             </div>
             
-            {place.hours && (
+            {displayHours && (
               <div className="flex items-center text-sm text-gray-600">
                 <Clock className="w-4 h-4 mr-1 flex-shrink-0" />
-                <span>{place.hours}</span>
+                <span>{displayHours}</span>
               </div>
             )}
             
