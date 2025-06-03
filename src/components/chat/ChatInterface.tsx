@@ -1,14 +1,16 @@
+
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import ChatModeToggle from './ChatModeToggle';
 import ChatMessage from './ChatMessage';
-import { Menu, X, Send } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import ChatInput from './ChatInput';
+import ChatModeToggle from './ChatModeToggle';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
 export type ChatMode = 'ai' | 'live';
+
 interface ChatInterfaceProps {
-  chatMode: 'ai' | 'live';
-  onChatModeChange: (mode: 'ai' | 'live') => void;
+  chatMode: ChatMode;
+  onChatModeChange: (mode: string) => void;
   messages: Array<{
     id: number;
     text: string;
@@ -18,9 +20,11 @@ interface ChatInterfaceProps {
   message: string;
   setMessage: (message: string) => void;
   handleSendMessage: () => void;
-  handleAttachmentOption?: () => void;
+  handleAttachmentOption: () => void;
   showAttachmentIcon?: boolean;
+  sendMenuOptionMessage?: (option: string) => void;
 }
+
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   chatMode,
   onChatModeChange,
@@ -29,68 +33,54 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   setMessage,
   handleSendMessage,
   handleAttachmentOption,
-  showAttachmentIcon = false
+  showAttachmentIcon = false,
+  sendMenuOptionMessage
 }) => {
-  const handleMenuOptionClick = (command: string) => {
-    setMessage(message + command + ' ');
-  };
-  return <Card className="mt-6 overflow-hidden border-none shadow-md">
-      <div className="flex h-full flex-col">
-        <div className="border-b p-3">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-lg">CHAT</h3>
-            <ChatModeToggle chatMode={chatMode} onChatModeChange={onChatModeChange} />
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            {chatMode === 'ai' ? "Connect with Avante Maps AI assistant" : "Connect with Avante Maps LIVE Intern"}
-          </p>
+  // Menu options for quick access
+  const menuOptions = ['Verification', 'Certification', 'Support', 'Feedback'];
+
+  return (
+    <Card className="h-[600px] flex flex-col">
+      <div className="p-4 border-b">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Avante Maps Support</h3>
+          <ChatModeToggle mode={chatMode} onModeChange={onChatModeChange} />
         </div>
-  
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[60vh] min-h-[400px]">
-          {messages.length === 0 ? <div className="flex h-full items-center justify-center">
-              <p className="text-center text-muted-foreground">
-                No messages yet. Start a conversation!
-              </p>
-            </div> : messages.map(msg => <ChatMessage key={msg.id} id={msg.id} text={msg.text} sender={msg.sender} timestamp={msg.timestamp} />)}
-        </div>
-
-        <div className="p-3 border-t">
-          <div className="relative flex items-center">
-            <div className="flex w-full bg-slate-50 rounded-full px-4 py-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-full px-4 py-1 mr-3 transition-colors">
-                    <Menu size={18} className="mr-1.5" />
-                    <span className="text-sm font-medium">Menu</span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 p-0 bg-[#1e2732] text-white" sideOffset={5}>
-                  <div className="flex flex-col divide-y divide-gray-700">
-                    <button onClick={() => handleMenuOptionClick('/attach')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
-                      <span className="text-lg">Attach</span>
-                      <span className="text-gray-400">/attach</span>
-                    </button>
-                    <button onClick={() => handleMenuOptionClick('/verification')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
-                      <span className="text-lg">Verify</span>
-                      <span className="text-gray-400">/verification</span>
-                    </button>
-                    <button onClick={() => handleMenuOptionClick('/certification')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
-                      <span className="text-lg">Certify</span>
-                      <span className="text-gray-400">/certification</span>
-                    </button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              <Input value={message} onChange={e => setMessage(e.target.value)} className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-gray-600 placeholder:text-gray-500" placeholder="Type your message to Avante Maps..." onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
-
-              <button onClick={handleSendMessage} disabled={!message.trim()} className="text-blue-500 hover:text-blue-600 ml-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                <Send size={20} className="transform rotate-45" />
-              </button>
-            </div>
-          </div>
+        
+        {/* Menu Options */}
+        <div className="flex flex-wrap gap-2 mb-2">
+          <span className="text-sm text-gray-600 mr-2">Quick Menu:</span>
+          {menuOptions.map((option) => (
+            <button
+              key={option}
+              onClick={() => sendMenuOptionMessage?.(option)}
+              className="px-3 py-1 text-xs bg-blue-100 hover:bg-blue-200 rounded-full transition-colors"
+            >
+              {option}
+            </button>
+          ))}
         </div>
       </div>
-    </Card>;
+
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-4">
+          {messages.map((msg) => (
+            <ChatMessage key={msg.id} message={msg} />
+          ))}
+        </div>
+      </ScrollArea>
+
+      <div className="p-4 border-t">
+        <ChatInput
+          message={message}
+          setMessage={setMessage}
+          onSendMessage={handleSendMessage}
+          onAttachmentOption={handleAttachmentOption}
+          showAttachmentIcon={showAttachmentIcon}
+        />
+      </div>
+    </Card>
+  );
 };
+
 export default ChatInterface;

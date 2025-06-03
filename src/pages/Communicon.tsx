@@ -28,7 +28,8 @@ const Communicon = () => {
     handleChatModeChange,
     handleSendMessage,
     handleAttachmentOption,
-    sendVerificationRequest
+    sendVerificationRequest,
+    sendMenuOptionMessage
   } = useChatState();
 
   useEffect(() => {
@@ -108,6 +109,7 @@ const Communicon = () => {
           handleSendMessage={handleSendMessageWrapper}
           handleAttachmentOption={handleAttachmentOptionWrapper}
           showAttachmentIcon={true}
+          sendMenuOptionMessage={sendMenuOptionMessage}
         />
       </div>
 
