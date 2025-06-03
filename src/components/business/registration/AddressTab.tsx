@@ -1,12 +1,12 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useFormContext } from 'react-hook-form';
 import { FormValues } from './formSchema';
-import { GOOGLE_MAPS_API_KEY } from '@/components/map/mapConfig';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AddressTabProps {
   onNext: () => void;
@@ -14,89 +14,79 @@ interface AddressTabProps {
   disabled?: boolean;
 }
 
-declare global {
-  interface Window {
-    google: any;
-  }
+interface LocationIQSuggestion {
+  place_id: string;
+  display_name: string;
+  lat: string;
+  lon: string;
+  address: {
+    house_number?: string;
+    road?: string;
+    state?: string;
+    postcode?: string;
+    country?: string;
+  };
 }
 
 const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled }) => {
   const form = useFormContext<FormValues>();
+  const [suggestions, setSuggestions] = useState<LocationIQSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [locationiqToken, setLocationiqToken] = useState<string>('');
   const autocompleteRef = useRef<HTMLInputElement>(null);
   
-  // Load Google Maps script with Places API
+  // Get LocationIQ token from Supabase secrets
   useEffect(() => {
-    // Check if script is already loaded
-    const googleMapsScriptId = 'google-maps-script';
-    
-    // Function to initialize autocomplete
-    const initializeAutocomplete = () => {
-      if (autocompleteRef.current && window.google && window.google.maps && window.google.maps.places) {
-        const autocomplete = new window.google.maps.places.Autocomplete(
-          autocompleteRef.current,
-          { types: ['address'] }
-        );
-        
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          if (!place.geometry) {
-            // User entered the name of a Place that was not suggested
-            return;
-          }
-          
-          // Get address components
-          const addressComponents = place.address_components;
-          let street = '';
-          let state = '';
-          let zipCode = '';
-          
-          for (const component of addressComponents) {
-            const componentType = component.types[0];
-            
-            switch (componentType) {
-              case 'street_number':
-                street = component.long_name;
-                break;
-              case 'route':
-                street += ' ' + component.long_name;
-                break;
-              case 'administrative_area_level_1':
-                state = component.long_name;
-                break;
-              case 'postal_code':
-                zipCode = component.long_name;
-                break;
-            }
-          }
-          
-          // Update form values
-          form.setValue('streetAddress', street.trim());
-          form.setValue('state', state);
-          form.setValue('zipCode', zipCode);
-        });
+    const getLocationIQToken = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-locationiq-token');
+        if (error) {
+          console.error('Error getting LocationIQ token:', error);
+        } else {
+          setLocationiqToken(data?.token || '');
+        }
+      } catch (error) {
+        console.error('Error fetching LocationIQ token:', error);
       }
     };
 
-    if (!document.getElementById(googleMapsScriptId) && !window.google) {
-      const script = document.createElement('script');
-      script.id = googleMapsScriptId;
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
-      script.async = true;
-      script.defer = true;
+    getLocationIQToken();
+  }, []);
+
+  const searchAddresses = async (query: string) => {
+    if (!query || query.length < 3 || !locationiqToken) return;
+
+    try {
+      const response = await fetch(
+        `https://api.locationiq.com/v1/search.php?key=${locationiqToken}&q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5&countrycodes=us`
+      );
       
-      // Use onload event instead of callback
-      script.onload = initializeAutocomplete;
-      
-      document.head.appendChild(script);
-    } else if (window.google && window.google.maps && window.google.maps.places) {
-      // If script is already loaded, initialize autocomplete directly
-      initializeAutocomplete();
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data);
+        setShowSuggestions(true);
+      }
+    } catch (error) {
+      console.error('Error searching addresses:', error);
     }
+  };
+
+  const handleAddressChange = (value: string) => {
+    form.setValue('streetAddress', value);
+    searchAddresses(value);
+  };
+
+  const handleSuggestionClick = (suggestion: LocationIQSuggestion) => {
+    const address = suggestion.address;
+    const streetAddress = `${address.house_number || ''} ${address.road || ''}`.trim();
     
-    return () => {
-      // Clean up if needed
-    };
-  }, [form]);
+    form.setValue('streetAddress', streetAddress || suggestion.display_name);
+    form.setValue('state', address.state || '');
+    form.setValue('zipCode', address.postcode || '');
+    
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
 
   return (
     <Card>
@@ -107,6 +97,7 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="relative">
           <FormField
             control={form.control}
             name="streetAddress"
@@ -116,15 +107,38 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
                 <FormControl>
                   <Input 
                     placeholder="123 Business Street" 
-                    {...field} 
+                    {...field}
                     ref={autocompleteRef}
                     disabled={disabled}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      handleAddressChange(e.target.value);
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+          
+          {/* Address suggestions dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
+              {suggestions.map((suggestion) => (
+                <div
+                  key={suggestion.place_id}
+                  className="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                >
+                  <div className="text-sm font-medium text-gray-900 truncate">
+                    {suggestion.display_name}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
         <FormField
           control={form.control}
           name="apartment"
@@ -138,32 +152,34 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
             </FormItem>
           )}
         />
-          <FormField
-            control={form.control}
-            name="state"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>State / Province</FormLabel>
-                <FormControl>
-                  <Input placeholder="California" {...field} disabled={disabled} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="zipCode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Postal / Zip Code</FormLabel>
-                <FormControl>
-                  <Input placeholder="94103" {...field} disabled={disabled} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        
+        <FormField
+          control={form.control}
+          name="state"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>State / Province</FormLabel>
+              <FormControl>
+                <Input placeholder="California" {...field} disabled={disabled} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="zipCode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Postal / Zip Code</FormLabel>
+              <FormControl>
+                <Input placeholder="94103" {...field} disabled={disabled} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button 
