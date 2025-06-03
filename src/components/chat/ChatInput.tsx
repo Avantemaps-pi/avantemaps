@@ -14,18 +14,18 @@ const ChatInput: React.FC<{
   disabled?: boolean;
   showAttachmentIcon?: boolean;
 }> = ({
-  value = '',  // Provide default empty string
+  value,
   onChange,
   onSubmit,
   onAttachmentClick,
   placeholder = 'Type a message...',
   disabled = false,
-  showAttachmentIcon = true
+  showAttachmentIcon = true  // Changed back to true as default
 }) => {
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (value?.trim()) {  // Add optional chaining
+      if (value.trim()) {
         onSubmit();
       }
     }
@@ -39,7 +39,7 @@ const ChatInput: React.FC<{
       
       <div className="relative flex-1">
         <Textarea
-          value={value || ''}  // Ensure value is never undefined
+          value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
@@ -66,7 +66,7 @@ const ChatInput: React.FC<{
             size="icon"
             onClick={onSubmit}
             className="h-8 w-8 bg-primary text-primary-foreground"
-            disabled={!value?.trim() || disabled}  // Add optional chaining
+            disabled={!value.trim() || disabled}
           >
             <Send className="h-5 w-5" />
             <span className="sr-only">Send message</span>
