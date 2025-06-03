@@ -1,11 +1,10 @@
 
-import { supabase } from '@/integrations/supabase/client';
 import { FormValues } from '@/components/business/registration/formSchema';
 import { geocodeAddress } from '@/utils/geocoding';
 import { uploadBusinessImages } from './imageUploadService';
-import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
-export interface BusinessSubmissionData {
+interface SubmitBusinessParams {
   formValues: FormValues;
   userId: string;
   selectedImages: File[];
@@ -15,56 +14,60 @@ export const submitBusiness = async ({
   formValues,
   userId,
   selectedImages
-}: BusinessSubmissionData) => {
-  const fullAddress = `${formValues.streetAddress}, ${formValues.state}, ${formValues.zipCode}`;
+}: SubmitBusinessParams) => {
+  // Geocode the address
+  const fullAddress = `${formValues.streetAddress}, ${formValues.state} ${formValues.zipCode}`;
   const coordinates = await geocodeAddress(fullAddress);
-  
-  if (!coordinates) {
-    toast.error('Could not locate address. Please check and try again.');
-    throw new Error('Geocoding failed');
-  }
-  
+
+  // Prepare business data
   const businessData = {
     name: formValues.businessName,
-    owner_id: userId,
-    location: fullAddress,
     description: formValues.businessDescription,
-    category: formValues.businessTypes.length > 0 ? formValues.businessTypes[0] : 'Other',
-    coordinates: JSON.stringify(coordinates),
+    business_types: formValues.businessTypes,
+    location: fullAddress,
+    coordinates: coordinates ? `${coordinates.lat},${coordinates.lng}` : null,
+    pi_wallet_address: formValues.piWalletAddress,
+    owner_id: userId,
     contact_info: {
+      firstName: formValues.firstName,
+      lastName: formValues.lastName,
       phone: formValues.phone,
       email: formValues.email,
       website: formValues.website,
+      address: {
+        street: formValues.streetAddress,
+        apartment: formValues.apartment,
+        state: formValues.state,
+        zipCode: formValues.zipCode
+      }
     },
     hours: {
-      monday: formValues.mondayClosed ? 'Closed' : `${formValues.mondayOpen}-${formValues.mondayClose}`,
-      tuesday: formValues.tuesdayClosed ? 'Closed' : `${formValues.tuesdayOpen}-${formValues.tuesdayClose}`,
-      wednesday: formValues.wednesdayClosed ? 'Closed' : `${formValues.wednesdayOpen}-${formValues.wednesdayClose}`,
-      thursday: formValues.thursdayClosed ? 'Closed' : `${formValues.thursdayOpen}-${formValues.thursdayClose}`,
-      friday: formValues.fridayClosed ? 'Closed' : `${formValues.fridayOpen}-${formValues.fridayClose}`,
-      saturday: formValues.saturdayClosed ? 'Closed' : `${formValues.saturdayOpen}-${formValues.saturdayClose}`,
-      sunday: formValues.sundayClosed ? 'Closed' : `${formValues.sundayOpen}-${formValues.sundayClose}`,
-    },
-    business_types: formValues.businessTypes,
-    pi_wallet_address: formValues.piWalletAddress,
-    keywords: [...formValues.businessTypes, formValues.businessName.split(' ')].flat(),
+      monday: formValues.mondayClosed ? null : { open: formValues.mondayOpen, close: formValues.mondayClose },
+      tuesday: formValues.tuesdayClosed ? null : { open: formValues.tuesdayOpen, close: formValues.tuesdayClose },
+      wednesday: formValues.wednesdayClosed ? null : { open: formValues.wednesdayOpen, close: formValues.wednesdayClose },
+      thursday: formValues.thursdayClosed ? null : { open: formValues.thursdayOpen, close: formValues.thursdayClose },
+      friday: formValues.fridayClosed ? null : { open: formValues.fridayOpen, close: formValues.fridayClose },
+      saturday: formValues.saturdayClosed ? null : { open: formValues.saturdayOpen, close: formValues.saturdayClose },
+      sunday: formValues.sundayClosed ? null : { open: formValues.sundayOpen, close: formValues.sundayClose }
+    }
   };
-  
+
+  // Insert business into database
   const { data, error } = await supabase
     .from('businesses')
-    .insert(businessData)
-    .select();
-    
+    .insert([businessData])
+    .select()
+    .single();
+
   if (error) {
-    console.error('Error submitting business data:', error);
-    toast.error(`Failed to register business: ${error.message}`);
-    throw error;
+    console.error('Error submitting business:', error);
+    throw new Error('Failed to submit business data');
   }
 
   // Upload images if business was created successfully
-  if (data?.[0]?.id) {
-    await uploadBusinessImages(selectedImages, data[0].id);
+  if (data && selectedImages.length > 0) {
+    await uploadBusinessImages(selectedImages, data.id.toString());
   }
 
-  return { data: data[0], coordinates };
+  return { data, coordinates };
 };

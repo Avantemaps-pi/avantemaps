@@ -5,18 +5,12 @@ import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import ChatModeToggle from './ChatModeToggle';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-export type ChatMode = 'ai' | 'live';
+import { ChatMode, ChatMessage as ChatMessageType } from '@/types/chat';
 
 interface ChatInterfaceProps {
   chatMode: ChatMode;
   onChatModeChange: (mode: string) => void;
-  messages: Array<{
-    id: number;
-    text: string;
-    sender: string;
-    timestamp: string;
-  }>;
+  messages: ChatMessageType[];
   message: string;
   setMessage: (message: string) => void;
   handleSendMessage: () => void;
