@@ -21,7 +21,7 @@ const MobileMenuButton = ({
   };
   
   return (
-    <Button variant="ghost" size="icon" onClick={handleClick} className="mr-2 lg:hidden">
+    <Button variant="ghost" size="icon" onClick={handleClick} className="mr-2 md:hidden">
       <Menu className="h-5 w-5" />
     </Button>
   );

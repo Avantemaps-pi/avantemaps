@@ -69,13 +69,13 @@ const Index = () => {
         />
       </div>
       
-      {/* Floating UI - responsive positioning */}
-      <div className="absolute top-0 left-0 right-0 z-20 px-2 sm:px-4 py-2 sm:py-4 flex items-center">
+      {/* Floating UI - responsive positioning with proper spacing for sidebar */}
+      <div className="absolute top-0 left-0 right-0 z-20 px-2 sm:px-4 md:pl-8 lg:pl-12 py-2 sm:py-4 flex items-center">
         <Button
           variant="ghost"
           size="icon"
           onClick={handleMenuClick}
-          className="mr-2 bg-white/80 shadow-sm flex-shrink-0 lg:hidden"
+          className="mr-2 bg-white/80 shadow-sm flex-shrink-0 md:hidden"
         >
           <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
@@ -84,7 +84,7 @@ const Index = () => {
           <AvanteMapLogo size="small" />
         </div>
         
-        <div className="flex-1 max-w-xs sm:max-w-md mx-auto">
+        <div className="flex-1 max-w-xs sm:max-w-md md:max-w-lg mx-auto md:ml-6 lg:ml-8">
           <SearchBar 
             onSearch={handleSearch} 
             placeholders={[

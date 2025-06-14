@@ -98,7 +98,7 @@ const PageHeader = ({
           {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && !isVerificationInfoPage && <MobileMenuButton />}
           {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && !isVerificationInfoPage && <DesktopMenuButton onClick={() => console.log('Desktop menu clicked')} />}
           
-          {isIndexPage && <Button variant="ghost" size="icon" onClick={handleMenuClick} className="mr-2 lg:hidden">
+          {isIndexPage && <Button variant="ghost" size="icon" onClick={handleMenuClick} className="mr-2 md:hidden">
               <Menu className="h-5 w-5" />
             </Button>}
           
