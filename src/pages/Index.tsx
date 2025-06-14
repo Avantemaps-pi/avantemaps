@@ -75,7 +75,7 @@ const Index = () => {
           variant="ghost"
           size="icon"
           onClick={handleMenuClick}
-          className="mr-2 bg-white/80 shadow-sm flex-shrink-0"
+          className="mr-2 bg-white/80 shadow-sm flex-shrink-0 lg:hidden"
         >
           <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
