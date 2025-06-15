@@ -63,11 +63,7 @@ const Recommendations = () => {
               {/* Horizontal Scroll Snap Slider */}
               <div className="relative">
                 <div 
-                  className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2"
-                  style={{
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
-                  }}
+                  className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2"
                 >
                   {data.map((place) => (
                     <div 
