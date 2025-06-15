@@ -76,8 +76,8 @@ const Review = () => {
           </TabsList>
           
           <TabsContent value="review" className="w-full">
-            <div className={`${isMobile ? 'mt-4' : 'mt-8'} w-full`}>
-              <div className="mb-6">
+            <Card className={`${isMobile ? 'mt-4' : 'mt-8'} w-full`}>
+              <CardHeader>
                 <div className="flex items-center gap-4 mb-6">
                   <div className="h-16 w-16 rounded-md overflow-hidden">
                     <img 
@@ -90,7 +90,7 @@ const Review = () => {
                     />
                   </div>
                   <div>
-                    <h1 className="text-xl font-semibold">{business.name}</h1>
+                    <CardTitle className="text-xl">{business.name}</CardTitle>
                     <div className="flex flex-col items-start mt-1">
                       <div className="flex items-center">
                         {[...Array(5)].map((_, i) => (
@@ -111,9 +111,9 @@ const Review = () => {
                     </div>
                   </div>
                 </div>
-                
-                <Separator className="mb-6" />
-                
+              </CardHeader>
+              
+              <CardContent>
                 <div className="mb-6">
                   <h3 className="text-lg font-medium mb-3">Your Rating</h3>
                   <div className="flex items-center gap-1">
@@ -166,8 +166,8 @@ const Review = () => {
                   <Button variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
                   <Button onClick={handleSubmitReview}>Submit Review</Button>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </TabsContent>
           
           <TabsContent value="comments" className="w-full">
