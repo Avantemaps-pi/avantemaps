@@ -70,7 +70,7 @@ const Index = () => {
       </div>
       
       {/* Floating UI - responsive positioning with proper spacing for sidebar */}
-      <div className="absolute top-0 left-0 right-0 z-20 px-2 sm:px-4 md:pl-8 lg:pl-12 py-2 sm:py-4 flex items-center">
+      <div className="absolute top-0 left-0 right-0 z-20 px-2 sm:px-4 md:pl-[280px] lg:pl-[280px] py-2 sm:py-4 flex items-center">
         <Button
           variant="ghost"
           size="icon"
@@ -80,7 +80,7 @@ const Index = () => {
           <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
         
-        <div className="mr-2 flex-shrink-0">
+        <div className="mr-2 flex-shrink-0 md:hidden">
           <AvanteMapLogo size="small" />
         </div>
         
