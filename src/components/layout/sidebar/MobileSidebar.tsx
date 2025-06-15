@@ -83,7 +83,7 @@ const MobileSidebar = ({
                     Logout
                   </> : <>
                     <LogIn className="h-4 w-4 mr-2" />
-                    {isLoading ? "Authenticating..." : "Login with Pi"}
+                    {isLoading ? "Authenticating..." : "Login with Pi Network"}
                   </>}
               </Button>
             </div>
