@@ -6,7 +6,6 @@ import PlaceCard from '@/components/business/PlaceCard';
 import { useNavigate } from 'react-router-dom';
 import { Place } from '@/data/mockPlaces';
 import { BookmarkX } from 'lucide-react';
-
 const bookmarkedPlaces: Place[] = [{
   id: '1',
   name: 'Pi Cafe Downtown',
@@ -47,15 +46,12 @@ const bookmarkedPlaces: Place[] = [{
     lng: -122.405
   }
 }];
-
 const Bookmarks = () => {
   const [bookmarks, setBookmarks] = React.useState(bookmarkedPlaces);
   const navigate = useNavigate();
-  
   const removeBookmark = (id: string) => {
     setBookmarks(bookmarks.filter(bookmark => bookmark.id !== id));
   };
-  
   const handlePlaceClick = (placeId: string) => {
     navigate('/', {
       state: {
@@ -63,16 +59,14 @@ const Bookmarks = () => {
       }
     });
   };
-  
-  return (
-    <AppLayout>
+  return <AppLayout>
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
         <div className="space-y-2">
+          
           <p className="text-muted-foreground">Your saved Pi-accepting businesses.</p>
         </div>
 
-        {bookmarks.length === 0 ? (
-          <Card className="w-full py-12 material-card">
+        {bookmarks.length === 0 ? <Card className="w-full py-12 material-card">
             <CardContent className="text-center flex flex-col items-center space-y-4">
               <div className="p-3 bg-muted rounded-full">
                 <BookmarkX className="h-6 w-6 text-muted-foreground" />
@@ -83,29 +77,14 @@ const Bookmarks = () => {
                 Explore Map
               </Button>
             </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {bookmarks.map((place, index) => (
-              <div 
-                key={place.id} 
-                style={{ animationDelay: `${index * 0.05}s` }} 
-                className="animate-fade-in"
-              >
-                <PlaceCard 
-                  place={place} 
-                  onPlaceClick={handlePlaceClick} 
-                  onRemove={removeBookmark} 
-                  showDetails={false} 
-                  isBookmarked={true} 
-                />
-              </div>
-            ))}
-          </div>
-        )}
+          </Card> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {bookmarks.map((place, index) => <div key={place.id} style={{
+          animationDelay: `${index * 0.05}s`
+        }} className="animate-fade-in">
+                <PlaceCard place={place} onPlaceClick={handlePlaceClick} onRemove={removeBookmark} showDetails={false} isBookmarked={true} />
+              </div>)}
+          </div>}
       </div>
-    </AppLayout>
-  );
+    </AppLayout>;
 };
-
 export default Bookmarks;
