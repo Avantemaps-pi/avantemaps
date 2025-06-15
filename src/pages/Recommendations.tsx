@@ -29,7 +29,7 @@ const Recommendations = () => {
 
   return (
     <AppLayout title="Recommendations">
-      <div className="w-full mx-auto mt-4 pb-6 overflow-y-auto overflow-x-hidden px-0">
+      <div className="w-full mx-auto mt-4 pb-6 overflow-y-auto px-0">
         <div className="space-y-6 pb-1 px-0">
           {[
             {
