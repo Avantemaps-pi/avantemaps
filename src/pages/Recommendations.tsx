@@ -53,9 +53,9 @@ const Recommendations = () => {
               onMouseEnter={() => handleMouseEnter(key)}
               onMouseLeave={handleMouseLeave}
               onTouchStart={() => handleMouseEnter(key)}
-              className="relative w-full max-w-[90%] sm:max-w-[50%] md:max-w-[80%] mx-auto"
+              className="relative w-full"
             >
-              <h2 className="text-xl font-semibold mb-4 flex items-center px-2">
+              <h2 className="text-xl font-semibold mb-4 flex items-center px-4">
                 <span className="bg-primary h-4 w-1 rounded-full mr-2"></span>
                 {title}
               </h2>
@@ -63,7 +63,7 @@ const Recommendations = () => {
               {/* Horizontal Scroll Snap Slider */}
               <div className="relative">
                 <div 
-                  className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2"
+                  className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 px-4"
                 >
                   {data.map((place) => (
                     <div 
