@@ -45,7 +45,7 @@
 }
 
 /* Mobile optimizations */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .snap-x {
     padding-left: 1rem;
     padding-right: 1rem;
