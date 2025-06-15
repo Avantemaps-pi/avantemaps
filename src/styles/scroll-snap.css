@@ -1,0 +1,65 @@
+
+/* Horizontal Scroll Snap Slider Styles */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scrolling for the slider */
+.snap-x {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for better UX when needed */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Enhanced scroll snap for better experience */
+@supports (scroll-snap-type: x mandatory) {
+  .snap-x {
+    scroll-snap-type: x mandatory;
+  }
+  
+  .snap-start {
+    scroll-snap-align: start;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .snap-x {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .snap-start {
+    width: 280px !important;
+    min-width: 280px;
+  }
+}
+
+@media (max-width: 640px) {
+  .snap-start {
+    width: 260px !important;
+    min-width: 260px;
+  }
+}
