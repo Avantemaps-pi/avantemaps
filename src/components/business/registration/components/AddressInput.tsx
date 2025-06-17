@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -60,6 +59,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled = false }) => {
     
     // Update form fields with selected suggestion
     form.setValue('streetAddress', streetAddress);
+    form.setValue('city', suggestion.address.city);
     form.setValue('state', suggestion.address.state);
     form.setValue('zipCode', suggestion.address.postcode);
     

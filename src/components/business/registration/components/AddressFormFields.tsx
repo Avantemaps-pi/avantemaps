@@ -30,6 +30,20 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
       
       <FormField
         control={form.control}
+        name="city"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>City</FormLabel>
+            <FormControl>
+              <Input placeholder="San Francisco" {...field} disabled={disabled} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      
+      <FormField
+        control={form.control}
         name="state"
         render={({ field }) => (
           <FormItem>
