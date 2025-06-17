@@ -142,7 +142,7 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
           name="website"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Pi Website URL (Optional)</FormLabel>
+              <FormLabel>Pi Network Website URL (Optional)</FormLabel>
               <FormControl>
                 <Input 
                   placeholder="https://pi-network.example.com" 
