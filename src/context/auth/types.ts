@@ -1,11 +1,5 @@
 
-import { User, Session } from '@supabase/supabase-js';
-
-export enum SubscriptionTier {
-  INDIVIDUAL = 'individual',
-  SMALL_BUSINESS = 'small-business',
-  ORGANIZATION = 'organization',
-}
+import { SubscriptionTier } from '@/utils/piNetwork';
 
 export interface PiUser {
   uid: string;
@@ -15,12 +9,11 @@ export interface PiUser {
   accessToken: string;
   lastAuthenticated: number;
   subscriptionTier: SubscriptionTier;
-  businessCount?: number;
+  businessCount?: number; // Added businessCount property as optional
 }
 
 export interface AuthContextType {
   user: PiUser | null;
-  session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   isOffline: boolean;

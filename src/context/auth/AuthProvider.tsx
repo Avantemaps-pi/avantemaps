@@ -1,169 +1,240 @@
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-import { AuthContextType, SubscriptionTier, PiUser } from './types';
-import { authService } from './authService';
-import { networkStatusService } from './networkStatusService';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { toast } from 'sonner';
+import { initializePiNetwork } from '@/utils/piNetwork';
+import { PiUser, AuthContextType, STORAGE_KEY } from './types';
+import { checkAccess } from './authUtils';
+import { performLogin, refreshUserData as refreshUserDataService, requestAuthPermissions } from './authService';
+import { useNetworkStatus } from './networkStatusService';
+import { SubscriptionTier } from '@/utils/piNetwork/types';
+import AuthContext from './useAuth';
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<PiUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isSdkInitialized, setIsSdkInitialized] = useState<boolean>(false);
+  const [lastRefresh, setLastRefresh] = useState<number>(0);
+  const pendingAuthRef = useRef<boolean>(false);
+  const initAttempted = useRef<boolean>(false);
+  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Development bypass - set to true to allow access without login
-  const BYPASS_AUTH = true;
+  // Minimum time between refresh calls (15 minutes)
+  const REFRESH_COOLDOWN = 15 * 60 * 1000; 
+  // Reduced timeout to 6 seconds
+  const AUTH_TIMEOUT = 6 * 1000;
 
+  // Check for cached session on mount
   useEffect(() => {
-    if (BYPASS_AUTH) {
-      setIsLoading(false);
-      return;
-    }
-
-    // Only set up Supabase auth if not bypassing
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change:', event);
-        setSession(session);
-        
-        // Convert Supabase User to PiUser if needed
-        if (session?.user) {
-          const piUser: PiUser = {
-            uid: session.user.id,
-            username: session.user.email || session.user.id,
-            accessToken: session.access_token,
-            lastAuthenticated: Date.now(),
-            subscriptionTier: SubscriptionTier.INDIVIDUAL,
-            walletAddress: undefined,
-            roles: undefined
-          };
-          setUser(piUser);
+    const cachedSession = localStorage.getItem(STORAGE_KEY);
+    
+    if (cachedSession) {
+      try {
+        const userData = JSON.parse(cachedSession) as PiUser;
+        // Check if the session is still relatively fresh (less than 24 hours old)
+        if (Date.now() - userData.lastAuthenticated < 24 * 60 * 60 * 1000) {
+          console.log("Restoring user from cached session");
+          setUser(userData);
         } else {
-          setUser(null);
+          console.log("Cached session expired");
+          localStorage.removeItem(STORAGE_KEY);
         }
-        
-        setIsLoading(false);
-        setAuthError(null);
+      } catch (error) {
+        console.error("Error parsing cached session:", error);
+        localStorage.removeItem(STORAGE_KEY);
       }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      
-      if (session?.user) {
-        const piUser: PiUser = {
-          uid: session.user.id,
-          username: session.user.email || session.user.id,
-          accessToken: session.access_token,
-          lastAuthenticated: Date.now(),
-          subscriptionTier: SubscriptionTier.INDIVIDUAL,
-          walletAddress: undefined,
-          roles: undefined
-        };
-        setUser(piUser);
-      } else {
-        setUser(null);
-      }
-      
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
   }, []);
 
+  // Initialize Pi Network SDK efficiently
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+    if (initAttempted.current) return;
+    
+    initAttempted.current = true;
+    const initSdk = async () => {
+      try {
+        console.log("Starting Pi Network SDK initialization...");
+        const result = await initializePiNetwork();
+        setIsSdkInitialized(result);
+        console.log("Pi Network SDK initialization complete:", result);
+      } catch (error) {
+        console.error("Failed to initialize Pi Network SDK:", error);
+        toast.error("Failed to initialize Pi Network SDK. Some features may be unavailable.");
+        setIsSdkInitialized(false);
+      }
     };
+    
+    initSdk();
   }, []);
 
-  const login = async () => {
-    if (BYPASS_AUTH) return;
+  // Optimized login process
+  const login = useCallback(async (): Promise<void> => {
+    if (pendingAuthRef.current) {
+      console.log("Authentication already in progress");
+      toast.info("Authentication in progress, please wait...");
+      return;
+    }
+
+    pendingAuthRef.current = true;
+    setIsLoading(true);
+    
+    // Reset any existing timeout
+    if (authTimeoutRef.current) {
+      clearTimeout(authTimeoutRef.current);
+    }
+    
+    // Set new authentication timeout - reduced to 6s
+    authTimeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+      setAuthError("Authentication timed out. Please try again.");
+      toast.error("Authentication timed out. Please try again.");
+      pendingAuthRef.current = false;
+    }, AUTH_TIMEOUT);
     
     try {
-      setAuthError(null);
-      // For now, just use a simple Supabase sign in
-      // You can implement Pi Network auth later
-      console.log('Login attempted but bypassed');
+      // Initialize SDK if needed
+      if (!isSdkInitialized) {
+        console.log("Attempting to initialize SDK before login...");
+        try {
+          const result = await initializePiNetwork();
+          setIsSdkInitialized(result);
+          if (!result) {
+            throw new Error("SDK initialization failed");
+          }
+        } catch (error) {
+          console.error("Failed to initialize Pi Network SDK during login:", error);
+          toast.error("Failed to initialize Pi Network SDK. Please try again later.");
+          pendingAuthRef.current = false;
+          setIsLoading(false);
+          if (authTimeoutRef.current) {
+            clearTimeout(authTimeoutRef.current);
+          }
+          return;
+        }
+      }
+      
+      // First step: Request permissions
+      const permissionsGranted = await requestAuthPermissions(
+        isSdkInitialized, 
+        setIsLoading, 
+        setAuthError
+      );
+      
+      if (!permissionsGranted) {
+        console.log("Permissions not granted. Authentication aborted.");
+        pendingAuthRef.current = false;
+        setIsLoading(false);
+        if (authTimeoutRef.current) {
+          clearTimeout(authTimeoutRef.current);
+          authTimeoutRef.current = null;
+        }
+        return;
+      }
+      
+      // Second step: Authenticate with Pi Network
+      await performLogin(
+        isSdkInitialized,
+        setIsLoading,
+        setAuthError,
+        (pending) => { pendingAuthRef.current = pending; },
+        setUser
+      );
+      
+      // Update last refresh timestamp
+      setLastRefresh(Date.now());
     } catch (error) {
-      console.error('Login error:', error);
-      setAuthError(error instanceof Error ? error.message : 'Login failed');
-      throw error;
+      console.error("Login process error:", error);
+      toast.error("Authentication failed. Please try again.");
+      pendingAuthRef.current = false;
+    } finally {
+      // Clear authentication timeout
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+        authTimeoutRef.current = null;
+      }
+      setIsLoading(false);
     }
-  };
+  }, [isSdkInitialized, AUTH_TIMEOUT]);
 
-  const logout = async () => {
-    if (BYPASS_AUTH) return;
-    
-    try {
-      await supabase.auth.signOut();
-      setUser(null);
-      setSession(null);
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
+  // Handle online/offline status
+  const isOffline = useNetworkStatus(pendingAuthRef, login);
 
-  const refreshUserData = async () => {
-    if (BYPASS_AUTH) {
-      console.log('Auth bypassed, skipping user data refresh');
+  // Refresh user data without full login
+  const refreshUserData = useCallback(async (force: boolean = false): Promise<void> => {
+    // Skip refresh if called too frequently unless forced
+    const now = Date.now();
+    if (!force && now - lastRefresh < REFRESH_COOLDOWN) {
+      console.log("Skipping refresh, too soon since last refresh");
       return;
     }
     
+    if (!isSdkInitialized) {
+      try {
+        const result = await initializePiNetwork();
+        setIsSdkInitialized(result);
+      } catch (error) {
+        console.error("Failed to initialize Pi Network SDK during refresh:", error);
+        return;
+      }
+    }
+    
+    if (!user) {
+      console.log("No user to refresh data for");
+      return;
+    }
+    
+    console.log("Refreshing user data...");
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      // In bypass mode, we don't need to refresh anything
-      // In real implementation, this would refresh user data from Pi Network or Supabase
-      console.log('Refreshing user data...');
+      await refreshUserDataService(user, setUser, setIsLoading);
+      console.log("User data refreshed successfully");
+      setLastRefresh(now);
     } catch (error) {
-      console.error('Error refreshing user data:', error);
-      setAuthError(error instanceof Error ? error.message : 'Failed to refresh user data');
+      console.error("Failed to refresh user data:", error);
     } finally {
       setIsLoading(false);
     }
+  }, [user, isSdkInitialized, lastRefresh]);
+  
+  // Silent refresh when app starts or becomes online
+  useEffect(() => {
+    if (user && !isOffline && isSdkInitialized) {
+      // Use setTimeout to avoid refreshing immediately during initial render
+      const timer = setTimeout(() => {
+        refreshUserData(false);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user, isOffline, isSdkInitialized, refreshUserData]);
+
+  const logout = (): void => {
+    localStorage.removeItem(STORAGE_KEY);
+    setUser(null);
+    toast.info("You've been logged out");
   };
 
-  const hasAccess = (tier: SubscriptionTier): boolean => {
-    if (BYPASS_AUTH) return true;
-    return user?.subscriptionTier === tier || user?.subscriptionTier === SubscriptionTier.ORGANIZATION;
-  };
+  // Check if user has access to a feature based on their subscription
+  const hasAccess = useCallback((requiredTier: SubscriptionTier): boolean => {
+    if (!user) return false;
+    return checkAccess(user.subscriptionTier, requiredTier);
+  }, [user]);
 
-  const value: AuthContextType = {
-    user,
-    session,
-    isAuthenticated: BYPASS_AUTH || !!user,
-    isLoading,
-    authError,
-    isOffline: isOffline || networkStatusService.isOffline(),
-    login,
-    logout,
-    refreshUserData,
-    hasAccess,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-// Export the useAuth hook from here to ensure it uses the same context
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        isOffline,
+        login,
+        logout,
+        authError,
+        hasAccess,
+        refreshUserData: () => refreshUserData(true)
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
