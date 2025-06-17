@@ -28,6 +28,7 @@ export interface AuthContextType {
   logout: () => void;
   authError: string | null;
   hasAccess: (requiredTier: SubscriptionTier) => boolean;
+  refreshUserData: () => Promise<void>;
 }
 
 export const SESSION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours in milliseconds

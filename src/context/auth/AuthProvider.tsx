@@ -127,6 +127,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const refreshUserData = async () => {
+    if (BYPASS_AUTH) {
+      console.log('Auth bypassed, skipping user data refresh');
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      // In bypass mode, we don't need to refresh anything
+      // In real implementation, this would refresh user data from Pi Network or Supabase
+      console.log('Refreshing user data...');
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+      setAuthError(error instanceof Error ? error.message : 'Failed to refresh user data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const hasAccess = (tier: SubscriptionTier): boolean => {
     if (BYPASS_AUTH) return true;
     return user?.subscriptionTier === tier || user?.subscriptionTier === SubscriptionTier.ORGANIZATION;
@@ -141,6 +160,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isOffline: isOffline || networkStatusService.isOffline(),
     login,
     logout,
+    refreshUserData,
     hasAccess,
   };
 
