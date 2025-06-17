@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 import { PiUser } from './types';
 import { 
@@ -345,4 +344,11 @@ export const refreshUserData = async (
   } finally {
     setIsLoading(false);
   }
+};
+
+// Export as authService object
+export const authService = {
+  requestAuthPermissions,
+  performLogin,
+  refreshUserData
 };

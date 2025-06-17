@@ -1,5 +1,11 @@
 
-import { SubscriptionTier } from '@/utils/piNetwork';
+import { User, Session } from '@supabase/supabase-js';
+
+export enum SubscriptionTier {
+  INDIVIDUAL = 'individual',
+  SMALL_BUSINESS = 'small-business',
+  ORGANIZATION = 'organization',
+}
 
 export interface PiUser {
   uid: string;
@@ -9,11 +15,12 @@ export interface PiUser {
   accessToken: string;
   lastAuthenticated: number;
   subscriptionTier: SubscriptionTier;
-  businessCount?: number; // Added businessCount property as optional
+  businessCount?: number;
 }
 
 export interface AuthContextType {
   user: PiUser | null;
+  session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   isOffline: boolean;
@@ -21,7 +28,6 @@ export interface AuthContextType {
   logout: () => void;
   authError: string | null;
   hasAccess: (requiredTier: SubscriptionTier) => boolean;
-  refreshUserData: () => Promise<void>;
 }
 
 export const SESSION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours in milliseconds

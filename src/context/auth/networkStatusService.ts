@@ -36,3 +36,9 @@ export const useNetworkStatus = (
 
   return isOffline;
 };
+
+// Export as networkStatusService object
+export const networkStatusService = {
+  isOffline: () => !navigator.onLine,
+  useNetworkStatus
+};
