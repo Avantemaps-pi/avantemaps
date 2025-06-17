@@ -145,7 +145,7 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
               <FormLabel>Pi Network Website URL (Optional)</FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="https://pi-network.example.com" 
+                  placeholder="https://example.pinet.com" 
                   {...field} 
                   disabled={disabled}
                 />
