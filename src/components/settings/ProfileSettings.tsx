@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
-import { PiUser } from '@/context/AuthContext';
+import { PiUser } from '@/context/auth/types';
 
 interface ProfileSettingsProps {
   language: string;
