@@ -168,29 +168,9 @@ export const initializePiNetwork = async (): Promise<boolean> => {
  * - testnet branch should use sandbox: false
  */
 export const determineSandboxMode = (): boolean => {
-  // Check environment variable first
-  if (typeof import.meta.env.VITE_PI_SANDBOX === 'string') {
-    return import.meta.env.VITE_PI_SANDBOX === 'true';
-  }
-  
-  // Fallback to hostname check
-  const hostname = window.location.hostname;
-  
-  // Check if we're in a development environment
-  if (
-    hostname === 'localhost' || 
-    hostname.includes('127.0.0.1') ||
-    hostname.includes('dev.') ||
-    hostname.includes('.dev.') ||
-    hostname.includes('-dev-') ||
-    hostname.includes('sandbox')
-  ) {
-    return true; // Use sandbox mode in development environments
-  }
-  
-  // Default to production (non-sandbox) mode for testnet and production
-  return false;
+  return true; // Force sandbox mode for all environments
 };
+
 
 // Check if SDK is initialized
 export const isSdkInitialized = (): boolean => {

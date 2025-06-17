@@ -5,7 +5,7 @@
  * In a production environment, these values should be injected at build time
  * via environment variables or fetched from a secure backend service.
  */
-
+VITE_PI_SANDBOX=true
 // Maps API configuration
 // Note: Google Maps JavaScript API keys are designed to be used in client-side code
 // and should be restricted by HTTP referrers in the Google Cloud Console
