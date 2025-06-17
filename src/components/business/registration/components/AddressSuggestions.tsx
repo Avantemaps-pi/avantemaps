@@ -36,11 +36,15 @@ const AddressSuggestions: React.FC<AddressSuggestionsProps> = ({
         <button
           key={index}
           type="button"
-          className="w-full px-3 py-2 text-left hover:bg-gray-100 border-b border-gray-100 last:border-b-0 text-sm"
+          className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 border-b border-gray-100 last:border-b-0 text-sm transition-colors duration-150"
           onClick={() => onSuggestionClick(suggestion)}
+          onMouseDown={(e) => e.preventDefault()} // Prevent input blur
         >
           <div className="font-medium text-gray-900">
-            {suggestion.address.house_number} {suggestion.address.road}
+            {suggestion.address.house_number && suggestion.address.road 
+              ? `${suggestion.address.house_number} ${suggestion.address.road}`
+              : suggestion.address.road || suggestion.display_name.split(',')[0]
+            }
           </div>
           <div className="text-gray-600 text-xs">
             {suggestion.address.city}, {suggestion.address.state} {suggestion.address.postcode}

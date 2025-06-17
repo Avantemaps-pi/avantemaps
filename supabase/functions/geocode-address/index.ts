@@ -38,15 +38,17 @@ serve(async (req) => {
       );
     }
 
-    // Use LocationIQ forward geocoding API
-    const url = `https://us1.locationiq.com/v1/search.php?key=${locationiqToken}&q=${encodeURIComponent(address)}&format=json&limit=5`;
+    // Use LocationIQ autocomplete API for better address suggestions
+    const url = `https://us1.locationiq.com/v1/autocomplete.php?key=${locationiqToken}&q=${encodeURIComponent(address)}&limit=5&format=json&countrycodes=us`;
     
-    console.log('Making request to LocationIQ for address:', address);
+    console.log('Making request to LocationIQ autocomplete for address:', address);
     
     const response = await fetch(url);
     
     if (!response.ok) {
       console.error('LocationIQ API error:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('LocationIQ error response:', errorText);
       return new Response(
         JSON.stringify({ error: 'Geocoding request failed' }),
         { 
@@ -57,7 +59,7 @@ serve(async (req) => {
     }
     
     const data = await response.json();
-    console.log('LocationIQ response:', data);
+    console.log('LocationIQ autocomplete response:', data);
     
     // Transform the response to match our expected format
     const suggestions = data.map((item: any) => ({
@@ -66,11 +68,11 @@ serve(async (req) => {
       lon: parseFloat(item.lon),
       address: {
         house_number: item.address?.house_number || '',
-        road: item.address?.road || '',
+        road: item.address?.road || item.address?.street || '',
         city: item.address?.city || item.address?.town || item.address?.village || '',
         state: item.address?.state || '',
         postcode: item.address?.postcode || '',
-        country: item.address?.country || ''
+        country: item.address?.country || 'US'
       }
     }));
 

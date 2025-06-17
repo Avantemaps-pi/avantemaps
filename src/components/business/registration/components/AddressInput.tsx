@@ -11,7 +11,7 @@ interface AddressInputProps {
   disabled?: boolean;
 }
 
-const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
+const AddressInput: React.FC<AddressInputProps> = ({ disabled = false }) => {
   const form = useFormContext<FormValues>();
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -19,9 +19,16 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout>();
 
-  const handleAddressChange = (value: string) => {
+  const handleAddressChange = async (value: string) => {
     form.setValue('streetAddress', value);
     
+    // Don't search if disabled or input is too short
+    if (disabled || value.length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
     // Clear existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -29,19 +36,17 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
 
     // Set new timeout for debounced search
     timeoutRef.current = setTimeout(async () => {
-      if (value.length < 3) {
-        setSuggestions([]);
-        return;
-      }
-
       setIsLoading(true);
       try {
+        console.log('Fetching suggestions for:', value);
         const fetchedSuggestions = await fetchAddressSuggestions(value);
+        console.log('Received suggestions:', fetchedSuggestions);
         setSuggestions(fetchedSuggestions);
-        setShowSuggestions(true);
+        setShowSuggestions(fetchedSuggestions.length > 0);
       } catch (error) {
         console.error('Error fetching address suggestions:', error);
         setSuggestions([]);
+        setShowSuggestions(false);
       } finally {
         setIsLoading(false);
       }
@@ -49,14 +54,23 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
   };
 
   const handleSuggestionClick = (suggestion: AddressSuggestion) => {
+    if (disabled) return;
+    
     const streetAddress = `${suggestion.address.house_number} ${suggestion.address.road}`.trim();
     
+    // Update form fields with selected suggestion
     form.setValue('streetAddress', streetAddress);
     form.setValue('state', suggestion.address.state);
     form.setValue('zipCode', suggestion.address.postcode);
     
+    // Clear suggestions and hide dropdown
     setSuggestions([]);
     setShowSuggestions(false);
+    
+    // Update input value manually to ensure it displays correctly
+    if (inputRef.current) {
+      inputRef.current.value = streetAddress;
+    }
   };
 
   // Clean up timeout on unmount
@@ -82,6 +96,14 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
     };
   }, []);
 
+  // Hide suggestions when input is disabled
+  useEffect(() => {
+    if (disabled) {
+      setShowSuggestions(false);
+      setSuggestions([]);
+    }
+  }, [disabled]);
+
   return (
     <div className="relative">
       <FormField
@@ -102,8 +124,9 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
                   }}
                   disabled={disabled}
                   autoComplete="off"
+                  className={disabled ? "bg-gray-100 cursor-not-allowed" : ""}
                 />
-                {isLoading && (
+                {isLoading && !disabled && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                     <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
                   </div>
@@ -114,7 +137,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
             
             <AddressSuggestions
               suggestions={suggestions}
-              isVisible={showSuggestions}
+              isVisible={showSuggestions && !disabled}
               onSuggestionClick={handleSuggestionClick}
             />
           </FormItem>
