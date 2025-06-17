@@ -70,26 +70,25 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
 
   const geocodeAddress = async (address: string): Promise<google.maps.LatLngLiteral | null> => {
     try {
-      if (!window.google || !window.google.maps) {
-        console.error('Google Maps API not loaded');
-        toast.error('Google Maps API not loaded. Please refresh the page and try again.');
+      // Use our LocationIQ edge function for geocoding
+      const { data, error } = await supabase.functions.invoke('geocode-address', {
+        body: { address }
+      });
+
+      if (error) {
+        console.error('Error geocoding address:', error);
         return null;
       }
-      
-      const geocoder = new google.maps.Geocoder();
-      return new Promise((resolve, reject) => {
-        geocoder.geocode({ address }, (results, status) => {
-          if (status === google.maps.GeocoderStatus.OK && results?.[0]?.geometry?.location) {
-            const location = results[0].geometry.location;
-            resolve({
-              lat: location.lat(),
-              lng: location.lng()
-            });
-          } else {
-            reject(new Error(`Geocoding failed: ${status}`));
-          }
-        });
-      });
+
+      if (data?.suggestions && data.suggestions.length > 0) {
+        const firstResult = data.suggestions[0];
+        return {
+          lat: firstResult.lat,
+          lng: firstResult.lon
+        };
+      }
+
+      return null;
     } catch (error) {
       console.error('Error geocoding address:', error);
       return null;
@@ -105,18 +104,10 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
 
       setIsSubmitting(true);
 
-      // Check if the business-images bucket exists, if not, handle gracefully
-      const { data: buckets, error: bucketError } = await supabase
-        .storage
-        .listBuckets();
+      // Create full address string
+      const fullAddress = `${values.streetAddress}${values.apartment ? `, ${values.apartment}` : ''}, ${values.state}, ${values.zipCode}`;
       
-      const businessBucketExists = buckets?.some(bucket => bucket.name === 'business-images');
-      
-      if (bucketError) {
-        console.error('Error checking storage buckets:', bucketError);
-      }
-
-      const fullAddress = `${values.streetAddress}, ${values.state}, ${values.zipCode}`;
+      // Geocode the address
       const coordinates = await geocodeAddress(fullAddress);
       
       if (!coordinates) {
@@ -125,6 +116,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
       
+      // Prepare business data with all submitted information
       const businessData = {
         name: values.businessName,
         owner_id: user?.uid,
@@ -136,6 +128,8 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
           phone: values.phone,
           email: values.email,
           website: values.website,
+          owner_first_name: values.firstName,
+          owner_last_name: values.lastName,
         },
         hours: {
           monday: values.mondayClosed ? 'Closed' : `${values.mondayOpen}-${values.mondayClose}`,
@@ -151,6 +145,9 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         keywords: [...values.businessTypes, values.businessName.split(' ')].flat(),
       };
       
+      console.log('Submitting business data:', businessData);
+      
+      // Insert business data into Supabase
       const { data, error } = await supabase
         .from('businesses')
         .insert(businessData)
@@ -163,31 +160,40 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
       
-      // Upload images only if we have the bucket and images
+      console.log('Business registered successfully:', data);
+
+      // Handle image uploads if any
       if (selectedImages.length > 0 && data[0]?.id) {
         const businessId = data[0].id;
         
-        for (let i = 0; i < selectedImages.length; i++) {
-          const image = selectedImages[i];
-          const filePath = `businesses/${businessId}/${image.name}`;
-          
-          if (!businessBucketExists) {
-            toast.warning("Image upload failed: Storage not configured. Your business was registered without images.");
-            break;
-          }
-          
-          try {
-            const { error: uploadError } = await supabase.storage
-              .from('business-images')
-              .upload(filePath, image);
-              
-            if (uploadError) {
+        // Check if business-images bucket exists
+        const { data: buckets, error: bucketError } = await supabase
+          .storage
+          .listBuckets();
+        
+        const businessBucketExists = buckets?.some(bucket => bucket.name === 'business-images');
+        
+        if (businessBucketExists) {
+          for (let i = 0; i < selectedImages.length; i++) {
+            const image = selectedImages[i];
+            const filePath = `businesses/${businessId}/${Date.now()}-${image.name}`;
+            
+            try {
+              const { error: uploadError } = await supabase.storage
+                .from('business-images')
+                .upload(filePath, image);
+                
+              if (uploadError) {
+                console.error(`Error uploading image ${i+1}:`, uploadError);
+                toast.warning(`Business registered, but image ${i+1} upload failed.`);
+              }
+            } catch (uploadError) {
               console.error(`Error uploading image ${i+1}:`, uploadError);
-              toast.error(`Business registered, but image ${i+1} upload failed.`);
             }
-          } catch (uploadError) {
-            console.error(`Error uploading image ${i+1}:`, uploadError);
           }
+        } else {
+          console.warn('Business images bucket not found, skipping image upload');
+          toast.warning("Business registered successfully, but image upload is not configured.");
         }
       }
 
@@ -195,6 +201,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       
       if (onSuccess) onSuccess();
       
+      // Navigate with business data
       if (coordinates) {
         navigate('/', { 
           state: { 

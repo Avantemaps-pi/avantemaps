@@ -7,16 +7,12 @@ interface DesktopMenuButtonProps {
   onClick: () => void;
 }
 
-const DesktopMenuButton = ({ onClick }: DesktopMenuButtonProps) => {
+const DesktopMenuButton = ({
+  onClick
+}: DesktopMenuButtonProps) => {
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="hidden md:inline-flex"
-      onClick={onClick}
-    >
+    <Button variant="ghost" size="icon" onClick={onClick} className="mr-2 hidden sm:flex md:hidden">
       <Menu className="h-5 w-5" />
-      <span className="sr-only">Toggle sidebar</span>
     </Button>
   );
 };

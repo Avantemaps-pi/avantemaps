@@ -75,10 +75,10 @@ const Review = () => {
             <TabsTrigger value="comments" className="flex-1">View Comments</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="review">
-            <Card>
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-4">
+          <TabsContent value="review" className="w-full">
+            <Card className={`${isMobile ? 'mt-4' : 'mt-8'} w-full`}>
+              <CardHeader>
+                <div className="flex items-center gap-4 mb-6">
                   <div className="h-16 w-16 rounded-md overflow-hidden">
                     <img 
                       src={business.image} 
@@ -91,7 +91,7 @@ const Review = () => {
                   </div>
                   <div>
                     <CardTitle className="text-xl">{business.name}</CardTitle>
-                    <CardDescription className="flex flex-col items-start mt-1">
+                    <div className="flex flex-col items-start mt-1">
                       <div className="flex items-center">
                         {[...Array(5)].map((_, i) => (
                           <StarIcon
@@ -108,14 +108,12 @@ const Review = () => {
                       <span className="text-sm text-muted-foreground">
                         ({business.totalReviews} reviews)
                       </span>
-                    </CardDescription>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
               
-              <Separator />
-              
-              <CardContent className="pt-6">
+              <CardContent>
                 <div className="mb-6">
                   <h3 className="text-lg font-medium mb-3">Your Rating</h3>
                   <div className="flex items-center gap-1">
@@ -154,7 +152,7 @@ const Review = () => {
                   </p>
                 </div>
                 
-                <div className="mb-2">
+                <div className="mb-6">
                   <h3 className="text-lg font-medium mb-3">Your Review (optional)</h3>
                   <Textarea
                     placeholder="Share your experience with this business..."
@@ -163,12 +161,12 @@ const Review = () => {
                     onChange={(e) => setReview(e.target.value)}
                   />
                 </div>
+                
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
+                  <Button onClick={handleSubmitReview}>Submit Review</Button>
+                </div>
               </CardContent>
-              
-              <CardFooter className="flex justify-end space-x-2 pt-0">
-                <Button variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
-                <Button onClick={handleSubmitReview}>Submit Review</Button>
-              </CardFooter>
             </Card>
           </TabsContent>
           

@@ -1,9 +1,11 @@
+
 import { useState } from 'react';
 import { useAuth } from '@/context/auth';
 import {
   executeSubscriptionPayment,
   getSubscriptionPrice
 } from '@/utils/piPayment';
+import { approvePayment } from '@/api/payments';
 import { SubscriptionTier } from '@/utils/piNetwork';
 import { toast } from 'sonner';
 
@@ -71,23 +73,26 @@ export const useSubscriptionPayment = () => {
       if (result.success) {
         toast.success(result.message);
 
-        const approvalResult = await approvePayment({
-          paymentId: result.paymentId,
-          userId: user?.id!,
-          amount: price,
-          memo: `${subscriptionTier}_${selectedFrequency}`,
-          metadata: {
-            subscriptionTier,
-            duration: selectedFrequency === 'yearly' ? 365 : 30
-          }
-        });
+        // Use the transaction ID from the result if available
+        if (result.transactionId) {
+          const approvalResult = await approvePayment({
+            paymentId: result.transactionId,
+            userId: user?.uid!,
+            amount: price,
+            memo: `${subscriptionTier}_${selectedFrequency}`,
+            metadata: {
+              subscriptionTier,
+              duration: selectedFrequency === 'yearly' ? 365 : 30
+            }
+          });
 
-        if (approvalResult.success) {
-          toast.success("Subscription activated successfully");
-          await refreshUserData();
-        } else {
-          toast.error("Payment approved, but subscription update failed");
-          console.error("Approval failed:", approvalResult.message);
+          if (approvalResult.success) {
+            toast.success("Subscription activated successfully");
+            await refreshUserData();
+          } else {
+            toast.error("Payment approved, but subscription update failed");
+            console.error("Approval failed:", approvalResult.message);
+          }
         }
 
       } else {

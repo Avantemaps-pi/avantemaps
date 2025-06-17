@@ -95,10 +95,10 @@ const PageHeader = ({
     <header className="sticky top-0 z-10 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-full items-center px-[14px] bg-transparent">
         <div className="flex items-center">
-          {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && <MobileMenuButton />}
-          {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && <DesktopMenuButton onClick={() => console.log('Desktop menu clicked')} />}
+          {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && !isVerificationInfoPage && <MobileMenuButton />}
+          {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && !isVerificationInfoPage && <DesktopMenuButton onClick={() => console.log('Desktop menu clicked')} />}
           
-          {isIndexPage && <Button variant="ghost" size="icon" onClick={handleMenuClick} className="mr-2">
+          {isIndexPage && <Button variant="ghost" size="icon" onClick={handleMenuClick} className="mr-2 sm:hidden">
               <Menu className="h-5 w-5" />
             </Button>}
           
