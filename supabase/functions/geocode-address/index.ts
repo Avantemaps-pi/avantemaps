@@ -38,10 +38,10 @@ serve(async (req) => {
       );
     }
 
-    // Use LocationIQ forward geocoding API
-    const url = `https://us1.locationiq.com/v1/search.php?key=${locationiqToken}&q=${encodeURIComponent(address)}&format=json&limit=5`;
+    // Use LocationIQ global autocomplete API endpoint
+    const url = `https://api.locationiq.com/v1/autocomplete?key=${locationiqToken}&q=${encodeURIComponent(address)}&format=json&limit=5`;
     
-    console.log('Making request to LocationIQ for address:', address);
+    console.log('Making request to LocationIQ global endpoint for address:', address);
     
     const response = await fetch(url);
     
@@ -68,7 +68,7 @@ serve(async (req) => {
         house_number: item.address?.house_number || '',
         road: item.address?.road || '',
         city: item.address?.city || item.address?.town || item.address?.village || '',
-        state: item.address?.state || '',
+        state: item.address?.state || item.address?.state_district || '',
         postcode: item.address?.postcode || '',
         country: item.address?.country || ''
       }
