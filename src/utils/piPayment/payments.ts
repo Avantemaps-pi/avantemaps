@@ -1,8 +1,10 @@
+
 import { toast } from 'sonner';
 import { initializePiNetwork, isPiNetworkAvailable } from '../piNetwork';
 import { PaymentResult, SubscriptionFrequency } from './types';
 import { SubscriptionTier, PaymentDTO, PaymentData, PaymentCallbacks } from '../piNetwork/types';
 import { approvePayment, completePayment } from '@/api/payments';
+import { supabase } from '@/integrations/supabase/client';
 
 let paymentInProgress = false;
 
@@ -10,6 +12,29 @@ const PAYMENT_TIMEOUT = 60000;
 const POLLING_INTERVAL = 2000;
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Clean up stale payments for the current user
+const cleanupStalePayments = async (userId: string): Promise<void> => {
+  try {
+    console.log('Cleaning up stale payments before creating new payment...');
+    
+    const { data, error } = await supabase.functions.invoke('cleanup-stale-payments', {
+      body: JSON.stringify({ userId })
+    });
+    
+    if (error) {
+      console.error('Error cleaning up stale payments:', error);
+    } else {
+      console.log('Stale payment cleanup result:', data);
+      if (data?.cleanedCount > 0) {
+        toast.info(`Cleared ${data.cleanedCount} incomplete payment(s) to allow retry`);
+      }
+    }
+  } catch (error) {
+    console.error('Error in cleanup process:', error);
+    // Don't throw - we want to continue with payment even if cleanup fails
+  }
+};
 
 export const executeSubscriptionPayment = async (
   amount: number,
@@ -32,6 +57,15 @@ export const executeSubscriptionPayment = async (
     }
 
     await initializePiNetwork();
+
+    // Get current user for cleanup
+    const piUser = window.Pi?.currentUser;
+    if (!piUser?.uid) {
+      throw new Error("User not authenticated");
+    }
+
+    // Clean up any stale payments before creating a new one
+    await cleanupStalePayments(piUser.uid);
 
     return new Promise((resolve, reject) => {
       try {
