@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,8 +24,10 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       website: '',
       streetAddress: '',
       apartment: '',
+      city: '',
       state: '',
       zipCode: '',
+      country: '',
       businessTypes: [],
       businessDescription: '',
       piWalletAddress: user?.walletAddress || '',
@@ -104,8 +105,8 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
 
       setIsSubmitting(true);
 
-      // Create full address string
-      const fullAddress = `${values.streetAddress}${values.apartment ? `, ${values.apartment}` : ''}, ${values.state}, ${values.zipCode}`;
+      // Create full address string including the new city and country fields
+      const fullAddress = `${values.streetAddress}${values.apartment ? `, ${values.apartment}` : ''}, ${values.city}, ${values.state}, ${values.zipCode}, ${values.country}`;
       
       // Geocode the address
       const coordinates = await geocodeAddress(fullAddress);

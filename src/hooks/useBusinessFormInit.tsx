@@ -18,8 +18,9 @@ export const useBusinessFormInit = (business: Business) => {
       streetAddress: business.address.split(',')[0] || '',
       apartment: '',
       city: business.address.split(',')[1]?.trim() || '',
-      state: business.address.split(',')[1]?.trim() || '',
-      zipCode: business.address.split(',')[2]?.trim() || '',
+      state: business.address.split(',')[2]?.trim() || '',
+      zipCode: business.address.split(',')[3]?.trim() || '',
+      country: business.address.split(',')[4]?.trim() || 'United States',
       businessTypes: ['Restaurant/Cafe'], // Mock data
       businessDescription: business.description,
       piWalletAddress: 'pi1abcdefghijklmnopqrstuvwxyz', // Mock data
