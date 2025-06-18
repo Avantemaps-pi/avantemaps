@@ -52,8 +52,10 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
     const streetAddress = `${suggestion.address.house_number} ${suggestion.address.road}`.trim();
     
     form.setValue('streetAddress', streetAddress);
+    form.setValue('city', suggestion.address.city);
     form.setValue('state', suggestion.address.state);
     form.setValue('zipCode', suggestion.address.postcode);
+    form.setValue('country', suggestion.address.country);
     
     setSuggestions([]);
     setShowSuggestions(false);
