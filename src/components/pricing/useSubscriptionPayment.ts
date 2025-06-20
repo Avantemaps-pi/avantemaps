@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/context/auth';
 import {
@@ -8,6 +7,22 @@ import {
 import { approvePayment } from '@/api/payments';
 import { SubscriptionTier } from '@/utils/piNetwork';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabaseClient'; // adjust path if needed
+
+// Helper: check for any recent pending Pi payment
+const getPendingPayment = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('payments')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (error || !data || data.length === 0) return null;
+
+  return data[0];
+};
 
 export const useSubscriptionPayment = () => {
   const { user, isAuthenticated, login, refreshUserData } = useAuth();
@@ -61,6 +76,16 @@ export const useSubscriptionPayment = () => {
       console.log("Refreshing user data before payment...");
       await refreshUserData();
 
+      const pendingPayment = await getPendingPayment(user?.uid!);
+
+      if (
+        pendingPayment &&
+        Date.now() - new Date(pendingPayment.created_at).getTime() < 60 * 60 * 1000 // 1 hour
+      ) {
+        toast.error("You already have a pending payment. Please wait for it to complete or expire.");
+        return;
+      }
+
       const subscriptionTier = tier as SubscriptionTier;
       const price = getSubscriptionPrice(subscriptionTier, selectedFrequency);
 
@@ -73,7 +98,6 @@ export const useSubscriptionPayment = () => {
       if (result.success) {
         toast.success(result.message);
 
-        // Use the transaction ID from the result if available
         if (result.transactionId) {
           const approvalResult = await approvePayment({
             paymentId: result.transactionId,
@@ -94,7 +118,6 @@ export const useSubscriptionPayment = () => {
             console.error("Approval failed:", approvalResult.message);
           }
         }
-
       } else {
         if (result.message.includes("permission not granted")) {
           toast.error(result.message);
