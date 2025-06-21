@@ -58,9 +58,11 @@ const Review = () => {
     <AppLayout 
       title={`Review ${business.name}`} 
       withHeader={false} 
-      fullHeight={false} // Set to false to enable scrolling
+      fullHeight={false}
+      fullWidth={true}
+      className="px-0"
     >
-      <div className={`${isMobile ? 'max-w-full' : 'max-w-4xl'} mx-auto pb-8 px-4 pt-4`}>
+      <div className="w-full pb-8 px-4 pt-4">
         <Button 
           variant="ghost" 
           className="mb-4" 
