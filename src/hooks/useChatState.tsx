@@ -18,10 +18,62 @@ export function useChatState() {
   const [chatMode, setChatMode] = useState<ChatMode>("ai");
   const [awaitingVerificationConfirmation, setAwaitingVerificationConfirmation] = useState(false);
   const [awaitingBusinessSelection, setAwaitingBusinessSelection] = useState(false);
+  const [awaitingVerificationBusinessSelection, setAwaitingVerificationBusinessSelection] = useState(false);
+
+  // Mock businesses data - in a real app this would come from a database
+  const mockBusinesses = [
+    { id: 1, name: "Your Restaurant Name" },
+    { id: 2, name: "Your Shop Name" },
+    { id: 3, name: "Your Service Business" }
+  ];
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim()) {
+      // Handle business selection for verification
+      if (awaitingVerificationBusinessSelection) {
+        const selectedBusiness = mockBusinesses.find(business => 
+          business.name.toLowerCase().includes(message.toLowerCase()) ||
+          message.toLowerCase().includes(business.name.toLowerCase())
+        );
+        
+        if (selectedBusiness) {
+          const selectionMessage = {
+            id: messages.length + 1,
+            text: `Selected business: ${selectedBusiness.name}`,
+            sender: "user",
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+          
+          setMessages([...messages, selectionMessage]);
+          
+          setTimeout(() => {
+            const confirmationMessage = {
+              id: messages.length + 2,
+              text: `Request a new verification check for "${selectedBusiness.name}"? Yes | No`,
+              sender: "support",
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            setMessages(prev => [...prev, confirmationMessage]);
+          }, 500);
+          
+          setAwaitingVerificationBusinessSelection(false);
+          setAwaitingVerificationConfirmation(true);
+          setMessage("");
+          return;
+        } else {
+          const errorMessage = {
+            id: messages.length + 1,
+            text: "Business not found. Please select from the available options:",
+            sender: "support",
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+          setMessages([...messages, errorMessage]);
+          setMessage("");
+          return;
+        }
+      }
+
       // Handle verification confirmation responses
       if (awaitingVerificationConfirmation) {
         if (message.toLowerCase().includes('yes') || message.toLowerCase() === 'y') {
@@ -73,15 +125,23 @@ export function useChatState() {
       
       // Check for special commands
       if (message.includes('/verification')) {
-        // Show verification confirmation message
-        const confirmationMessage = {
+        // Show business selection for verification
+        const businessSelectionMessage = {
           id: messages.length + 1,
-          text: "Are you sure you want to request a new verification check? Yes | No",
+          text: "Please select which business you'd like to verify:",
           sender: "support",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
-        setMessages([...messages, confirmationMessage]);
-        setAwaitingVerificationConfirmation(true);
+        
+        const businessOptionsMessage = {
+          id: messages.length + 2,
+          text: "Available businesses:\n" + mockBusinesses.map(b => `• ${b.name}`).join('\n') + "\n\nPlease type the name of the business you want to verify:",
+          sender: "support",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        setMessages([...messages, businessSelectionMessage, businessOptionsMessage]);
+        setAwaitingVerificationBusinessSelection(true);
         setMessage("");
         return;
       }
@@ -97,7 +157,7 @@ export function useChatState() {
         
         const businessOptionsMessage = {
           id: messages.length + 2,
-          text: "Available businesses:\n• Your Restaurant Name\n• Your Shop Name\n• Your Service Business\n\nPlease type the name of the business you want to certify:",
+          text: "Available businesses:\n" + mockBusinesses.map(b => `• ${b.name}`).join('\n') + "\n\nPlease type the name of the business you want to certify:",
           sender: "support",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
@@ -109,10 +169,22 @@ export function useChatState() {
       }
       
       if (message.includes('/attach')) {
-        // Handle attachment request
-        if (handleAttachmentOption) {
-          handleAttachmentOption('default');
-        }
+        // Handle attachment request - show options
+        const systemMessage = {
+          id: messages.length + 1,
+          text: "Please select an attachment type:",
+          sender: "system",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        const optionsMessage = {
+          id: messages.length + 2,
+          text: "Choose your attachment type:",
+          sender: "attachment-options",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        setMessages([...messages, systemMessage, optionsMessage]);
         setMessage("");
         return;
       }

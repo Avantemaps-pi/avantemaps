@@ -1,11 +1,15 @@
+
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import ChatModeToggle from './ChatModeToggle';
 import ChatMessage from './ChatMessage';
-import { Menu, X, Send } from 'lucide-react';
+import { Menu, X, Send, Image, Video } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+
 export type ChatMode = 'ai' | 'live';
+
 interface ChatInterfaceProps {
   chatMode: 'ai' | 'live';
   onChatModeChange: (mode: 'ai' | 'live') => void;
@@ -21,6 +25,7 @@ interface ChatInterfaceProps {
   handleAttachmentOption?: () => void;
   showAttachmentIcon?: boolean;
 }
+
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   chatMode,
   onChatModeChange,
@@ -34,6 +39,53 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const handleMenuOptionClick = (command: string) => {
     setMessage(message + command + ' ');
   };
+
+  const renderAttachmentOptions = (msg: any) => {
+    if (msg.sender === "attachment-options") {
+      return (
+        <div className="flex gap-2 mt-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              const responseMessage = {
+                id: messages.length + 1,
+                text: "Image attachment selected. In a full implementation, this would open an image picker.",
+                sender: "system",
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              };
+              // This would normally be handled by the parent component
+              console.log('Image attachment selected');
+            }}
+            className="flex items-center gap-2"
+          >
+            <Image size={16} />
+            Image
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              const responseMessage = {
+                id: messages.length + 1,
+                text: "Video attachment selected. In a full implementation, this would open a video picker.",
+                sender: "system",
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              };
+              // This would normally be handled by the parent component
+              console.log('Video attachment selected');
+            }}
+            className="flex items-center gap-2"
+          >
+            <Video size={16} />
+            Video
+          </Button>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return <Card className="mt-6 overflow-hidden border-none shadow-md">
       <div className="flex h-full flex-col">
         <div className="border-b p-3">
@@ -51,7 +103,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <p className="text-center text-muted-foreground">
                 No messages yet. Start a conversation!
               </p>
-            </div> : messages.map(msg => <ChatMessage key={msg.id} id={msg.id} text={msg.text} sender={msg.sender} timestamp={msg.timestamp} />)}
+            </div> : messages.map(msg => (
+              <div key={msg.id}>
+                <ChatMessage 
+                  id={msg.id} 
+                  text={msg.text} 
+                  sender={msg.sender} 
+                  timestamp={msg.timestamp} 
+                />
+                {renderAttachmentOptions(msg)}
+              </div>
+            ))}
         </div>
 
         <div className="p-3 border-t">
@@ -93,4 +155,5 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
     </Card>;
 };
+
 export default ChatInterface;
