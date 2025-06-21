@@ -1,143 +1,52 @@
+import { serve } from 'std/server';
+import { createClient } from '@supabase/supabase-js';
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors.ts';
+const supabaseAdminUrl = Deno.env.get('SUPABASE_ADMIN_URL')!;
+const supabaseAdminKey = Deno.env.get('SUPABASE_ADMIN_SERVICE_ROLE_KEY')!;
+const supabase = createClient(supabaseAdminUrl, supabaseAdminKey);
 
-interface CleanupRequest {
-  userId: string;
-}
-
-const supabaseClient = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-);
-
-// Check if a payment is stale (older than 10 minutes and not completed)
-function isStalePayment(payment: any): boolean {
-  const createdAt = new Date(payment.created_at).getTime();
-  const now = Date.now();
-  const tenMinutesInMs = 10 * 60 * 1000; // 10 minutes
-  
-  return (
-    !payment.status.completed && 
-    !payment.status.cancelled && 
-    (now - createdAt) > tenMinutesInMs
-  );
-}
-
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
-
+serve(async (req) => {
   try {
-    const { userId }: CleanupRequest = await req.json();
-    console.log(`Cleaning up stale payments for user: ${userId}`);
+    const { userId } = await req.json();
 
     if (!userId) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Missing user ID' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Missing userId' }), { status: 400 });
     }
 
-    const piApiKey = Deno.env.get('PI_API_KEY');
-    if (!piApiKey) {
-      console.error('PI_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ success: false, message: 'Payment service not configured' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-
-    // Find all stale payments for this user
-    const { data: payments, error: fetchError } = await supabaseClient
+    // Fetch all pending payments for the user
+    const { data: payments, error: fetchError } = await supabase
       .from('payments')
-      .select('*')
+      .select('id, status')
       .eq('user_id', userId)
-      .eq('status->completed', false)
-      .eq('status->cancelled', false);
+      .eq('status', 'pending');
 
     if (fetchError) {
       console.error('Error fetching payments:', fetchError);
-      return new Response(
-        JSON.stringify({ success: false, message: 'Error fetching payments' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
+      return new Response(JSON.stringify({ error: fetchError.message }), { status: 500 });
     }
 
     if (!payments || payments.length === 0) {
-      return new Response(
-        JSON.stringify({ success: true, message: 'No stale payments found', cleanedCount: 0 }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ cleanedCount: 0 }), { status: 200 });
     }
 
-    const stalePayments = payments.filter(isStalePayment);
-    let cleanedCount = 0;
+    // Delete all pending payments
+    const paymentIds = payments.map(p => p.id);
 
-    console.log(`Found ${stalePayments.length} stale payments to clean up`);
+    const { error: deleteError } = await supabase
+      .from('payments')
+      .delete()
+      .in('id', paymentIds);
 
-    // Clean up each stale payment
-    for (const payment of stalePayments) {
-      try {
-        console.log(`Cleaning up stale payment: ${payment.payment_id}`);
-
-        // Try to cancel with Pi Network API
-        const piNetworkApiUrl = 'https://api.minepi.com/v2/payments';
-        const cancelResponse = await fetch(`${piNetworkApiUrl}/${payment.payment_id}/cancel`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Key ${piApiKey}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        console.log(`Pi Network cancel response for ${payment.payment_id}:`, cancelResponse.status);
-
-        // Update our database regardless of Pi Network response
-        const { error: updateError } = await supabaseClient
-          .from('payments')
-          .update({
-            status: {
-              approved: false,
-              verified: false,
-              completed: false,
-              cancelled: true,
-              error: 'Payment automatically cancelled due to staleness (>10 minutes old)'
-            },
-            updated_at: new Date().toISOString()
-          })
-          .eq('payment_id', payment.payment_id);
-
-        if (!updateError) {
-          cleanedCount++;
-          console.log(`Successfully cleaned up payment: ${payment.payment_id}`);
-        } else {
-          console.error(`Error updating payment ${payment.payment_id}:`, updateError);
-        }
-
-      } catch (error) {
-        console.error(`Error cleaning up payment ${payment.payment_id}:`, error);
-        // Continue with other payments even if one fails
-      }
+    if (deleteError) {
+      console.error('Error deleting payments:', deleteError);
+      return new Response(JSON.stringify({ error: deleteError.message }), { status: 500 });
     }
 
-    console.log(`Cleanup completed. Cleaned ${cleanedCount} stale payments.`);
+    console.log(`Cleaned up ${paymentIds.length} pending payment(s) for user ${userId}`);
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Cleaned up ${cleanedCount} stale payments`, 
-        cleanedCount 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
+    return new Response(JSON.stringify({ cleanedCount: paymentIds.length }), { status: 200 });
   } catch (error) {
-    console.error('Error in cleanup-stale-payments function:', error);
-    return new Response(
-      JSON.stringify({ success: false, message: `Server error: ${error.message}` }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
+    console.error('Unexpected error:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
   }
 });
