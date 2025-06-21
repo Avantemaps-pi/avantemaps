@@ -125,7 +125,7 @@ export function useChatState() {
       
       // Check for special commands
       if (message.includes('/verification')) {
-        // Show business selection for verification
+        // Show business selection buttons for verification
         const businessSelectionMessage = {
           id: messages.length + 1,
           text: "Please select which business you'd like to verify:",
@@ -135,8 +135,8 @@ export function useChatState() {
         
         const businessOptionsMessage = {
           id: messages.length + 2,
-          text: "Available businesses:\n" + mockBusinesses.map(b => `• ${b.name}`).join('\n') + "\n\nPlease type the name of the business you want to verify:",
-          sender: "support",
+          text: "Select your business:",
+          sender: "business-selection",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         
@@ -274,6 +274,33 @@ export function useChatState() {
     }, 1000);
   };
 
+  // Handle business selection from buttons
+  const handleBusinessSelection = (business: { id: number; name: string }) => {
+    if (awaitingVerificationBusinessSelection) {
+      const selectionMessage = {
+        id: messages.length + 1,
+        text: `Selected business: ${business.name}`,
+        sender: "user",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      
+      setMessages(prev => [...prev, selectionMessage]);
+      
+      setTimeout(() => {
+        const confirmationMessage = {
+          id: messages.length + 2,
+          text: `Request a new verification check for "${business.name}"? Yes | No`,
+          sender: "support",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages(prev => [...prev, confirmationMessage]);
+      }, 500);
+      
+      setAwaitingVerificationBusinessSelection(false);
+      setAwaitingVerificationConfirmation(true);
+    }
+  };
+
   return {
     message,
     setMessage,
@@ -284,6 +311,7 @@ export function useChatState() {
     handleSendMessage,
     handleChatModeChange,
     handleAttachmentOption,
-    sendVerificationRequest
+    sendVerificationRequest,
+    handleBusinessSelection
   };
 }

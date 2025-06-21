@@ -3,6 +3,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import ChatModeToggle from './ChatModeToggle';
 import ChatMessage from './ChatMessage';
+import BusinessSelectionButtons from './BusinessSelectionButtons';
 import { Menu, X, Send, Image, Video } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -86,6 +87,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return null;
   };
 
+  const renderBusinessSelectionButtons = (msg: any) => {
+    if (msg.sender === "business-selection") {
+      const mockBusinesses = [
+        { id: 1, name: "Your Restaurant Name" },
+        { id: 2, name: "Your Shop Name" },
+        { id: 3, name: "Your Service Business" }
+      ];
+
+      return (
+        <BusinessSelectionButtons 
+          businesses={mockBusinesses}
+          onBusinessSelect={(business) => {
+            // This would normally be handled by the parent component
+            console.log('Business selected:', business.name);
+            // Trigger the business selection logic
+            if (window.handleBusinessSelection) {
+              window.handleBusinessSelection(business);
+            }
+          }}
+        />
+      );
+    }
+    return null;
+  };
+
   return <Card className="mt-6 overflow-hidden border-none shadow-md">
       <div className="flex h-full flex-col">
         <div className="border-b p-3">
@@ -112,6 +138,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   timestamp={msg.timestamp} 
                 />
                 {renderAttachmentOptions(msg)}
+                {renderBusinessSelectionButtons(msg)}
               </div>
             ))}
         </div>

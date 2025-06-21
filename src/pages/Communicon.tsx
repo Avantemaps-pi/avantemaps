@@ -28,16 +28,19 @@ const Communicon = () => {
     handleChatModeChange,
     handleSendMessage,
     handleAttachmentOption,
-    sendVerificationRequest
+    sendVerificationRequest,
+    handleBusinessSelection
   } = useChatState();
 
   useEffect(() => {
     window.sendVerificationRequest = sendVerificationRequest;
+    window.handleBusinessSelection = handleBusinessSelection;
     
     return () => {
       window.sendVerificationRequest = undefined;
+      window.handleBusinessSelection = undefined;
     };
-  }, [sendVerificationRequest]);
+  }, [sendVerificationRequest, handleBusinessSelection]);
 
   // Create wrapper function to match expected signature
   const handleSendMessageWrapper = () => {
