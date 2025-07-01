@@ -1,11 +1,13 @@
+
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { X, UserRound, LogIn, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import NavItem from './NavItem';
 import { useAuth } from '@/context/auth';
 import { cn } from '@/lib/utils';
+
 interface MobileSidebarProps {
   isOpen: boolean;
   navItems: Array<{
@@ -23,6 +25,7 @@ interface MobileSidebarProps {
   onClose: () => void;
   onLinkClick: () => void;
 }
+
 const MobileSidebar = ({
   isOpen,
   navItems,
@@ -31,6 +34,7 @@ const MobileSidebar = ({
   onClose,
   onLinkClick
 }: MobileSidebarProps) => {
+  const navigate = useNavigate();
   const {
     user,
     isAuthenticated,
@@ -38,12 +42,16 @@ const MobileSidebar = ({
     logout,
     isLoading
   } = useAuth();
+
   const username = user?.username || 'Guest';
+  
   const formatPlanType = (tier?: string) => {
     if (!tier) return 'Individual';
     return tier.charAt(0).toUpperCase() + tier.slice(1).replace('-', ' ');
   };
+  
   const planType = formatPlanType(user?.subscriptionTier);
+
   const handleAuthAction = () => {
     if (isAuthenticated) {
       logout();
@@ -52,8 +60,21 @@ const MobileSidebar = ({
     }
     onClose();
   };
-  return <>
-      {isOpen && <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />}
+
+  const handlePlanClick = () => {
+    navigate('/pricing');
+    onClose();
+  };
+
+  return (
+    <>
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" 
+          onClick={onClose} 
+          aria-hidden="true" 
+        />
+      )}
       
       <div className={`fixed inset-y-0 left-0 w-4/5 max-w-[300px] bg-background z-50 transform transition-transform duration-300 ease-in-out shadow-xl ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
@@ -67,7 +88,14 @@ const MobileSidebar = ({
               </Avatar>
               <div className="flex flex-col">
                 <span className="font-medium text-sm">{username}</span>
-                <span className="text-xs text-muted-foreground">{planType} Plan</span>
+                <span className="text-xs text-muted-foreground">
+                  {planType} <span 
+                    className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors"
+                    onClick={handlePlanClick}
+                  >
+                    Plan
+                  </span>
+                </span>
               </div>
             </div>
             <Button variant="ghost" size="icon" onClick={onClose}>
@@ -108,6 +136,8 @@ const MobileSidebar = ({
           </div>
         </div>
       </div>
-    </>;
+    </>
+  );
 };
+
 export default MobileSidebar;
