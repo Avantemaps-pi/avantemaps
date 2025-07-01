@@ -51,7 +51,7 @@ const Recommendations = () => {
                 <div style={{
               paddingLeft: isMobile ? '1rem' : '0',
               paddingRight: isMobile ? '1rem' : '0'
-            }} className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide px-[15px]">
+            }} className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide px-0 mx-[15px]">
                   {data.map(place => <div key={place.id} className="flex-none w-80 snap-start">
                       <PlaceCard place={place} onPlaceClick={handlePlaceClick} className="w-full h-full" />
                     </div>)}
