@@ -10,12 +10,14 @@ interface PricingGridProps {
   })[]
   paymentFrequency: string
   organizationTierId?: string
+  currentUserTier?: string
 }
 
 export function PricingGrid({
   tiers,
   paymentFrequency,
   organizationTierId,
+  currentUserTier,
 }: PricingGridProps) {
   return (
     <div className="mx-auto max-w-[1400px] px-4 lg:px-6">
@@ -29,6 +31,7 @@ export function PricingGrid({
             onSubscribe={tier.onSubscribe}
             isLoading={tier.isLoading}
             disabled={tier.disabled}
+            isCurrentPlan={currentUserTier === tier.id}
           />
         ))}
       </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -69,6 +68,7 @@ const Pricing = () => {
       <PricingSection 
         title="Simple, transparent pricing"
         subtitle="Choose the plan that's right for you and explore Avante Maps with premium features."
+        currentUserTier={userSubscriptionTier}
         tiers={TIERS.map(tier => ({
           ...tier,
           onSubscribe: () => {
