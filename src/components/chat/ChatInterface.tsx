@@ -112,7 +112,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return null;
   };
 
-  return <Card className="mt-6 overflow-hidden border-none shadow-md">
+  return (
+    <Card className="mt-6 overflow-hidden border-none shadow-md">
       <div className="flex h-full flex-col">
         <div className="border-b p-3">
           <div className="flex items-center justify-between mb-2">
@@ -125,11 +126,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
   
         <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[60vh] min-h-[400px]">
-          {messages.length === 0 ? <div className="flex h-full items-center justify-center">
+          {messages.length === 0 ? (
+            <div className="flex h-full items-center justify-center">
               <p className="text-center text-muted-foreground">
                 No messages yet. Start a conversation!
               </p>
-            </div> : messages.map(msg => (
+            </div>
+          ) : (
+            messages.map(msg => (
               <div key={msg.id}>
                 <ChatMessage 
                   id={msg.id} 
@@ -140,7 +144,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 {renderAttachmentOptions(msg)}
                 {renderBusinessSelectionButtons(msg)}
               </div>
-            ))}
+            ))
+          )}
         </div>
 
         <div className="p-3 border-t">
@@ -171,16 +176,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </PopoverContent>
               </Popover>
 
-              <Input value={message} onChange={e => setMessage(e.target.value)} className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-gray-600 placeholder:text-gray-500" placeholder="Type your message to Avante Maps..." onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
+              <Input 
+                value={message} 
+                onChange={e => setMessage(e.target.value)} 
+                className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-gray-600 placeholder:text-gray-500" 
+                placeholder="Type your message to Avante Maps..." 
+                onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
+              />
 
-              <button onClick={handleSendMessage} disabled={!message.trim()} className="text-blue-500 hover:text-blue-600 ml-2 disabled:opacity-50 disabled:cursor-not-allowed">
+              <button 
+                onClick={handleSendMessage} 
+                disabled={!message.trim()} 
+                className="text-blue-500 hover:text-blue-600 ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <Send size={20} className="transform rotate-45" />
               </button>
             </div>
           </div>
         </div>
       </div>
-    </Card>;
+    </Card>
+  );
 };
 
 export default ChatInterface;
