@@ -48,10 +48,10 @@ const Recommendations = () => {
               
               {/* Horizontal Scroll Snap Slider for Place Cards Only */}
               <div className="relative overflow-x-hidden">
-                <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide" style={{
+                <div style={{
               paddingLeft: isMobile ? '1rem' : '0',
               paddingRight: isMobile ? '1rem' : '0'
-            }}>
+            }} className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide px-[15px]">
                   {data.map(place => <div key={place.id} className="flex-none w-80 snap-start">
                       <PlaceCard place={place} onPlaceClick={handlePlaceClick} className="w-full h-full" />
                     </div>)}
