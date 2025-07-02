@@ -30,21 +30,6 @@
   }
 }
 
-/* Keep slim width */
-section.relative {
-  max-width: 80% !important;
-  margin: 0 auto;
-}
-
-/* For smaller screens, add horizontal padding to prevent floating look */
-@media (max-width: 640px) {
-  section.relative {
-    max-width: 70% !important;
-    margin: 0 auto;
-  }
-}
-
-
 .carousel {
   display: flex;
   overflow-x: hidden; /* prevents horizontal scroll */

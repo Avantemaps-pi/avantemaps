@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { X, UserRound, LogIn, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -34,7 +34,15 @@ const MobileSidebar = ({
   onClose,
   onLinkClick
 }: MobileSidebarProps) => {
-  const { user, isAuthenticated, login, logout, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const {
+    user,
+    isAuthenticated,
+    login,
+    logout,
+    isLoading
+  } = useAuth();
+
   const username = user?.username || 'Guest';
   
   const formatPlanType = (tier?: string) => {
@@ -53,13 +61,18 @@ const MobileSidebar = ({
     onClose();
   };
 
+  const handlePlanClick = () => {
+    navigate('/pricing');
+    onClose();
+  };
+
   return (
     <>
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
-          onClick={onClose}
-          aria-hidden="true"
+          className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" 
+          onClick={onClose} 
+          aria-hidden="true" 
         />
       )}
       
@@ -75,80 +88,51 @@ const MobileSidebar = ({
               </Avatar>
               <div className="flex flex-col">
                 <span className="font-medium text-sm">{username}</span>
-                <span className="text-xs text-muted-foreground">{planType} Plan</span>
+                <span className="text-xs text-muted-foreground">
+                  {planType} <span 
+                    className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors"
+                    onClick={handlePlanClick}
+                  >
+                    Plan
+                  </span>
+                </span>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-            >
+            <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-5 w-5" />
             </Button>
           </div>
           
           <div className="flex-1 overflow-y-auto py-4">
             <div className="px-2 mb-4">
-              <Button 
-                onClick={handleAuthAction} 
-                disabled={isLoading}
-                className={cn(
-                  "w-full flex items-center",
-                  isAuthenticated 
-                    ? "bg-white hover:bg-gray-100 border border-red-500 text-red-500" 
-                    : "bg-blue-500 hover:bg-blue-600 text-white"
-                )}
-              >
-                {isAuthenticated ? (
-                  <>
+              <Button onClick={handleAuthAction} disabled={isLoading} className={cn("w-full flex items-center", isAuthenticated ? "bg-white hover:bg-gray-100 border border-red-500 text-red-500" : "bg-blue-500 hover:bg-blue-600 text-white")}>
+                {isAuthenticated ? <>
                     <LogOut className="h-4 w-4 mr-2 text-red-500" />
                     Logout
-                  </>
-                ) : (
-                  <>
+                  </> : <>
                     <LogIn className="h-4 w-4 mr-2" />
-                    {isLoading ? "Authenticating..." : "Login with Pi"}
-                  </>
-                )}
+                    {isLoading ? "Authenticating..." : "Login with Pi Network"}
+                  </>}
               </Button>
             </div>
             
             <nav>
               <ul className="space-y-1 px-2">
-                {navItems.map((item) => (
-                  <NavItem 
-                    key={item.to}
-                    to={item.to}
-                    icon={item.icon}
-                    label={item.label}
-                    isActive={currentPath === item.to}
-                    onClick={onLinkClick}
-                    badge={item.badge}
-                  />
-                ))}
+                {navItems.map(item => <NavItem key={item.to} to={item.to} icon={item.icon} label={item.label} isActive={currentPath === item.to} onClick={onLinkClick} badge={item.badge} />)}
               </ul>
             </nav>
 
             <div className="mt-6 px-2">
               <h3 className="text-xs uppercase text-muted-foreground font-medium mb-2 px-3">Legal</h3>
               <ul className="space-y-1">
-                {legalItems.map((item) => (
-                  <NavItem 
-                    key={item.to}
-                    to={item.to}
-                    icon={item.icon}
-                    label={item.label}
-                    isActive={currentPath === item.to}
-                    onClick={onLinkClick}
-                  />
-                ))}
+                {legalItems.map(item => <NavItem key={item.to} to={item.to} icon={item.icon} label={item.label} isActive={currentPath === item.to} onClick={onLinkClick} />)}
               </ul>
             </div>
           </div>
           
           <div className="p-4 border-t border-sidebar-border text-xs text-muted-foreground">
             <p>© 2025 Avante Maps</p>
-            <p>Architectured by Avante Maps Pty Ltd</p>
+            <p>By Avante Maps Pty Ltd</p>
           </div>
         </div>
       </div>

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import UserProfileCard from '@/components/chat/UserProfileCard';
@@ -28,16 +27,23 @@ const Communicon = () => {
     handleChatModeChange,
     handleSendMessage,
     handleAttachmentOption,
-    sendVerificationRequest
+    sendVerificationRequest,
+    handleBusinessSelection
   } = useChatState();
 
   useEffect(() => {
-    window.sendVerificationRequest = sendVerificationRequest;
+    if (window) {
+      window.sendVerificationRequest = sendVerificationRequest;
+      window.handleBusinessSelection = handleBusinessSelection;
+    }
     
     return () => {
-      window.sendVerificationRequest = undefined;
+      if (window) {
+        window.sendVerificationRequest = undefined;
+        window.handleBusinessSelection = undefined;
+      }
     };
-  }, [sendVerificationRequest]);
+  }, [sendVerificationRequest, handleBusinessSelection]);
 
   // Create wrapper function to match expected signature
   const handleSendMessageWrapper = () => {

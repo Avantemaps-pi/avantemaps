@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
@@ -22,6 +23,19 @@ function determineSubscriptionTier(amount: number, metadata: Record<string, any>
   if (amount < 1) return 'individual';
   if (amount < 10) return 'small-business';
   return 'organization';
+}
+
+// Check if a payment is stale (older than 10 minutes and not completed)
+function isStalePayment(payment: any): boolean {
+  const createdAt = new Date(payment.created_at).getTime();
+  const now = Date.now();
+  const tenMinutesInMs = 10 * 60 * 1000; // 10 minutes
+  
+  return (
+    !payment.status.completed && 
+    !payment.status.cancelled && 
+    (now - createdAt) > tenMinutesInMs
+  );
 }
 
 const supabaseClient = createClient(
@@ -57,19 +71,56 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check for existing payment
     const { data: existingPayment, error: checkError } = await supabaseClient
       .from('payments')
-      .select('status')
+      .select('*')
       .eq('payment_id', paymentRequest.paymentId)
       .single();
 
-    if (existingPayment?.status?.approved) {
+    // Handle stale payments - automatically cancel them
+    if (existingPayment && isStalePayment(existingPayment)) {
+      console.log(`Detected stale payment ${paymentRequest.paymentId}, attempting to cancel it`);
+      
+      try {
+        // Try to cancel the stale payment with Pi Network
+        const piNetworkApiUrl = 'https://api.minepi.com/v2/payments';
+        const cancelResponse = await fetch(`${piNetworkApiUrl}/${paymentRequest.paymentId}/cancel`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Key ${piApiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        // Update our database regardless of Pi Network response
+        await supabaseClient.from('payments').update({
+          status: {
+            approved: false,
+            verified: false,
+            completed: false,
+            cancelled: true,
+            error: 'Payment automatically cancelled due to staleness (>10 minutes old)'
+          },
+          updated_at: new Date().toISOString()
+        }).eq('payment_id', paymentRequest.paymentId);
+
+        console.log(`Stale payment ${paymentRequest.paymentId} has been cancelled`);
+      } catch (cancelError) {
+        console.error('Error cancelling stale payment:', cancelError);
+        // Continue with approval process even if cancellation fails
+      }
+    }
+
+    // Check if payment was already approved (and not stale)
+    if (existingPayment?.status?.approved && !isStalePayment(existingPayment)) {
       return new Response(
         JSON.stringify({ success: true, message: 'Payment was already approved', paymentId: paymentRequest.paymentId }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Create new payment record if it doesn't exist
     if (!existingPayment) {
       const { error } = await supabaseClient
         .from('payments')
@@ -94,6 +145,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Attempt to approve the payment with Pi Network
     try {
       const piNetworkApiUrl = 'https://api.minepi.com/v2/payments';
       const approveResponse = await fetch(`${piNetworkApiUrl}/${paymentRequest.paymentId}/approve`, {
@@ -141,6 +193,7 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Update payment status to approved
       await supabaseClient.from('payments').update({
         status: {
           approved: true,
@@ -151,8 +204,9 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString()
       }).eq('payment_id', paymentRequest.paymentId);
 
+      // Update user subscription
       const subscriptionTier = determineSubscriptionTier(paymentRequest.amount, paymentRequest.metadata);
-      const duration = Number(paymentRequest.metadata?.duration) || null; // in days
+      const duration = Number(paymentRequest.metadata?.duration) || null;
       const now = new Date();
       const endDate = duration ? new Date(now.getTime() + duration * 86400000) : null;
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { toast } from 'sonner';
@@ -7,6 +8,7 @@ import DangerZone from '@/components/settings/DangerZone';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/auth';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
+
 const Settings = () => {
   const isMobile = useIsMobile();
   const {
@@ -119,10 +121,10 @@ const Settings = () => {
       description: 'Your account has been successfully reactivated.'
     });
   };
-  return <AppLayout title="" fullWidth={false} className="overflow-x-hidden">
-      <div className="w-full max-w-xs mx-auto px-3 sm:px-4 py-4 sm:py-6 overflow-hidden">
+  return (
+    <AppLayout title="" fullWidth={true} className="overflow-x-hidden">
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6 overflow-hidden">
         <div>
-          
           <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Manage your account preferences.</p>
         </div>
 
@@ -134,6 +136,8 @@ const Settings = () => {
           <DangerZone onDeleteAccount={handleDeleteAccount} onReinstateAccount={handleReinstateAccount} />
         </div>
       </div>
-    </AppLayout>;
+    </AppLayout>
+  );
 };
+
 export default Settings;

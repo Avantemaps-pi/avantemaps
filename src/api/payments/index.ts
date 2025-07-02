@@ -9,4 +9,5 @@
 export { approvePayment } from './approvePayment';
 export { completePayment } from './completePayment';
 export { getPaymentStatus } from './paymentStatus';
+export { cleanupStalePayments } from './cleanupStalePayments';
 export { paymentStore } from './types';

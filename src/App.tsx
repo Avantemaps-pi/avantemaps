@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from 'react-helmet-async';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/context/auth";
 import { useSessionRestoration } from "@/hooks/useSessionRestoration";
@@ -122,42 +123,43 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <SidebarProvider>
-            <SessionManager />
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/recommendations" element={<Recommendations />} />
-                <Route path="/recommendations/:placeId" element={<Recommendations />} />
-                <Route path="/bookmarks" element={<Bookmarks />} />
-                <Route path="/communicon" element={<Communicon />} />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/registered-business" element={<RegisteredBusiness />} />
-                <Route path="/verification-info" element={<VerificationInfo />} />
-                <Route path="/review/:businessId?" element={<Review />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/terms" element={<TermsOfService />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route path="/cookies" element={<CookiePolicy />} />
-                <Route path="/registration" element={<Registration />} />
-                <Route path="/update-registration/:businessId?" element={<UpdateRegistration />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </SidebarProvider>
-        </AuthProvider>
-      </TooltipProvider>
+      <HelmetProvider>
+        <BrowserRouter>
+          <TooltipProvider>
+            <AuthProvider>
+              <SidebarProvider>
+                <SessionManager />
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/recommendations" element={<Recommendations />} />
+                  <Route path="/recommendations/:placeId" element={<Recommendations />} />
+                  <Route path="/bookmarks" element={<Bookmarks />} />
+                  <Route path="/communicon" element={<Communicon />} />
+                  <Route path="/notifications" element={<Notifications />} />
+                  <Route path="/registered-business" element={<RegisteredBusiness />} />
+                  <Route path="/verification-info" element={<VerificationInfo />} />
+                  <Route path="/review/:businessId?" element={<Review />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/cookies" element={<CookiePolicy />} />
+                  <Route path="/registration" element={<Registration />} />
+                  <Route path="/update-registration/:businessId?" element={<UpdateRegistration />} />
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </SidebarProvider>
+            </AuthProvider>
+          </TooltipProvider>
+        </BrowserRouter>
+      </HelmetProvider>
     </QueryClientProvider>
   );
 };
 
 export default App;
-

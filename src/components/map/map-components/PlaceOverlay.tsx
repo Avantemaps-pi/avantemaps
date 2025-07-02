@@ -29,8 +29,8 @@ const PlaceOverlay: React.FC<PlaceOverlayProps> = ({
         onClick={onOverlayClick}
       />
       
-      {/* Popup card overlay for selected place */}
-      <div className="fixed top-28 left-1/2 transform -translate-x-1/2 z-50 place-popup">
+      {/* Popup card overlay for selected place - responsive positioning */}
+      <div className="fixed top-16 sm:top-20 md:top-24 lg:top-28 left-1/2 transform -translate-x-1/2 z-50 place-popup px-2 sm:px-4">
         <PlaceCardPopup location={selectedPlace} detailCardRef={detailCardRef} />
       </div>
     </>

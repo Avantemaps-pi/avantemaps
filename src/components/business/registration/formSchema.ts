@@ -43,6 +43,7 @@ export const formSchema = z.object({
   city: z.string().min(1, { message: "City is required" }),
   state: z.string().min(1, { message: "State is required" }),
   zipCode: z.string().min(1, { message: "ZIP code is required" }),
+  country: z.string().min(1, { message: "Country is required" }),
   businessTypes: z.array(z.string()).min(1, { message: "Choose at least one business type" }),
   businessDescription: z.string().min(10, { message: "Description must be at least 10 characters" }),
   piWalletAddress: z.string().min(1, { message: "Pi wallet address is required" }),

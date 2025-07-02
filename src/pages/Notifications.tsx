@@ -38,7 +38,7 @@ const Notifications = () => {
       <div className="max-w-3xl mx-auto mt-6">
         <div className="mb-6">
           
-          <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0} className="mb-3">
+          <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0} className="mb-3 mx-[20px]">
             Mark all as read
           </Button>
         </div>

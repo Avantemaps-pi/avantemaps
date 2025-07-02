@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -63,7 +64,7 @@ const DesktopSidebar = ({
                   Logout
                 </> : <>
                   <LogIn className="h-4 w-4 mr-2" />
-                  {isLoading ? "Authenticating..." : "Login with Pi"}
+                  {isLoading ? "Authenticating..." : "Login with Pi Network"}
                 </>}
             </Button>
           </div>
