@@ -66,11 +66,11 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   // Check if we're on the recommendations page
   const isRecommendationsPage = window.location.pathname === '/recommendations';
 
-  // Parse categories and limit to 2
+  // Parse categories and limit to 1 for the reference design
   const categories = place.category.split(',')
     .map(cat => cat.trim())
     .filter(Boolean)
-    .slice(0, 2); // Limit to 2 categories
+    .slice(0, 1); // Show only 1 category to match the reference
 
   // Create an array of images (for now using single image, but ready for multiple)
   const images = place.image ? [place.image] : [];
@@ -78,7 +78,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   return (
     <Card 
       key={place.id} 
-      className={`material-card card-hover ${className || 'w-full'} place-card-container`}
+      className={`bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden ${className || 'w-full'}`}
     >
       {images.length > 0 ? (
         <div className="relative">
@@ -116,30 +116,27 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
         </PlaceCardImage>
       )}
       
-      <CardHeader className="pb-0 px-3 pt-3">
+      <CardHeader className="pb-3 px-4 pt-4">
         <PlaceCardTitle name={place.name} onClick={handlePlaceClick} />
       </CardHeader>
       
-      <CardContent className="pt-2 px-3 pb-3">
+      <CardContent className="px-4 pb-4 space-y-3">
         <PlaceCardAddress address={place.address} onClick={handlePlaceClick} />
         
-        <div className="h-20 mb-2 overflow-hidden">
-          <ExpandableDescription text={place.description} maxLines={3} />
+        <div className="text-sm text-gray-600 leading-relaxed">
+          <ExpandableDescription text={place.description} maxLines={2} />
         </div>
         
-        <div className="flex flex-wrap justify-between items-start mt-auto gap-2">
-          <div className="flex flex-col items-start gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <PlaceCardRating rating={place.rating} onClick={handleRatingClick} />
             
-            {/* Display up to 2 categories vertically */}
-            <div className="flex flex-col gap-1.5">
-              {categories.map((category, index) => (
-                <CategoryBadge key={index} category={category} />
-              ))}
-            </div>
+            {categories.map((category, index) => (
+              <CategoryBadge key={index} category={category} />
+            ))}
           </div>
           
-          <div className="flex flex-col gap-2 items-end">
+          <div className="flex items-center gap-3">
             <PlaceCardWebsiteButton url={place.website} />
             
             <PlaceCardDetails 

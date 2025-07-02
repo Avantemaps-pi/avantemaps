@@ -17,29 +17,19 @@ const PlaceCardActions: React.FC<PlaceCardActionsProps> = ({
   isLoading
 }) => {
   return (
-    <div className="absolute top-2 right-2 flex gap-2">
+    <div className="absolute top-3 right-3 flex gap-2">
       <Button 
         variant="secondary" 
         size="icon" 
-        className={`rounded-full w-8 h-8 bg-white/80 backdrop-blur-sm text-gray-800 hover:bg-white ${
+        className={`rounded-md w-8 h-8 bg-white/90 backdrop-blur-sm text-gray-600 hover:bg-white border border-gray-200 ${
           isLoading ? 'opacity-70 cursor-wait' : ''
         }`}
         onClick={onBookmarkToggle}
         disabled={isLoading}
       >
         <Bookmark 
-          className={`h-4 w-4 ${isBookmarked ? 'text-primary fill-primary' : 'text-gray-600'}`}
+          className={`h-4 w-4 ${isBookmarked ? 'text-gray-600 fill-gray-600' : 'text-gray-600'}`}
         />
-      </Button>
-      <Button 
-        variant="secondary" 
-        size="icon" 
-        className="rounded-full w-8 h-8 bg-white/80 backdrop-blur-sm text-gray-800 hover:bg-white"
-        onClick={onShare}
-        title="Share this place"
-        aria-label="Share this place"
-      >
-        <Share2 className="h-4 w-4 text-gray-600" />
       </Button>
     </div>
   );
