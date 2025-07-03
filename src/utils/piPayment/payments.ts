@@ -36,6 +36,30 @@ const cleanupStalePayments = async (userId: string): Promise<void> => {
   }
 };
 
+// Force cleanup of incomplete payments
+const forceCleanupIncompletePayments = async (): Promise<void> => {
+  try {
+    console.log('Force cleaning up incomplete payments...');
+    
+    // Clear localStorage incomplete payment
+    clearIncompletePayment();
+    
+    // Get current user
+    const piUser = window.Pi?.currentUser;
+    if (piUser?.uid) {
+      await cleanupStalePayments(piUser.uid);
+    }
+    
+    // Wait a moment for cleanup to complete
+    await delay(1000);
+    
+    toast.success('Payment cleanup completed. You can now try the payment again.');
+  } catch (error) {
+    console.error('Error in force cleanup:', error);
+    toast.error('Cleanup failed, but you can still try the payment');
+  }
+};
+
 export const executeSubscriptionPayment = async (
   amount: number,
   tier: SubscriptionTier,
@@ -243,8 +267,20 @@ export const executeSubscriptionPayment = async (
             if (approvalTimeoutId) clearTimeout(approvalTimeoutId);
             if (completionTimeoutId) clearTimeout(completionTimeoutId);
 
-            paymentInProgress = false;
-            reject(error);
+            // If error indicates pending payment, try to resolve it
+            if (error.message.includes('pending payment') || error.message.includes('action from the developer')) {
+              console.log('Detected pending payment error, attempting automatic cleanup...');
+              forceCleanupIncompletePayments().then(() => {
+                paymentInProgress = false;
+                resolve({
+                  success: false,
+                  message: "Previous payment cleaned up. Please try your payment again."
+                });
+              });
+            } else {
+              paymentInProgress = false;
+              reject(error);
+            }
           }
         };
 
@@ -288,3 +324,6 @@ export const clearIncompletePayment = (): void => {
     console.error('Error clearing incomplete payment:', error);
   }
 };
+
+// Export the force cleanup function for external use
+export { forceCleanupIncompletePayments };

@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { useAuth } from '@/context/auth';
 import {
   executeSubscriptionPayment,
-  getSubscriptionPrice
+  getSubscriptionPrice,
+  forceCleanupIncompletePayments
 } from '@/utils/piPayment';
 import { approvePayment } from '@/api/payments';
 import { SubscriptionTier } from '@/utils/piNetwork';
@@ -103,6 +104,10 @@ export const useSubscriptionPayment = () => {
         } else if (result.message.includes("Failed to get user permissions")) {
           toast.error("Permission issue detected. Please log in again to grant all required permissions.");
           await login();
+        } else if (result.message.includes("pending payment") || result.message.includes("action from the developer")) {
+          toast.error("Found a pending payment issue. Attempting to resolve...");
+          await forceCleanupIncompletePayments();
+          toast.info("Payment issue resolved. Please try again.");
         } else {
           toast.error(result.message);
         }
@@ -119,6 +124,10 @@ export const useSubscriptionPayment = () => {
           toast.error(error.message);
           toast.info("Please try logging in again to grant all required permissions");
           await login();
+        } else if (error.message.includes("pending payment") || error.message.includes("action from the developer")) {
+          toast.error("Found a pending payment issue. Attempting to resolve...");
+          await forceCleanupIncompletePayments();
+          toast.info("Payment issue resolved. Please try again.");
         } else {
           toast.error("Failed to process subscription payment: " + error.message);
         }
@@ -130,12 +139,22 @@ export const useSubscriptionPayment = () => {
     }
   };
 
+  const handleCleanupPayments = async () => {
+    setIsProcessingPayment(true);
+    try {
+      await forceCleanupIncompletePayments();
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
   return {
     isProcessingPayment,
     selectedFrequency,
     handleFrequencyChange,
     handleSubscribe,
     updateUserSubscription,
+    handleCleanupPayments,
     userSubscriptionTier: user?.subscriptionTier
   };
 };

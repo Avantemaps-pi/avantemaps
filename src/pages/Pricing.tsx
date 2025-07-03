@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -23,6 +24,7 @@ const Pricing = () => {
     handleFrequencyChange,
     handleSubscribe,
     updateUserSubscription,
+    handleCleanupPayments,
     isProcessingPayment 
   } = useSubscriptionPayment();
   
@@ -65,6 +67,20 @@ const Pricing = () => {
   
   return (
     <AppLayout title="Pricing">
+      <div className="mb-4 flex flex-col gap-2">
+        <Button 
+          onClick={handleCleanupPayments}
+          variant="outline"
+          disabled={isProcessingPayment}
+          className="self-start"
+        >
+          {isProcessingPayment ? "Cleaning up..." : "Fix Payment Issues"}
+        </Button>
+        <p className="text-sm text-muted-foreground">
+          If you're experiencing payment issues, click the button above to clean up any pending payments.
+        </p>
+      </div>
+      
       <PricingSection 
         title="Simple, transparent pricing"
         subtitle="Choose the plan that's right for you and explore Avante Maps with premium features."
