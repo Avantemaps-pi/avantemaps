@@ -79,7 +79,7 @@ export function PricingCard({
               <span className="text-xl">π</span>
               <span className="text-2xl font-medium ml-1">{piPrice}</span>
               <span className="ml-1 text-sm">
-                / {paymentFrequency}
+                π / {paymentFrequency}
               </span>
             </div>
           )}

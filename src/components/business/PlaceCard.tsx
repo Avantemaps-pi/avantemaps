@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
@@ -91,6 +90,8 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
               isBookmarked={isBookmarked} 
               onBookmarkToggle={handleBookmarkToggle} 
               onShare={handleShare} 
+              placeName={place.name}
+              placeId={place.id}
             />
           </PlaceCardImage>
           
@@ -112,6 +113,8 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
             isBookmarked={isBookmarked} 
             onBookmarkToggle={handleBookmarkToggle} 
             onShare={handleShare} 
+            placeName={place.name}
+            placeId={place.id}
           />
         </PlaceCardImage>
       )}

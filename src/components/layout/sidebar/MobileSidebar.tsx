@@ -66,6 +66,11 @@ const MobileSidebar = ({
     onClose();
   };
 
+  const handleIndividualPlanClick = () => {
+    navigate('/pricing');
+    onClose();
+  };
+
   return (
     <>
       {isOpen && (
@@ -89,7 +94,12 @@ const MobileSidebar = ({
               <div className="flex flex-col">
                 <span className="font-medium text-sm">{username}</span>
                 <span className="text-xs text-muted-foreground">
-                  {planType} <span 
+                  <span 
+                    className="cursor-pointer hover:text-primary transition-colors"
+                    onClick={handleIndividualPlanClick}
+                  >
+                    {planType}
+                  </span> <span 
                     className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors"
                     onClick={handlePlanClick}
                   >
