@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -78,8 +77,9 @@ export function PricingCard({
             <div className="flex items-baseline text-gray-600">
               <span className="text-xl">π</span>
               <span className="text-2xl font-medium ml-1">{piPrice}</span>
+              <span className="ml-1 text-sm font-medium text-gray-600">Pi</span>
               <span className="ml-1 text-sm">
-                π / {paymentFrequency}
+                / {paymentFrequency}
               </span>
             </div>
           )}
