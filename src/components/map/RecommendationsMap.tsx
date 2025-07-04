@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { toast } from 'sonner';
@@ -13,6 +12,7 @@ interface RecommendationsMapProps {
   onMarkerClick: (placeId: string) => void;
   detailCardRef?: React.RefObject<HTMLDivElement>;
   newBusinessData?: any;
+  isLoading?: boolean;
 }
 
 // Simple MapViewUpdater component
@@ -27,7 +27,8 @@ const RecommendationsMap: React.FC<RecommendationsMapProps> = ({
   selectedPlaceId,
   onMarkerClick,
   detailCardRef,
-  newBusinessData
+  newBusinessData,
+  isLoading
 }) => {
   const [center, setCenter] = useState<{lat: number, lng: number}>(defaultCenter);
   const [zoom, setZoom] = useState(defaultZoom);

@@ -62,8 +62,8 @@ const ShareablePlaceSEO: React.FC<ShareablePlaceSEOProps> = ({
       {/* Business specific Open Graph */}
       <meta property="business:contact_data:street_address" content={place.address} />
       <meta property="business:contact_data:website" content={place.website || url} />
-      <meta property="place:location:latitude" content={place.coordinates?.split(',')[0] || ''} />
-      <meta property="place:location:longitude" content={place.coordinates?.split(',')[1] || ''} />
+      <meta property="place:location:latitude" content={place.position?.lat?.toString() || ''} />
+      <meta property="place:location:longitude" content={place.position?.lng?.toString() || ''} />
       
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
@@ -99,10 +99,10 @@ const ShareablePlaceSEO: React.FC<ShareablePlaceSEOProps> = ({
             "ratingValue": place.rating,
             "bestRating": "5"
           },
-          "geo": place.coordinates ? {
+          "geo": place.position ? {
             "@type": "GeoCoordinates",
-            "latitude": place.coordinates.split(',')[0],
-            "longitude": place.coordinates.split(',')[1]
+            "latitude": place.position.lat,
+            "longitude": place.position.lng
           } : undefined
         })}
       </script>
