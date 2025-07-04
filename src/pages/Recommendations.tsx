@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 import { recommendedForYou, suggestedForYou, avanteTopChoice } from '@/data/mockPlaces';
 import PlaceCard from '@/components/business/PlaceCard';
 import { useIsMobile } from '@/hooks/use-mobile';
+import RecommendationsSEO from '@/components/seo/RecommendationsSEO';
 
 const Recommendations = () => {
   const navigate = useNavigate();
@@ -29,6 +29,8 @@ const Recommendations = () => {
 
   return (
     <AppLayout title="Recommendations" className="overflow-x-hidden">
+      <RecommendationsSEO />
+      
       <div className="w-full mx-auto mt-4 pb-6 overflow-y-auto overflow-x-hidden px-0">
         <div className="space-y-6 pb-1 px-0 overflow-x-hidden lg:ml-[15px]">
           {[

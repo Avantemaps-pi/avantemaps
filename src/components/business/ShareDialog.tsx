@@ -40,8 +40,8 @@ const ShareDialog: React.FC<ShareDialogProps> = ({
         navigator.clipboard.writeText(shareUrl);
         toast({
           title: 'Success',
-          description: 'Link copied to clipboard!',
-          duration: 2000
+          description: 'Link copied to clipboard! Rich preview will be available when shared on social media.',
+          duration: 3000
         });
         onClose();
       }
@@ -59,7 +59,9 @@ const ShareDialog: React.FC<ShareDialogProps> = ({
       name: 'Email',
       icon: Mail,
       action: () => {
-        const emailUrl = `mailto:?subject=${encodeURIComponent(placeName)}&body=${encodeURIComponent(`Check out ${placeName} on Avante Maps: ${shareUrl}`)}`;
+        const subject = encodeURIComponent(`Check out ${placeName} on Avante Maps`);
+        const body = encodeURIComponent(`I found this amazing place on Avante Maps and thought you'd be interested!\n\n${placeName}\n\nView details: ${shareUrl}`);
+        const emailUrl = `mailto:?subject=${subject}&body=${body}`;
         window.location.href = emailUrl;
         onClose();
       }
@@ -69,44 +71,63 @@ const ShareDialog: React.FC<ShareDialogProps> = ({
       icon: Facebook,
       action: () => {
         const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
-        window.open(facebookUrl, '_blank');
+        window.open(facebookUrl, '_blank', 'width=600,height=400');
         onClose();
       }
     },
     {
-      name: 'Twitter',
+      name: 'Twitter/X',
       icon: Twitter,
       action: () => {
-        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${placeName} on Avante Maps`)}&url=${encodeURIComponent(shareUrl)}`;
-        window.open(twitterUrl, '_blank');
+        const twitterText = encodeURIComponent(`Check out ${placeName} on Avante Maps! 🗺️`);
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${twitterText}&url=${encodeURIComponent(shareUrl)}`;
+        window.open(twitterUrl, '_blank', 'width=600,height=400');
         onClose();
       }
     },
     {
-      name: 'Native Share',
+      name: 'LinkedIn',
       icon: Link,
       action: () => {
-        if (navigator.share) {
-          navigator.share({
-            title: placeName,
-            text: `Check out ${placeName} on Avante Maps`,
-            url: shareUrl
-          }).catch(err => {
-            console.error('Error sharing', err);
-          });
-        } else {
-          // Fallback to copy link
-          navigator.clipboard.writeText(shareUrl);
-          toast({
-            title: 'Success',
-            description: 'Link copied to clipboard!',
-            duration: 2000
-          });
-        }
+        const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+        window.open(linkedinUrl, '_blank', 'width=600,height=400');
         onClose();
       }
     }
   ];
+
+  // Show native share if available, otherwise show LinkedIn
+  const finalShareOptions = shareOptions.filter(option => {
+    if (option.name === 'LinkedIn') {
+      return !navigator.share; // Only show LinkedIn if native share is not available
+    }
+    return true;
+  });
+
+  // Add native share option if available
+  if (navigator.share) {
+    finalShareOptions.push({
+      name: 'More Options',
+      icon: Link,
+      action: () => {
+        navigator.share({
+          title: placeName,
+          text: `Check out ${placeName} on Avante Maps`,
+          url: shareUrl
+        }).catch(err => {
+          console.error('Error sharing', err);
+          // Fallback to copy link
+          navigator.clipboard.writeText(shareUrl);
+          toast({
+            title: 'Link Copied',
+            description: 'Link copied to clipboard!',
+            duration: 2000
+          });
+        });
+        onClose();
+      }
+    });
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -115,20 +136,23 @@ const ShareDialog: React.FC<ShareDialogProps> = ({
           <DialogTitle>Share {placeName}</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3 py-4">
-          {shareOptions.map((option, index) => {
+          {finalShareOptions.map((option, index) => {
             const IconComponent = option.icon;
             return (
               <Button
                 key={index}
                 variant="outline"
-                className="flex flex-col items-center gap-2 h-16 p-3"
+                className="flex flex-col items-center gap-2 h-16 p-3 hover:bg-primary/10"
                 onClick={option.action}
               >
                 <IconComponent className="h-5 w-5" />
-                <span className="text-xs">{option.name}</span>
+                <span className="text-xs text-center">{option.name}</span>
               </Button>
             );
           })}
+        </div>
+        <div className="text-xs text-muted-foreground text-center px-4 pb-2">
+          Links shared will include rich previews with images and descriptions on social media platforms.
         </div>
       </DialogContent>
     </Dialog>
