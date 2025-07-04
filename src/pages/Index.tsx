@@ -10,7 +10,7 @@ import SearchBar from '@/components/map/SearchBar';
 import { useSidebar } from '@/components/ui/sidebar';
 import AvanteMapLogo from '@/components/layout/header/AvanteMapLogo';
 import AppSidebar from '@/components/layout/AppSidebar';
-import PlaceCardSEO from '@/components/seo/PlaceCardSEO';
+import ShareablePlaceSEO from '@/components/seo/ShareablePlaceSEO';
 import '../styles/map.css';
 
 const Index = () => {
@@ -52,9 +52,13 @@ const Index = () => {
 
   return (
     <div className="w-full h-screen relative overflow-hidden">
-      {/* SEO metadata for shared place */}
+      {/* Enhanced SEO metadata for shared place */}
       {selectedPlaceData && (
-        <PlaceCardSEO place={selectedPlaceData} isActive={true} />
+        <ShareablePlaceSEO 
+          place={selectedPlaceData} 
+          isActive={true} 
+          shareType="default"
+        />
       )}
 
       <AppSidebar />
