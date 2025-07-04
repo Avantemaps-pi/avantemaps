@@ -1,84 +1,87 @@
 
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
+import { recommendedForYou, suggestedForYou, avanteTopChoice } from '@/data/mockPlaces';
 import PlaceCard from '@/components/business/PlaceCard';
-import RecommendationsMap from '@/components/map/RecommendationsMap';
-import { useBusinessData } from '@/hooks/useBusinessData';
 import { useIsMobile } from '@/hooks/use-mobile';
-import ShareablePlaceSEO from '@/components/seo/ShareablePlaceSEO';
-import '../styles/recommendations.css';
 
 const Recommendations = () => {
-  const { placeId } = useParams();
-  const { places, isLoading, handleSearch } = useBusinessData();
-  const [selectedPlace, setSelectedPlace] = useState<string | null>(placeId || null);
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
-  const handlePlaceClick = (id: string) => {
-    setSelectedPlace(id);
+  const handlePlaceClick = (placeId: string) => {
+    navigate('/', {
+      state: {
+        selectedPlaceId: placeId
+      }
+    });
   };
 
-  // Handle URL parameter changes
-  useEffect(() => {
-    if (placeId) {
-      setSelectedPlace(placeId);
-    }
-  }, [placeId]);
+  const handleMouseEnter = (section: string) => {
+    setActiveSection(section);
+  };
 
-  // Find the selected place for SEO
-  const selectedPlaceData = places.find(place => place.id === selectedPlace);
+  const handleMouseLeave = () => {
+    setActiveSection(null);
+  };
 
   return (
-    <AppLayout 
-      title="Recommendations" 
-      onSearch={handleSearch}
-      showSearch={true}
-    >
-      {/* Enhanced SEO metadata for shared recommendations */}
-      {selectedPlaceData && (
-        <ShareablePlaceSEO 
-          place={selectedPlaceData} 
-          isActive={true} 
-          shareType="recommendations"
-        />
-      )}
-
-      <div className="recommendations-container">
-        <div className="recommendations-content">
-          <div className="recommendations-sidebar">
-            <div className="recommendations-header">
-              <h1 className="text-2xl font-bold mb-4">Recommended Places</h1>
-              <p className="text-muted-foreground mb-6">
-                Discover amazing places curated just for you
-              </p>
-            </div>
-            
-            <div className="place-cards-container">
-              {isLoading ? (
-                <div className="loading-state">Loading recommendations...</div>
-              ) : (
-                places.map((place) => (
-                  <PlaceCard
-                    key={place.id}
-                    place={place}
-                    onPlaceClick={handlePlaceClick}
-                    className="recommendations-card"
-                    showDetails={true}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-          
-          <div className="recommendations-map">
-            <RecommendationsMap
-              places={places}
-              selectedPlaceId={selectedPlace}
-              onMarkerClick={handlePlaceClick}
-              isLoading={isLoading}
-            />
-          </div>
+    <AppLayout title="Recommendations" className="overflow-x-hidden">
+      <div className="w-full mx-auto mt-4 pb-6 overflow-y-auto overflow-x-hidden px-0">
+        <div className="space-y-6 pb-1 px-0 overflow-x-hidden lg:ml-[15px]">
+          {[
+            {
+              title: 'Avante Top Choice',
+              data: avanteTopChoice,
+              key: 'avanteTopChoice'
+            },
+            {
+              title: 'Suggested for you',
+              data: suggestedForYou,
+              key: 'suggestedForYou'
+            },
+            {
+              title: 'Recommended for you',
+              data: recommendedForYou,
+              key: 'recommendedForYou'
+            }
+          ].map(({ title, data, key }) => (
+            <section
+              key={key}
+              onMouseEnter={() => handleMouseEnter(key)}
+              onMouseLeave={handleMouseLeave}
+              onTouchStart={() => handleMouseEnter(key)}
+              className="relative w-full overflow-x-hidden"
+            >
+              <h2 className="text-xl font-semibold mb-4 flex items-center px-4 md:px-[15px]">
+                <span className="bg-primary h-4 w-1 rounded-full mr-2"></span>
+                {title}
+              </h2>
+              
+              {/* Horizontal Scroll Snap Slider for Place Cards Only */}
+              <div className="relative overflow-x-hidden">
+                <div
+                  style={{
+                    paddingLeft: isMobile ? '1rem' : '0',
+                    paddingRight: isMobile ? '1rem' : '0'
+                  }}
+                  className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide px-0 mx-[15px]"
+                >
+                  {data.map(place => (
+                    <div key={place.id} className="flex-none w-80 snap-start">
+                      <PlaceCard
+                        place={place}
+                        onPlaceClick={handlePlaceClick}
+                        className="w-full h-full"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          ))}
         </div>
       </div>
     </AppLayout>

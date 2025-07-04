@@ -13,8 +13,7 @@ import {
   Copy, 
   Facebook, 
   Twitter,
-  Link,
-  ExternalLink
+  Link
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -60,7 +59,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({
       name: 'Email',
       icon: Mail,
       action: () => {
-        const emailUrl = `mailto:?subject=${encodeURIComponent(`Check out ${placeName}`)}&body=${encodeURIComponent(`I found this amazing place on Avante Maps: ${placeName}\n\n${shareUrl}`)}`;
+        const emailUrl = `mailto:?subject=${encodeURIComponent(placeName)}&body=${encodeURIComponent(`Check out ${placeName} on Avante Maps: ${shareUrl}`)}`;
         window.location.href = emailUrl;
         onClose();
       }
@@ -75,20 +74,11 @@ const ShareDialog: React.FC<ShareDialogProps> = ({
       }
     },
     {
-      name: 'Twitter/X',
+      name: 'Twitter',
       icon: Twitter,
       action: () => {
         const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${placeName} on Avante Maps`)}&url=${encodeURIComponent(shareUrl)}`;
         window.open(twitterUrl, '_blank');
-        onClose();
-      }
-    },
-    {
-      name: 'LinkedIn',
-      icon: ExternalLink,
-      action: () => {
-        const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
-        window.open(linkedinUrl, '_blank');
         onClose();
       }
     },
@@ -118,20 +108,12 @@ const ShareDialog: React.FC<ShareDialogProps> = ({
     }
   ];
 
-  // Preview testing URLs
-  const previewTestUrls = {
-    facebook: `https://developers.facebook.com/tools/debug/?q=${encodeURIComponent(shareUrl)}`,
-    twitter: `https://cards-dev.twitter.com/validator?url=${encodeURIComponent(shareUrl)}`,
-    linkedin: `https://www.linkedin.com/post-inspector/inspect/${encodeURIComponent(shareUrl)}`
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Share {placeName}</DialogTitle>
         </DialogHeader>
-        
         <div className="grid grid-cols-2 gap-3 py-4">
           {shareOptions.map((option, index) => {
             const IconComponent = option.icon;
@@ -148,44 +130,6 @@ const ShareDialog: React.FC<ShareDialogProps> = ({
             );
           })}
         </div>
-
-        {/* Preview Testing Section - Only show in development */}
-        {process.env.NODE_ENV === 'development' && (
-          <>
-            <div className="border-t pt-4">
-              <h4 className="text-sm font-medium mb-2">Test Social Media Previews</h4>
-              <div className="flex flex-col gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start text-xs"
-                  onClick={() => window.open(previewTestUrls.facebook, '_blank')}
-                >
-                  <Facebook className="h-4 w-4 mr-2" />
-                  Facebook Sharing Debugger
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start text-xs"
-                  onClick={() => window.open(previewTestUrls.twitter, '_blank')}
-                >
-                  <Twitter className="h-4 w-4 mr-2" />
-                  Twitter Card Validator
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start text-xs"
-                  onClick={() => window.open(previewTestUrls.linkedin, '_blank')}
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  LinkedIn Post Inspector
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
       </DialogContent>
     </Dialog>
   );
