@@ -70,22 +70,38 @@ export const canProceedWithPayment = async (): Promise<boolean> => {
       return false;
     }
 
-    // Check our database for any incomplete payments
+    // Check our database for any incomplete payments with explicit typing
     const { data: incompletePayments, error } = await supabase
       .from('payments')
       .select('payment_id, created_at, status')
       .eq('user_id', piUser.uid)
-      .eq('status->completed', false)
-      .eq('status->cancelled', false);
+      .returns<Array<{
+        payment_id: string;
+        created_at: string;
+        status: {
+          completed?: boolean;
+          cancelled?: boolean;
+        };
+      }>>();
 
     if (error) {
       console.error('Error checking for incomplete payments:', error);
       return true; // Allow payment to proceed if we can't check
     }
 
+    if (!incompletePayments) {
+      return true;
+    }
+
+    // Filter incomplete payments manually to avoid complex type inference
+    const incompleteFiltered = incompletePayments.filter(payment => {
+      const status = payment.status as any;
+      return !status?.completed && !status?.cancelled;
+    });
+
     // If we have recent incomplete payments (less than 15 minutes old), block new payments
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-    const recentIncomplete = incompletePayments?.filter(payment => 
+    const recentIncomplete = incompleteFiltered.filter(payment => 
       new Date(payment.created_at) > fifteenMinutesAgo
     );
 
