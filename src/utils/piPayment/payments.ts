@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 import { initializePiNetwork, isPiNetworkAvailable } from '../piNetwork';
 import { PaymentResult, SubscriptionFrequency } from './types';
@@ -13,15 +12,14 @@ const POLLING_INTERVAL = 2000;
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Clean up stale payments for the current user
 const cleanupStalePayments = async (userId: string): Promise<void> => {
   try {
     console.log('Cleaning up stale payments before creating new payment...');
-    
+
     const { data, error } = await supabase.functions.invoke('cleanup-stale-payments', {
       body: JSON.stringify({ userId })
     });
-    
+
     if (error) {
       console.error('Error cleaning up stale payments:', error);
     } else {
@@ -32,27 +30,18 @@ const cleanupStalePayments = async (userId: string): Promise<void> => {
     }
   } catch (error) {
     console.error('Error in cleanup process:', error);
-    // Don't throw - we want to continue with payment even if cleanup fails
   }
 };
 
-// Force cleanup of incomplete payments
 const forceCleanupIncompletePayments = async (): Promise<void> => {
   try {
     console.log('Force cleaning up incomplete payments...');
-    
-    // Clear localStorage incomplete payment
     clearIncompletePayment();
-    
-    // Get current user
     const piUser = window.Pi?.currentUser;
     if (piUser?.uid) {
       await cleanupStalePayments(piUser.uid);
     }
-    
-    // Wait a moment for cleanup to complete
     await delay(1000);
-    
     toast.success('Payment cleanup completed. You can now try the payment again.');
   } catch (error) {
     console.error('Error in force cleanup:', error);
@@ -80,15 +69,24 @@ export const executeSubscriptionPayment = async (
       throw new Error("Pi Network SDK is not available");
     }
 
-    await initializePiNetwork();
+    await initializePiNetwork({
+      onIncompletePaymentFound: async (payment) => {
+        console.log('Found incomplete payment:', payment);
+        try {
+          await payment.cancel();
+          clearIncompletePayment();
+          toast.success('Previous incomplete payment cancelled.');
+        } catch (error) {
+          console.error('Failed to handle incomplete payment:', error);
+        }
+      }
+    });
 
-    // Get current user for cleanup
     const piUser = window.Pi?.currentUser;
     if (!piUser?.uid) {
       throw new Error("User not authenticated");
     }
 
-    // Clean up any stale payments before creating a new one
     await cleanupStalePayments(piUser.uid);
 
     return new Promise((resolve, reject) => {
@@ -111,9 +109,7 @@ export const executeSubscriptionPayment = async (
         const callbacks: PaymentCallbacks = {
           onReadyForServerApproval: async (paymentId: string) => {
             console.log("Payment ready for server approval:", paymentId);
-
             if (approvalTimeoutId) clearTimeout(approvalTimeoutId);
-
             approvalTimeoutId = window.setTimeout(() => {
               console.error("Payment approval timed out");
               toast.error("Payment approval timed out. Please try again.");
@@ -129,7 +125,6 @@ export const executeSubscriptionPayment = async (
               return;
             }
 
-            // Save incomplete payment
             localStorage.setItem('pi_incomplete_payment', JSON.stringify({
               paymentId,
               userId: piUser.uid,
@@ -180,9 +175,7 @@ export const executeSubscriptionPayment = async (
 
           onReadyForServerCompletion: async (paymentId: string, txid: string) => {
             console.log("Payment ready for server completion:", paymentId, txid);
-
             if (approvalTimeoutId) clearTimeout(approvalTimeoutId);
-
             completionTimeoutId = window.setTimeout(() => {
               console.error("Payment completion timed out");
               toast.error("Payment completion timed out. Please contact support.");
@@ -220,9 +213,7 @@ export const executeSubscriptionPayment = async (
                   success = true;
                   console.log("Payment completed successfully:", paymentId, txid);
                   if (completionTimeoutId) clearTimeout(completionTimeoutId);
-
-                  clearIncompletePayment(); // clear saved payment
-
+                  clearIncompletePayment();
                   paymentInProgress = false;
                   resolve({
                     success: true,
@@ -252,9 +243,7 @@ export const executeSubscriptionPayment = async (
             console.log("Payment cancelled:", paymentId);
             if (approvalTimeoutId) clearTimeout(approvalTimeoutId);
             if (completionTimeoutId) clearTimeout(completionTimeoutId);
-
             clearIncompletePayment();
-
             paymentInProgress = false;
             resolve({
               success: false,
@@ -266,8 +255,6 @@ export const executeSubscriptionPayment = async (
             console.error("Payment error:", error, payment);
             if (approvalTimeoutId) clearTimeout(approvalTimeoutId);
             if (completionTimeoutId) clearTimeout(completionTimeoutId);
-
-            // If error indicates pending payment, try to resolve it
             if (error.message.includes('pending payment') || error.message.includes('action from the developer')) {
               console.log('Detected pending payment error, attempting automatic cleanup...');
               forceCleanupIncompletePayments().then(() => {
@@ -294,7 +281,6 @@ export const executeSubscriptionPayment = async (
   } catch (error) {
     console.error("Pi payment error:", error);
     paymentInProgress = false;
-
     return {
       success: false,
       message: error instanceof Error ? error.message : "Payment failed"
@@ -325,5 +311,4 @@ export const clearIncompletePayment = (): void => {
   }
 };
 
-// Export the force cleanup function for external use
 export { forceCleanupIncompletePayments };
