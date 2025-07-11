@@ -5,6 +5,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFoo
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/components/layout/AppLayout';
 import { PricingSection } from '@/components/ui/pricing-section';
+import { PaymentStatusIndicator } from '@/components/pricing/PaymentStatusIndicator';
 import { toast } from 'sonner';
 import { TIERS } from '@/components/pricing/pricingTiers';
 import { useAuth } from '@/context/auth';
@@ -16,6 +17,7 @@ const Pricing = () => {
   const navigate = useNavigate();
   const [previousPlan, setPreviousPlan] = useState("");
   const [showDialog, setShowDialog] = useState(false);
+  const [paymentStatusKey, setPaymentStatusKey] = useState(0);
   
   // Get subscription payment utilities
   const { 
@@ -64,9 +66,17 @@ const Pricing = () => {
     toast.success('Your subscription has been updated to the Individual plan.');
     setShowDialog(false);
   };
+
+  // Handle payment status resolution
+  const handlePaymentStatusResolved = () => {
+    setPaymentStatusKey(prev => prev + 1); // Force re-render of payment components
+    toast.success('Payment issues resolved. You can now proceed with subscriptions.');
+  };
   
   return (
     <AppLayout title="Pricing">
+      <PaymentStatusIndicator onStatusResolved={handlePaymentStatusResolved} />
+      
       <div className="mb-4 flex flex-col gap-2">
         <Button 
           onClick={handleCleanupPayments}
@@ -77,11 +87,12 @@ const Pricing = () => {
           {isProcessingPayment ? "Cleaning up..." : "Fix Payment Issues"}
         </Button>
         <p className="text-sm text-muted-foreground">
-          If you're experiencing payment issues, click the button above to clean up any pending payments.
+          If you're experiencing payment issues or getting "pending payment" errors, click the button above to clean up any pending payments.
         </p>
       </div>
       
       <PricingSection 
+        key={paymentStatusKey} // Force re-render when payment status changes
         title="Simple, transparent pricing"
         subtitle="Choose the plan that's right for you and explore Avante Maps with premium features."
         currentUserTier={userSubscriptionTier}
