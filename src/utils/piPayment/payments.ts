@@ -83,21 +83,7 @@ export const executeSubscriptionPayment = async (
       throw new Error("User not authenticated");
     }
 
-    const canProceed = await canProceedWithPayment();
-    if (!canProceed) {
-      console.log('Cannot proceed with payment due to pending issues, attempting resolution...');
-      const resolved = await forceResolvePendingPayments();
-      if (!resolved) {
-        return {
-          success: false,
-          message: "Unable to resolve pending payment issues. Please try the 'Fix Payment Issues' button and wait a few minutes before retrying."
-        };
-      }
-      await delay(3000);
-    }
-
     paymentInProgress = true;
-    await cleanupStalePayments(piUser.uid);
 
     return new Promise((resolve, reject) => {
       try {

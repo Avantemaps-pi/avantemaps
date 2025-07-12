@@ -66,13 +66,11 @@ export const useSubscriptionPayment = () => {
       const subscriptionTier = tier as SubscriptionTier;
       const price = getSubscriptionPrice(subscriptionTier, selectedFrequency);
 
-      const result = await withPiErrorHandling(async () => {
-        return executeSubscriptionPayment(
-          price,
-          subscriptionTier,
-          selectedFrequency as 'monthly' | 'yearly'
-        );
-      });
+      const result = await executeSubscriptionPayment(
+        price,
+        subscriptionTier,
+        selectedFrequency as 'monthly' | 'yearly'
+      );
 
       if (result && result.success) {
         toast.success(result.message);
