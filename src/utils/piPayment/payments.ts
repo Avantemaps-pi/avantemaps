@@ -3,60 +3,25 @@ import { initializePiNetwork, isPiNetworkAvailable } from '../piNetwork';
 import { PaymentResult, SubscriptionFrequency } from './types';
 import { SubscriptionTier, PaymentDTO, PaymentData, PaymentCallbacks } from '../piNetwork/types';
 import { approvePayment, completePayment } from '@/api/payments';
-import { supabase } from '@/integrations/supabase/client';
-import { forceResolvePendingPayments, canProceedWithPayment, clearLocalPaymentData } from './cleanup';
-import { withPiErrorHandling } from './piErrorHandler';
 
 let paymentInProgress = false;
 
-const PAYMENT_TIMEOUT = 60000;
-const POLLING_INTERVAL = 2000;
-
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-const cleanupStalePayments = async (userId: string): Promise<void> => {
-  try {
-    console.log('Cleaning up stale payments before creating new payment...');
-
-    const { data, error } = await supabase.functions.invoke('cleanup-stale-payments', {
-      body: JSON.stringify({ userId })
-    });
-
-    if (error) {
-      console.error('Error cleaning up stale payments:', error);
-    } else {
-      console.log('Stale payment cleanup result:', data);
-      if (data?.cleanedCount > 0) {
-        toast.info(`Cleared ${data.cleanedCount} incomplete payment(s) to allow retry`);
-      }
-    }
-  } catch (error) {
-    console.error('Error in cleanup process:', error);
-  }
-};
-
-// Merged + enhanced version
-const forceCleanupIncompletePayments = async (): Promise<void> => {
-  try {
-    console.log('Force cleanup of incomplete payments started...');
-    clearLocalPaymentData();
-
-    const piUser = window.Pi?.currentUser;
-    if (piUser?.uid) {
-      const resolved = await forceResolvePendingPayments();
-      if (resolved) {
-        toast.success('All payment issues have been resolved. You can now try again.');
-      } else {
-        toast.warning('Some payment issues may persist. Please wait a moment before retrying.');
-      }
-    }
-
-    await delay(2000);
-  } catch (error) {
-    console.error('Error in force cleanup:', error);
-    toast.error('Cleanup encountered an issue, but you can still try the payment');
-  }
-};
+/**
+ * Pi Network Payment Implementation
+ * 
+ * Based on the official Pi Platform documentation (payments.md)
+ * 
+ * Flow:
+ * 1. createPayment - Frontend creates payment, Payment Flow UI opens
+ * 2. onReadyForServerApproval - SDK passes PaymentID to app for server-side approval  
+ * 3. Frontend sends PaymentID to server
+ * 4. Server calls /approve API to approve payment with Pi Servers
+ * 5. User interaction with payment dialog (handled by Pi Platform)
+ * 6. onReadyForServerCompletion - SDK passes TxID to app for server-side completion
+ * 7. Frontend sends TxID to server
+ * 8. Server calls /complete API to acknowledge payment with Pi Servers
+ * 9. Payment flow closes, app becomes visible again
+ */
 
 export const executeSubscriptionPayment = async (
   amount: number,
@@ -64,6 +29,7 @@ export const executeSubscriptionPayment = async (
   frequency: SubscriptionFrequency
 ): Promise<PaymentResult> => {
   try {
+    // Guard against multiple concurrent payments
     if (paymentInProgress) {
       console.warn("Payment already in progress");
       return {
@@ -72,12 +38,14 @@ export const executeSubscriptionPayment = async (
       };
     }
 
+    // Ensure Pi Network SDK is available and initialized
     if (!isPiNetworkAvailable()) {
       throw new Error("Pi Network SDK is not available");
     }
 
     await initializePiNetwork();
 
+    // Verify user is authenticated
     const piUser = window.Pi?.currentUser;
     if (!piUser?.uid) {
       throw new Error("User not authenticated");
@@ -85,6 +53,7 @@ export const executeSubscriptionPayment = async (
 
     paymentInProgress = true;
 
+    // Phase I: Payment creation and Server-Side Approval
     return new Promise((resolve, reject) => {
       try {
         const paymentData: PaymentData = {
@@ -94,167 +63,125 @@ export const executeSubscriptionPayment = async (
             subscriptionTier: tier,
             frequency,
             timestamp: new Date().toISOString(),
+            userId: piUser.uid
           }
         };
 
-        console.log("Creating payment with data:", paymentData);
-
-        let approvalTimeoutId: number | undefined;
-        let completionTimeoutId: number | undefined;
+        console.log("Creating Pi Network payment with data:", paymentData);
 
         const callbacks: PaymentCallbacks = {
+          // Phase I: Server-Side Approval Callback
           onReadyForServerApproval: async (paymentId: string) => {
             console.log("Payment ready for server approval:", paymentId);
-            if (approvalTimeoutId) clearTimeout(approvalTimeoutId);
-            approvalTimeoutId = window.setTimeout(() => {
-              toast.error("Payment approval timed out. Please try again.");
-              paymentInProgress = false;
-              reject(new Error("Payment approval timed out"));
-            }, 45000);
+            
+            try {
+              // Step 3: Frontend sends PaymentID to server
+              console.log("Sending payment for server-side approval...");
+              
+              const approvalResult = await approvePayment({
+                paymentId,
+                userId: piUser.uid,
+                amount: paymentData.amount,
+                memo: paymentData.memo,
+                metadata: paymentData.metadata
+              });
 
-            if (!piUser?.uid) {
-              clearTimeout(approvalTimeoutId);
-              paymentInProgress = false;
-              reject(new Error("User not authenticated"));
-              return;
-            }
-
-            localStorage.setItem('pi_incomplete_payment', JSON.stringify({
-              paymentId,
-              userId: piUser.uid,
-              amount: paymentData.amount,
-              memo: paymentData.memo,
-              metadata: paymentData.metadata
-            }));
-
-            let retries = 3;
-            let success = false;
-
-            while (retries > 0 && !success) {
-              try {
-                if (retries < 3) toast.info("Processing payment...");
-
-                const approvalResult = await approvePayment({
-                  paymentId,
-                  userId: piUser.uid,
-                  amount: paymentData.amount,
-                  memo: paymentData.memo,
-                  metadata: paymentData.metadata
-                });
-
-                if (approvalResult.success) {
-                  success = true;
-                  console.log("Payment approved:", paymentId);
-                } else {
-                  retries--;
-                  await delay((4 - retries) * 1000);
-                }
-              } catch (error) {
-                console.error("Error in approval:", error);
-                retries--;
-                await delay((4 - retries) * 1000);
+              if (!approvalResult.success) {
+                console.error("Server-side approval failed:", approvalResult.message);
+                paymentInProgress = false;
+                reject(new Error(`Payment approval failed: ${approvalResult.message}`));
+                return;
               }
-            }
 
-            if (!success) {
-              clearTimeout(approvalTimeoutId);
+              console.log("Payment approved successfully:", paymentId);
+              // Now Pi Platform enables user interaction with payment dialog (Phase II)
+              
+            } catch (error) {
+              console.error("Error during server-side approval:", error);
               paymentInProgress = false;
-              toast.error("Failed to approve payment after multiple attempts");
-              reject(new Error("Failed to approve payment"));
+              reject(new Error(`Payment approval error: ${error instanceof Error ? error.message : 'Unknown error'}`));
             }
           },
 
+          // Phase III: Server-Side Completion Callback  
           onReadyForServerCompletion: async (paymentId: string, txid: string) => {
-            console.log("Payment ready for server completion:", paymentId, txid);
-            if (approvalTimeoutId) clearTimeout(approvalTimeoutId);
-            completionTimeoutId = window.setTimeout(() => {
-              toast.error("Payment completion timed out. Please contact support.");
-              paymentInProgress = false;
-              reject(new Error("Payment completion timed out"));
-            }, 45000);
+            console.log("Payment ready for server completion:", paymentId, "TxID:", txid);
+            
+            try {
+              // Step 6: Frontend sends TxID to server
+              console.log("Sending payment for server-side completion...");
+              
+              const completionResult = await completePayment({
+                paymentId,
+                txid,
+                userId: piUser.uid,
+                amount: paymentData.amount,
+                memo: paymentData.memo,
+                metadata: paymentData.metadata
+              });
 
-            let retries = 3;
-            let success = false;
-
-            while (retries > 0 && !success) {
-              try {
-                if (retries < 3) toast.info("Finalizing payment...");
-
-                const completionResult = await completePayment({
-                  paymentId,
-                  txid,
-                  userId: piUser.uid,
-                  amount: paymentData.amount,
-                  memo: paymentData.memo,
-                  metadata: paymentData.metadata
-                });
-
-                if (completionResult.success) {
-                  success = true;
-                  clearTimeout(completionTimeoutId);
-                  clearLocalPaymentData();
-                  paymentInProgress = false;
-                  resolve({
-                    success: true,
-                    transactionId: txid,
-                    message: "Payment successful! Your subscription has been upgraded."
-                  });
-                } else {
-                  retries--;
-                  await delay((4 - retries) * 1000);
-                }
-              } catch (error) {
-                console.error("Error in completion:", error);
-                retries--;
-                await delay((4 - retries) * 1000);
+              if (!completionResult.success) {
+                console.error("Server-side completion failed:", completionResult.message);
+                paymentInProgress = false;
+                reject(new Error(`Payment completion failed: ${completionResult.message}`));
+                return;
               }
-            }
 
-            if (!success) {
-              clearTimeout(completionTimeoutId);
+              console.log("Payment completed successfully:", paymentId, "TxID:", txid);
+              
+              // Step 8: Payment flow closes, app becomes visible again
               paymentInProgress = false;
-              reject(new Error("Failed to complete payment"));
+              resolve({
+                success: true,
+                transactionId: txid,
+                message: "Payment successful! Your subscription has been upgraded."
+              });
+              
+            } catch (error) {
+              console.error("Error during server-side completion:", error);
+              paymentInProgress = false;
+              reject(new Error(`Payment completion error: ${error instanceof Error ? error.message : 'Unknown error'}`));
             }
           },
 
+          // User cancelled the payment
           onCancel: (paymentId: string) => {
-            console.log("Payment cancelled:", paymentId);
-            if (approvalTimeoutId) clearTimeout(approvalTimeoutId);
-            if (completionTimeoutId) clearTimeout(completionTimeoutId);
-            clearLocalPaymentData();
+            console.log("Payment cancelled by user:", paymentId);
             paymentInProgress = false;
-            resolve({ success: false, message: "Payment was cancelled." });
+            resolve({ 
+              success: false, 
+              message: "Payment was cancelled." 
+            });
           },
 
+          // Payment error occurred
           onError: (error: Error, payment?: PaymentDTO) => {
             console.error("Payment error:", error, payment);
-            if (approvalTimeoutId) clearTimeout(approvalTimeoutId);
-            if (completionTimeoutId) clearTimeout(completionTimeoutId);
-
+            paymentInProgress = false;
+            
+            // Handle specific Pi Network errors
             if (error.message.includes('pending payment') || 
                 error.message.includes('action from the developer') ||
                 error.message.includes('already have a pending payment')) {
-              forceCleanupIncompletePayments().then(() => {
-                paymentInProgress = false;
-                resolve({
-                  success: false,
-                  message: "Found and resolved pending payment issues. Please try again shortly."
-                });
-              });
+              
+              reject(new Error("You already have a pending payment on this app, which needs an action from the developer. Please contact support or try again later."));
             } else {
-              paymentInProgress = false;
               reject(error);
             }
           }
         };
 
+        // Step 1: Create payment - Payment Flow UI opens
+        console.log("Calling Pi.createPayment...");
         window.Pi?.createPayment(paymentData, callbacks);
+        
       } catch (error) {
         console.error("Error creating payment:", error);
         paymentInProgress = false;
         reject(error);
       }
     });
+    
   } catch (error) {
     console.error("Pi payment error:", error);
     paymentInProgress = false;
@@ -265,23 +192,17 @@ export const executeSubscriptionPayment = async (
   }
 };
 
-export const checkForIncompletePayments = (): PaymentDTO | null => {
-  try {
-    const storedPayment = localStorage.getItem('pi_incomplete_payment');
-    if (storedPayment) {
-      const payment: PaymentDTO = JSON.parse(storedPayment);
-      console.log('Found incomplete payment:', payment);
-      return payment;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error checking for incomplete payments:', error);
-    return null;
-  }
+/**
+ * Check if a payment is currently in progress
+ */
+export const isPaymentInProgress = (): boolean => {
+  return paymentInProgress;
 };
 
-export const clearIncompletePayment = (): void => {
-  clearLocalPaymentData();
+/**
+ * Force reset payment state (use with caution)
+ */
+export const resetPaymentState = (): void => {
+  paymentInProgress = false;
+  console.log("Payment state has been reset");
 };
-
-export { forceCleanupIncompletePayments };

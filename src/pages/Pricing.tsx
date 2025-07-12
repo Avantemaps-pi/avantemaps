@@ -77,19 +77,6 @@ const Pricing = () => {
     <AppLayout title="Pricing">
       <PaymentStatusIndicator onStatusResolved={handlePaymentStatusResolved} />
       
-      <div className="mb-4 flex flex-col gap-2">
-        <Button 
-          onClick={handleCleanupPayments}
-          variant="outline"
-          disabled={isProcessingPayment}
-          className="self-start"
-        >
-          {isProcessingPayment ? "Cleaning up..." : "Fix Payment Issues"}
-        </Button>
-        <p className="text-sm text-muted-foreground">
-          If you're experiencing payment issues or getting "pending payment" errors, click the button above to clean up any pending payments.
-        </p>
-      </div>
       
       <PricingSection 
         key={paymentStatusKey} // Force re-render when payment status changes

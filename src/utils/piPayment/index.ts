@@ -1,7 +1,7 @@
 
-import { executeSubscriptionPayment, forceCleanupIncompletePayments } from './payments';
+import { executeSubscriptionPayment, isPaymentInProgress, resetPaymentState } from './payments';
 
-export { executeSubscriptionPayment, forceCleanupIncompletePayments };
+export { executeSubscriptionPayment, isPaymentInProgress, resetPaymentState };
 
 // Export pricing functions
 export { getSubscriptionPrice } from './pricing';

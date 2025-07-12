@@ -3,8 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '@/context/auth';
 import {
   executeSubscriptionPayment,
-  getSubscriptionPrice,
-  forceCleanupIncompletePayments
+  getSubscriptionPrice
 } from '@/utils/piPayment';
 import { approvePayment } from '@/api/payments';
 import { SubscriptionTier } from '@/utils/piNetwork';
@@ -66,6 +65,7 @@ export const useSubscriptionPayment = () => {
       const subscriptionTier = tier as SubscriptionTier;
       const price = getSubscriptionPrice(subscriptionTier, selectedFrequency);
 
+      // Execute the payment using the Pi Network flow
       const result = await executeSubscriptionPayment(
         price,
         subscriptionTier,
@@ -74,30 +74,10 @@ export const useSubscriptionPayment = () => {
 
       if (result && result.success) {
         toast.success(result.message);
-
-        // Use the transaction ID from the result if available
-        if (result.transactionId) {
-          const approvalResult = await approvePayment({
-            paymentId: result.transactionId,
-            userId: user?.uid!,
-            amount: price,
-            memo: `${subscriptionTier}_${selectedFrequency}`,
-            metadata: {
-              subscriptionTier,
-              duration: selectedFrequency === 'yearly' ? 365 : 30
-            }
-          });
-
-          if (approvalResult.success) {
-            toast.success("Subscription activated successfully");
-            await refreshUserData();
-          } else {
-            toast.error("Payment approved, but subscription update failed");
-            console.error("Approval failed:", approvalResult.message);
-          }
-        }
-
+        // Refresh user data to reflect the subscription update
+        await refreshUserData();
       } else if (result) {
+        // Handle specific error cases
         if (result.message.includes("permission not granted")) {
           toast.error(result.message);
           toast.info("Attempting to refresh your permissions...");
@@ -106,15 +86,10 @@ export const useSubscriptionPayment = () => {
           toast.error("Permission issue detected. Please log in again to grant all required permissions.");
           await login();
         } else if (result.message.includes("pending payment") || result.message.includes("action from the developer")) {
-          toast.error("Found a pending payment issue. Attempting to resolve...");
-          await forceCleanupIncompletePayments();
-          toast.info("Payment issue resolved. Please try again.");
+          toast.error("You have a pending payment that needs attention. Please contact support or try again later.");
         } else {
           toast.error(result.message);
         }
-      } else {
-        // result is null, which means error was handled by withPiErrorHandling
-        console.log('Payment error was handled by error handler');
       }
     } catch (error) {
       console.error("Subscription error:", error);
@@ -129,9 +104,7 @@ export const useSubscriptionPayment = () => {
           toast.info("Please try logging in again to grant all required permissions");
           await login();
         } else if (error.message.includes("pending payment") || error.message.includes("action from the developer")) {
-          toast.error("Found a pending payment issue. Attempting to resolve...");
-          await forceCleanupIncompletePayments();
-          toast.info("Payment issue resolved. Please try again.");
+          toast.error("You have a pending payment that needs attention. Please contact support or try again later.");
         } else {
           toast.error("Failed to process subscription payment: " + error.message);
         }
@@ -146,7 +119,7 @@ export const useSubscriptionPayment = () => {
   const handleCleanupPayments = async () => {
     setIsProcessingPayment(true);
     try {
-      await forceCleanupIncompletePayments();
+      toast.info("This feature has been removed. Payment issues are now handled automatically.");
     } finally {
       setIsProcessingPayment(false);
     }

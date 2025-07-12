@@ -30,7 +30,7 @@ import Review from "./pages/Review";
 import Pricing from "./pages/Pricing";
 import Analytics from "./pages/Analytics";
 import { initializePiNetwork } from "./utils/piNetwork";
-import { checkForIncompletePayments } from "./utils/piPayment/payments";
+// Removed incomplete payments check - handled automatically by Pi Network flow
 
 const queryClient = new QueryClient();
 
@@ -55,10 +55,6 @@ const App = () => {
         const success = await initializePiNetwork();
         if (success) {
           console.log("Pi SDK initialized successfully in App.tsx");
-          const incompletePayment = checkForIncompletePayments();
-          if (incompletePayment && !incompletePayment.status.developer_completed) {
-            console.log("Found incomplete payment that needs handling:", incompletePayment);
-          }
         } else {
           console.warn("Pi SDK initialization failed in App.tsx");
         }

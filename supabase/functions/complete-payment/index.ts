@@ -1,9 +1,25 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+interface PaymentRequest {
+  paymentId: string;
+  txid: string;
+  userId: string;
+  amount: number;
+  memo: string;
+  metadata: Record<string, any>;
+}
+
+interface PaymentResponse {
+  success: boolean;
+  message: string;
+  paymentId?: string;
+  txid?: string;
+}
+
+const supabaseClient = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
 
 Deno.serve(async (req) => {
@@ -11,103 +27,150 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  console.log(`Starting payment completion at ${new Date().toISOString()}`);
+
   try {
-    const body = await req.json();
-    const { paymentId } = body;
+    const paymentRequest: PaymentRequest = await req.json();
+    console.log('Payment completion request received:', paymentRequest);
 
-    if (!paymentId) {
-      return new Response(JSON.stringify({ error: 'Missing paymentId' }), {
-        status: 400,
-        headers: corsHeaders
-      });
+    if (!paymentRequest.paymentId || !paymentRequest.txid) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Missing payment ID or transaction ID' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
 
-    // Fetch the payment request
-    const { data: paymentRequest, error: fetchError } = await supabase
-      .from('payment_requests')
-      .select('*')
-      .eq('paymentId', paymentId)
-      .single();
-
-    if (fetchError || !paymentRequest) {
-      console.error('Payment request not found:', fetchError?.message || 'Unknown error');
-      return new Response(JSON.stringify({ error: 'Payment request not found' }), {
-        status: 404,
-        headers: corsHeaders
-      });
+    const piApiKey = Deno.env.get('PI_API_KEY');
+    if (!piApiKey) {
+      console.error('PI_API_KEY not configured');
+      return new Response(
+        JSON.stringify({ success: false, message: 'Payment service not configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
 
-    if (!paymentRequest.txid) {
-      return new Response(JSON.stringify({ error: 'Transaction ID not found' }), {
-        status: 400,
-        headers: corsHeaders
-      });
-    }
-
-    const piNetworkApiUrl = 'https://api.minepi.com/payments';
-    const apiKey = Deno.env.get('PI_API_KEY')!;
-
+    // Step 7: Server-Side Completion - Call Pi Servers /complete API
     try {
-      const completeResponse = await fetch(`${piNetworkApiUrl}/${paymentId}/complete`, {
+      const piNetworkApiUrl = 'https://api.minepi.com/v2/payments';
+      const completeResponse = await fetch(`${piNetworkApiUrl}/${paymentRequest.paymentId}/complete`, {
         method: 'POST',
         headers: {
-          'Authorization': `Key ${apiKey}`,
+          'Authorization': `Key ${piApiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ txid: paymentRequest.txid })
       });
 
-      const completeData = await completeResponse.json();
+      const completeResult = await completeResponse.json();
+      console.log('Pi Network completion API response:', completeResult);
 
       if (!completeResponse.ok) {
-        console.error(`Error completing payment ${paymentId} with txid ${paymentRequest.txid}:`, completeData);
-        return new Response(JSON.stringify({ error: 'Failed to complete payment', details: completeData }), {
-          status: 500,
-          headers: corsHeaders
-        });
-      }
+        // Check if payment was already completed
+        if (completeResult.message?.includes('already completed')) {
+          console.log(`Payment ${paymentRequest.paymentId} was already completed`);
+          
+          // Update our database to reflect completion
+          await supabaseClient.from('payments').update({
+            status: {
+              approved: true,
+              verified: true,
+              completed: true,
+              cancelled: false
+            },
+            txid: paymentRequest.txid,
+            updated_at: new Date().toISOString()
+          }).eq('payment_id', paymentRequest.paymentId);
 
-      // Update the payment record in Supabase
-      const { error: updateError } = await supabase
-        .from('payment_requests')
-        .update({
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              message: 'Payment was already completed', 
+              paymentId: paymentRequest.paymentId,
+              txid: paymentRequest.txid 
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Handle other Pi Network API errors
+        await supabaseClient.from('payments').update({
           status: {
-            ...paymentRequest.status,
-            completed: true,
-            cancelled: false
+            approved: true,
+            verified: false,
+            completed: false,
+            cancelled: true,
+            error: `Pi Network completion API error: ${JSON.stringify(completeResult)}`
           },
-          txid: paymentRequest.txid,
-          tx_url: `https://pi.blockchain.xyz/tx/${paymentRequest.txid}`,
-          completed: true
-        })
-        .eq('paymentId', paymentId);
+          updated_at: new Date().toISOString()
+        }).eq('payment_id', paymentRequest.paymentId);
 
-      if (updateError) {
-        console.error('Error updating payment record in Supabase:', updateError.message);
-        return new Response(JSON.stringify({ error: 'Failed to update payment status in database' }), {
-          status: 500,
-          headers: corsHeaders
-        });
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: `Pi Network completion API error: ${completeResult.message || 'Unknown error'}`, 
+            paymentId: paymentRequest.paymentId,
+            txid: paymentRequest.txid 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
+        );
       }
 
-      return new Response(JSON.stringify({ message: 'Payment completed successfully' }), {
-        status: 200,
-        headers: corsHeaders
-      });
+      // Payment completed successfully - update database
+      await supabaseClient.from('payments').update({
+        status: {
+          approved: true,
+          verified: true,
+          completed: true,
+          cancelled: false
+        },
+        txid: paymentRequest.txid,
+        updated_at: new Date().toISOString()
+      }).eq('payment_id', paymentRequest.paymentId);
+
+      const endTime = Date.now();
+      console.log(`Payment completion successful in ${endTime - startTime}ms`);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Payment completed successfully', 
+          paymentId: paymentRequest.paymentId,
+          txid: paymentRequest.txid 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
 
     } catch (apiError) {
-      console.error(`API error while completing payment ${paymentId}:`, apiError);
-      return new Response(JSON.stringify({ error: 'Failed to call Pi Network API', details: apiError }), {
-        status: 500,
-        headers: corsHeaders
-      });
+      console.error('Error calling Pi Network completion API:', apiError);
+      
+      await supabaseClient.from('payments').update({
+        status: {
+          approved: true,
+          verified: false,
+          completed: false,
+          cancelled: true,
+          error: `API call error: ${apiError.message}`
+        },
+        updated_at: new Date().toISOString()
+      }).eq('payment_id', paymentRequest.paymentId);
+
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: `Error calling Pi Network completion API: ${apiError.message}`, 
+          paymentId: paymentRequest.paymentId,
+          txid: paymentRequest.txid 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
+      );
     }
 
   } catch (error) {
-    console.error('Unhandled error:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error', details: error }), {
-      status: 500,
-      headers: corsHeaders
-    });
+    console.error('Error in complete-payment function:', error);
+    return new Response(
+      JSON.stringify({ success: false, message: `Server error: ${error.message}` }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
   }
 });
