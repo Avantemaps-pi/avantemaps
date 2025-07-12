@@ -9,6 +9,7 @@ import {
 import { approvePayment } from '@/api/payments';
 import { SubscriptionTier } from '@/utils/piNetwork';
 import { toast } from 'sonner';
+import { withPiErrorHandling } from '@/utils/piPayment/piErrorHandler';
 
 export const useSubscriptionPayment = () => {
   const { user, isAuthenticated, login, refreshUserData } = useAuth();
@@ -65,13 +66,15 @@ export const useSubscriptionPayment = () => {
       const subscriptionTier = tier as SubscriptionTier;
       const price = getSubscriptionPrice(subscriptionTier, selectedFrequency);
 
-      const result = await executeSubscriptionPayment(
-        price,
-        subscriptionTier,
-        selectedFrequency as 'monthly' | 'yearly'
-      );
+      const result = await withPiErrorHandling(async () => {
+        return executeSubscriptionPayment(
+          price,
+          subscriptionTier,
+          selectedFrequency as 'monthly' | 'yearly'
+        );
+      });
 
-      if (result.success) {
+      if (result && result.success) {
         toast.success(result.message);
 
         // Use the transaction ID from the result if available
@@ -96,7 +99,7 @@ export const useSubscriptionPayment = () => {
           }
         }
 
-      } else {
+      } else if (result) {
         if (result.message.includes("permission not granted")) {
           toast.error(result.message);
           toast.info("Attempting to refresh your permissions...");
@@ -111,6 +114,9 @@ export const useSubscriptionPayment = () => {
         } else {
           toast.error(result.message);
         }
+      } else {
+        // result is null, which means error was handled by withPiErrorHandling
+        console.log('Payment error was handled by error handler');
       }
     } catch (error) {
       console.error("Subscription error:", error);

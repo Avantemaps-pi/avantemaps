@@ -36,7 +36,17 @@ export const forceResolvePendingPayments = async (): Promise<boolean> => {
       return false;
     }
 
-    // Step 3: Call our enhanced cleanup function
+    // Step 3: Force close any Pi SDK payment modals/flows
+    if (window.Pi?.closeApp) {
+      try {
+        window.Pi.closeApp();
+        console.log('Attempted to close Pi app/modal');
+      } catch (e) {
+        console.log('Could not close Pi app:', e);
+      }
+    }
+
+    // Step 4: Call our enhanced cleanup function
     const cleanupResult = await cleanupStalePayments(piUser.uid);
     console.log('Cleanup result:', cleanupResult);
 
@@ -47,8 +57,19 @@ export const forceResolvePendingPayments = async (): Promise<boolean> => {
         toast.success('No pending payments found to clean up');
       }
       
-      // Step 4: Wait a moment for cleanup to propagate
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Step 5: Wait longer for Pi Network to update
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      // Step 6: Try to reset Pi SDK state
+      if (window.Pi?.init) {
+        try {
+          console.log('Attempting to reinitialize Pi SDK...');
+          // Don't await this as it might hang
+          window.Pi.init({ version: "2.0", sandbox: false });
+        } catch (e) {
+          console.log('Pi SDK reinit failed:', e);
+        }
+      }
       
       return true;
     } else {

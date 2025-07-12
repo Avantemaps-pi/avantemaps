@@ -5,6 +5,7 @@ import { SubscriptionTier, PaymentDTO, PaymentData, PaymentCallbacks } from '../
 import { approvePayment, completePayment } from '@/api/payments';
 import { supabase } from '@/integrations/supabase/client';
 import { forceResolvePendingPayments, canProceedWithPayment, clearLocalPaymentData } from './cleanup';
+import { withPiErrorHandling } from './piErrorHandler';
 
 let paymentInProgress = false;
 
@@ -75,18 +76,7 @@ export const executeSubscriptionPayment = async (
       throw new Error("Pi Network SDK is not available");
     }
 
-    await initializePiNetwork({
-      onIncompletePaymentFound: async (payment) => {
-        console.log('Found incomplete payment:', payment);
-        try {
-          await payment.cancel();
-          clearIncompletePayment();
-          toast.success('Previous incomplete payment cancelled.');
-        } catch (error) {
-          console.error('Failed to handle incomplete payment:', error);
-        }
-      }
-    });
+    await initializePiNetwork();
 
     const piUser = window.Pi?.currentUser;
     if (!piUser?.uid) {
