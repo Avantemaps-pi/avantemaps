@@ -23,7 +23,7 @@ const Contact = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm">inquiries@avantemaps.com</p>
+              <p className="text-sm break-all">inquiries@avantemaps.com</p>
               <p className="text-xs text-muted-foreground mt-1">For general inquiries</p>
             </CardContent>
           </Card>
