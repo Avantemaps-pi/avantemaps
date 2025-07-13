@@ -65,12 +65,14 @@ export const useSubscriptionPayment = () => {
       const subscriptionTier = tier as SubscriptionTier;
       const price = getSubscriptionPrice(subscriptionTier, selectedFrequency);
 
-      // Execute the payment using the Pi Network flow
-      const result = await executeSubscriptionPayment(
-        price,
-        subscriptionTier,
-        selectedFrequency as 'monthly' | 'yearly'
-      );
+      // Execute the payment using the Pi Network flow with error handling
+      const result = await withPiErrorHandling(async () => {
+        return await executeSubscriptionPayment(
+          price,
+          subscriptionTier,
+          selectedFrequency as 'monthly' | 'yearly'
+        );
+      });
 
       if (result && result.success) {
         toast.success(result.message);

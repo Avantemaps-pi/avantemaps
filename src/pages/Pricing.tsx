@@ -5,7 +5,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFoo
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/components/layout/AppLayout';
 import { PricingSection } from '@/components/ui/pricing-section';
-import { PaymentStatusIndicator } from '@/components/pricing/PaymentStatusIndicator';
+
 import { toast } from 'sonner';
 import { TIERS } from '@/components/pricing/pricingTiers';
 import { useAuth } from '@/context/auth';
@@ -17,8 +17,6 @@ const Pricing = () => {
   const navigate = useNavigate();
   const [previousPlan, setPreviousPlan] = useState("");
   const [showDialog, setShowDialog] = useState(false);
-  const [paymentStatusKey, setPaymentStatusKey] = useState(0);
-  
   // Get subscription payment utilities
   const { 
     userSubscriptionTier,
@@ -26,7 +24,6 @@ const Pricing = () => {
     handleFrequencyChange,
     handleSubscribe,
     updateUserSubscription,
-    handleCleanupPayments,
     isProcessingPayment 
   } = useSubscriptionPayment();
   
@@ -67,19 +64,9 @@ const Pricing = () => {
     setShowDialog(false);
   };
 
-  // Handle payment status resolution
-  const handlePaymentStatusResolved = () => {
-    setPaymentStatusKey(prev => prev + 1); // Force re-render of payment components
-    toast.success('Payment issues resolved. You can now proceed with subscriptions.');
-  };
-  
   return (
     <AppLayout title="Pricing">
-      <PaymentStatusIndicator onStatusResolved={handlePaymentStatusResolved} />
-      
-      
-      <PricingSection 
-        key={paymentStatusKey} // Force re-render when payment status changes
+      <PricingSection
         title="Simple, transparent pricing"
         subtitle="Choose the plan that's right for you and explore Avante Maps with premium features."
         currentUserTier={userSubscriptionTier}

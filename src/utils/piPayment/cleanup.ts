@@ -84,6 +84,8 @@ export const forceResolvePendingPayments = async (): Promise<boolean> => {
 };
 
 // Check if we can proceed with a new payment
+// Note: This function now always returns true as we handle pending payment errors 
+// when they actually occur during payment attempts
 export const canProceedWithPayment = async (): Promise<boolean> => {
   try {
     const piUser = window.Pi?.currentUser;
@@ -91,46 +93,7 @@ export const canProceedWithPayment = async (): Promise<boolean> => {
       return false;
     }
 
-    // Check our database for any incomplete payments with explicit typing
-    const { data: incompletePayments, error } = await supabase
-      .from('payments')
-      .select('payment_id, created_at, status')
-      .eq('user_id', piUser.uid)
-      .returns<Array<{
-        payment_id: string;
-        created_at: string;
-        status: {
-          completed?: boolean;
-          cancelled?: boolean;
-        };
-      }>>();
-
-    if (error) {
-      console.error('Error checking for incomplete payments:', error);
-      return true; // Allow payment to proceed if we can't check
-    }
-
-    if (!incompletePayments) {
-      return true;
-    }
-
-    // Filter incomplete payments manually to avoid complex type inference
-    const incompleteFiltered = incompletePayments.filter(payment => {
-      const status = payment.status as any;
-      return !status?.completed && !status?.cancelled;
-    });
-
-    // If we have recent incomplete payments (less than 15 minutes old), block new payments
-    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-    const recentIncomplete = incompleteFiltered.filter(payment => 
-      new Date(payment.created_at) > fifteenMinutesAgo
-    );
-
-    if (recentIncomplete && recentIncomplete.length > 0) {
-      console.log('Found recent incomplete payments:', recentIncomplete);
-      return false;
-    }
-
+    // Always return true - we'll handle pending payment errors when they occur
     return true;
   } catch (error) {
     console.error('Error checking payment eligibility:', error);
