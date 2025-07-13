@@ -1,14 +1,17 @@
-
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { cleanupStalePayments } from '@/api/payments/cleanupStalePayments';
-
 /**
- * Enhanced cleanup utilities for Pi Network payments
- * Specifically designed to handle "pending payment" errors
+ * Simplified cleanup utilities for Pi Network payments
+ * 
+ * Based on Pi Network documentation, the SDK handles incomplete payments
+ * automatically through the onIncompletePaymentFound callback
  */
 
-// Clear any stored incomplete payment data
+import { toast } from 'sonner';
+import { cleanupStalePayments } from '@/api/payments/cleanupStalePayments';
+import { getPiAuthResult, clearPiAuth, initializePi, authenticateUser } from '../piNetwork/core';
+
+/**
+ * Clear any stored local payment data
+ */
 export const clearLocalPaymentData = (): void => {
   try {
     localStorage.removeItem('pi_incomplete_payment');
@@ -20,35 +23,34 @@ export const clearLocalPaymentData = (): void => {
   }
 };
 
-// Comprehensive cleanup for pending payment issues
+/**
+ * Force resolve pending payments
+ * This function is simplified as per Pi Network documentation -
+ * incomplete payments should be handled automatically by the SDK
+ */
 export const forceResolvePendingPayments = async (): Promise<boolean> => {
   try {
-    console.log('Starting comprehensive pending payment cleanup...');
-    toast.info('Cleaning up payment issues...');
-
-    // Step 1: Clear all local storage
+    console.log('Starting payment cleanup process...');
+    
+    // Step 1: Clear local storage
     clearLocalPaymentData();
 
-    // Step 2: Get current user
-    const piUser = window.Pi?.currentUser;
-    if (!piUser?.uid) {
-      toast.error('Unable to identify user for cleanup');
-      return false;
-    }
-
-    // Step 3: Force close any Pi SDK payment modals/flows
-    if (window.Pi?.closeApp) {
+    // Step 2: Get authenticated user
+    let authResult = getPiAuthResult();
+    if (!authResult) {
+      toast.info('Authenticating to resolve payment issues...');
       try {
-        window.Pi.closeApp();
-        console.log('Attempted to close Pi app/modal');
-      } catch (e) {
-        console.log('Could not close Pi app:', e);
+        authResult = await authenticateUser();
+      } catch (error) {
+        console.error('Authentication failed during cleanup:', error);
+        toast.error('Unable to authenticate for payment cleanup');
+        return false;
       }
     }
 
-    // Step 4: Call our enhanced cleanup function
-    const cleanupResult = await cleanupStalePayments(piUser.uid);
-    console.log('Cleanup result:', cleanupResult);
+    // Step 3: Call server-side cleanup
+    const cleanupResult = await cleanupStalePayments(authResult.user.uid);
+    console.log('Server cleanup result:', cleanupResult);
 
     if (cleanupResult.success) {
       if (cleanupResult.cleanedCount && cleanupResult.cleanedCount > 0) {
@@ -56,47 +58,38 @@ export const forceResolvePendingPayments = async (): Promise<boolean> => {
       } else {
         toast.success('No pending payments found to clean up');
       }
-      
-      // Step 5: Wait longer for Pi Network to update
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      
-      // Step 6: Try to reset Pi SDK state
-      if (window.Pi?.init) {
-        try {
-          console.log('Attempting to reinitialize Pi SDK...');
-          // Don't await this as it might hang
-          window.Pi.init({ version: "2.0", sandbox: false });
-        } catch (e) {
-          console.log('Pi SDK reinit failed:', e);
-        }
-      }
-      
       return true;
     } else {
       toast.error(`Cleanup failed: ${cleanupResult.message}`);
       return false;
     }
   } catch (error) {
-    console.error('Error in comprehensive cleanup:', error);
+    console.error('Error in payment cleanup:', error);
     toast.error('Failed to resolve pending payments');
     return false;
   }
 };
 
-// Check if we can proceed with a new payment
-// Note: This function now always returns true as we handle pending payment errors 
-// when they actually occur during payment attempts
+/**
+ * Check if we can proceed with a new payment
+ * 
+ * According to Pi Network documentation, the SDK will automatically
+ * handle incomplete payments via the onIncompletePaymentFound callback,
+ * so we can always proceed with new payments
+ */
 export const canProceedWithPayment = async (): Promise<boolean> => {
   try {
-    const piUser = window.Pi?.currentUser;
-    if (!piUser?.uid) {
-      return false;
+    // Ensure we have authentication
+    let authResult = getPiAuthResult();
+    if (!authResult) {
+      return false; // Need authentication first
     }
 
-    // Always return true - we'll handle pending payment errors when they occur
+    // According to Pi documentation, the SDK handles incomplete payments
+    // automatically, so we can always proceed
     return true;
   } catch (error) {
     console.error('Error checking payment eligibility:', error);
-    return true; // Allow payment to proceed if check fails
+    return true; // Default to allowing payment if check fails
   }
 };
