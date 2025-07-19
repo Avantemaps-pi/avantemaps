@@ -95,7 +95,12 @@ const MobileSidebar = ({
                 <span className="font-medium text-sm">{username}</span>
                 <span className="text-xs text-muted-foreground">
                   <span 
-                    className="cursor-pointer hover:text-primary transition-colors"
+                    className={cn(
+                      "cursor-pointer hover:text-primary transition-colors",
+                      user?.subscriptionTier === 'organization' && "text-purple-500 font-medium",
+                      user?.subscriptionTier === 'small-business' && "text-blue-500 font-medium",
+                      user?.subscriptionTier === 'individual' && "text-green-500"
+                    )}
                     onClick={handleIndividualPlanClick}
                   >
                     {planType}

@@ -40,7 +40,7 @@ function isStalePayment(payment: any): boolean {
 
 const supabaseClient = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
 
 Deno.serve(async (req) => {
@@ -72,11 +72,22 @@ Deno.serve(async (req) => {
     }
 
     // Check for existing payment
+    console.log('Checking for existing payment...');
     const { data: existingPayment, error: checkError } = await supabaseClient
       .from('payments')
       .select('*')
       .eq('payment_id', paymentRequest.paymentId)
       .single();
+    
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Database check error:', checkError);
+      return new Response(
+        JSON.stringify({ success: false, message: `Database check error: ${checkError.message}`, paymentId: paymentRequest.paymentId }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+    
+    console.log('Existing payment found:', !!existingPayment);
 
     // Handle stale payments - automatically cancel them
     if (existingPayment && isStalePayment(existingPayment)) {
@@ -146,6 +157,7 @@ Deno.serve(async (req) => {
     }
 
     // Attempt to approve the payment with Pi Network
+    console.log('Calling Pi Network API for approval...');
     try {
       const piNetworkApiUrl = 'https://api.minepi.com/v2/payments';
       const approveResponse = await fetch(`${piNetworkApiUrl}/${paymentRequest.paymentId}/approve`, {
@@ -157,6 +169,8 @@ Deno.serve(async (req) => {
       });
 
       const approveResult = await approveResponse.json();
+      console.log('Pi Network API response status:', approveResponse.status);
+      console.log('Pi Network API response:', approveResult);
 
       if (!approveResponse.ok) {
         if (approveResult.message?.includes('already approved')) {
