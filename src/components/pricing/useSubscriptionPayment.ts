@@ -76,8 +76,12 @@ export const useSubscriptionPayment = () => {
 
       if (result && result.success) {
         toast.success(result.message);
-        // Refresh user data to reflect the subscription update
-        await refreshUserData();
+        
+        // Refresh user data if the payment was successful and requires refresh
+        if (result.shouldRefreshUser) {
+          console.log("Payment successful, refreshing user data...");
+          await refreshUserData();
+        }
       } else if (result) {
         // Handle specific error cases
         if (result.message.includes("permission not granted")) {

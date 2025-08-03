@@ -5,6 +5,7 @@ export interface PaymentResult {
   success: boolean;
   transactionId?: string;
   message: string;
+  shouldRefreshUser?: boolean;
 }
 
 export type SubscriptionFrequency = 'monthly' | 'yearly';

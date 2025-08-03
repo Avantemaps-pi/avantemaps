@@ -145,7 +145,8 @@ export const executeSubscriptionPayment = async (
             resolve({
               success: true,
               transactionId: txid,
-              message: "Payment successful! Your subscription has been upgraded."
+              message: "Payment successful! Your subscription has been upgraded.",
+              shouldRefreshUser: true // Signal that user data should be refreshed
             });
             
           } catch (error) {
