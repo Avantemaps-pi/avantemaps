@@ -128,6 +128,33 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString()
       }).eq('payment_id', paymentRequest.paymentId);
 
+      // Handle subscription creation if payment is completed successfully
+      if (paymentRequest.metadata?.subscriptionTier) {
+        try {
+          // Get user data from metadata or create defaults
+          const username = paymentRequest.metadata.username || `user_${paymentRequest.userId.slice(0, 8)}`;
+          const email = paymentRequest.metadata.email || `${username}@pi.app`;
+          
+          // Call the database function to handle subscription
+          const { error: subscriptionError } = await supabaseClient.rpc('handle_subscription_after_payment', {
+            p_user_id: paymentRequest.userId,
+            p_username: username,
+            p_email: email,
+            p_subscription_tier: paymentRequest.metadata.subscriptionTier
+          });
+
+          if (subscriptionError) {
+            console.error('Failed to create subscription:', subscriptionError);
+            // Don't fail the entire request since payment was successful
+          } else {
+            console.log(`Subscription ${paymentRequest.metadata.subscriptionTier} created for user ${paymentRequest.userId}`);
+          }
+        } catch (subscriptionErr) {
+          console.error('Error handling subscription:', subscriptionErr);
+          // Don't fail the entire request since payment was successful
+        }
+      }
+
       const endTime = Date.now();
       console.log(`Payment completion successful in ${endTime - startTime}ms`);
 
@@ -136,7 +163,8 @@ Deno.serve(async (req) => {
           success: true, 
           message: 'Payment completed successfully', 
           paymentId: paymentRequest.paymentId,
-          txid: paymentRequest.txid 
+          txid: paymentRequest.txid,
+          subscriptionCreated: !!paymentRequest.metadata?.subscriptionTier
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
