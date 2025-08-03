@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Place } from '@/data/mockPlaces';
@@ -34,8 +33,11 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const [mapCenter, setMapCenter] = useState<LatLngTuple>([defaultCenter.lat, defaultCenter.lng]); // San Francisco by default
   const [zoom, setZoom] = useState(defaultZoom);
 
-  // Use provided places or default locations
-  const displayPlaces = isLoading ? [] : places.length > 0 ? places : defaultLocations;
+  // Use provided places or default locations - memoized to prevent infinite re-renders
+  const displayPlaces = useMemo(() => {
+    if (isLoading) return [];
+    return places.length > 0 ? places : defaultLocations;
+  }, [places, isLoading]);
 
   // Ensure map centers on San Francisco or a selected place, and handle zoom accordingly
   useEffect(() => {
