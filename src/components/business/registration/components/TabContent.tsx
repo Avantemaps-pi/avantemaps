@@ -25,54 +25,44 @@ const TabContent: React.FC<TabContentProps> = ({
   return (
     <div className="w-full min-h-[500px]">
       <TabsContent value="business-owner" className="space-y-4 w-full">
-        <div className="min-h-[450px] flex flex-col">
-          <BusinessOwnerTab 
-            onNext={() => setSelectedTab('contact')}
-            disabled={isSubmitting} 
-          />
-        </div>
+        <BusinessOwnerTab 
+          onNext={() => setSelectedTab('contact')}
+          disabled={isSubmitting} 
+        />
       </TabsContent>
 
       <TabsContent value="contact" className="space-y-4 w-full">
-        <div className="min-h-[450px] flex flex-col">
-          <ContactTab 
-            onNext={() => setSelectedTab('address')} 
-            onPrevious={() => setSelectedTab('business-owner')} 
-            disabled={isSubmitting}
-          />
-        </div>
+        <ContactTab 
+          onNext={() => setSelectedTab('address')} 
+          onPrevious={() => setSelectedTab('business-owner')} 
+          disabled={isSubmitting}
+        />
       </TabsContent>
 
       <TabsContent value="address" className="space-y-4 w-full">
-        <div className="min-h-[450px] flex flex-col">
-          <AddressTab 
-            onNext={() => setSelectedTab('hours')} 
-            onPrevious={() => setSelectedTab('contact')} 
-            disabled={isSubmitting}
-          />
-        </div>
+        <AddressTab 
+          onNext={() => setSelectedTab('hours')} 
+          onPrevious={() => setSelectedTab('contact')} 
+          disabled={isSubmitting}
+        />
       </TabsContent>
 
       <TabsContent value="hours" className="space-y-4 w-full">
-        <div className="min-h-[450px] flex flex-col">
-          <HoursTab 
-            onNext={() => setSelectedTab('details')} 
-            onPrevious={() => setSelectedTab('address')} 
-            disabled={isSubmitting}
-          />
-        </div>
+        <HoursTab 
+          onNext={() => setSelectedTab('details')} 
+          onPrevious={() => setSelectedTab('address')} 
+          disabled={isSubmitting}
+        />
       </TabsContent>
 
       <TabsContent value="details" className="space-y-4 w-full">
-        <div className="min-h-[450px] flex flex-col">
-          <DetailsTab 
-            onPrevious={() => setSelectedTab('hours')}
-            selectedImages={selectedImages}
-            handleImageUpload={handleImageUpload}
-            handleImageRemove={handleImageRemove}
-            disabled={isSubmitting}
-          />
-        </div>
+        <DetailsTab 
+          onPrevious={() => setSelectedTab('hours')}
+          selectedImages={selectedImages}
+          handleImageUpload={handleImageUpload}
+          handleImageRemove={handleImageRemove}
+          disabled={isSubmitting}
+        />
       </TabsContent>
     </div>
   );
