@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { MARKER_COLORS, defaultCenter, defaultZoom, OSM_TILE_LAYER } from './mapConfig';
+import { MARKER_COLORS, defaultCenter, defaultZoom, OSM_TILE_LAYER, worldBounds, maxBoundsViscosity } from './mapConfig';
 import 'leaflet/dist/leaflet.css';
 import { Place } from '@/data/mockPlaces';
 
@@ -116,11 +116,16 @@ const RecommendationsMap: React.FC<RecommendationsMapProps> = ({
       <MapContainer 
         style={{ height: '100%', width: '100%', zIndex: 1 }}
         className="leaflet-container"
+        maxBounds={worldBounds}
+        maxBoundsViscosity={maxBoundsViscosity}
+        worldCopyJump={false}
       >
         <MapViewUpdater center={[center.lat, center.lng]} zoom={zoom} />
         
         <TileLayer
           url={OSM_TILE_LAYER.url}
+          attribution={OSM_TILE_LAYER.attribution}
+          noWrap={OSM_TILE_LAYER.noWrap}
         />
         
         {allPlaces.map((place) => (
