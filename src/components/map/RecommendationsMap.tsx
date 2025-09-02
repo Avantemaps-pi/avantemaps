@@ -37,13 +37,12 @@ const RecommendationsMap: React.FC<RecommendationsMapProps> = ({
   useEffect(() => {
     const fetchUserBusinesses = async () => {
       try {
+        // Use the secure function to get only public business info
         const { data, error } = await supabase
-          .from('businesses')
-          .select('id, name, category, coordinates')
-          .not('coordinates', 'is', null);
+          .rpc('get_public_business_info');
         
         if (error) {
-          console.error('Error fetching user businesses:', error);
+          console.error('Error fetching businesses:', error);
           return;
         }
         
@@ -64,7 +63,8 @@ const RecommendationsMap: React.FC<RecommendationsMapProps> = ({
                 name: business.name,
                 category: business.category || '',
                 position: coords,
-                address: '',
+                address: business.location || '',
+                description: business.description || '',
                 isUserBusiness: true
               };
             } catch (e) {

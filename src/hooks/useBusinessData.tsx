@@ -4,20 +4,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { Place } from '@/data/mockPlaces';
 import { toast } from 'sonner';
 
-interface SupabaseBusiness {
+interface PublicBusinessInfo {
   id: number;
   name: string;
-  owner_id: string;
-  created_at: string;
-  contact_info: any;
-  hours: any;
-  coordinates: string;
-  business_types: string[];
-  pi_wallet_address: string;
-  keywords: string[];
   description: string;
   location: string;
   category: string;
+  coordinates: string;
+  business_types: string[];
+  keywords: string[];
+  created_at: string;
 }
 
 export const useBusinessData = () => {
@@ -29,13 +25,13 @@ export const useBusinessData = () => {
     const fetchBusinesses = async () => {
       setIsLoading(true);
       try {
+        // Use the secure function to get only public business info
         const { data, error } = await supabase
-          .from('businesses')
-          .select('*');
+          .rpc('get_public_business_info');
         
         if (error) throw error;
         
-        const transformedPlaces: Place[] = (data as SupabaseBusiness[]).map((business) => {
+        const transformedPlaces: Place[] = (data as PublicBusinessInfo[]).map((business) => {
           let position = { lat: 37.7749 + (Math.random() * 0.2 - 0.1), lng: -122.4194 + (Math.random() * 0.2 - 0.1) };
           
           try {
@@ -49,17 +45,6 @@ export const useBusinessData = () => {
             console.error("Failed to parse location:", e);
           }
           
-          const contactInfo = typeof business.contact_info === 'object' ? business.contact_info : {};
-          const website = contactInfo?.website || "";
-          const phone = contactInfo?.phone || "";
-
-          const hoursRecord: Record<string, string> = {};
-          if (typeof business.hours === 'object' && business.hours !== null) {
-            Object.entries(business.hours).forEach(([day, time]) => {
-              hoursRecord[day] = String(time);
-            });
-          }
-          
           return {
             id: business.id.toString(),
             name: business.name,
@@ -70,13 +55,13 @@ export const useBusinessData = () => {
             description: business.description || "No description provided",
             category: business.category || "Other",
             image: "/placeholder.svg",
-            website,
-            phone,
-            hours: hoursRecord,
+            website: "", // Not available in public data for security
+            phone: "", // Not available in public data for security
+            hours: {}, // Not available in public data for security
             isVerified: false,
             business_types: business.business_types || [],
             keywords: business.keywords || [],
-            isUserBusiness: business.owner_id === business.owner_id || false,
+            isUserBusiness: false, // Cannot determine ownership from public data
           };
         });
         
