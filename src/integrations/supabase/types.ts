@@ -42,6 +42,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bookmarks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "public_business_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bookmarks_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -203,7 +210,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_business_view: {
+        Row: {
+          business_types: string[] | null
+          category: string | null
+          coordinates: string | null
+          created_at: string | null
+          description: string | null
+          id: number | null
+          keywords: string[] | null
+          location: string | null
+          name: string | null
+        }
+        Insert: {
+          business_types?: string[] | null
+          category?: string | null
+          coordinates?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: number | null
+          keywords?: string[] | null
+          location?: string | null
+          name?: string | null
+        }
+        Update: {
+          business_types?: string[] | null
+          category?: string | null
+          coordinates?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: number | null
+          keywords?: string[] | null
+          location?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_public_business_info: {
