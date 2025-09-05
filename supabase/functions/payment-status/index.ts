@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: `Database error: ${error.message}`,
+          message: "Unable to retrieve payment status",
           paymentId: statusRequest.paymentId
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        message: `Server error: ${error.message}` 
+        message: "Payment status service temporarily unavailable" 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );

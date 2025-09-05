@@ -88,14 +88,10 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
       <MapContainer 
         style={{ height: '100%', width: '100%', zIndex: 1 }}
         className="leaflet-container"
-        maxBounds={worldBounds}
-        maxBoundsViscosity={maxBoundsViscosity}
-        worldCopyJump={false}
+        bounds={worldBounds}
       >
         <TileLayer 
-          url={OSM_TILE_LAYER.url} 
-          attribution={OSM_TILE_LAYER.attribution}
-          noWrap={OSM_TILE_LAYER.noWrap}
+          url={OSM_TILE_LAYER.url}
         />
         
         <MapViewUpdater center={mapCenter} zoom={zoom} />
