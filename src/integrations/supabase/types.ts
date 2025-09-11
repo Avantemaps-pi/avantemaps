@@ -7,10 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
@@ -206,12 +206,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_public_business_info: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          business_types: string[]
+          category: string
+          coordinates: string
+          created_at: string
+          description: string
+          id: number
+          keywords: string[]
+          location: string
+          name: string
+        }[]
+      }
       handle_subscription_after_payment: {
         Args: {
-          p_user_id: string
-          p_username: string
           p_email: string
           p_subscription_tier: string
+          p_user_id: string
+          p_username: string
         }
         Returns: undefined
       }

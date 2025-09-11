@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { MARKER_COLORS, defaultCenter, defaultZoom, OSM_TILE_LAYER } from './mapConfig';
+import { MARKER_COLORS, defaultCenter, defaultZoom, OSM_TILE_LAYER, worldBounds, maxBoundsViscosity } from './mapConfig';
 import 'leaflet/dist/leaflet.css';
 import { Place } from '@/data/mockPlaces';
 
@@ -37,13 +37,12 @@ const RecommendationsMap: React.FC<RecommendationsMapProps> = ({
   useEffect(() => {
     const fetchUserBusinesses = async () => {
       try {
+        // Use the secure function to get only public business info
         const { data, error } = await supabase
-          .from('businesses')
-          .select('id, name, category, coordinates')
-          .not('coordinates', 'is', null);
+          .rpc('get_public_business_info');
         
         if (error) {
-          console.error('Error fetching user businesses:', error);
+          console.error('Error fetching businesses:', error);
           return;
         }
         
@@ -64,7 +63,8 @@ const RecommendationsMap: React.FC<RecommendationsMapProps> = ({
                 name: business.name,
                 category: business.category || '',
                 position: coords,
-                address: '',
+                address: business.location || '',
+                description: business.description || '',
                 isUserBusiness: true
               };
             } catch (e) {
@@ -116,6 +116,7 @@ const RecommendationsMap: React.FC<RecommendationsMapProps> = ({
       <MapContainer 
         style={{ height: '100%', width: '100%', zIndex: 1 }}
         className="leaflet-container"
+        bounds={worldBounds}
       >
         <MapViewUpdater center={[center.lat, center.lng]} zoom={zoom} />
         

@@ -28,7 +28,8 @@ const DetailsTab: React.FC<DetailsTabProps> = ({
   const form = useFormContext<FormValues>();
   
   return (
-    <Card className="border shadow-sm">
+    <div className="w-full max-w-none">
+      <Card className="border shadow-sm">
       <CardHeader className="pb-4 space-y-2">
         <CardTitle className="text-2xl sm:text-xl">Additional Details</CardTitle>
         <CardDescription className="text-base sm:text-sm">
@@ -72,7 +73,8 @@ const DetailsTab: React.FC<DetailsTabProps> = ({
           )}
         </Button>
       </CardFooter>
-    </Card>
+      </Card>
+    </div>
   );
 };
 

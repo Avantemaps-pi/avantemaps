@@ -71,7 +71,8 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
   };
 
   return (
-    <Card>
+    <div className="w-full max-w-none">
+      <Card>
       <CardHeader>
         <CardTitle className="text-xl">Contact Details</CardTitle>
         <CardDescription className="whitespace-nowrap overflow-hidden text-ellipsis">
@@ -173,7 +174,8 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
           Next
         </Button>
       </CardFooter>
-    </Card>
+      </Card>
+    </div>
   );
 };
 

@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { Place } from '@/data/mockPlaces';
 import { toast } from 'sonner';
 import { defaultLocations } from './defaultLocations';
-import { defaultCenter, defaultZoom, OSM_TILE_LAYER } from './mapConfig';
+import { defaultCenter, defaultZoom, OSM_TILE_LAYER, worldBounds, maxBoundsViscosity } from './mapConfig';
 import MapMarkers from './map-components/MapMarkers';
 import MapViewUpdater from './map-components/MapViewUpdater';
 import PlaceOverlay from './map-components/PlaceOverlay';
@@ -88,8 +88,11 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
       <MapContainer 
         style={{ height: '100%', width: '100%', zIndex: 1 }}
         className="leaflet-container"
+        bounds={worldBounds}
       >
-        <TileLayer url={OSM_TILE_LAYER.url} />
+        <TileLayer 
+          url={OSM_TILE_LAYER.url}
+        />
         
         <MapViewUpdater center={mapCenter} zoom={zoom} />
         

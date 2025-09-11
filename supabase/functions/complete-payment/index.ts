@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: `Error calling Pi Network completion API: ${apiError.message}`, 
+          message: "Payment completion temporarily unavailable", 
           paymentId: paymentRequest.paymentId,
           txid: paymentRequest.txid 
         }),
@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in complete-payment function:', error);
     return new Response(
-      JSON.stringify({ success: false, message: `Server error: ${error.message}` }),
+      JSON.stringify({ success: false, message: "Payment completion service temporarily unavailable" }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

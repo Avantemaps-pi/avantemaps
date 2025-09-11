@@ -16,7 +16,8 @@ const BusinessOwnerTab: React.FC<BusinessOwnerTabProps> = ({ onNext, disabled })
   const form = useFormContext<FormValues>();
   
   return (
-    <Card className="border shadow-sm">
+    <div className="w-full max-w-none">
+      <Card className="border shadow-sm">
       <CardHeader className="pb-4 space-y-2">
         <CardTitle className="text-2xl sm:text-xl">Business Owner Information</CardTitle>
         <CardDescription className="text-base sm:text-sm">
@@ -76,7 +77,8 @@ const BusinessOwnerTab: React.FC<BusinessOwnerTabProps> = ({ onNext, disabled })
           Next
         </Button>
       </CardFooter>
-    </Card>
+      </Card>
+    </div>
   );
 };
 
