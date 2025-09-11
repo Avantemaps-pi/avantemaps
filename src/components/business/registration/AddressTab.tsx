@@ -13,8 +13,7 @@ interface AddressTabProps {
 
 const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled }) => {
   return (
-    <div className="w-full max-w-none">
-      <Card className="w-full">
+    <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-xl">Physical Address</CardTitle>
           <CardDescription>
@@ -43,8 +42,7 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
             Next
           </Button>
         </CardFooter>
-      </Card>
-    </div>
+    </Card>
   );
 };
 
