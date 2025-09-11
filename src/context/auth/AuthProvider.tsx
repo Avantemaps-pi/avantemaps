@@ -7,6 +7,7 @@ import { checkAccess } from './authUtils';
 import { performLogin, refreshUserData as refreshUserDataService, requestAuthPermissions } from './authService';
 import { useNetworkStatus } from './networkStatusService';
 import { SubscriptionTier } from '@/utils/piNetwork/types';
+import { shouldBypassAuth, DEV_CONFIG } from '@/config/environment';
 import AuthContext from './useAuth';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -26,6 +27,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Check for cached session on mount
   useEffect(() => {
+    // In development mode, bypass authentication
+    if (shouldBypassAuth()) {
+      console.log("Development mode: bypassing authentication");
+      setUser(DEV_CONFIG.mockUser);
+      return;
+    }
+
     const cachedSession = localStorage.getItem(STORAGE_KEY);
     
     if (cachedSession) {
@@ -69,6 +77,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Optimized login process
   const login = useCallback(async (): Promise<void> => {
+    // In development mode, automatically set mock user
+    if (shouldBypassAuth()) {
+      console.log("Development mode: setting mock user");
+      setUser(DEV_CONFIG.mockUser);
+      toast.success("Development mode: Logged in as mock user");
+      return;
+    }
+
     if (pendingAuthRef.current) {
       console.log("Authentication already in progress");
       toast.info("Authentication in progress, please wait...");
