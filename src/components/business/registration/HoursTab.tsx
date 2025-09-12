@@ -44,7 +44,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
                       control={form.control}
                       name={day.closed as keyof FormValues}
                       render={({ field }) => (
-                        <FormItem className="flex items-center justify-center space-x-0 space-y-0 m-0 mr-0">
+                        <FormItem className="flex items-center justify-center space-x-0 space-y-0 m-0 mr-0 ml-0">
                           <FormControl>
                             <Checkbox
                               checked={field.value as boolean}
