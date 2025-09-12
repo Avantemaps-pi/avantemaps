@@ -68,7 +68,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
                               type="time"
                               {...field}
                               disabled={form.watch(day.closed as keyof FormValues) === true || disabled}
-                              className="w-full"
+                              className="w-full ml-0"
                               value={field.value as string}
                             />
                           </FormControl>
