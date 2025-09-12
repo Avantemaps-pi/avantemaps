@@ -2,6 +2,7 @@
 import { useAuth } from '@/context/auth';
 import { useNavigate } from 'react-router-dom';
 import { SubscriptionTier } from '@/utils/piNetwork';
+import { shouldBypassAuth } from '@/config/environment';
 import { useEffect, useState } from 'react';
 
 interface UseFeatureAccessOptions {
@@ -22,6 +23,12 @@ export const useFeatureAccess = (
   useEffect(() => {
     // If permission is overridden, grant access immediately
     if (overridePermission) {
+      setHasPermission(true);
+      return;
+    }
+
+    // In development mode, bypass all authentication and access checks
+    if (shouldBypassAuth()) {
       setHasPermission(true);
       return;
     }
