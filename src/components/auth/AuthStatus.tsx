@@ -1,9 +1,8 @@
 
 import React from 'react';
 import { useAuth } from '@/context/auth';
-import { Shield, WifiOff, Code } from 'lucide-react';
+import { Shield, WifiOff } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
-import { shouldBypassAuth } from '@/config/environment';
 
 const AuthStatus: React.FC = () => {
   const { isAuthenticated, user, isLoading, isOffline } = useAuth();
@@ -29,13 +28,7 @@ const AuthStatus: React.FC = () => {
 
   if (isAuthenticated && user) {
     return (
-      <div className="flex items-center space-x-2">
-        {shouldBypassAuth() && (
-          <div className="flex items-center space-x-1 text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded">
-            <Code className="h-3 w-3" />
-            <span>DEV</span>
-          </div>
-        )}
+      <div className="flex items-center">
         <span className="text-sm hidden md:inline-block">{user.username}</span>
       </div>
     );

@@ -6,24 +6,6 @@
  * via environment variables or fetched from a secure backend service.
  */
 
-import { SubscriptionTier } from '@/utils/piNetwork/types';
-
-// Development configuration
-export const DEV_CONFIG = {
-  // Enable this to bypass Pi Network authentication during development
-  bypassAuth: import.meta.env.DEV, // Only bypass in development mode
-  mockUser: {
-    uid: "dev-user-123",
-    username: "Developer",
-    walletAddress: "dev-wallet-address",
-    roles: ["user"],
-    accessToken: "dev-access-token",
-    lastAuthenticated: Date.now(),
-    subscriptionTier: SubscriptionTier.ORGANIZATION, // Using the highest tier for dev access
-    businessCount: 5
-  }
-};
-
 // Maps API configuration
 // Note: Google Maps JavaScript API keys are designed to be used in client-side code
 // and should be restricted by HTTP referrers in the Google Cloud Console
@@ -44,7 +26,3 @@ export const validateEnvConfig = (): boolean => {
   }
   return true;
 };
-
-// Development mode helpers
-export const isDevelopmentMode = (): boolean => import.meta.env.DEV;
-export const shouldBypassAuth = (): boolean => DEV_CONFIG.bypassAuth;
