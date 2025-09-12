@@ -27,7 +27,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="relative">
+          <div className="relative overflow-x-auto">
             <div className="max-h-[450px] overflow-y-auto pr-0">
               <div className="space-y-4">
                 <div className="grid grid-cols-[1fr_60px_1fr_1fr] gap-3 items-center mb-2 font-medium">
