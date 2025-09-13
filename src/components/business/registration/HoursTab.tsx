@@ -28,7 +28,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
         </CardHeader>
         <CardContent>
           <div className="relative">
-            <div className="max-h-[450px] overflow-y-auto pr-0">
+            <div className="max-h-[450px] overflow-y-auto pr-2">
               <div className="space-y-4">
                 <div className="grid grid-cols-[1fr_60px_1fr_1fr] gap-3 items-center mb-2 font-medium">
                   <div>Day</div>
@@ -37,14 +37,14 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
                   <div className="text-center">Closing</div>
                 </div>
                 {daysOfWeek.map((day) => (
-                  <div key={day.name} className="grid grid-cols-[1fr_60px_1fr_1fr] gap-2 sm:grid-cols-2 items-center">
+                  <div key={day.name} className="grid grid-cols-[1fr_60px_1fr_1fr] gap-4 sm:grid-cols-2 items-center">
                     <div className="font-medium">{day.name}</div>
                     
                     <FormField
                       control={form.control}
                       name={day.closed as keyof FormValues}
                       render={({ field }) => (
-                        <FormItem className="flex items-center justify-center space-x-0 space-y-0 m-0 mr-0 ml-0 px-px">
+                        <FormItem className="flex items-center justify-center space-x-2 space-y-0 m-0">
                           <FormControl>
                             <Checkbox
                               checked={field.value as boolean}
@@ -68,7 +68,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
                               type="time"
                               {...field}
                               disabled={form.watch(day.closed as keyof FormValues) === true || disabled}
-                              className="w-full ml-0"
+                              className="w-full"
                               value={field.value as string}
                             />
                           </FormControl>
