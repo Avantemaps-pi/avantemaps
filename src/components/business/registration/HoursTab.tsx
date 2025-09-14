@@ -27,18 +27,18 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="relative">
-            <div className="max-h-[450px] overflow-y-auto pr-0">
-              <div className="space-y-4">
-                <div className="grid grid-cols-[1fr_60px_1fr_1fr] gap-3 items-center mb-2 font-medium">
-                  <div>Day</div>
-                  <div className="text-center">Closed</div>
-                  <div className="text-center">Opening</div>
-                  <div className="text-center">Closing</div>
+          <div className="relative overflow-hidden">
+            <div className="max-h-[450px] overflow-y-auto">
+              <div className="space-y-3">
+                <div className="grid grid-cols-[1fr_auto_1fr_1fr] gap-2 items-center mb-2 font-medium text-sm">
+                  <div className="min-w-0">Day</div>
+                  <div className="text-center min-w-[50px]">Closed</div>
+                  <div className="text-center min-w-0">Opening</div>
+                  <div className="text-center min-w-0">Closing</div>
                 </div>
                 {daysOfWeek.map((day) => (
-                  <div key={day.name} className="grid grid-cols-[1fr_60px_1fr_1fr] gap-2 sm:grid-cols-2 items-center">
-                    <div className="font-medium">{day.name}</div>
+                  <div key={day.name} className="grid grid-cols-[1fr_auto_1fr_1fr] gap-2 items-center">
+                    <div className="font-medium text-sm min-w-0 truncate">{day.name}</div>
                     
                     <FormField
                       control={form.control}
