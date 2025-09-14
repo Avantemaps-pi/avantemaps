@@ -27,17 +27,17 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="relative">
-            <div className="max-h-[450px] overflow-y-auto pr-0">
+          <div className="relative overflow-hidden">
+            <div className="max-h-[450px] overflow-y-auto overflow-x-hidden">
               <div>
-                <div className="grid grid-cols-[1fr_60px_1fr_1fr] items-center mb-2 font-medium">
-                  <div>Day</div>
-                  <div className="text-center">Closed</div>
-                  <div className="text-center">Opening</div>
-                  <div className="text-center">Closing</div>
+                <div className="grid grid-cols-[1fr_50px_1fr_1fr] items-center mb-2 font-medium text-sm">
+                  <div className="truncate">Day</div>
+                  <div className="text-center text-xs">Closed</div>
+                  <div className="text-center text-xs">Opening</div>
+                  <div className="text-center text-xs">Closing</div>
                 </div>
                 {daysOfWeek.map((day) => (
-                  <div key={day.name} className="grid grid-cols-[1fr_60px_1fr_1fr] sm:grid-cols-2 items-center">
+                  <div key={day.name} className="grid grid-cols-[1fr_50px_1fr_1fr] items-center min-w-0">
                     <div className="font-medium">{day.name}</div>
                     <FormField
                       control={form.control}
@@ -61,13 +61,13 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
                       control={form.control}
                       name={day.open as keyof FormValues}
                       render={({ field }) => (
-                        <FormItem className="space-y-0">
+                        <FormItem className="space-y-0 min-w-0">
                           <FormControl>
                             <Input
                               type="time"
                               {...field}
                               disabled={form.watch(day.closed as keyof FormValues) === true || disabled}
-                              className="w-full"
+                              className="w-full min-w-0 text-sm"
                               value={field.value as string}
                             />
                           </FormControl>
@@ -79,13 +79,13 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
                       control={form.control}
                       name={day.close as keyof FormValues}
                       render={({ field }) => (
-                        <FormItem className="space-y-0">
+                        <FormItem className="space-y-0 min-w-0">
                           <FormControl>
                             <Input
                               type="time"
                               {...field}
                               disabled={form.watch(day.closed as keyof FormValues) === true || disabled}
-                              className="w-full"
+                              className="w-full min-w-0 text-sm"
                               value={field.value as string}
                             />
                           </FormControl>
