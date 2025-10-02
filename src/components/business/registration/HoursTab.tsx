@@ -19,7 +19,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
 
   return (
     <div className="w-full max-w-none">
-      <Card className="material-card w-full">
+      <Card className="border shadow-sm">
         <CardHeader>
           <CardTitle className="text-xl">Trading Hours</CardTitle>
           <CardDescription>

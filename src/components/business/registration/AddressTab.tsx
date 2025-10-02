@@ -14,7 +14,7 @@ interface AddressTabProps {
 const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled }) => {
   return (
     <div className="w-full max-w-none">
-      <Card className="w-full">
+      <Card className="border shadow-sm">
         <CardHeader>
           <CardTitle className="text-xl">Physical Address</CardTitle>
           <CardDescription>

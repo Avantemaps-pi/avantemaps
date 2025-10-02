@@ -72,7 +72,7 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
 
   return (
     <div className="w-full max-w-none">
-      <Card>
+      <Card className="border shadow-sm">
       <CardHeader>
         <CardTitle className="text-xl">Contact Details</CardTitle>
         <CardDescription className="whitespace-nowrap overflow-hidden text-ellipsis">
