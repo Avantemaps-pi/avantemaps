@@ -9,6 +9,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/context/auth";
 import { useSessionRestoration } from "@/hooks/useSessionRestoration";
+import AuthenticatingOverlay from "@/components/auth/AuthenticatingOverlay";
 import 'leaflet/dist/leaflet.css';
 import Index from "./pages/Index";
 import Recommendations from "./pages/Recommendations";
@@ -123,6 +124,7 @@ const App = () => {
         <BrowserRouter>
           <TooltipProvider>
             <AuthProvider>
+              <AuthenticatingOverlay />
               <SidebarProvider>
                 <SessionManager />
                 <Toaster />

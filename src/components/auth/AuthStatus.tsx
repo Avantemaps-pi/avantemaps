@@ -10,12 +10,7 @@ const AuthStatus: React.FC = () => {
   const location = useLocation();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center space-x-1 text-sm text-muted-foreground">
-        <Shield className="h-4 w-4" />
-        <span>Authenticating...</span>
-      </div>
-    );
+    return null;
   }
 
   if (isOffline) {
