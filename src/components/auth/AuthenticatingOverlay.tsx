@@ -1,11 +1,13 @@
 import React from 'react';
 import { useAuth } from '@/context/auth';
 import { Shield } from 'lucide-react';
+import { shouldBypassAuth } from '@/config/environment';
 
 const AuthenticatingOverlay: React.FC = () => {
   const { isLoading } = useAuth();
 
-  if (!isLoading) {
+  // Don't show overlay in development mode when auth is bypassed
+  if (!isLoading || shouldBypassAuth()) {
     return null;
   }
 
