@@ -18,7 +18,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
   const form = useFormContext<FormValues>();
 
   return (
-    <div className="w-full max-w-none">
+    <div className="w-full">
       <Card className="border shadow-sm">
         <CardHeader>
           <CardTitle className="text-xl">Trading Hours</CardTitle>
