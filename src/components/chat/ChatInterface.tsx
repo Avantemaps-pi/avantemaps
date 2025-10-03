@@ -25,6 +25,7 @@ interface ChatInterfaceProps {
   handleSendMessage: () => void;
   handleAttachmentOption?: () => void;
   showAttachmentIcon?: boolean;
+  hasLiveChatAccess?: boolean;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -35,7 +36,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   setMessage,
   handleSendMessage,
   handleAttachmentOption,
-  showAttachmentIcon = false
+  showAttachmentIcon = false,
+  hasLiveChatAccess = false
 }) => {
   const handleMenuOptionClick = (command: string) => {
     setMessage(message + command + ' ');
@@ -118,7 +120,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div className="border-b p-3">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-lg">CHAT</h3>
-            <ChatModeToggle chatMode={chatMode} onChatModeChange={onChatModeChange} />
+            <ChatModeToggle 
+              chatMode={chatMode} 
+              onChatModeChange={onChatModeChange}
+              hasLiveChatAccess={hasLiveChatAccess}
+            />
           </div>
           <p className="text-sm text-muted-foreground mt-2">
             {chatMode === 'ai' ? "Connect with Avante Maps AI assistant" : "Connect with Avante Maps LIVE Intern"}
