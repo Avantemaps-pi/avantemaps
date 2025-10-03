@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Menu } from 'lucide-react';
+import { ArrowLeft, Menu, MoreVertical } from 'lucide-react';
 import MobileMenuButton from './header/MobileMenuButton';
 import DesktopMenuButton from './header/DesktopMenuButton';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,7 @@ const PageHeader = ({
   const isIndexPage = location.pathname === '/';
   const isUpdateRegistrationPage = location.pathname.includes('/update-registration');
   const isVerificationInfoPage = location.pathname === '/verification-info';
+  const isBookmarksPage = location.pathname === '/bookmarks';
 
   // Get page title based on current route
   const getPageTitle = () => {
@@ -117,7 +118,14 @@ const PageHeader = ({
         
         <div className={`flex-1 flex ${showSearch && isIndexPage ? 'items-center justify-between' : 'justify-center'}`}>
           {pageTitle ? 
-            <h1 className="text-xl font-semibold">{pageTitle}</h1> 
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold">{pageTitle}</h1>
+              {isBookmarksPage && (
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
             : 
             <Link to="/" className="flex items-center gap-2">
               {/* Logo would go here */}
