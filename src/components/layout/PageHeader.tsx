@@ -8,6 +8,12 @@ import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
 import AuthStatus from '@/components/auth/AuthStatus';
 import SearchBar from '@/components/map/SearchBar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface PageHeaderProps {
   title?: string;
@@ -143,9 +149,18 @@ const PageHeader = ({
         
         <div className="flex items-center space-x-4">
           {isBookmarksPage && (
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical className="h-5 w-5" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
+                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                  Delete all Bookmarks
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           <AuthStatus />
         </div>
