@@ -118,14 +118,7 @@ const PageHeader = ({
         
         <div className={`flex-1 flex ${showSearch && isIndexPage ? 'items-center justify-between' : 'justify-center'}`}>
           {pageTitle ? 
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold">{pageTitle}</h1>
-              {isBookmarksPage && (
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="h-5 w-5" />
-                </Button>
-              )}
-            </div>
+            <h1 className="text-xl font-semibold">{pageTitle}</h1> 
             : 
             <Link to="/" className="flex items-center gap-2">
               {/* Logo would go here */}
@@ -149,6 +142,11 @@ const PageHeader = ({
         </div>
         
         <div className="flex items-center space-x-4">
+          {isBookmarksPage && (
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreVertical className="h-5 w-5" />
+            </Button>
+          )}
           <AuthStatus />
         </div>
       </div>
