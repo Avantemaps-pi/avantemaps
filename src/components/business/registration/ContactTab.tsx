@@ -73,13 +73,13 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
   return (
     <div className="w-full">
       <Card className="border shadow-sm">
-      <CardHeader>
+      <CardHeader className="px-0">
         <CardTitle className="text-xl">Contact Details</CardTitle>
         <CardDescription className="whitespace-nowrap overflow-hidden text-ellipsis">
           How customers can reach your business.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-0">
         <FormField
           control={form.control}
           name="phone"
@@ -156,7 +156,7 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
           )}
         />
       </CardContent>
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex justify-between px-0">
         <Button 
           type="button" 
           variant="outline" 
