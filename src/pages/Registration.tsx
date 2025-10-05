@@ -40,7 +40,6 @@ const Registration = () => {
     <AppLayout 
       title="Register Business"
       fullHeight={false} 
-      fullWidth={true}
       hideSidebar={true}
     >
       <motion.div 
