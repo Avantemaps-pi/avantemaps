@@ -53,7 +53,7 @@ const BusinessRegistrationForm = ({ onSuccess }: BusinessRegistrationFormProps) 
 
   return (
     <div className="w-full py-2 min-h-[600px]">
-      <div className="mb-6 md:mb-8">
+      <div className="mb-6 md:mb-8 ml-10">
         <h2 className="text-3xl font-bold tracking-tight">Register Business</h2>
         <p className="text-muted-foreground text-lg mt-2">
           List your business on Avante Maps.
