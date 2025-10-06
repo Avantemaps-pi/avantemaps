@@ -64,8 +64,6 @@ const BusinessRegistrationForm = ({ onSuccess }: BusinessRegistrationFormProps) 
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
           <TabNavigation 
             isMobile={isMobile} 
-            value={selectedTab} 
-            onValueChange={setSelectedTab} 
             disabled={isSubmitting}
           />
 
