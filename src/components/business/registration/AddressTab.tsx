@@ -15,17 +15,17 @@ const AddressTab: React.FC<AddressTabProps> = ({ onNext, onPrevious, disabled })
   return (
     <div className="w-full">
       <Card className="border shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-xl">Physical Address</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-4 space-y-2">
+          <CardTitle className="text-2xl sm:text-xl">Physical Address</CardTitle>
+          <CardDescription className="text-base sm:text-sm">
             Where your business is located.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <AddressInput disabled={disabled} />
           <AddressFormFields disabled={disabled} />
         </CardContent>
-        <CardFooter className="flex justify-between">
+        <CardFooter className="flex justify-between pt-2">
           <Button 
             type="button" 
             variant="outline" 

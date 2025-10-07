@@ -73,19 +73,19 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
   return (
     <div className="w-full">
       <Card className="border shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-xl">Contact Details</CardTitle>
-        <CardDescription className="whitespace-nowrap overflow-hidden text-ellipsis">
+      <CardHeader className="pb-4 space-y-2">
+        <CardTitle className="text-2xl sm:text-xl">Contact Details</CardTitle>
+        <CardDescription className="text-base sm:text-sm">
           How customers can reach your business.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         <FormField
           control={form.control}
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Contact Number</FormLabel>
+              <FormLabel className="text-base mb-1.5">Contact Number</FormLabel>
               <div className="flex space-x-2">
                 <Select
                   value={countryCode}
@@ -126,7 +126,7 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email Address</FormLabel>
+              <FormLabel className="text-base mb-1.5">Email Address</FormLabel>
               <FormControl>
                 <Input 
                   placeholder="contact@business.com" 
@@ -143,7 +143,7 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
           name="website"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Pi Network Website URL (Optional)</FormLabel>
+              <FormLabel className="text-base mb-1.5">Pi Network Website URL (Optional)</FormLabel>
               <FormControl>
                 <Input 
                   placeholder="https://example.pinet.com" 
@@ -156,7 +156,7 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
           )}
         />
       </CardContent>
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex justify-between pt-2">
         <Button 
           type="button" 
           variant="outline" 
