@@ -41,6 +41,8 @@ const UpdateRegistration = () => {
     navigate('/registered-business');
   };
 
+  const businessUpdateFormRef = React.useRef<{ checkUnsavedChanges: () => void } | null>(null);
+
   const handleSuccess = () => {
     toast.success('Business information updated successfully!');
     navigate('/registered-business');
@@ -66,7 +68,11 @@ const UpdateRegistration = () => {
             <span className="ml-2 text-muted-foreground">Loading business information...</span>
           </div>
         ) : business ? (
-          <BusinessUpdateForm business={business} onSuccess={handleSuccess} />
+          <BusinessUpdateForm 
+            business={business} 
+            onSuccess={handleSuccess}
+            onNavigateBack={handleGoBack}
+          />
         ) : (
           <div className="bg-destructive/10 text-destructive p-4 rounded-md">
             Failed to load business information. Please try again.

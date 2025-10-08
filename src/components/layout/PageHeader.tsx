@@ -109,7 +109,7 @@ const PageHeader = ({
               <Menu className="h-5 w-5" />
             </Button>}
           
-          {(isAnalyticsPage || backButton) && <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-2">
+          {(isAnalyticsPage || backButton || isUpdateRegistrationPage) && <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-2">
               <ArrowLeft className="h-5 w-5" />
             </Button>}
           

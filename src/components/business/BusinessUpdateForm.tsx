@@ -26,9 +26,10 @@ import {
 interface BusinessUpdateFormProps {
   business: Business;
   onSuccess?: () => void;
+  onNavigateBack?: () => void;
 }
 
-export const BusinessUpdateForm = ({ business, onSuccess }: BusinessUpdateFormProps) => {
+export const BusinessUpdateForm = ({ business, onSuccess, onNavigateBack }: BusinessUpdateFormProps) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('business-owner');
@@ -95,7 +96,21 @@ export const BusinessUpdateForm = ({ business, onSuccess }: BusinessUpdateFormPr
 
   const handleDiscardChanges = () => {
     setShowUnsavedChangesDialog(false);
-    navigate(-1);
+    if (onNavigateBack) {
+      onNavigateBack();
+    } else {
+      navigate(-1);
+    }
+  };
+
+  const handleBackButtonClick = () => {
+    if (hasUnsavedChanges) {
+      setShowUnsavedChangesDialog(true);
+    } else if (onNavigateBack) {
+      onNavigateBack();
+    } else {
+      navigate(-1);
+    }
   };
 
   return (
