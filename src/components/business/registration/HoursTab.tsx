@@ -26,7 +26,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
             Let customers know when your business is open.
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-0.5">
+        <CardContent>
           <div className="relative overflow-hidden">
             <div className="max-h-[450px] overflow-y-auto">
               <div className="space-y-3">
