@@ -30,10 +30,10 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
           <div className="relative overflow-hidden">
             <div className="max-h-[450px] overflow-y-auto">
               <div className="space-y-3">
-                <div className="grid grid-cols-[1fr_auto_1fr_1fr] gap-2 mb-2 font-medium text-sm">
+                <div className="grid grid-cols-[1fr_auto_1fr_1fr] gap-2 mb-3 font-medium text-sm">
                   <div className="min-w-0">Day</div>
-                  <div className="text-center min-w-[50px] flex flex-col items-center">
-                    <span className="mb-1">Closed</span>
+                  <div className="text-center min-w-[50px] flex flex-col items-center justify-start pb-2">
+                    <span className="mb-2 block">Closed</span>
                   </div>
                   <div className="text-center min-w-0">Opening</div>
                   <div className="text-center min-w-0">Closing</div>
