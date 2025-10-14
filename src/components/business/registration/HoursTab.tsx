@@ -35,7 +35,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
                   <div className="text-center w-auto flex flex-col items-center pr-[20px] md:pr-2">
                     <span className="mb-1">Closed</span>
                   </div>
-                  <div className="text-center min-w-0 pr-0 md:pr-2">Opening</div>
+                  <div className="text-center min-w-0 pr-1">Opening</div>
                   <div className="text-center min-w-0">Closing</div>
                 </div>
                 {daysOfWeek.map((day) => (
@@ -73,7 +73,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
                               type="time"
                               {...field}
                               disabled={form.watch(day.closed as keyof FormValues) === true || disabled}
-                              className="w-full ml-0 pr-0 md:pr-2"
+                              className="w-full ml-0 pr-1"
                               value={field.value as string}
                             />
                           </FormControl>
