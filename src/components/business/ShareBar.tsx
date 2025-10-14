@@ -26,7 +26,7 @@ const ShareBar: React.FC<ShareBarProps> = ({
       ariaLabel: 'Share on WhatsApp',
       color: 'hover:text-green-600',
       action: () => {
-        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent('Check this out on Avante Maps! https://avantemaps.com')}`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`Check this out on Avante Maps! ${shareUrl}`)}`;
         window.open(whatsappUrl, '_blank');
       }
     },
