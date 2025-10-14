@@ -21,13 +21,13 @@ export const businessTypes = [
 ];
 
 export const daysOfWeek = [
-  { name: "Monday", open: "mondayOpen", close: "mondayClose", closed: "mondayClosed" },
-  { name: "Tuesday", open: "tuesdayOpen", close: "tuesdayClose", closed: "tuesdayClosed" },
-  { name: "Wednesday", open: "wednesdayOpen", close: "wednesdayClose", closed: "wednesdayClosed" },
-  { name: "Thursday", open: "thursdayOpen", close: "thursdayClose", closed: "thursdayClosed" },
-  { name: "Friday", open: "fridayOpen", close: "fridayClose", closed: "fridayClosed" },
-  { name: "Saturday", open: "saturdayOpen", close: "saturdayClose", closed: "saturdayClosed" },
-  { name: "Sunday", open: "sundayOpen", close: "sundayClose", closed: "sundayClosed" }
+  { name: "Monday", short: "Mon", open: "mondayOpen", close: "mondayClose", closed: "mondayClosed" },
+  { name: "Tuesday", short: "Tue", open: "tuesdayOpen", close: "tuesdayClose", closed: "tuesdayClosed" },
+  { name: "Wednesday", short: "Wed", open: "wednesdayOpen", close: "wednesdayClose", closed: "wednesdayClosed" },
+  { name: "Thursday", short: "Thu", open: "thursdayOpen", close: "thursdayClose", closed: "thursdayClosed" },
+  { name: "Friday", short: "Fri", open: "fridayOpen", close: "fridayClose", closed: "fridayClosed" },
+  { name: "Saturday", short: "Sat", open: "saturdayOpen", close: "saturdayClose", closed: "saturdayClosed" },
+  { name: "Sunday", short: "Sun", open: "sundayOpen", close: "sundayClose", closed: "sundayClosed" }
 ];
 
 export const formSchema = z.object({
