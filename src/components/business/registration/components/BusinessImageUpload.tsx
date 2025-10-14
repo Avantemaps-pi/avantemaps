@@ -46,7 +46,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
         />
       </FormControl>
       <FormDescription className="text-sm mt-1.5 flex items-center justify-between">
-        <span>Upload images of your business (max {maxImages})</span>
+        <span>Upload images of your business (maximum: {maxImages})</span>
         <ImageUploadCounter 
           currentCount={selectedImages.length} 
           maxCount={maxImages} 
