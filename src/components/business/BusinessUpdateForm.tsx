@@ -99,7 +99,13 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
   };
 
   const handleDiscardChanges = () => {
+    // Reset form to clear dirty state
+    form.reset();
+    // Clear selected images
+    setSelectedImages([]);
+    // Close dialog
     setShowUnsavedChangesDialog(false);
+    // Navigate back immediately
     navigate(-1);
   };
 
