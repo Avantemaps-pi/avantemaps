@@ -30,8 +30,8 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
           <div className="relative overflow-hidden">
             <div className="max-h-[450px] overflow-y-auto">
               <div className="space-y-3">
-                <div className="grid grid-cols-[auto_auto_1fr_1fr] sm:grid-cols-[1fr_auto_1fr_1fr] gap-x-[20px] sm:gap-x-2 gap-y-0 mb-2 font-medium text-sm">
-                  <div className="min-w-0 pr-0 sm:pr-3">Day</div>
+                <div className="grid grid-cols-[auto_auto_1fr_1fr] md:grid-cols-[1fr_auto_1fr_1fr] gap-x-[20px] md:gap-x-2 gap-y-0 mb-2 font-medium text-sm">
+                  <div className="min-w-0 pr-0 md:pr-3">Day</div>
                   <div className="text-center w-auto flex flex-col items-center">
                     <span className="mb-1">Closed</span>
                   </div>
@@ -39,10 +39,10 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
                   <div className="text-center min-w-0">Closing</div>
                 </div>
                 {daysOfWeek.map((day) => (
-                  <div key={day.name} className="grid grid-cols-[auto_auto_1fr_1fr] sm:grid-cols-[1fr_auto_1fr_1fr] gap-x-[20px] sm:gap-x-2 gap-y-0 items-center">
-                    <div className="font-medium text-sm min-w-0 truncate pr-0 sm:pr-3">
-                      <span className="sm:hidden">{day.short}</span>
-                      <span className="hidden sm:inline">{day.name}</span>
+                  <div key={day.name} className="grid grid-cols-[auto_auto_1fr_1fr] md:grid-cols-[1fr_auto_1fr_1fr] gap-x-[20px] md:gap-x-2 gap-y-0 items-center">
+                    <div className="font-medium text-sm min-w-0 truncate pr-0 md:pr-3">
+                      <span className="md:hidden">{day.short}</span>
+                      <span className="hidden md:inline">{day.name}</span>
                     </div>
                     
                     <FormField
