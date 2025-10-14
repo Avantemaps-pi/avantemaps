@@ -1,10 +1,10 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { motion } from '@/components/ui/motion';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { BusinessUpdateForm } from '@/components/business/BusinessUpdateForm';
+import { BusinessUpdateForm, BusinessUpdateFormRef } from '@/components/business/BusinessUpdateForm';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
 import AppLayout from '@/components/layout/AppLayout';
@@ -15,6 +15,7 @@ const UpdateRegistration = () => {
   const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(true);
   const [business, setBusiness] = useState<Business | null>(null);
+  const businessUpdateFormRef = useRef<BusinessUpdateFormRef>(null);
   
   useEffect(() => {
     // In a real app, we would fetch the business data from the API
@@ -38,10 +39,12 @@ const UpdateRegistration = () => {
   }, [location]);
 
   const handleGoBack = () => {
-    navigate('/registered-business');
+    if (businessUpdateFormRef.current) {
+      businessUpdateFormRef.current.checkAndHandleBackNavigation();
+    } else {
+      navigate('/registered-business');
+    }
   };
-
-  const businessUpdateFormRef = React.useRef<{ checkUnsavedChanges: () => void } | null>(null);
 
   const handleSuccess = () => {
     toast.success('Business information updated successfully!');
@@ -69,9 +72,9 @@ const UpdateRegistration = () => {
           </div>
         ) : business ? (
           <BusinessUpdateForm 
+            ref={businessUpdateFormRef}
             business={business} 
             onSuccess={handleSuccess}
-            onNavigateBack={handleGoBack}
           />
         ) : (
           <div className="bg-destructive/10 text-destructive p-4 rounded-md">

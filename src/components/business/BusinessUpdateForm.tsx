@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { FormProvider } from 'react-hook-form';
 import { Form } from '@/components/ui/form';
 import { Tabs } from '@/components/ui/tabs';
@@ -26,10 +26,14 @@ import {
 interface BusinessUpdateFormProps {
   business: Business;
   onSuccess?: () => void;
-  onNavigateBack?: () => void;
 }
 
-export const BusinessUpdateForm = ({ business, onSuccess, onNavigateBack }: BusinessUpdateFormProps) => {
+export interface BusinessUpdateFormRef {
+  checkAndHandleBackNavigation: () => void;
+}
+
+export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpdateFormProps>(
+  ({ business, onSuccess }, ref) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('business-owner');
@@ -96,22 +100,19 @@ export const BusinessUpdateForm = ({ business, onSuccess, onNavigateBack }: Busi
 
   const handleDiscardChanges = () => {
     setShowUnsavedChangesDialog(false);
-    if (onNavigateBack) {
-      onNavigateBack();
-    } else {
-      navigate(-1);
-    }
+    navigate(-1);
   };
 
-  const handleBackButtonClick = () => {
-    if (hasUnsavedChanges) {
-      setShowUnsavedChangesDialog(true);
-    } else if (onNavigateBack) {
-      onNavigateBack();
-    } else {
-      navigate(-1);
+  // Expose method to parent via ref
+  useImperativeHandle(ref, () => ({
+    checkAndHandleBackNavigation: () => {
+      if (hasUnsavedChanges) {
+        setShowUnsavedChangesDialog(true);
+      } else {
+        navigate(-1);
+      }
     }
-  };
+  }));
 
   return (
     <div className="w-full py-2">
@@ -161,4 +162,4 @@ export const BusinessUpdateForm = ({ business, onSuccess, onNavigateBack }: Busi
       </AlertDialog>
     </div>
   );
-};
+});
