@@ -30,16 +30,16 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
           <div className="relative overflow-hidden">
             <div className="max-h-[450px] overflow-y-auto">
               <div className="space-y-3">
-                <div className="grid grid-cols-[minmax(2.5rem,auto)_auto_1fr_1fr] md:grid-cols-[1fr_auto_1fr_1fr] gap-x-[20px] md:gap-x-2 gap-y-0 mb-2 font-medium text-sm">
+                <div className="grid grid-cols-[minmax(2.5rem,auto)_auto_1fr_1fr] md:grid-cols-[1fr_auto_1fr_1fr] gap-y-0 mb-2 font-medium text-sm">
                   <div className="min-w-[2.5rem] pr-0 md:pr-3">Day</div>
-                  <div className="text-center w-auto flex flex-col items-center">
+                  <div className="text-center w-auto flex flex-col items-center pr-[20px] md:pr-2">
                     <span className="mb-1">Closed</span>
                   </div>
-                  <div className="text-center min-w-0">Opening</div>
+                  <div className="text-center min-w-0 pr-1">Opening</div>
                   <div className="text-center min-w-0">Closing</div>
                 </div>
                 {daysOfWeek.map((day) => (
-                  <div key={day.name} className="grid grid-cols-[minmax(2.5rem,auto)_auto_1fr_1fr] md:grid-cols-[1fr_auto_1fr_1fr] gap-x-[20px] md:gap-x-2 gap-y-0 items-center">
+                  <div key={day.name} className="grid grid-cols-[minmax(2.5rem,auto)_auto_1fr_1fr] md:grid-cols-[1fr_auto_1fr_1fr] gap-y-0 items-center">
                     <div className="font-medium text-sm min-w-[2.5rem] pr-0 md:pr-3">
                       <span className="md:hidden">{day.short}</span>
                       <span className="hidden md:inline">{day.name}</span>
@@ -49,7 +49,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
                       control={form.control}
                       name={day.closed as keyof FormValues}
                       render={({ field }) => (
-                        <FormItem className="flex items-center justify-center space-x-0 space-y-0 m-0 p-0">
+                        <FormItem className="flex items-center justify-center space-x-0 space-y-0 m-0 p-0 pr-[20px] md:pr-2">
                           <FormControl>
                             <Checkbox
                               checked={field.value as boolean}
@@ -73,7 +73,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
                               type="time"
                               {...field}
                               disabled={form.watch(day.closed as keyof FormValues) === true || disabled}
-                              className="w-full ml-0"
+                              className="w-full ml-0 pr-1"
                               value={field.value as string}
                             />
                           </FormControl>
