@@ -31,7 +31,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
             <div className="max-h-[450px] overflow-y-auto">
               <div className="space-y-3">
                 <div className="grid grid-cols-[1fr_auto_1fr_1fr] gap-x-0 sm:gap-x-2 gap-y-0 mb-2 font-medium text-sm">
-                  <div className="min-w-0">Day</div>
+                  <div className="min-w-0 pr-0">Day</div>
                   <div className="text-center w-auto flex flex-col items-center">
                     <span className="mb-1">Closed</span>
                   </div>
@@ -40,7 +40,7 @@ const HoursTab: React.FC<HoursTabProps> = ({ onNext, onPrevious, disabled }) => 
                 </div>
                 {daysOfWeek.map((day) => (
                   <div key={day.name} className="grid grid-cols-[1fr_auto_1fr_1fr] gap-x-0 sm:gap-x-2 gap-y-0 items-center">
-                    <div className="font-medium text-sm min-w-0 truncate">
+                    <div className="font-medium text-sm min-w-0 truncate pr-0">
                       <span className="sm:hidden">{day.short}</span>
                       <span className="hidden sm:inline">{day.name}</span>
                     </div>
