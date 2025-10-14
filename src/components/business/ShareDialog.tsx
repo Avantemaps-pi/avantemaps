@@ -52,7 +52,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({
       icon: MessageCircle,
       ariaLabel: 'Share on WhatsApp',
       action: () => {
-        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`Check this out on Avante Maps! ${shareUrl}`)}`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent('Check this out on Avante Maps! https://avantemaps.com')}`;
         window.open(whatsappUrl, '_blank');
         onClose();
       }
