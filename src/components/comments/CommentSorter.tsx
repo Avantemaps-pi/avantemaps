@@ -29,7 +29,7 @@ const CommentSorter: React.FC<CommentSorterProps> = ({
 
   return (
     <div className="flex items-center justify-between mb-4">
-      <span className="text-sm font-medium">Sort comments by:</span>
+      <span className="text-sm font-medium">Sort by:</span>
       <Select value={sortOption} onValueChange={handleSortChange}>
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Sort by" />
