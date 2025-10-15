@@ -167,18 +167,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <PopoverContent className="w-64 p-0 bg-[#1e2732] text-white" sideOffset={5}>
                   <div className="flex flex-col divide-y divide-gray-700">
                     {chatMode === 'live' && (
-                      <button onClick={() => handleMenuOptionClick('/attach')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
-                        <span className="text-lg">Attach</span>
-                        <span className="text-gray-400">/attach</span>
-                      </button>
+                      <>
+                        <button onClick={() => handleMenuOptionClick('/attach')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
+                          <span className="text-lg">Attach</span>
+                          <span className="text-gray-400">/attach</span>
+                        </button>
+                        <button onClick={() => handleMenuOptionClick('/certification')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
+                          <span className="text-lg">Certify</span>
+                          <span className="text-gray-400">/certification</span>
+                        </button>
+                      </>
                     )}
                     <button onClick={() => handleMenuOptionClick('/verification')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
                       <span className="text-lg">Verify</span>
                       <span className="text-gray-400">/verification</span>
-                    </button>
-                    <button onClick={() => handleMenuOptionClick('/certification')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
-                      <span className="text-lg">Certify</span>
-                      <span className="text-gray-400">/certification</span>
                     </button>
                   </div>
                 </PopoverContent>
