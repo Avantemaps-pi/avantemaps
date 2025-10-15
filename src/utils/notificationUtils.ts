@@ -1,5 +1,5 @@
-
-import { NotificationProps } from '@/types/notification';
+import { NotificationProps, NotificationType, NotificationMetadata } from '@/types/notification';
+import { generateNotificationMessage } from './notificationTemplates';
 
 // Initial notifications data
 let globalNotifications: NotificationProps[] = [
@@ -46,6 +46,27 @@ export const markAllNotificationsAsRead = (): void => {
 // Helper function to get all notifications
 export const getAllNotifications = (): NotificationProps[] => {
   return [...globalNotifications];
+};
+
+// Helper function to create a new notification
+export const createNotification = (
+  type: NotificationType,
+  metadata: NotificationMetadata = {}
+): NotificationProps => {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    type,
+    content: generateNotificationMessage(type, metadata),
+    time: 'Just now',
+    read: false,
+    metadata
+  };
+};
+
+// Helper function to add a notification to the global list
+export const addNotification = (notification: NotificationProps): void => {
+  globalNotifications = [notification, ...globalNotifications];
+  window.dispatchEvent(notificationUpdateEvent);
 };
 
 // Custom event for notification updates
