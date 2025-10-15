@@ -19,19 +19,19 @@ export type Database = {
           business_id: number | null
           created_at: string | null
           id: number
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           business_id?: number | null
           created_at?: string | null
           id?: number
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           business_id?: number | null
           created_at?: string | null
           id?: number
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -65,7 +65,7 @@ export type Database = {
           keywords: string[] | null
           location: string | null
           name: string
-          owner_id: string | null
+          owner_id: string
           pi_wallet_address: string | null
           verification_status: string | null
         }
@@ -83,7 +83,7 @@ export type Database = {
           keywords?: string[] | null
           location?: string | null
           name: string
-          owner_id?: string | null
+          owner_id: string
           pi_wallet_address?: string | null
           verification_status?: string | null
         }
@@ -101,7 +101,7 @@ export type Database = {
           keywords?: string[] | null
           location?: string | null
           name?: string
-          owner_id?: string | null
+          owner_id?: string
           pi_wallet_address?: string | null
           verification_status?: string | null
         }
@@ -160,21 +160,21 @@ export type Database = {
           id: number
           plan: string | null
           start_date: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           end_date?: string | null
           id?: number
           plan?: string | null
           start_date?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           end_date?: string | null
           id?: number
           plan?: string | null
           start_date?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {

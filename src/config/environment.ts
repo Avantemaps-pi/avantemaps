@@ -11,9 +11,10 @@ import { SubscriptionTier } from '@/utils/piNetwork/types';
 // Development configuration
 export const DEV_CONFIG = {
   // Enable this to bypass Pi Network authentication during development
-  bypassAuth: true, // Always bypass in development for unrestricted access
+  // SECURITY: This is automatically disabled in production builds
+  bypassAuth: import.meta.env.DEV, // Only bypass in development mode
   mockUser: {
-    uid: "dev-user-123",
+    uid: "00000000-0000-0000-0000-000000000001", // Valid UUID format
     username: "Developer",
     walletAddress: "dev-wallet-address",
     roles: ["user"],
