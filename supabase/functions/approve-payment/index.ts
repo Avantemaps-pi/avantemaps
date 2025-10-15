@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
     }
     
     const paymentRequest = validationResult.data;
-    console.log('Validated payment approval request received:', paymentRequest.paymentId);
+    console.log('Payment approval request received for payment:', paymentRequest.paymentId);
 
     const piApiKey = Deno.env.get('PI_API_KEY');
     if (!piApiKey) {
@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
 
       const approveResult = await approveResponse.json();
       console.log('Pi Network API response status:', approveResponse.status);
-      console.log('Pi Network API response:', approveResult);
+      // Log sanitized response (avoid logging full API response with sensitive data)
 
       if (!approveResponse.ok) {
         if (approveResult.message?.includes('already approved')) {

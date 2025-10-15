@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     }
     
     const paymentRequest = validationResult.data;
-    console.log('Validated payment completion request received:', paymentRequest.paymentId);
+    console.log('Payment completion request received for payment:', paymentRequest.paymentId);
 
     const piApiKey = Deno.env.get('PI_API_KEY');
     if (!piApiKey) {
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
       });
 
       const completeResult = await completeResponse.json();
-      console.log('Pi Network completion API response:', completeResult);
+      // Log sanitized response (avoid logging full API response with sensitive data)
 
       if (!completeResponse.ok) {
         // Check if payment was already completed
