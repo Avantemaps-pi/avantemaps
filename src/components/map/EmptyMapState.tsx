@@ -8,7 +8,7 @@ const EmptyMapState = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-[1000] pointer-events-none">
+    <div className="absolute inset-0 flex items-center justify-center z-[100] pointer-events-none">
       <Card className="w-[90%] max-w-md pointer-events-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-lg">
         <CardContent className="text-center py-12 px-6">
           <div className="p-4 bg-muted rounded-full inline-block mb-4">
