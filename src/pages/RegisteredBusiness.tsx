@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import BusinessCard from '@/components/business/BusinessCard';
 import BusinessSelector from '@/components/business/BusinessSelector';
@@ -9,28 +9,59 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/auth';
 import { Business } from '@/types/business';
+import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const RegisteredBusiness = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, login } = useAuth();
-  const businesses: Business[] = [
-    {
-      id: 1,
-      name: "Pi Cafe",
-      address: "123 Main St, San Francisco, CA",
-      description: "A cozy cafe serving coffee and pastries. We accept Pi payments for all items.",
-      isCertified: false
-    },
-    {
-      id: 2,
-      name: "Pi Tech Repairs",
-      address: "456 Market St, San Francisco, CA",
-      description: "Computer and phone repair services. Quick and reliable, accepting Pi cryptocurrency.",
-      isCertified: false
-    }
-  ];
-
+  const { isAuthenticated, login, user } = useAuth();
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
+
+  // Fetch user's businesses from database
+  useEffect(() => {
+    const fetchUserBusinesses = async () => {
+      if (!user?.uid) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('owner_id', user.uid);
+
+        if (error) throw error;
+
+        // Transform to Business type
+        const transformedBusinesses: Business[] = (data || []).map(b => ({
+          id: b.id,
+          name: b.name,
+          address: b.location || '',
+          description: b.description || '',
+          isCertified: b.is_certified,
+          isVerified: b.is_verified,
+          category: b.category,
+          coordinates: b.coordinates,
+          business_types: b.business_types,
+          keywords: b.keywords,
+          created_at: b.created_at
+        }));
+
+        setBusinesses(transformedBusinesses);
+      } catch (error) {
+        console.error('Error fetching businesses:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchUserBusinesses();
+    }
+  }, [user?.uid, isAuthenticated]);
 
   // Filter businesses based on selection, but only show them if something is selected
   const filteredBusinesses = selectedBusinessId 
@@ -73,6 +104,25 @@ const RegisteredBusiness = () => {
                 Login
               </Button>
             </div>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <AppLayout title="Avante Maps">
+        <div className="max-w-5xl mx-auto py-6 px-4 sm:px-6 lg:px-8 bg-slate-50">
+          <BusinessHeader 
+            title="My Businesses" 
+            subtitle="Manage your Pi business" 
+            showButton={false}
+          />
+          <div className="space-y-6 mt-6">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
           </div>
         </div>
       </AppLayout>
