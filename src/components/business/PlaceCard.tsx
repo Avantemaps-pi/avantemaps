@@ -18,7 +18,7 @@ import ImageCarousel from './ImageCarousel';
 
 interface PlaceCardProps {
   place: Place;
-  onPlaceClick: (placeId: string) => void;
+  onPlaceClick: (placeId: string, zoomToLocation?: boolean) => void;
   onRemove?: (placeId: string) => void;
   className?: string;
   showDetails?: boolean;
@@ -59,6 +59,14 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
       onPlaceClick(place.id);
     } else {
       navigate('/', { state: { selectedPlaceId: place.id } });
+    }
+  };
+
+  const handleAddressClick = () => {
+    if (window.location.pathname === '/') {
+      onPlaceClick(place.id, true);
+    } else {
+      navigate('/', { state: { selectedPlaceId: place.id, zoomToLocation: true } });
     }
   };
   
@@ -124,7 +132,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
       </CardHeader>
       
       <CardContent className="pt-2 px-3 pb-3">
-        <PlaceCardAddress address={place.address} onClick={handlePlaceClick} />
+        <PlaceCardAddress address={place.address} onClick={handleAddressClick} />
         
         <div className="h-20 mb-2 overflow-hidden">
           <ExpandableDescription text={place.description} maxLines={4} />

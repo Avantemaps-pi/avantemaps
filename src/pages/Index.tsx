@@ -19,8 +19,12 @@ const Index = () => {
   const { places = [], filteredPlaces = [], isLoading = false, handleSearch } = useBusinessData();
   const { setOpenMobile } = useSidebar();
 
-  const handlePlaceClick = (placeId: string) => {
+  const handlePlaceClick = (placeId: string, zoomToLocation?: boolean) => {
     setSelectedPlace(placeId);
+    if (zoomToLocation) {
+      // Trigger zoom event
+      window.dispatchEvent(new CustomEvent('zoomToPlace', { detail: { placeId, zoom: true } }));
+    }
   };
   
   const handleMenuClick = () => {
@@ -39,11 +43,18 @@ const Index = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const sharedPlaceId = urlParams.get('place');
     const stateSelectedPlaceId = location.state?.selectedPlaceId;
+    const shouldZoom = location.state?.zoomToLocation;
     
     if (sharedPlaceId) {
       setSelectedPlace(sharedPlaceId);
     } else if (stateSelectedPlaceId) {
       setSelectedPlace(stateSelectedPlaceId);
+      if (shouldZoom) {
+        // Trigger zoom event with a slight delay to ensure map is ready
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('zoomToPlace', { detail: { placeId: stateSelectedPlaceId, zoom: true } }));
+        }, 300);
+      }
     }
   }, [location]);
 

@@ -61,6 +61,30 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
     }
   }, [selectedPlaceId, displayPlaces]);
 
+  // Listen for zoom to place events
+  useEffect(() => {
+    const handleZoomToPlace = (event: CustomEvent) => {
+      const { placeId, zoom: shouldZoom } = event.detail;
+      if (shouldZoom && placeId) {
+        const selectedPlace = displayPlaces.find(place => place.id === placeId);
+        if (selectedPlace && selectedPlace.position) {
+          setMapCenter([selectedPlace.position.lat, selectedPlace.position.lng]);
+          setZoom(18); // Zoom in fully
+          setActiveMarker(placeId);
+          setShowPopover(true);
+
+          toast.info(`Zoomed to: ${selectedPlace.name}`, {
+            description: selectedPlace.address,
+            duration: 2000,
+          });
+        }
+      }
+    };
+
+    window.addEventListener('zoomToPlace', handleZoomToPlace as EventListener);
+    return () => window.removeEventListener('zoomToPlace', handleZoomToPlace as EventListener);
+  }, [displayPlaces]);
+
   const handleMarkerClick = (id: string) => {
     setActiveMarker(id);
     setShowPopover(true);

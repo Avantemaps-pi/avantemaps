@@ -11,10 +11,11 @@ const Recommendations = () => {
   const isMobile = useIsMobile();
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
-  const handlePlaceClick = (placeId: string) => {
+  const handlePlaceClick = (placeId: string, zoomToLocation?: boolean) => {
     navigate('/', {
       state: {
-        selectedPlaceId: placeId
+        selectedPlaceId: placeId,
+        zoomToLocation: zoomToLocation
       }
     });
   };
