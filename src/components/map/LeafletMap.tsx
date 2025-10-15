@@ -69,7 +69,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         const selectedPlace = displayPlaces.find(place => place.id === placeId);
         if (selectedPlace && selectedPlace.position) {
           setMapCenter([selectedPlace.position.lat, selectedPlace.position.lng]);
-          setZoom(19); // Maximum zoom level
+          setZoom(18); // Zoom in fully
           setActiveMarker(placeId);
           setShowPopover(true);
 
