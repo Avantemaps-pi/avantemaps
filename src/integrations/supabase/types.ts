@@ -231,6 +231,14 @@ export type Database = {
           name: string
         }[]
       }
+      get_user_business_count: {
+        Args: { user_id: string }
+        Returns: number
+      }
+      get_user_subscription: {
+        Args: { user_id: string }
+        Returns: string
+      }
       handle_subscription_after_payment: {
         Args: {
           p_email: string

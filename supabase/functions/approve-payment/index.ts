@@ -1,14 +1,24 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
-interface PaymentRequest {
-  paymentId: string;
-  userId: string;
-  amount: number;
-  memo: string;
-  metadata: Record<string, any>;
-}
+// Validation schema for payment requests
+const PaymentRequestSchema = z.object({
+  paymentId: z.string().min(1, 'Payment ID is required').max(255, 'Payment ID too long'),
+  userId: z.string().uuid('Invalid user ID format'),
+  amount: z.number().positive('Amount must be positive').max(1000000, 'Amount exceeds maximum'),
+  memo: z.string().max(500, 'Memo too long').transform(val => 
+    val.replace(/[<>]/g, '') // Sanitize potential HTML/script tags
+  ).optional(),
+  metadata: z.object({
+    subscriptionTier: z.enum(['individual', 'small-business', 'organization']).optional(),
+    frequency: z.enum(['monthly', 'annual']).optional(),
+    duration: z.number().int().positive().max(365).optional()
+  }).passthrough() // Allow other keys but validate known ones
+});
+
+type PaymentRequest = z.infer<typeof PaymentRequestSchema>;
 
 interface PaymentResponse {
   success: boolean;
@@ -52,15 +62,27 @@ Deno.serve(async (req) => {
   console.log(`Starting payment approval at ${new Date().toISOString()}`);
 
   try {
-    const paymentRequest: PaymentRequest = await req.json();
-    console.log('Payment approval request received:', paymentRequest);
-
-    if (!paymentRequest.paymentId) {
+    // Parse and validate request body
+    const rawBody = await req.json();
+    const validationResult = PaymentRequestSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      console.error('Invalid payment request data:', validationResult.error.errors);
       return new Response(
-        JSON.stringify({ success: false, message: 'Missing payment ID' }),
+        JSON.stringify({ 
+          success: false, 
+          message: 'Invalid request data',
+          errors: validationResult.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
+    
+    const paymentRequest = validationResult.data;
+    console.log('Validated payment approval request received:', paymentRequest.paymentId);
 
     const piApiKey = Deno.env.get('PI_API_KEY');
     if (!piApiKey) {

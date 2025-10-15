@@ -1,10 +1,14 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
-interface CleanupRequest {
-  userId: string;
-}
+// Validation schema for cleanup request
+const CleanupRequestSchema = z.object({
+  userId: z.string().uuid('Invalid user ID format')
+});
+
+type CleanupRequest = z.infer<typeof CleanupRequestSchema>;
 
 const supabaseClient = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -30,15 +34,27 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { userId }: CleanupRequest = await req.json();
-    console.log(`Cleaning up stale payments for user: ${userId}`);
-
-    if (!userId) {
+    // Parse and validate request body
+    const rawBody = await req.json();
+    const validationResult = CleanupRequestSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      console.error('Invalid cleanup request data:', validationResult.error.errors);
       return new Response(
-        JSON.stringify({ success: false, message: 'Missing user ID' }),
+        JSON.stringify({ 
+          success: false, 
+          message: 'Invalid request data',
+          errors: validationResult.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
+    
+    const { userId } = validationResult.data;
+    console.log(`Cleaning up stale payments for user: ${userId}`);
 
     const piApiKey = Deno.env.get('PI_API_KEY');
     if (!piApiKey) {
