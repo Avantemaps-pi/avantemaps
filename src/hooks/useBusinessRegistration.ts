@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/auth';
+import { containsInappropriateContent } from '@/utils/contentFilter';
 
 export const useBusinessRegistration = (onSuccess?: () => void) => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
@@ -100,6 +101,22 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
     try {
       if (!user?.uid) {
         toast.error('You must be logged in to register a business.');
+        return;
+      }
+
+      // Validate content for malicious patterns
+      if (containsInappropriateContent(values.businessName)) {
+        toast.error('Business name contains inappropriate content or suspicious patterns.');
+        return;
+      }
+
+      if (values.businessDescription && containsInappropriateContent(values.businessDescription)) {
+        toast.error('Business description contains inappropriate content or suspicious patterns.');
+        return;
+      }
+
+      if (values.website && containsInappropriateContent(values.website)) {
+        toast.error('Website URL contains suspicious patterns.');
         return;
       }
 

@@ -8,6 +8,8 @@ import { Menu, X, Send, Image, Video } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import { isSafeForAI } from '@/utils/contentFilter';
+import { toast } from 'sonner';
 
 export type ChatMode = 'ai' | 'live';
 
@@ -39,6 +41,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   showAttachmentIcon = false,
   hasLiveChatAccess = false
 }) => {
+  const handleValidatedSendMessage = () => {
+    // Validate message content before sending to AI
+    if (!isSafeForAI(message)) {
+      toast.error('Message contains inappropriate content or suspicious patterns.');
+      return;
+    }
+    handleSendMessage();
+  };
   const handleMenuOptionClick = (command: string) => {
     setMessage(message + command + ' ');
   };
@@ -191,11 +201,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 onChange={e => setMessage(e.target.value)} 
                 className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-gray-600 placeholder:text-gray-500" 
                 placeholder="Type your message to Avante Maps..." 
-                onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
+                onKeyDown={e => e.key === 'Enter' && handleValidatedSendMessage()} 
               />
 
               <button 
-                onClick={handleSendMessage} 
+                onClick={handleValidatedSendMessage} 
                 disabled={!message.trim()} 
                 className="text-blue-500 hover:text-blue-600 ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >

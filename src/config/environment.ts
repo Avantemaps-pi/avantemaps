@@ -26,8 +26,16 @@ export const DEV_CONFIG = {
 };
 
 // Maps API configuration
-// Note: Google Maps JavaScript API keys are designed to be used in client-side code
-// and should be restricted by HTTP referrers in the Google Cloud Console
+// SECURITY WARNING: This Google Maps API key is exposed in client-side code.
+// Google Maps JavaScript API keys are designed to be used client-side, but MUST be protected.
+// 
+// REQUIRED SECURITY MEASURES (configure in Google Cloud Console):
+// 1. HTTP Referrer Restrictions: Limit to your domains (e.g., yourdomain.com/*, *.lovable.app/*)
+// 2. API Restrictions: Restrict to only Maps JavaScript API and Geocoding API
+// 3. Usage Quotas: Set up billing alerts and quotas to prevent abuse
+// 4. Key Rotation: Rotate this key if it's been exposed without restrictions
+//
+// To configure: Google Cloud Console → APIs & Services → Credentials → Select this key
 export const MAPS_CONFIG = {
   apiKey: "AIzaSyAp6za1pf11Tvq80kIRBpqqunXg4AcYa8s",
   defaultCenter: {
