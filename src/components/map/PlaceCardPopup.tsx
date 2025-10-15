@@ -1,7 +1,7 @@
 
 import React, { forwardRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CircleCheck, Info } from 'lucide-react';
+import { CircleCheck, Info, Shield } from 'lucide-react';
 import CategoryBadge from '@/components/business/CategoryBadge';
 import { useNavigate } from 'react-router-dom';
 import { Place } from '@/data/mockPlaces';
@@ -51,6 +51,11 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
       <CardHeader className="pb-2 px-3 pt-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
+            {location.isCertified && (
+              <div className="flex-shrink-0">
+                <Shield className="h-5 w-5 text-blue-500" />
+              </div>
+            )}
             {location.isVerified && (
               <div className="flex-shrink-0">
                 <CircleCheck className="h-5 w-5 text-green-500" />

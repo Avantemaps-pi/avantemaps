@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Place } from '@/data/mockPlaces';
 import CategoryBadge from '@/components/business/CategoryBadge';
@@ -128,7 +129,16 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
       )}
       
       <CardHeader className="pb-0 px-3 pt-3">
-        <PlaceCardTitle name={place.name} onClick={handlePlaceClick} isVerified={place.isVerified} />
+        <div className="flex items-start gap-2">
+          {place.isCertified && (
+            <div className="flex-shrink-0">
+              <Shield className="h-5 w-5 text-blue-500" />
+            </div>
+          )}
+          <div className="flex-1">
+            <PlaceCardTitle name={place.name} onClick={handlePlaceClick} isVerified={place.isVerified} />
+          </div>
+        </div>
       </CardHeader>
       
       <CardContent className="pt-2 px-3 pb-3">

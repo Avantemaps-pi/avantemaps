@@ -15,6 +15,7 @@ interface PublicBusinessInfo {
   keywords: string[];
   created_at: string;
   is_verified: boolean;
+  is_certified: boolean;
 }
 
 export const useBusinessData = () => {
@@ -60,6 +61,7 @@ export const useBusinessData = () => {
             phone: "", // Not available in public data for security
             hours: {}, // Not available in public data for security
             isVerified: business.is_verified || false,
+            isCertified: business.is_certified || false,
             business_types: business.business_types || [],
             keywords: business.keywords || [],
             isUserBusiness: false, // Cannot determine ownership from public data

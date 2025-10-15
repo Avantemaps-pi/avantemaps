@@ -19,6 +19,7 @@ export interface Place {
   category: string;
   image?: string;
   isVerified?: boolean;
+  isCertified?: boolean;
   isUserBusiness?: boolean;
   website?: string;
   phone?: string;
