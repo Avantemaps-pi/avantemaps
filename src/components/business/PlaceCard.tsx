@@ -128,7 +128,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
       )}
       
       <CardHeader className="pb-0 px-3 pt-3">
-        <PlaceCardTitle name={place.name} onClick={handlePlaceClick} />
+        <PlaceCardTitle name={place.name} onClick={handlePlaceClick} isVerified={place.isVerified} />
       </CardHeader>
       
       <CardContent className="pt-2 px-3 pb-3">

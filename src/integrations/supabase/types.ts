@@ -60,11 +60,13 @@ export type Database = {
           description: string | null
           hours: Json | null
           id: number
+          is_verified: boolean
           keywords: string[] | null
           location: string | null
           name: string
           owner_id: string | null
           pi_wallet_address: string | null
+          verification_status: string | null
         }
         Insert: {
           business_types?: string[] | null
@@ -75,11 +77,13 @@ export type Database = {
           description?: string | null
           hours?: Json | null
           id?: number
+          is_verified?: boolean
           keywords?: string[] | null
           location?: string | null
           name: string
           owner_id?: string | null
           pi_wallet_address?: string | null
+          verification_status?: string | null
         }
         Update: {
           business_types?: string[] | null
@@ -90,11 +94,13 @@ export type Database = {
           description?: string | null
           hours?: Json | null
           id?: number
+          is_verified?: boolean
           keywords?: string[] | null
           location?: string | null
           name?: string
           owner_id?: string | null
           pi_wallet_address?: string | null
+          verification_status?: string | null
         }
         Relationships: [
           {
@@ -215,6 +221,7 @@ export type Database = {
           created_at: string
           description: string
           id: number
+          is_verified: boolean
           keywords: string[]
           location: string
           name: string

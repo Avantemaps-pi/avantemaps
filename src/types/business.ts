@@ -5,4 +5,6 @@ export interface Business {
   address: string;
   description: string;
   isCertified: boolean;
+  isVerified?: boolean;
+  verificationStatus?: 'pending' | 'verified' | 'rejected';
 }
