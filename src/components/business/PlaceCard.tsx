@@ -127,7 +127,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
         <PlaceCardAddress address={place.address} onClick={handlePlaceClick} />
         
         <div className="h-20 mb-2 overflow-hidden">
-          <ExpandableDescription text={place.description} maxLines={3} />
+          <ExpandableDescription text={place.description} maxLines={4} />
         </div>
         
         <div className="flex flex-wrap justify-between items-start mt-auto gap-2">
