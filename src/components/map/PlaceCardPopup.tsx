@@ -1,10 +1,9 @@
-
 import React, { forwardRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CircleCheck, Info, Shield } from 'lucide-react';
 import CategoryBadge from '@/components/business/CategoryBadge';
 import { useNavigate } from 'react-router-dom';
-import { Place } from '@/data/mockPlaces';
+import { Place } from '@/types/business';
 import ExpandableDescription from '@/components/business/ExpandableDescription';
 import BookmarkButton from './buttons/BookmarkButton';
 import WebsiteButton from './buttons/WebsiteButton';

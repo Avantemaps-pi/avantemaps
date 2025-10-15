@@ -1,7 +1,6 @@
-
 import React from 'react';
 import PlaceCard from './PlaceCard';
-import { Place } from '@/data/mockPlaces';
+import { Place } from '@/types/business';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CategorySectionProps {

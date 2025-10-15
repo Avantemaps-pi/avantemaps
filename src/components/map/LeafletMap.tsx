@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Place } from '@/data/mockPlaces';
+import { Place } from '@/types/business';
 import { toast } from 'sonner';
-import { defaultLocations } from './defaultLocations';
 import { defaultCenter, defaultZoom, OSM_TILE_LAYER, worldBounds, maxBoundsViscosity } from './mapConfig';
 import MapMarkers from './map-components/MapMarkers';
 import MapViewUpdater from './map-components/MapViewUpdater';
 import PlaceOverlay from './map-components/PlaceOverlay';
 import LoadingOverlay from './map-components/LoadingOverlay';
+import EmptyMapState from './EmptyMapState';
 import { LatLngTuple } from 'leaflet';
 import '@/lib/fix-leaflet-icons';
 import MarkerClusterGroup from 'react-leaflet-cluster';
@@ -33,10 +33,10 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const [mapCenter, setMapCenter] = useState<LatLngTuple>([defaultCenter.lat, defaultCenter.lng]); // San Francisco by default
   const [zoom, setZoom] = useState(defaultZoom);
 
-  // Use provided places or default locations - memoized to prevent infinite re-renders
+  // Use provided places - memoized to prevent infinite re-renders
   const displayPlaces = useMemo(() => {
     if (isLoading) return [];
-    return places.length > 0 ? places : defaultLocations;
+    return places;
   }, [places, isLoading]);
 
   // Ensure map centers on San Francisco or a selected place, and handle zoom accordingly
@@ -108,6 +108,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   return (
     <div className="w-full h-full relative">
       {isLoading && <LoadingOverlay />}
+      {!isLoading && displayPlaces.length === 0 && <EmptyMapState />}
       
       <MapContainer 
         style={{ height: '100%', width: '100%', zIndex: 1 }}

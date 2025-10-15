@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Place } from '@/data/mockPlaces';
+import { Place } from '@/types/business';
 import PlaceCardPopup from '../PlaceCardPopup';
 
 interface PlaceOverlayProps {

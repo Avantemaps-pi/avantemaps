@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Place } from '@/data/mockPlaces';
+import { Place } from '@/types/business';
 import CategoryBadge from '@/components/business/CategoryBadge';
 import ExpandableDescription from './ExpandableDescription';
 import { useIsMobile } from '@/hooks/use-mobile';

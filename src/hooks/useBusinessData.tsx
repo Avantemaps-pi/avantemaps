@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Place } from '@/data/mockPlaces';
+import { Place } from '@/types/business';
 import { toast } from 'sonner';
 
 interface PublicBusinessInfo {

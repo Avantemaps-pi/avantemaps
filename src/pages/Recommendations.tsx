@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
-import { recommendedForYou, suggestedForYou, avanteTopChoice } from '@/data/mockPlaces';
 import PlaceCard from '@/components/business/PlaceCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 import RecommendationsSEO from '@/components/seo/RecommendationsSEO';
+import { useRecommendations } from '@/hooks/useRecommendations';
+import RecommendationSkeleton from '@/components/recommendations/RecommendationSkeleton';
+import EmptyRecommendationSection from '@/components/recommendations/EmptyRecommendationSection';
+import { Award, TrendingUp, Star } from 'lucide-react';
 
 const Recommendations = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const { avanteTopChoice, suggestedForYou, recommendedForYou, isLoading } = useRecommendations();
 
   const handlePlaceClick = (placeId: string, zoomToLocation?: boolean) => {
     navigate('/', {
@@ -38,19 +42,25 @@ const Recommendations = () => {
             {
               title: 'Avante Top Choice',
               data: avanteTopChoice,
-              key: 'avanteTopChoice'
+              key: 'avanteTopChoice',
+              icon: Award,
+              emptyMessage: 'No verified and certified businesses yet. Check back soon!'
             },
             {
               title: 'Suggested for you',
               data: suggestedForYou,
-              key: 'suggestedForYou'
+              key: 'suggestedForYou',
+              icon: TrendingUp,
+              emptyMessage: 'No suggestions available at the moment.'
             },
             {
               title: 'Recommended for you',
               data: recommendedForYou,
-              key: 'recommendedForYou'
+              key: 'recommendedForYou',
+              icon: Star,
+              emptyMessage: 'No recommendations available yet.'
             }
-          ].map(({ title, data, key }) => (
+          ].map(({ title, data, key, icon, emptyMessage }) => (
             <section
               key={key}
               onMouseEnter={() => handleMouseEnter(key)}
@@ -72,15 +82,32 @@ const Recommendations = () => {
                   }}
                   className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide px-0 mx-[15px]"
                 >
-                  {data.map(place => (
-                    <div key={place.id} className="flex-none w-80 snap-start">
-                      <PlaceCard
-                        place={place}
-                        onPlaceClick={handlePlaceClick}
-                        className="w-full h-full"
-                      />
-                    </div>
-                  ))}
+                  {isLoading ? (
+                    // Show loading skeletons
+                    <>
+                      <RecommendationSkeleton />
+                      <RecommendationSkeleton />
+                      <RecommendationSkeleton />
+                    </>
+                  ) : data.length === 0 ? (
+                    // Show empty state
+                    <EmptyRecommendationSection 
+                      title={title}
+                      message={emptyMessage}
+                      icon={icon}
+                    />
+                  ) : (
+                    // Show actual data
+                    data.map(place => (
+                      <div key={place.id} className="flex-none w-80 snap-start">
+                        <PlaceCard
+                          place={place}
+                          onPlaceClick={handlePlaceClick}
+                          className="w-full h-full"
+                        />
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </section>

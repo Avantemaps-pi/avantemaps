@@ -1,5 +1,4 @@
-
-import { Place } from '@/data/mockPlaces';
+import { Place } from '@/types/business';
 
 export const generateShareableUrl = (place: Place, currentPath?: string): string => {
   const baseUrl = window.location.origin;

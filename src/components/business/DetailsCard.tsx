@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExternalLink, Clock, Phone, Mail, Globe, Tag } from 'lucide-react';
-import { Place } from '@/data/mockPlaces';
+import { Place } from '@/types/business';
 
 interface DetailsCardProps {
   place: Place;
