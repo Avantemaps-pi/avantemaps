@@ -1,18 +1,18 @@
 
 import { toast } from 'sonner';
+import { useAuth } from '@/context/auth';
 
 export const useAuthRestrictions = () => {
-  // In a real app, this would come from authentication state
-  const isLoggedIn = false;
-  const isVerified = false;
+  const { user, isAuthenticated } = useAuth();
   
   const checkAuthForAction = (actionType: 'vote' | 'report'): boolean => {
-    if (!isLoggedIn) {
+    if (!isAuthenticated || !user) {
       toast.error(`Please log in to ${actionType} on comments`);
       return false;
     }
     
-    if (!isVerified) {
+    // Verify user has completed Pi Network authentication
+    if (!user.username || !user.uid) {
       toast.error(`Only verified Pi Network users can ${actionType} on comments`);
       return false;
     }
@@ -20,5 +20,9 @@ export const useAuthRestrictions = () => {
     return true;
   };
   
-  return { isLoggedIn, isVerified, checkAuthForAction };
+  return { 
+    isLoggedIn: isAuthenticated, 
+    isVerified: isAuthenticated && !!user?.username, 
+    checkAuthForAction 
+  };
 };
