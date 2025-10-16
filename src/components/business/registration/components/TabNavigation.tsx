@@ -20,7 +20,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ isMobile, disabled }) => 
   if (isMobile) {
     return (
       <>
-        <div className="flex items-center justify-between mb-3 w-full relative">
+        <TabsList className="flex items-center justify-between mb-3 w-full bg-transparent h-auto p-0">
           {tabs.slice(0, 3).map((tab, index) => (
             <React.Fragment key={tab.value}>
               <TabsTrigger 
@@ -39,8 +39,8 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ isMobile, disabled }) => 
               )}
             </React.Fragment>
           ))}
-        </div>
-        <div className="flex items-center justify-between mb-6 w-full relative">
+        </TabsList>
+        <TabsList className="flex items-center justify-between mb-6 w-full bg-transparent h-auto p-0">
           {tabs.slice(3).map((tab, index) => (
             <React.Fragment key={tab.value}>
               <TabsTrigger 
@@ -59,13 +59,13 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ isMobile, disabled }) => 
               )}
             </React.Fragment>
           ))}
-        </div>
+        </TabsList>
       </>
     );
   }
 
   return (
-    <div className="flex items-center justify-between mb-6 w-full relative">
+    <TabsList className="flex items-center justify-between mb-6 w-full bg-transparent h-auto p-0">
       {tabs.map((tab, index) => (
         <React.Fragment key={tab.value}>
           <TabsTrigger 
@@ -84,7 +84,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ isMobile, disabled }) => 
           )}
         </React.Fragment>
       ))}
-    </div>
+    </TabsList>
   );
 };
 
