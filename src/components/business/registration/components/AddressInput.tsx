@@ -6,6 +6,7 @@ import { useFormContext } from 'react-hook-form';
 import { FormValues } from '../formSchema';
 import AddressSuggestions, { AddressSuggestion } from './AddressSuggestions';
 import { fetchAddressSuggestions } from '../utils/addressUtils';
+import { MapPin, Loader2 } from 'lucide-react';
 
 interface AddressInputProps {
   disabled?: boolean;
@@ -85,17 +86,27 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
   }, []);
 
   return (
-    <div className="relative">
+    <div className="space-y-2">
       <FormField
         control={form.control}
         name="streetAddress"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>Street Address</FormLabel>
+          <FormItem className="relative">
+            <FormLabel className="text-base font-semibold flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary" />
+              Search Address
+            </FormLabel>
             <FormControl>
               <div className="relative">
-                <Input 
-                  placeholder="123 Business Street" 
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10">
+                  {isLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  ) : (
+                    <MapPin className="w-5 h-5" />
+                  )}
+                </div>
+                <Input
+                  placeholder="Start typing your business address..."
                   {...field}
                   ref={inputRef}
                   onChange={(e) => {
@@ -104,16 +115,14 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
                   }}
                   disabled={disabled}
                   autoComplete="off"
+                  className="pl-12 h-14 text-base rounded-xl border-2 focus:border-primary transition-colors shadow-sm"
                 />
-                {isLoading && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-                  </div>
-                )}
               </div>
             </FormControl>
+            <p className="text-xs text-muted-foreground mt-1.5 ml-1">
+              We'll automatically fill in city, province, and postal code
+            </p>
             <FormMessage />
-            
             <AddressSuggestions
               suggestions={suggestions}
               isVisible={showSuggestions}

@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Place } from '@/data/mockPlaces';
+import { Place } from '@/types/business';
 import { toast } from 'sonner';
 
 interface PublicBusinessInfo {
@@ -14,6 +13,8 @@ interface PublicBusinessInfo {
   business_types: string[];
   keywords: string[];
   created_at: string;
+  is_verified: boolean;
+  is_certified: boolean;
 }
 
 export const useBusinessData = () => {
@@ -58,7 +59,8 @@ export const useBusinessData = () => {
             website: "", // Not available in public data for security
             phone: "", // Not available in public data for security
             hours: {}, // Not available in public data for security
-            isVerified: false,
+            isVerified: business.is_verified || false,
+            isCertified: business.is_certified || false,
             business_types: business.business_types || [],
             keywords: business.keywords || [],
             isUserBusiness: false, // Cannot determine ownership from public data

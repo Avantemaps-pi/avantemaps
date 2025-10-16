@@ -8,6 +8,8 @@ import { Menu, X, Send, Image, Video } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import { isSafeForAI } from '@/utils/contentFilter';
+import { toast } from 'sonner';
 
 export type ChatMode = 'ai' | 'live';
 
@@ -25,6 +27,7 @@ interface ChatInterfaceProps {
   handleSendMessage: () => void;
   handleAttachmentOption?: () => void;
   showAttachmentIcon?: boolean;
+  hasLiveChatAccess?: boolean;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -35,8 +38,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   setMessage,
   handleSendMessage,
   handleAttachmentOption,
-  showAttachmentIcon = false
+  showAttachmentIcon = false,
+  hasLiveChatAccess = false
 }) => {
+  const handleValidatedSendMessage = () => {
+    // Validate message content before sending to AI
+    if (!isSafeForAI(message)) {
+      toast.error('Message contains inappropriate content or suspicious patterns.');
+      return;
+    }
+    handleSendMessage();
+  };
   const handleMenuOptionClick = (command: string) => {
     setMessage(message + command + ' ');
   };
@@ -118,7 +130,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div className="border-b p-3">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-lg">CHAT</h3>
-            <ChatModeToggle chatMode={chatMode} onChatModeChange={onChatModeChange} />
+            <ChatModeToggle 
+              chatMode={chatMode} 
+              onChatModeChange={onChatModeChange}
+              hasLiveChatAccess={hasLiveChatAccess}
+            />
           </div>
           <p className="text-sm text-muted-foreground mt-2">
             {chatMode === 'ai' ? "Connect with Avante Maps AI assistant" : "Connect with Avante Maps LIVE Intern"}
@@ -160,17 +176,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </PopoverTrigger>
                 <PopoverContent className="w-64 p-0 bg-[#1e2732] text-white" sideOffset={5}>
                   <div className="flex flex-col divide-y divide-gray-700">
-                    <button onClick={() => handleMenuOptionClick('/attach')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
-                      <span className="text-lg">Attach</span>
-                      <span className="text-gray-400">/attach</span>
-                    </button>
+                    {chatMode === 'live' && (
+                      <>
+                        <button onClick={() => handleMenuOptionClick('/attach')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
+                          <span className="text-lg">Attach</span>
+                          <span className="text-gray-400">/attach</span>
+                        </button>
+                        <button onClick={() => handleMenuOptionClick('/certification')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
+                          <span className="text-lg">Certify</span>
+                          <span className="text-gray-400">/certification</span>
+                        </button>
+                      </>
+                    )}
                     <button onClick={() => handleMenuOptionClick('/verification')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
                       <span className="text-lg">Verify</span>
                       <span className="text-gray-400">/verification</span>
-                    </button>
-                    <button onClick={() => handleMenuOptionClick('/certification')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
-                      <span className="text-lg">Certify</span>
-                      <span className="text-gray-400">/certification</span>
                     </button>
                   </div>
                 </PopoverContent>
@@ -181,11 +201,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 onChange={e => setMessage(e.target.value)} 
                 className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-gray-600 placeholder:text-gray-500" 
                 placeholder="Type your message to Avante Maps..." 
-                onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
+                onKeyDown={e => e.key === 'Enter' && handleValidatedSendMessage()} 
               />
 
               <button 
-                onClick={handleSendMessage} 
+                onClick={handleValidatedSendMessage} 
                 disabled={!message.trim()} 
                 className="text-blue-500 hover:text-blue-600 ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >

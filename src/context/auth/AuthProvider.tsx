@@ -7,7 +7,9 @@ import { checkAccess } from './authUtils';
 import { performLogin, refreshUserData as refreshUserDataService, requestAuthPermissions } from './authService';
 import { useNetworkStatus } from './networkStatusService';
 import { SubscriptionTier } from '@/utils/piNetwork/types';
+import { shouldBypassAuth, DEV_CONFIG } from '@/config/environment';
 import AuthContext from './useAuth';
+import { secureLog } from '@/utils/secureLogger';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<PiUser | null>(null);
@@ -26,6 +28,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Check for cached session on mount
   useEffect(() => {
+    // In development mode, bypass authentication
+    if (shouldBypassAuth()) {
+      secureLog.info("Development mode: bypassing authentication");
+      setUser(DEV_CONFIG.mockUser);
+      return;
+    }
+
     const cachedSession = localStorage.getItem(STORAGE_KEY);
     
     if (cachedSession) {
@@ -33,14 +42,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userData = JSON.parse(cachedSession) as PiUser;
         // Check if the session is still relatively fresh (less than 24 hours old)
         if (Date.now() - userData.lastAuthenticated < 24 * 60 * 60 * 1000) {
-          console.log("Restoring user from cached session");
+          secureLog.info("Restoring user from cached session");
           setUser(userData);
         } else {
-          console.log("Cached session expired");
+          secureLog.info("Cached session expired");
           localStorage.removeItem(STORAGE_KEY);
         }
       } catch (error) {
-        console.error("Error parsing cached session:", error);
+        secureLog.error("Error parsing cached session:", error);
         localStorage.removeItem(STORAGE_KEY);
       }
     }
@@ -53,12 +62,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAttempted.current = true;
     const initSdk = async () => {
       try {
-        console.log("Starting Pi Network SDK initialization...");
+        secureLog.info("Starting Pi Network SDK initialization...");
         const result = await initializePiNetwork();
         setIsSdkInitialized(result);
-        console.log("Pi Network SDK initialization complete:", result);
+        secureLog.info("Pi Network SDK initialization complete:", result);
       } catch (error) {
-        console.error("Failed to initialize Pi Network SDK:", error);
+        secureLog.error("Failed to initialize Pi Network SDK:", error);
         toast.error("Failed to initialize Pi Network SDK. Some features may be unavailable.");
         setIsSdkInitialized(false);
       }
@@ -69,6 +78,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Optimized login process
   const login = useCallback(async (): Promise<void> => {
+    // In development mode, automatically set mock user
+    if (shouldBypassAuth()) {
+      secureLog.info("Development mode: setting mock user");
+      setUser(DEV_CONFIG.mockUser);
+      toast.success("Development mode: Logged in as mock user");
+      return;
+    }
+
     if (pendingAuthRef.current) {
       console.log("Authentication already in progress");
       toast.info("Authentication in progress, please wait...");
@@ -94,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Initialize SDK if needed
       if (!isSdkInitialized) {
-        console.log("Attempting to initialize SDK before login...");
+        secureLog.info("Attempting to initialize SDK before login...");
         try {
           const result = await initializePiNetwork();
           setIsSdkInitialized(result);
@@ -102,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             throw new Error("SDK initialization failed");
           }
         } catch (error) {
-          console.error("Failed to initialize Pi Network SDK during login:", error);
+          secureLog.error("Failed to initialize Pi Network SDK during login:", error);
           toast.error("Failed to initialize Pi Network SDK. Please try again later.");
           pendingAuthRef.current = false;
           setIsLoading(false);
@@ -179,18 +196,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     if (!user) {
-      console.log("No user to refresh data for");
+      secureLog.info("No user to refresh data for");
       return;
     }
     
-    console.log("Refreshing user data...");
+    secureLog.info("Refreshing user data...");
     setIsLoading(true);
     try {
       await refreshUserDataService(user, setUser, setIsLoading);
-      console.log("User data refreshed successfully");
+      secureLog.info("User data refreshed successfully");
       setLastRefresh(now);
     } catch (error) {
-      console.error("Failed to refresh user data:", error);
+      secureLog.error("Failed to refresh user data:", error);
     } finally {
       setIsLoading(false);
     }

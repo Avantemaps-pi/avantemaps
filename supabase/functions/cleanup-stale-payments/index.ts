@@ -1,14 +1,18 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
-interface CleanupRequest {
-  userId: string;
-}
+// Validation schema for cleanup request
+const CleanupRequestSchema = z.object({
+  userId: z.string().uuid('Invalid user ID format')
+});
+
+type CleanupRequest = z.infer<typeof CleanupRequestSchema>;
 
 const supabaseClient = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
 
 // Check if a payment is stale (older than 10 minutes and not completed)
@@ -30,21 +34,34 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { userId }: CleanupRequest = await req.json();
-    console.log(`Cleaning up stale payments for user: ${userId}`);
-
-    if (!userId) {
+    // Authenticate user via JWT
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ success: false, message: 'Missing user ID' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        JSON.stringify({ success: false, message: 'Authentication required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Invalid authentication' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    // Use authenticated user's ID
+    const userId = user.id;
+    console.log(`Cleaning up stale payments for authenticated user`);
 
     const piApiKey = Deno.env.get('PI_API_KEY');
     if (!piApiKey) {
       console.error('PI_API_KEY not configured');
       return new Response(
-        JSON.stringify({ success: false, message: 'Payment service not configured' }),
+        JSON.stringify({ success: false, message: 'Service temporarily unavailable' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
@@ -60,7 +77,7 @@ Deno.serve(async (req) => {
     if (fetchError) {
       console.error('Error fetching payments:', fetchError);
       return new Response(
-        JSON.stringify({ success: false, message: 'Error fetching payments' }),
+        JSON.stringify({ success: false, message: 'Service temporarily unavailable' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
@@ -136,7 +153,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in cleanup-stale-payments function:', error);
     return new Response(
-      JSON.stringify({ success: false, message: `Server error: ${error.message}` }),
+      JSON.stringify({ success: false, message: 'Service temporarily unavailable' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

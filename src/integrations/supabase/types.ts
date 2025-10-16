@@ -10,28 +10,49 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
+      api_rate_limits: {
+        Row: {
+          created_at: string | null
+          endpoint: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bookmarks: {
         Row: {
           business_id: number | null
           created_at: string | null
           id: number
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           business_id?: number | null
           created_at?: string | null
           id?: number
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           business_id?: number | null
           created_at?: string | null
           id?: number
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -60,11 +81,14 @@ export type Database = {
           description: string | null
           hours: Json | null
           id: number
+          is_certified: boolean
+          is_verified: boolean
           keywords: string[] | null
           location: string | null
           name: string
-          owner_id: string | null
+          owner_id: string
           pi_wallet_address: string | null
+          verification_status: string | null
         }
         Insert: {
           business_types?: string[] | null
@@ -75,11 +99,14 @@ export type Database = {
           description?: string | null
           hours?: Json | null
           id?: number
+          is_certified?: boolean
+          is_verified?: boolean
           keywords?: string[] | null
           location?: string | null
           name: string
-          owner_id?: string | null
+          owner_id: string
           pi_wallet_address?: string | null
+          verification_status?: string | null
         }
         Update: {
           business_types?: string[] | null
@@ -90,11 +117,14 @@ export type Database = {
           description?: string | null
           hours?: Json | null
           id?: number
+          is_certified?: boolean
+          is_verified?: boolean
           keywords?: string[] | null
           location?: string | null
           name?: string
-          owner_id?: string | null
+          owner_id?: string
           pi_wallet_address?: string | null
+          verification_status?: string | null
         }
         Relationships: [
           {
@@ -102,6 +132,117 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_reports: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          reported_by: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reported_by: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reported_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_reports_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_votes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_votes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          business_id: number
+          content: string
+          created_at: string
+          downvotes: number
+          id: string
+          is_hidden: boolean
+          report_count: number
+          updated_at: string
+          upvotes: number
+          user_id: string
+        }
+        Insert: {
+          business_id: number
+          content: string
+          created_at?: string
+          downvotes?: number
+          id?: string
+          is_hidden?: boolean
+          report_count?: number
+          updated_at?: string
+          upvotes?: number
+          user_id: string
+        }
+        Update: {
+          business_id?: number
+          content?: string
+          created_at?: string
+          downvotes?: number
+          id?: string
+          is_hidden?: boolean
+          report_count?: number
+          updated_at?: string
+          upvotes?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -151,21 +292,21 @@ export type Database = {
           id: number
           plan: string | null
           start_date: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           end_date?: string | null
           id?: number
           plan?: string | null
           start_date?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           end_date?: string | null
           id?: number
           plan?: string | null
           start_date?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -176,6 +317,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
       }
       users: {
         Row: {
@@ -201,11 +366,50 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_audit: {
+        Row: {
+          action: string
+          business_id: number
+          id: string
+          notes: string | null
+          performed_at: string | null
+          performed_by: string
+        }
+        Insert: {
+          action: string
+          business_id: number
+          id?: string
+          notes?: string | null
+          performed_at?: string | null
+          performed_by: string
+        }
+        Update: {
+          action?: string
+          business_id?: number
+          id?: string
+          notes?: string | null
+          performed_at?: string | null
+          performed_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_audit_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      assign_admin_role: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       get_public_business_info: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -215,10 +419,20 @@ export type Database = {
           created_at: string
           description: string
           id: number
+          is_certified: boolean
+          is_verified: boolean
           keywords: string[]
           location: string
           name: string
         }[]
+      }
+      get_user_business_count: {
+        Args: { user_id: string }
+        Returns: number
+      }
+      get_user_subscription: {
+        Args: { user_id: string }
+        Returns: string
       }
       handle_subscription_after_payment: {
         Args: {
@@ -229,9 +443,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -358,6 +579,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const

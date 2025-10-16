@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Place } from '@/data/mockPlaces';
+import { Place } from '@/types/business';
 
 interface RecommendationsSEOProps {
   selectedPlace?: Place;

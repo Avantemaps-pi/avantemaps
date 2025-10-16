@@ -1,83 +1,90 @@
 
 import React from 'react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 interface TabNavigationProps {
   isMobile: boolean;
-  value: string;
-  onValueChange: (value: string) => void;
   disabled?: boolean;
 }
 
-const TabNavigation: React.FC<TabNavigationProps> = ({ isMobile, value, onValueChange, disabled }) => {
+const TabNavigation: React.FC<TabNavigationProps> = ({ isMobile, disabled }) => {
+  const tabs = [
+    { value: "business-owner", label: isMobile ? "Owner" : "Business Owner" },
+    { value: "contact", label: "Contact" },
+    { value: "address", label: "Address" },
+    { value: "hours", label: "Hours" },
+    { value: "details", label: "Details" },
+  ];
+
+  if (isMobile) {
+    return (
+      <>
+        <TabsList className="flex items-center justify-between mb-3 w-full bg-transparent h-auto p-0">
+          {tabs.slice(0, 3).map((tab, index) => (
+            <React.Fragment key={tab.value}>
+              <TabsTrigger 
+                value={tab.value}
+                className={cn(
+                  "flex-1 text-sm whitespace-nowrap relative z-10 rounded-md",
+                  "data-[state=active]:bg-avante-blue data-[state=active]:text-white",
+                  "data-[state=inactive]:bg-muted data-[state=inactive]:text-muted-foreground"
+                )}
+                disabled={disabled}
+              >
+                {tab.label}
+              </TabsTrigger>
+              {index < 2 && (
+                <div className="h-0.5 flex-1 bg-border mx-1" />
+              )}
+            </React.Fragment>
+          ))}
+        </TabsList>
+        <TabsList className="flex items-center justify-between mb-6 w-full bg-transparent h-auto p-0">
+          {tabs.slice(3).map((tab, index) => (
+            <React.Fragment key={tab.value}>
+              <TabsTrigger 
+                value={tab.value}
+                className={cn(
+                  "flex-1 text-sm whitespace-nowrap relative z-10 rounded-md",
+                  "data-[state=active]:bg-avante-blue data-[state=active]:text-white",
+                  "data-[state=inactive]:bg-muted data-[state=inactive]:text-muted-foreground"
+                )}
+                disabled={disabled}
+              >
+                {tab.label}
+              </TabsTrigger>
+              {index < 1 && (
+                <div className="h-0.5 flex-1 bg-border mx-1" />
+              )}
+            </React.Fragment>
+          ))}
+        </TabsList>
+      </>
+    );
+  }
+
   return (
-    <Tabs value={value} onValueChange={onValueChange} className="w-full">
-      <TabsList className={cn(
-        "grid mb-6 w-full",
-        isMobile ? "grid-cols-3 gap-1" : "grid-cols-5"
-      )}>
-        <TabsTrigger 
-          value="business-owner" 
-          className="text-sm whitespace-nowrap"
-          disabled={disabled}
-        >
-          {isMobile ? "Owner" : "Business Owner"}
-        </TabsTrigger>
-        <TabsTrigger 
-          value="contact" 
-          className="text-sm"
-          disabled={disabled}
-        >
-          Contact
-        </TabsTrigger>
-        <TabsTrigger 
-          value="address" 
-          className="text-sm"
-          disabled={disabled}
-        >
-          Address
-        </TabsTrigger>
-        {isMobile && (
-          <div className="col-span-3 mt-1">
-            <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger 
-                value="hours" 
-                className="text-sm"
-                disabled={disabled}
-              >
-                Hours
-              </TabsTrigger>
-              <TabsTrigger 
-                value="details" 
-                className="text-sm" 
-                disabled={disabled}
-              >
-                Details
-              </TabsTrigger>
-            </TabsList>
-          </div>
-        )}
-        {!isMobile && (
-          <>
-            <TabsTrigger 
-              value="hours" 
-              className="text-sm"
-              disabled={disabled}
-            >
-              Hours
-            </TabsTrigger>
-            <TabsTrigger 
-              value="details" 
-              className="text-sm"
-              disabled={disabled}
-            >
-              Details
-            </TabsTrigger>
-          </>
-        )}
-      </TabsList>
-    </Tabs>
+    <TabsList className="flex items-center justify-between mb-6 w-full bg-transparent h-auto p-0">
+      {tabs.map((tab, index) => (
+        <React.Fragment key={tab.value}>
+          <TabsTrigger 
+            value={tab.value}
+            className={cn(
+              "flex-1 text-sm whitespace-nowrap relative z-10 rounded-md",
+              "data-[state=active]:bg-avante-blue data-[state=active]:text-white",
+              "data-[state=inactive]:bg-muted data-[state=inactive]:text-muted-foreground"
+            )}
+            disabled={disabled}
+          >
+            {tab.label}
+          </TabsTrigger>
+          {index < tabs.length - 1 && (
+            <div className="h-0.5 flex-1 bg-border mx-1" />
+          )}
+        </React.Fragment>
+      ))}
+    </TabsList>
   );
 };
 

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Place } from '@/data/mockPlaces';
+import { Place } from '@/types/business';
 import CategoryBadge from '@/components/business/CategoryBadge';
 import ExpandableDescription from './ExpandableDescription';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -18,7 +19,7 @@ import ImageCarousel from './ImageCarousel';
 
 interface PlaceCardProps {
   place: Place;
-  onPlaceClick: (placeId: string) => void;
+  onPlaceClick: (placeId: string, zoomToLocation?: boolean) => void;
   onRemove?: (placeId: string) => void;
   className?: string;
   showDetails?: boolean;
@@ -59,6 +60,14 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
       onPlaceClick(place.id);
     } else {
       navigate('/', { state: { selectedPlaceId: place.id } });
+    }
+  };
+
+  const handleAddressClick = () => {
+    if (window.location.pathname === '/') {
+      onPlaceClick(place.id, true);
+    } else {
+      navigate('/', { state: { selectedPlaceId: place.id, zoomToLocation: true } });
     }
   };
   
@@ -120,14 +129,23 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
       )}
       
       <CardHeader className="pb-0 px-3 pt-3">
-        <PlaceCardTitle name={place.name} onClick={handlePlaceClick} />
+        <div className="flex items-start gap-2">
+          {place.isCertified && (
+            <div className="flex-shrink-0">
+              <Shield className="h-5 w-5 text-blue-500" />
+            </div>
+          )}
+          <div className="flex-1">
+            <PlaceCardTitle name={place.name} onClick={handlePlaceClick} isVerified={place.isVerified} />
+          </div>
+        </div>
       </CardHeader>
       
       <CardContent className="pt-2 px-3 pb-3">
-        <PlaceCardAddress address={place.address} onClick={handlePlaceClick} />
+        <PlaceCardAddress address={place.address} onClick={handleAddressClick} />
         
         <div className="h-20 mb-2 overflow-hidden">
-          <ExpandableDescription text={place.description} maxLines={3} />
+          <ExpandableDescription text={place.description} maxLines={4} />
         </div>
         
         <div className="flex flex-wrap justify-between items-start mt-auto gap-2">

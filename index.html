@@ -4,6 +4,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Security: Content Security Policy to mitigate XSS attacks -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sdk.minepi.com https://unpkg.com https://cdn.gpteng.co;
+      style-src 'self' 'unsafe-inline' https://unpkg.com;
+      img-src 'self' data: blob: https: http:;
+      font-src 'self' data:;
+      connect-src 'self' https://*.supabase.co https://api.minepi.com wss://*.supabase.co https://nominatim.openstreetmap.org https://*.locationiq.com;
+      frame-src 'self';
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      upgrade-insecure-requests;
+    "/>
+    
     <title>Avante Maps</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <meta name="description" content="Lovable Generated Project" />

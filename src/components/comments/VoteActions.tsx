@@ -9,10 +9,10 @@ interface VoteActionsProps {
     upvotes: number;
     downvotes: number;
     userVote?: 'up' | 'down' | null;
-    isReported: boolean;
+    isReported?: boolean;
   };
-  onVote: (commentId: string, voteType: 'up' | 'down') => void;
-  onReport: (commentId: string) => void;
+  onVote: (commentId: string, voteType: 'up' | 'down') => void | Promise<void>;
+  onReport: (commentId: string) => void | Promise<void>;
 }
 
 const VoteActions: React.FC<VoteActionsProps> = ({ comment, onVote, onReport }) => {

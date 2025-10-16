@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Info } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import DetailsCard from './DetailsCard';
-import { Place } from '@/data/mockPlaces';
+import { Place } from '@/types/business';
 
 interface PlaceCardDetailsProps {
   place: Place;

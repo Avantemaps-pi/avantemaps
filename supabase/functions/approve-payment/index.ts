@@ -1,14 +1,27 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
-interface PaymentRequest {
-  paymentId: string;
-  userId: string;
-  amount: number;
-  memo: string;
-  metadata: Record<string, any>;
-}
+// Validation schema for payment requests with strict input validation
+const PaymentRequestSchema = z.object({
+  paymentId: z.string()
+    .min(1, 'Payment ID is required')
+    .max(100, 'Payment ID too long')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid payment ID format'),
+  userId: z.string().uuid('Invalid user ID format'),
+  amount: z.number().positive('Amount must be positive').max(1000000, 'Amount exceeds maximum'),
+  memo: z.string().max(500, 'Memo too long').transform(val => 
+    val.replace(/[<>]/g, '') // Sanitize potential HTML/script tags
+  ).optional(),
+  metadata: z.object({
+    subscriptionTier: z.enum(['individual', 'small-business', 'organization']).optional(),
+    frequency: z.enum(['monthly', 'annual']).optional(),
+    duration: z.number().int().positive().max(365).optional()
+  }).strict() // Only allow known keys for security
+});
+
+type PaymentRequest = z.infer<typeof PaymentRequestSchema>;
 
 interface PaymentResponse {
   success: boolean;
@@ -52,15 +65,27 @@ Deno.serve(async (req) => {
   console.log(`Starting payment approval at ${new Date().toISOString()}`);
 
   try {
-    const paymentRequest: PaymentRequest = await req.json();
-    console.log('Payment approval request received:', paymentRequest);
-
-    if (!paymentRequest.paymentId) {
+    // Parse and validate request body
+    const rawBody = await req.json();
+    const validationResult = PaymentRequestSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      console.error('Invalid payment request data:', validationResult.error.errors);
       return new Response(
-        JSON.stringify({ success: false, message: 'Missing payment ID' }),
+        JSON.stringify({ 
+          success: false, 
+          message: 'Invalid request data',
+          errors: validationResult.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
+    
+    const paymentRequest = validationResult.data;
+    console.log('Payment approval request received');
 
     const piApiKey = Deno.env.get('PI_API_KEY');
     if (!piApiKey) {
@@ -82,7 +107,7 @@ Deno.serve(async (req) => {
     if (checkError && checkError.code !== 'PGRST116') {
       console.error('Database check error:', checkError);
       return new Response(
-        JSON.stringify({ success: false, message: `Database check error: ${checkError.message}`, paymentId: paymentRequest.paymentId }),
+        JSON.stringify({ success: false, message: 'Payment processing failed. Please try again.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
@@ -91,7 +116,7 @@ Deno.serve(async (req) => {
 
     // Handle stale payments - automatically cancel them
     if (existingPayment && isStalePayment(existingPayment)) {
-      console.log(`Detected stale payment ${paymentRequest.paymentId}, attempting to cancel it`);
+      console.log('Detected stale payment, attempting to cancel');
       
       try {
         // Try to cancel the stale payment with Pi Network
@@ -116,7 +141,7 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString()
         }).eq('payment_id', paymentRequest.paymentId);
 
-        console.log(`Stale payment ${paymentRequest.paymentId} has been cancelled`);
+        console.log('Stale payment cancelled');
       } catch (cancelError) {
         console.error('Error cancelling stale payment:', cancelError);
         // Continue with approval process even if cancellation fails
@@ -149,8 +174,9 @@ Deno.serve(async (req) => {
           }
         });
       if (error && error.code !== '23505') {
+        console.error('Payment creation error:', error);
         return new Response(
-          JSON.stringify({ success: false, message: `Database error: ${error.message}`, paymentId: paymentRequest.paymentId }),
+          JSON.stringify({ success: false, message: 'Payment processing failed. Please try again.' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
         );
       }
@@ -169,8 +195,7 @@ Deno.serve(async (req) => {
       });
 
       const approveResult = await approveResponse.json();
-      console.log('Pi Network API response status:', approveResponse.status);
-      console.log('Pi Network API response:', approveResult);
+      console.log('Pi Network API response received');
 
       if (!approveResponse.ok) {
         if (approveResult.message?.includes('already approved')) {
@@ -201,8 +226,9 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString()
         }).eq('payment_id', paymentRequest.paymentId);
 
+        console.error('Pi Network API error:', approveResult);
         return new Response(
-          JSON.stringify({ success: false, message: `Pi Network API error: ${approveResult.message || 'Unknown error'}`, paymentId: paymentRequest.paymentId }),
+          JSON.stringify({ success: false, message: 'Payment approval failed. Please try again.' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
         );
       }
@@ -255,10 +281,10 @@ Deno.serve(async (req) => {
             if (subError) console.error('Error recording subscription history:', subError);
           }
         } else {
-          console.log(`User already has equal or better subscription.`);
+          console.log('User subscription unchanged - current tier equal or better');
         }
       } else {
-        console.log(`User ${paymentRequest.userId} not found.`);
+        console.log('User not found in database');
       }
 
       const endTime = Date.now();
@@ -270,6 +296,7 @@ Deno.serve(async (req) => {
       );
 
     } catch (apiError) {
+      console.error('Pi Network API call error:', apiError);
       await supabaseClient.from('payments').update({
         status: {
           approved: false,
@@ -282,14 +309,14 @@ Deno.serve(async (req) => {
       }).eq('payment_id', paymentRequest.paymentId);
 
       return new Response(
-        JSON.stringify({ success: false, message: `Error calling Pi Network API: ${apiError.message}`, paymentId: paymentRequest.paymentId }),
+        JSON.stringify({ success: false, message: 'Payment service temporarily unavailable. Please try again.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
       );
     }
   } catch (error) {
     console.error('Error in approve-payment function:', error);
     return new Response(
-      JSON.stringify({ success: false, message: `Server error: ${error.message}` }),
+      JSON.stringify({ success: false, message: 'Payment service error. Please try again later.' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

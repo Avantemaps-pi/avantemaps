@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import { Place } from '@/data/mockPlaces';
+import { Place } from '@/types/business';
 import { LatLngTuple } from 'leaflet';
 import { createMarkerIcon } from '../markerUtils';
 

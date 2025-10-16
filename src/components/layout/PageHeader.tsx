@@ -1,13 +1,19 @@
 
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Menu } from 'lucide-react';
+import { ArrowLeft, Menu, MoreVertical } from 'lucide-react';
 import MobileMenuButton from './header/MobileMenuButton';
 import DesktopMenuButton from './header/DesktopMenuButton';
 import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
 import AuthStatus from '@/components/auth/AuthStatus';
 import SearchBar from '@/components/map/SearchBar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface PageHeaderProps {
   title?: string;
@@ -35,6 +41,7 @@ const PageHeader = ({
   const isIndexPage = location.pathname === '/';
   const isUpdateRegistrationPage = location.pathname.includes('/update-registration');
   const isVerificationInfoPage = location.pathname === '/verification-info';
+  const isBookmarksPage = location.pathname === '/bookmarks';
 
   // Get page title based on current route
   const getPageTitle = () => {
@@ -95,18 +102,18 @@ const PageHeader = ({
     <header className="sticky top-0 z-10 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-full items-center px-[14px] bg-transparent">
         <div className="flex items-center">
-          {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && !isVerificationInfoPage && <MobileMenuButton />}
-          {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && !isVerificationInfoPage && <DesktopMenuButton onClick={() => console.log('Desktop menu clicked')} />}
+          {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && !isVerificationInfoPage && !isUpdateRegistrationPage && <MobileMenuButton />}
+          {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && !isVerificationInfoPage && !isUpdateRegistrationPage && <DesktopMenuButton onClick={() => console.log('Desktop menu clicked')} />}
           
           {isIndexPage && <Button variant="ghost" size="icon" onClick={handleMenuClick} className="mr-2 sm:hidden">
               <Menu className="h-5 w-5" />
             </Button>}
           
-          {(isAnalyticsPage || backButton) && <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-2">
+          {(isAnalyticsPage || backButton || isUpdateRegistrationPage) && <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-2">
               <ArrowLeft className="h-5 w-5" />
             </Button>}
           
-          {isRegistrationPage && <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="mr-2">
+          {isRegistrationPage && <Button variant="ghost" size="icon" onClick={() => navigate('/registered-business')} className="mr-2">
               <ArrowLeft className="h-5 w-5" />
             </Button>}
           
@@ -141,6 +148,20 @@ const PageHeader = ({
         </div>
         
         <div className="flex items-center space-x-4">
+          {isBookmarksPage && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
+                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                  Delete all Bookmarks
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <AuthStatus />
         </div>
       </div>

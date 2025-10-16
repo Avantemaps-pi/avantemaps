@@ -1,10 +1,13 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { filterInappropriateContent, isSafeForAI } from '@/utils/contentFilter';
+import { useToast } from '@/hooks/use-toast';
 import { ChatMode } from '@/components/chat/ChatInterface';
 
 export function useChatState() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Array<{
     id: number;
@@ -27,9 +30,143 @@ export function useChatState() {
     { id: 3, name: "Your Service Business" }
   ];
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const streamAIResponse = async (conversationMessages: typeof messages) => {
+    try {
+      const aiMessageId = conversationMessages.length + 1;
+      const aiMessage = {
+        id: aiMessageId,
+        text: "",
+        sender: "ai",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      
+      setMessages(prev => [...prev, aiMessage]);
+
+      const apiMessages = conversationMessages
+        .filter(msg => msg.sender === 'user' || msg.sender === 'ai')
+        .map(msg => ({
+          role: msg.sender === 'user' ? 'user' : 'assistant',
+          content: msg.text
+        }));
+
+      const CHAT_URL = `https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/chat-ai`;
+
+      const response = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages: apiMessages }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'AI service error');
+      }
+
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = '';
+      let streamDone = false;
+      let accumulatedText = '';
+
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') {
+            streamDone = true;
+            break;
+          }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              accumulatedText += content;
+              
+              setMessages(prev => 
+                prev.map(msg => 
+                  msg.id === aiMessageId 
+                    ? { ...msg, text: accumulatedText }
+                    : msg
+                )
+              );
+            }
+          } catch {
+            textBuffer = line + '\n' + textBuffer;
+            break;
+          }
+        }
+      }
+
+      if (textBuffer.trim()) {
+        for (let raw of textBuffer.split('\n')) {
+          if (!raw) continue;
+          if (raw.endsWith('\r')) raw = raw.slice(0, -1);
+          if (raw.startsWith(':') || raw.trim() === '') continue;
+          if (!raw.startsWith('data: ')) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              accumulatedText += content;
+              setMessages(prev => 
+                prev.map(msg => 
+                  msg.id === aiMessageId 
+                    ? { ...msg, text: accumulatedText }
+                    : msg
+                )
+              );
+            }
+          } catch { /* ignore */ }
+        }
+      }
+    } catch (error) {
+      console.error('Error streaming AI response:', error);
+      toast({
+        title: "AI Error",
+        description: error instanceof Error ? error.message : "Failed to get AI response. Please try again.",
+        variant: "destructive",
+      });
+      
+      setMessages(prev => prev.filter(msg => !(msg.sender === 'ai' && msg.text === '')));
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim()) {
+      // Filter and validate message for AI mode
+      if (chatMode === "ai" && !isSafeForAI(message.trim())) {
+        toast({
+          title: "Message blocked",
+          description: "Your message contains inappropriate content or patterns. Please rephrase.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const filteredMessage = chatMode === "ai" ? filterInappropriateContent(message.trim()) : message.trim();
+
       // Handle business selection for verification
       if (awaitingVerificationBusinessSelection) {
         const selectedBusiness = mockBusinesses.find(business => 
@@ -191,27 +328,30 @@ export function useChatState() {
       
       const newMessage = {
         id: messages.length + 1,
-        text: message,
+        text: filteredMessage,
         sender: "user",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       
-      setMessages([...messages, newMessage]);
-      
-      // Add a response based on chat mode
-      setTimeout(() => {
-        const responseMessage = {
-          id: messages.length + 2,
-          text: chatMode === "ai" 
-            ? "This is an AI-generated response. How can I assist you further?"
-            : "A live agent has received your message. We'll respond as soon as possible.",
-          sender: chatMode === "ai" ? "support" : "live-support",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages(prev => [...prev, responseMessage]);
-      }, 1000);
-      
+      const updatedMessages = [...messages, newMessage];
+      setMessages(updatedMessages);
       setMessage("");
+      
+      // Handle AI mode with streaming
+      if (chatMode === "ai") {
+        await streamAIResponse(updatedMessages);
+      } else {
+        // LIVE mode - placeholder
+        setTimeout(() => {
+          const responseMessage = {
+            id: updatedMessages.length + 1,
+            text: "A live agent has received your message. We'll respond as soon as possible.",
+            sender: "live-support",
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+          setMessages(prev => [...prev, responseMessage]);
+        }, 1000);
+      }
     }
   };
 

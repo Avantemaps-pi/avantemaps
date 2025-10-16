@@ -14,7 +14,7 @@ const Communicon = () => {
   const navigate = useNavigate();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const { hasPermission, isLoading } = useFeatureAccess(
-    SubscriptionTier.SMALL_BUSINESS,
+    SubscriptionTier.ORGANIZATION,
     { redirectTo: '' } // We'll handle redirection within the component
   );
   
@@ -114,6 +114,7 @@ const Communicon = () => {
           handleSendMessage={handleSendMessageWrapper}
           handleAttachmentOption={handleAttachmentOptionWrapper}
           showAttachmentIcon={true}
+          hasLiveChatAccess={hasPermission}
         />
       </div>
 
@@ -143,9 +144,9 @@ const Communicon = () => {
                 <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"></path>
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-center">LIVE Chat Support Available with Business Subscription</h2>
+            <h2 className="text-2xl font-bold text-center">LIVE Chat Support Available with Organization Subscription</h2>
             <p className="text-muted-foreground text-center">
-              Access direct LIVE chat support with our team by upgrading to our Small Business plan.
+              Access direct LIVE chat support with our team by upgrading to our Organization plan.
             </p>
             <div className="flex space-x-4">
               <Button 

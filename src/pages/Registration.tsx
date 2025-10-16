@@ -40,10 +40,11 @@ const Registration = () => {
     <AppLayout 
       title="Register Business"
       fullHeight={false} 
+      fullWidth={true}
       hideSidebar={true}
     >
       <motion.div 
-        className="w-full max-w-5xl mx-auto px-2 py-2 md:py-6 overflow-visible form-container"
+        className="w-full py-2 md:py-6 overflow-visible form-container"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}

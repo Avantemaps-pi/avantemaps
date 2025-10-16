@@ -9,6 +9,7 @@ import {
 } from '@/utils/piNetwork';
 import { SubscriptionTier } from '@/utils/piNetwork/types';
 import { getUserSubscription, updateUserData } from './authUtils';
+import { secureLog } from '@/utils/secureLogger';
 
 // Request permissions before authenticating with improved error handling
 export const requestAuthPermissions = async (
@@ -75,7 +76,7 @@ export const requestAuthPermissions = async (
       clearTimeout(requestTimeout);
       
       if (userInfo) {
-        console.log("Permission request successful:", userInfo);
+        secureLog.info("Permission request successful");
         return true;
       } else {
         console.log("Permission request failed or was denied");
@@ -182,7 +183,7 @@ export const performLogin = async (
         }, 6000); // 6 second timeout for this specific step
         
         window.Pi!.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
-          console.log('Incomplete payment found:', payment);
+          secureLog.info('Incomplete payment found');
           // Store it to be handled after authentication
           if (window.localStorage) {
             window.localStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
@@ -200,19 +201,24 @@ export const performLogin = async (
       
       const authResult = await authPromise;
       
-      console.log("Authentication result:", authResult);
+      secureLog.info("Authentication successful");
       
       if (authResult && authResult.user && authResult.accessToken) {
         console.log("Authentication successful");
         
         // Store the current user in the window.Pi object for later use
-        if (window.Pi) {
-          window.Pi.currentUser = {
+      // Store user data in Pi SDK object as read-only to prevent manipulation
+      if (window.Pi) {
+        Object.defineProperty(window.Pi, 'currentUser', {
+          value: Object.freeze({
             uid: authResult.user.uid,
             username: authResult.user.username,
-            roles: authResult.user.roles
-          };
-        }
+            roles: Object.freeze([...authResult.user.roles])
+          }),
+          writable: false,
+          configurable: false
+        });
+      }
         
         // Get user's subscription tier from Supabase
         const subscriptionTier = await getUserSubscription(authResult.user.uid);
@@ -300,7 +306,7 @@ export const refreshUserData = async (
 
     // Request permissions again to ensure all required ones are granted
     if (isPiNetworkAvailable()) {
-      console.log("Refreshing user permissions with authenticate");
+      secureLog.info("Refreshing user permissions with authenticate");
       const authResult = await window.Pi!.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
         console.log('Incomplete payment found during refresh:', payment);
         // Store it to be handled later
@@ -310,13 +316,17 @@ export const refreshUserData = async (
       });
       
       if (authResult) {
-        // Update the current user in the window.Pi object
+        // Store refreshed user data in Pi SDK object as read-only
         if (window.Pi) {
-          window.Pi.currentUser = {
-            uid: authResult.user.uid,
-            username: authResult.user.username,
-            roles: authResult.user.roles
-          };
+          Object.defineProperty(window.Pi, 'currentUser', {
+            value: Object.freeze({
+              uid: authResult.user.uid,
+              username: authResult.user.username,
+              roles: Object.freeze([...authResult.user.roles])
+            }),
+            writable: false,
+            configurable: false
+          });
         }
         
         // Extract wallet address if available

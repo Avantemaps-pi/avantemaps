@@ -31,7 +31,7 @@ export const TIERS: PricingTier[] = [
       "Priority business support",
       "Verified business status",
     ],
-    cta: "Upgrade to Business",
+    cta: "Switch to Business",
     highlighted: true,
     popular: true
   },

@@ -17,9 +17,9 @@ Deno.serve(async (req) => {
     const bucketExists = existingBuckets?.some(bucket => bucket.name === 'business-images');
     
     if (!bucketExists) {
-      // Create storage bucket for business images
+      // Create storage bucket for business images (private with RLS policies)
       const { data: newBucket, error: bucketError } = await supabaseClient.storage.createBucket('business-images', {
-        public: true
+        public: false
       });
       
       if (bucketError) {

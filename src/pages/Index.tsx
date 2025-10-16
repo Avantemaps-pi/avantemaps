@@ -19,12 +19,23 @@ const Index = () => {
   const { places = [], filteredPlaces = [], isLoading = false, handleSearch } = useBusinessData();
   const { setOpenMobile } = useSidebar();
 
-  const handlePlaceClick = (placeId: string) => {
+  const handlePlaceClick = (placeId: string, zoomToLocation?: boolean) => {
     setSelectedPlace(placeId);
+    if (zoomToLocation) {
+      // Trigger zoom event
+      window.dispatchEvent(new CustomEvent('zoomToPlace', { detail: { placeId, zoom: true } }));
+    }
   };
   
   const handleMenuClick = () => {
     setOpenMobile(true);
+  };
+
+  const handlePlaceSelect = (place: { name: string; lat: number; lng: number }) => {
+    // Center the map on the selected place
+    window.dispatchEvent(new CustomEvent('centerMap', { 
+      detail: { lat: place.lat, lng: place.lng, zoom: 15 } 
+    }));
   };
 
   useEffect(() => {
@@ -39,11 +50,18 @@ const Index = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const sharedPlaceId = urlParams.get('place');
     const stateSelectedPlaceId = location.state?.selectedPlaceId;
+    const shouldZoom = location.state?.zoomToLocation;
     
     if (sharedPlaceId) {
       setSelectedPlace(sharedPlaceId);
     } else if (stateSelectedPlaceId) {
       setSelectedPlace(stateSelectedPlaceId);
+      if (shouldZoom) {
+        // Trigger zoom event with a slight delay to ensure map is ready
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('zoomToPlace', { detail: { placeId: stateSelectedPlaceId, zoom: true } }));
+        }, 300);
+      }
     }
   }, [location]);
 
@@ -86,7 +104,8 @@ const Index = () => {
         
         <div className="flex-1 max-w-xs sm:max-w-md md:max-w-lg mx-auto md:ml-6 lg:ml-8">
           <SearchBar 
-            onSearch={handleSearch} 
+            onSearch={handleSearch}
+            onPlaceSelect={handlePlaceSelect}
             placeholders={[
               "Search for Address", 
               "Search for Business name", 

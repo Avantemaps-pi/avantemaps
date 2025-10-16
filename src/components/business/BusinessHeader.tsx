@@ -15,7 +15,6 @@ const BusinessHeader = ({ title, subtitle, showButton = true }: BusinessHeaderPr
   return (
     <div className="flex justify-between items-center mb-6">
       <div>
-        <h1 className="text-3xl font-bold">{title}</h1>
         {subtitle && <p className="text-muted-foreground mt-1">{subtitle}</p>}
       </div>
       {showButton && <Button onClick={() => navigate('/registration')}>Register New Business</Button>}
