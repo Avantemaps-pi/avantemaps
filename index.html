@@ -11,6 +11,18 @@
     <meta property="og:image" content="/og-image.png" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" type="module"></script>
+    <script>
+      (function() {
+        const script = document.createElement('script');
+        script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyAp6za1pf11Tvq80kIRBpqqunXg4AcYa8s&libraries=places&loading=async';
+        script.async = true;
+        script.defer = true;
+        script.onload = function() {
+          window.dispatchEvent(new Event('google-maps-loaded'));
+        };
+        document.head.appendChild(script);
+      })();
+    </script>
   </head>
 
   <body>

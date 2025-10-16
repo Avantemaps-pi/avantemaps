@@ -81,8 +81,22 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
       }
     };
 
+    const handleCenterMap = (event: CustomEvent) => {
+      const { lat, lng, zoom: newZoom } = event.detail;
+      if (lat && lng) {
+        setMapCenter([lat, lng]);
+        if (newZoom) {
+          setZoom(newZoom);
+        }
+      }
+    };
+
     window.addEventListener('zoomToPlace', handleZoomToPlace as EventListener);
-    return () => window.removeEventListener('zoomToPlace', handleZoomToPlace as EventListener);
+    window.addEventListener('centerMap', handleCenterMap as EventListener);
+    return () => {
+      window.removeEventListener('zoomToPlace', handleZoomToPlace as EventListener);
+      window.removeEventListener('centerMap', handleCenterMap as EventListener);
+    };
   }, [displayPlaces]);
 
   const handleMarkerClick = (id: string) => {

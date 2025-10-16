@@ -31,6 +31,13 @@ const Index = () => {
     setOpenMobile(true);
   };
 
+  const handlePlaceSelect = (place: { name: string; lat: number; lng: number }) => {
+    // Center the map on the selected place
+    window.dispatchEvent(new CustomEvent('centerMap', { 
+      detail: { lat: place.lat, lng: place.lng, zoom: 15 } 
+    }));
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
@@ -97,7 +104,8 @@ const Index = () => {
         
         <div className="flex-1 max-w-xs sm:max-w-md md:max-w-lg mx-auto md:ml-6 lg:ml-8">
           <SearchBar 
-            onSearch={handleSearch} 
+            onSearch={handleSearch}
+            onPlaceSelect={handlePlaceSelect}
             placeholders={[
               "Search for Address", 
               "Search for Business name", 
