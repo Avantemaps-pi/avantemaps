@@ -40,10 +40,11 @@ export const isDevelopmentMode = (): boolean => import.meta.env.DEV;
 const isProduction = (): boolean => {
   if (typeof window !== 'undefined') {
     const host = window.location.host;
-    return host.includes('lovable.app') || 
-           host.includes('app.lovable.dev') ||
-           host.includes('lovableproject.com') ||
-           import.meta.env.PROD;
+    // Only consider it production if it's on the actual deployed domains
+    // .lovableproject.com is the Lovable sandbox/preview environment
+    return (host.includes('lovable.app') || 
+            host.includes('app.lovable.dev')) &&
+           !host.includes('lovableproject.com');
   }
   return import.meta.env.PROD;
 };
