@@ -14,35 +14,39 @@ const AddressTab: React.FC<AddressTabProps> = ({
   onPrevious,
   disabled
 }) => {
-  return <div className="w-full max-w-4xl mx-auto">
-      {/* Progress Indicator */}
-      <div className="mb-6 sm:mb-8">
-        
-        
-      </div>
-
-      <Card className="border-border/40 shadow-lg rounded-2xl overflow-hidden">
-        <CardHeader className="pb-6 space-y-3 bg-gradient-to-br from-background to-muted/20">
-          <CardTitle className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Business Location
-          </CardTitle>
-          <CardDescription className="text-base sm:text-lg">
-            Help customers find you by providing your business address
+  return (
+    <div className="w-full">
+      <Card className="border shadow-sm">
+        <CardHeader className="pb-4 space-y-2">
+          <CardTitle className="text-2xl sm:text-xl">Business Location</CardTitle>
+          <CardDescription className="text-base sm:text-sm">
+            Help customers find you by providing your business address.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6 pt-6 px-4 sm:px-6">
+        <CardContent className="space-y-6">
           <AddressInput disabled={disabled} />
           <AddressFormFields disabled={disabled} />
         </CardContent>
-        <CardFooter className="flex flex-col sm:flex-row gap-3 pt-6 pb-6 px-4 sm:px-6 bg-muted/30">
-          <Button type="button" variant="outline" onClick={onPrevious} disabled={disabled} className="w-full sm:w-auto order-2 sm:order-1 border-2 hover:bg-background">
+        <CardFooter className="flex justify-between pt-2">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onPrevious} 
+            disabled={disabled}
+          >
             Back
           </Button>
-          <Button type="button" onClick={onNext} disabled={disabled} className="w-full sm:w-auto sm:ml-auto order-1 sm:order-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all">
-            Continue to Contact Info
+          <Button 
+            type="button" 
+            className="bg-avante-blue hover:bg-avante-blue/90"
+            onClick={onNext} 
+            disabled={disabled}
+          >
+            Next
           </Button>
         </CardFooter>
       </Card>
-    </div>;
+    </div>
+  );
 };
 export default AddressTab;
