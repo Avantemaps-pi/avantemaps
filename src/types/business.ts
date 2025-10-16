@@ -35,4 +35,13 @@ export interface Place {
     lat: number;
     lng: number;
   };
+  // Enhanced address fields
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  // Search metadata
+  distance?: number; // Distance in meters from search point
+  relevance?: number; // Search relevance score (0-1)
 }

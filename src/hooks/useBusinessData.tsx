@@ -15,6 +15,13 @@ interface PublicBusinessInfo {
   created_at: string;
   is_verified: boolean;
   is_certified: boolean;
+  street_address?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export const useBusinessData = () => {
@@ -33,17 +40,23 @@ export const useBusinessData = () => {
         if (error) throw error;
         
         const transformedPlaces: Place[] = (data as PublicBusinessInfo[]).map((business) => {
-          let position = { lat: 37.7749 + (Math.random() * 0.2 - 0.1), lng: -122.4194 + (Math.random() * 0.2 - 0.1) };
+          // Use native lat/lng from PostGIS if available, fallback to JSON parsing
+          let position = { lat: 37.7749, lng: -122.4194 };
           
-          try {
-            if (business.coordinates) {
+          if (business.latitude !== undefined && business.longitude !== undefined && 
+              business.latitude !== null && business.longitude !== null) {
+            // Use native PostGIS coordinates (preferred)
+            position = { lat: business.latitude, lng: business.longitude };
+          } else if (business.coordinates) {
+            // Fallback to JSON parsing for backward compatibility
+            try {
               const coordinates = JSON.parse(business.coordinates);
               if (coordinates.lat && coordinates.lng) {
                 position = coordinates;
               }
+            } catch (e) {
+              console.error("Failed to parse location:", e);
             }
-          } catch (e) {
-            console.error("Failed to parse location:", e);
           }
           
           return {
@@ -64,6 +77,12 @@ export const useBusinessData = () => {
             business_types: business.business_types || [],
             keywords: business.keywords || [],
             isUserBusiness: false, // Cannot determine ownership from public data
+            // Enhanced address fields
+            streetAddress: business.street_address,
+            city: business.city,
+            state: business.state,
+            postalCode: business.postal_code,
+            country: business.country,
           };
         });
         

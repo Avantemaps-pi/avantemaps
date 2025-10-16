@@ -17,6 +17,7 @@ export const fetchAddressSuggestions = async (query: string): Promise<AddressSug
       return [];
     }
 
+    // The edge function now returns structured address components
     return data?.suggestions || [];
   } catch (error) {
     console.error('Error calling geocode function:', error);
