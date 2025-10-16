@@ -31,9 +31,9 @@ interface CommentProps {
 const CommentItem: React.FC<CommentProps> = ({ comment, onVote, onReport }) => {
   const { checkAuthForAction } = useAuthRestrictions();
 
-  const handleVote = (voteType: 'up' | 'down') => {
+  const handleVote = async (voteType: 'up' | 'down') => {
     if (checkAuthForAction('vote')) {
-      onVote(comment.id, voteType);
+      await onVote(comment.id, voteType);
     }
   };
 
