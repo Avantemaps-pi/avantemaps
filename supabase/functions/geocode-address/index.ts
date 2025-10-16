@@ -130,7 +130,7 @@ serve(async (req) => {
     if (!locationiqToken) {
       console.error('LOCATIONIQ_TOKEN not configured');
       return new Response(
-        JSON.stringify({ error: 'Geocoding service not configured' }),
+        JSON.stringify({ error: 'Service temporarily unavailable' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -148,9 +148,9 @@ serve(async (req) => {
     if (!response.ok) {
       console.error(`LocationIQ API error: ${response.status}`);
       return new Response(
-        JSON.stringify({ error: 'Geocoding request failed' }),
+        JSON.stringify({ error: 'Service temporarily unavailable' }),
         { 
-          status: response.status, 
+          status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
@@ -184,7 +184,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Geocoding error:', error instanceof Error ? error.message : 'Unknown error');
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Service temporarily unavailable' }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
