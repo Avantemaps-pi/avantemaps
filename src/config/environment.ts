@@ -25,33 +25,13 @@ export const DEV_CONFIG = {
   }
 };
 
-// Maps API configuration
-// SECURITY WARNING: This Google Maps API key is exposed in client-side code.
-// Google Maps JavaScript API keys are designed to be used client-side, but MUST be protected.
-// 
-// REQUIRED SECURITY MEASURES (configure in Google Cloud Console):
-// 1. HTTP Referrer Restrictions: Limit to your domains (e.g., yourdomain.com/*, *.lovable.app/*)
-// 2. API Restrictions: Restrict to only Maps JavaScript API and Geocoding API
-// 3. Usage Quotas: Set up billing alerts and quotas to prevent abuse
-// 4. Key Rotation: Rotate this key if it's been exposed without restrictions
-//
-// To configure: Google Cloud Console → APIs & Services → Credentials → Select this key
+// Map configuration (using OpenStreetMap via Leaflet)
 export const MAPS_CONFIG = {
-  apiKey: "AIzaSyAp6za1pf11Tvq80kIRBpqqunXg4AcYa8s",
   defaultCenter: {
     lat: 37.7749,
     lng: -122.4194,
   },
   defaultZoom: 13,
-};
-
-// Function to validate that required configuration exists
-export const validateEnvConfig = (): boolean => {
-  if (!MAPS_CONFIG.apiKey) {
-    console.error("Missing Google Maps API key in environment configuration");
-    return false;
-  }
-  return true;
 };
 
 // Development mode helpers

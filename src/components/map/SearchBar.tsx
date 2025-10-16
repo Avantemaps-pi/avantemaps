@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, MapPin } from 'lucide-react';
 import debounce from 'lodash/debounce';
-import { useGooglePlacesAutocomplete } from '@/hooks/useGooglePlacesAutocomplete';
+import { useLocationIQAutocomplete } from '@/hooks/useLocationIQAutocomplete';
 import { cn } from '@/lib/utils';
 interface SearchBarProps {
   onSearch?: (searchTerm: string) => void;
@@ -23,7 +23,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { predictions, getSuggestions, getPlaceDetails, clearSuggestions } = useGooglePlacesAutocomplete();
+  const { predictions, getSuggestions, getPlaceDetails, clearSuggestions } = useLocationIQAutocomplete();
 
   // Debounced autocomplete function
   const debouncedAutocomplete = useCallback(
