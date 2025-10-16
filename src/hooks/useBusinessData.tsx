@@ -126,10 +126,6 @@ export const useBusinessData = () => {
     });
     
     setFilteredPlaces(filtered);
-    
-    if (filtered.length === 0) {
-      toast.info("No businesses found. Try a different name, address, or keyword.");
-    }
   };
 
   return {
