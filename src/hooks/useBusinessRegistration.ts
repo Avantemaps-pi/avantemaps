@@ -70,7 +70,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const geocodeAddress = async (address: string): Promise<google.maps.LatLngLiteral | null> => {
+  const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
       // Use our LocationIQ edge function for geocoding
       const { data, error } = await supabase.functions.invoke('geocode-address', {
