@@ -8,11 +8,23 @@
 
 import { SubscriptionTier } from '@/utils/piNetwork/types';
 
+// Build-time security check: Ensure auth bypass is never enabled in production builds
+if (import.meta.env.PROD) {
+  const authBypassEnabled = import.meta.env.DEV; // Should always be false in PROD
+  if (authBypassEnabled) {
+    throw new Error(
+      '🚨 CRITICAL SECURITY ERROR: Authentication bypass is enabled in a production build! ' +
+      'This is a severe security vulnerability. Build failed.'
+    );
+  }
+}
+
 // Development configuration
 export const DEV_CONFIG = {
   // Enable this to bypass Pi Network authentication during development
   // SECURITY: This is automatically disabled in production builds
-  bypassAuth: import.meta.env.DEV, // Only bypass in development mode
+  // CRITICAL: Remove this entire config before deploying to production
+  bypassAuth: import.meta.env.DEV && import.meta.env.VITE_ALLOW_AUTH_BYPASS !== 'false', // Only bypass in development mode
   mockUser: {
     uid: "00000000-0000-0000-0000-000000000001", // Valid UUID format
     username: "Developer",
@@ -50,13 +62,20 @@ const isProduction = (): boolean => {
 };
 
 export const shouldBypassAuth = (): boolean => {
+  // Triple-layer protection against production bypass
   if (isProduction()) {
     console.error('⚠️ SECURITY WARNING: Auth bypass attempted in production environment');
     return false;
   }
   
+  if (import.meta.env.PROD) {
+    console.error('⚠️ SECURITY WARNING: Auth bypass attempted in production build');
+    return false;
+  }
+  
   if (DEV_CONFIG.bypassAuth) {
     console.warn('🔓 Development mode: Authentication bypass is active');
+    console.warn('⚠️  This feature must be disabled before production deployment');
   }
   
   return DEV_CONFIG.bypassAuth;
