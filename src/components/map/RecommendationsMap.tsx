@@ -52,28 +52,50 @@ const RecommendationsMap: React.FC<RecommendationsMapProps> = ({
         
         // Transform the data into the Place format
         const formattedBusinesses = data
-          .filter(business => business.coordinates) // Filter out any without coordinates
-          .map(business => {
-            try {
-              // Parse coordinates from JSON string
-              const coords = JSON.parse(business.coordinates || '{}');
-              return {
-                id: business.id.toString(),
-                name: business.name,
-                category: business.category || '',
-                position: coords,
-                address: business.location || '',
-                description: business.description || '',
-                isUserBusiness: true
-              };
-            } catch (e) {
-              console.error("Failed to parse coordinates for business:", business.id);
-              return null;
-            }
+          .filter(business => {
+            // Filter businesses with valid coordinates (either PostGIS or JSON)
+            return (business.latitude && business.longitude) || business.coordinates;
           })
-          .filter(Boolean) as Place[]; // Filter out any nulls from parsing errors
+          .map(business => {
+            // Use native PostGIS coordinates if available, fallback to JSON parsing
+            let position = { lat: 37.7749, lng: -122.4194 };
+            
+            if (business.latitude !== undefined && business.longitude !== undefined && 
+                business.latitude !== null && business.longitude !== null) {
+              // Use native PostGIS coordinates (preferred)
+              position = { lat: business.latitude, lng: business.longitude };
+            } else if (business.coordinates) {
+              // Fallback to JSON parsing for backward compatibility
+              try {
+                const coords = JSON.parse(business.coordinates || '{}');
+                if (coords.lat && coords.lng) {
+                  position = coords;
+                }
+              } catch (e) {
+                console.error("Failed to parse coordinates:", e);
+              }
+            }
+            
+            return {
+              id: business.id.toString(),
+              name: business.name,
+              category: business.category || '',
+              position,
+              address: business.location || '',
+              description: business.description || '',
+              isUserBusiness: true,
+              streetAddress: business.street_address,
+              city: business.city,
+              state: business.state,
+              postalCode: business.postal_code,
+              country: business.country,
+            };
+          });
         
-        setUserBusinesses(formattedBusinesses);
+        // Filter out any businesses that might have failed
+        const validBusinesses = formattedBusinesses.filter(b => b !== null) as Place[];
+        
+        setUserBusinesses(validBusinesses);
       } catch (error) {
         console.error('Error processing user businesses:', error);
       }

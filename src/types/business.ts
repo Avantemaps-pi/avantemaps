@@ -41,7 +41,7 @@ export interface Place {
   state?: string;
   postalCode?: string;
   country?: string;
-  // Search metadata
+  // Search relevance
   distance?: number; // Distance in meters from search point
-  relevance?: number; // Search relevance score (0-1)
+  relevance?: number; // Search relevance score
 }

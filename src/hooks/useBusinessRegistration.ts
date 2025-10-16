@@ -70,7 +70,18 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
+  const geocodeAddress = async (address: string): Promise<{ 
+    lat: number; 
+    lng: number;
+    address_components?: {
+      house_number: string;
+      road: string;
+      city: string;
+      state: string;
+      postcode: string;
+      country: string;
+    }
+  } | null> => {
     try {
       // Use our LocationIQ edge function for geocoding
       const { data, error } = await supabase.functions.invoke('geocode-address', {
@@ -86,7 +97,8 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         const firstResult = data.suggestions[0];
         return {
           lat: firstResult.lat,
-          lng: firstResult.lon
+          lng: firstResult.lon,
+          address_components: firstResult.address
         };
       }
 
@@ -126,9 +138,9 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       const fullAddress = `${values.streetAddress}${values.apartment ? `, ${values.apartment}` : ''}, ${values.city}, ${values.state}, ${values.zipCode}, ${values.country}`;
       
       // Geocode the address
-      const coordinates = await geocodeAddress(fullAddress);
+      const geocodedData = await geocodeAddress(fullAddress);
       
-      if (!coordinates) {
+      if (!geocodedData) {
         toast.error('Could not locate address. Please check and try again.');
         setIsSubmitting(false);
         return;
@@ -141,7 +153,16 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         location: fullAddress,
         description: values.businessDescription,
         category: values.businessTypes.length > 0 ? values.businessTypes[0] : 'Other',
-        coordinates: JSON.stringify(coordinates),
+        coordinates: JSON.stringify({
+          lat: geocodedData.lat,
+          lng: geocodedData.lng
+        }),
+        // Enhanced structured address fields
+        street_address: values.streetAddress,
+        city: values.city,
+        state: values.state,
+        postal_code: values.zipCode,
+        country: values.country,
         contact_info: {
           phone: values.phone,
           email: values.email,
@@ -220,13 +241,16 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       if (onSuccess) onSuccess();
       
       // Navigate with business data
-      if (coordinates) {
+      if (geocodedData) {
         navigate('/', { 
           state: { 
             newBusiness: true,
             businessData: {
               ...data[0],
-              position: coordinates,
+              position: {
+                lat: geocodedData.lat,
+                lng: geocodedData.lng
+              },
             }
           } 
         });
