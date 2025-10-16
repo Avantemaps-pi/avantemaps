@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
     }
     
     const paymentRequest = validationResult.data;
-    console.log('Payment approval request received for payment:', paymentRequest.paymentId);
+    console.log('Payment approval request received');
 
     const piApiKey = Deno.env.get('PI_API_KEY');
     if (!piApiKey) {
@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
 
     // Handle stale payments - automatically cancel them
     if (existingPayment && isStalePayment(existingPayment)) {
-      console.log(`Detected stale payment ${paymentRequest.paymentId}, attempting to cancel it`);
+      console.log('Detected stale payment, attempting to cancel');
       
       try {
         // Try to cancel the stale payment with Pi Network
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString()
         }).eq('payment_id', paymentRequest.paymentId);
 
-        console.log(`Stale payment ${paymentRequest.paymentId} has been cancelled`);
+        console.log('Stale payment cancelled');
       } catch (cancelError) {
         console.error('Error cancelling stale payment:', cancelError);
         // Continue with approval process even if cancellation fails
@@ -191,8 +191,7 @@ Deno.serve(async (req) => {
       });
 
       const approveResult = await approveResponse.json();
-      console.log('Pi Network API response status:', approveResponse.status);
-      // Log sanitized response (avoid logging full API response with sensitive data)
+      console.log('Pi Network API response received');
 
       if (!approveResponse.ok) {
         if (approveResult.message?.includes('already approved')) {
@@ -277,10 +276,10 @@ Deno.serve(async (req) => {
             if (subError) console.error('Error recording subscription history:', subError);
           }
         } else {
-          console.log(`User already has equal or better subscription.`);
+          console.log('User subscription unchanged - current tier equal or better');
         }
       } else {
-        console.log(`User ${paymentRequest.userId} not found.`);
+        console.log('User not found in database');
       }
 
       const endTime = Date.now();

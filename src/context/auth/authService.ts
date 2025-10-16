@@ -207,13 +207,18 @@ export const performLogin = async (
         console.log("Authentication successful");
         
         // Store the current user in the window.Pi object for later use
-        if (window.Pi) {
-          window.Pi.currentUser = {
+      // Store user data in Pi SDK object as read-only to prevent manipulation
+      if (window.Pi) {
+        Object.defineProperty(window.Pi, 'currentUser', {
+          value: Object.freeze({
             uid: authResult.user.uid,
             username: authResult.user.username,
-            roles: authResult.user.roles
-          };
-        }
+            roles: Object.freeze([...authResult.user.roles])
+          }),
+          writable: false,
+          configurable: false
+        });
+      }
         
         // Get user's subscription tier from Supabase
         const subscriptionTier = await getUserSubscription(authResult.user.uid);
@@ -311,13 +316,17 @@ export const refreshUserData = async (
       });
       
       if (authResult) {
-        // Update the current user in the window.Pi object
+        // Store refreshed user data in Pi SDK object as read-only
         if (window.Pi) {
-          window.Pi.currentUser = {
-            uid: authResult.user.uid,
-            username: authResult.user.username,
-            roles: authResult.user.roles
-          };
+          Object.defineProperty(window.Pi, 'currentUser', {
+            value: Object.freeze({
+              uid: authResult.user.uid,
+              username: authResult.user.username,
+              roles: Object.freeze([...authResult.user.roles])
+            }),
+            writable: false,
+            configurable: false
+          });
         }
         
         // Extract wallet address if available

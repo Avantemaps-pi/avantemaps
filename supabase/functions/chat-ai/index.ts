@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { containsMaliciousContent } from '../_shared/contentFilter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -185,6 +186,24 @@ serve(async (req) => {
     }
     
     const { messages } = validationResult.data;
+    
+    // Check each message for malicious content (prompt injection, data extraction)
+    for (const msg of messages) {
+      if (containsMaliciousContent(msg.content)) {
+        console.log('Blocked message with malicious content');
+        return new Response(
+          JSON.stringify({ 
+            error: 'Invalid message content',
+            message: 'Your message contains prohibited patterns. Please rephrase and try again.'
+          }),
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+    }
+    
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {

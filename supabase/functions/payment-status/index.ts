@@ -21,10 +21,10 @@ interface PaymentResponse {
   };
 }
 
-// Create a Supabase client with the Auth context of the function
+// Create a Supabase client with service role key for database operations
 const supabaseClient = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
 
 // Helper function to check if a payment is likely voided due to timeout
@@ -49,11 +49,41 @@ Deno.serve(async (req) => {
   }
   
   try {
+    // Extract and validate JWT for authentication
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.log('Payment status request denied: No authorization header');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Unauthorized - authentication required' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    // Decode JWT to get user ID
+    const token = authHeader.replace('Bearer ', '');
+    let userId: string;
+    try {
+      const jwt = JSON.parse(atob(token.split('.')[1]));
+      userId = jwt.sub;
+      if (!userId) {
+        throw new Error('Invalid token: missing user ID');
+      }
+    } catch (jwtError) {
+      console.error('Invalid JWT token:', jwtError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Invalid authentication token' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+    
     // Get request body
     const statusRequest: StatusRequest = await req.json();
-    
-    // Log the request for debugging
-    console.log('Payment status request received for payment ID:', statusRequest.paymentId);
     
     // Validate the request
     if (!statusRequest.paymentId) {
@@ -66,22 +96,26 @@ Deno.serve(async (req) => {
       );
     }
     
-    // Get the payment from the database
+    console.log('Payment status request received');
+    
+    // Get the payment from the database - ONLY for the authenticated user
     const { data, error } = await supabaseClient
       .from('payments')
       .select('*')
       .eq('payment_id', statusRequest.paymentId)
+      .eq('user_id', userId) // Authorization check: user can only view their own payments
       .single();
       
     if (error) {
       console.error('Database error:', error);
       
       if (error.code === 'PGRST116') {
-        // Payment not found
+        // Payment not found or user doesn't own it
+        console.log('Payment not found or unauthorized access attempt');
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'Payment not found',
+            message: 'Payment not found or access denied',
             paymentId: statusRequest.paymentId
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
@@ -102,7 +136,7 @@ Deno.serve(async (req) => {
     let paymentStatus = { ...data.status };
     
     if (checkIfPaymentVoided(data)) {
-      console.log('Payment appears to be voided due to timeout:', statusRequest.paymentId);
+      console.log('Payment voided due to timeout');
       paymentStatus.voided = true;
       
       // Update the payment status in the database
