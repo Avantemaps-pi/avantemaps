@@ -30,22 +30,103 @@ export const daysOfWeek = [
   { name: "Sunday", short: "Sun", open: "sundayOpen", close: "sundayClose", closed: "sundayClosed" }
 ];
 
+// XSS Protection: Patterns that could be used for script injection
+const dangerousPatterns = [
+  /<script[^>]*>.*?<\/script>/gi,
+  /on\w+\s*=/gi,
+  /javascript:/gi,
+  /<iframe/gi,
+  /<object/gi,
+  /<embed/gi,
+];
+
+const sanitizeInput = (value: string, fieldName: string) => {
+  if (dangerousPatterns.some((pattern) => pattern.test(value))) {
+    throw new Error(`${fieldName} contains invalid characters`);
+  }
+  return value;
+};
+
 export const formSchema = z.object({
-  firstName: z.string().min(1, { message: "First name is required" }),
-  lastName: z.string().min(1, { message: "Last name is required" }),
-  businessName: z.string().min(1, { message: "Business name is required" }),
+  firstName: z.string().min(1, { message: "First name is required" }).transform((val, ctx) => {
+    try {
+      return sanitizeInput(val, "First name");
+    } catch (e) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: (e as Error).message });
+      return z.NEVER;
+    }
+  }),
+  lastName: z.string().min(1, { message: "Last name is required" }).transform((val, ctx) => {
+    try {
+      return sanitizeInput(val, "Last name");
+    } catch (e) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: (e as Error).message });
+      return z.NEVER;
+    }
+  }),
+  businessName: z.string().min(1, { message: "Business name is required" }).transform((val, ctx) => {
+    try {
+      return sanitizeInput(val, "Business name");
+    } catch (e) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: (e as Error).message });
+      return z.NEVER;
+    }
+  }),
   countryCode: z.string().default('+1'),
   phone: z.string().min(1, { message: "Phone number is required" }),
   email: z.string().email({ message: "Invalid email address" }),
   website: z.string().optional(),
-  streetAddress: z.string().min(1, { message: "Street address is required" }),
-  apartment: z.string().optional(),
-  city: z.string().min(1, { message: "City is required" }),
-  state: z.string().min(1, { message: "State is required" }),
+  streetAddress: z.string().min(1, { message: "Street address is required" }).transform((val, ctx) => {
+    try {
+      return sanitizeInput(val, "Street address");
+    } catch (e) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: (e as Error).message });
+      return z.NEVER;
+    }
+  }),
+  apartment: z.string().optional().transform((val, ctx) => {
+    if (!val) return val;
+    try {
+      return sanitizeInput(val, "Apartment");
+    } catch (e) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: (e as Error).message });
+      return z.NEVER;
+    }
+  }),
+  city: z.string().min(1, { message: "City is required" }).transform((val, ctx) => {
+    try {
+      return sanitizeInput(val, "City");
+    } catch (e) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: (e as Error).message });
+      return z.NEVER;
+    }
+  }),
+  state: z.string().min(1, { message: "State is required" }).transform((val, ctx) => {
+    try {
+      return sanitizeInput(val, "State");
+    } catch (e) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: (e as Error).message });
+      return z.NEVER;
+    }
+  }),
   zipCode: z.string().min(1, { message: "ZIP code is required" }),
-  country: z.string().min(1, { message: "Country is required" }),
+  country: z.string().min(1, { message: "Country is required" }).transform((val, ctx) => {
+    try {
+      return sanitizeInput(val, "Country");
+    } catch (e) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: (e as Error).message });
+      return z.NEVER;
+    }
+  }),
   businessTypes: z.array(z.string()).min(1, { message: "Choose at least one business type" }),
-  businessDescription: z.string().min(10, { message: "Description must be at least 10 characters" }),
+  businessDescription: z.string().min(10, { message: "Description must be at least 10 characters" }).transform((val, ctx) => {
+    try {
+      return sanitizeInput(val, "Business description");
+    } catch (e) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: (e as Error).message });
+      return z.NEVER;
+    }
+  }),
   piWalletAddress: z.string().min(1, { message: "Pi wallet address is required" }),
   mondayOpen: z.string(),
   mondayClose: z.string(),

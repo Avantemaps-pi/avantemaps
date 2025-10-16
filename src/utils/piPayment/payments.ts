@@ -68,14 +68,15 @@ export const executeSubscriptionPayment = async (
     paymentInProgress = true;
 
     // Create payment data according to Pi Network documentation
+    // Security: Remove userId from metadata to prevent exposure in external systems
+    // User identification is already handled via user_id column in database
     const paymentData: PaymentData = {
       amount,
       memo: `Avante Maps ${tier} subscription (${frequency})`,
       metadata: {
         subscriptionTier: tier,
         frequency,
-        timestamp: new Date().toISOString(),
-        userId: authResult.user.uid
+        timestamp: new Date().toISOString()
       }
     };
 
