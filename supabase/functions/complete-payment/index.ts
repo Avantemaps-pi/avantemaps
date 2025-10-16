@@ -2,10 +2,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
-// Validation schema for payment completion requests
+// Validation schema for payment completion requests with strict input validation
 const PaymentRequestSchema = z.object({
-  paymentId: z.string().min(1, 'Payment ID is required').max(255, 'Payment ID too long'),
-  txid: z.string().min(1, 'Transaction ID is required').max(255, 'Transaction ID too long'),
+  paymentId: z.string()
+    .min(1, 'Payment ID is required')
+    .max(100, 'Payment ID too long')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid payment ID format'),
+  txid: z.string()
+    .min(1, 'Transaction ID is required')
+    .max(128, 'Transaction ID too long')
+    .regex(/^[a-fA-F0-9]+$/, 'Invalid transaction ID format'),
   userId: z.string().uuid('Invalid user ID format'),
   amount: z.number().positive('Amount must be positive').max(1000000, 'Amount exceeds maximum'),
   memo: z.string().max(500, 'Memo too long').transform(val => 
@@ -15,7 +21,7 @@ const PaymentRequestSchema = z.object({
     subscriptionTier: z.enum(['individual', 'small-business', 'organization']).optional(),
     frequency: z.enum(['monthly', 'annual']).optional(),
     duration: z.number().int().positive().max(365).optional()
-  }).passthrough() // Allow other keys but validate known ones
+  }).strict() // Only allow known keys for security
 });
 
 type PaymentRequest = z.infer<typeof PaymentRequestSchema>;
@@ -127,12 +133,11 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString()
         }).eq('payment_id', paymentRequest.paymentId);
 
+        console.error('Pi Network completion API error:', completeResult);
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: `Pi Network completion API error: ${completeResult.message || 'Unknown error'}`, 
-            paymentId: paymentRequest.paymentId,
-            txid: paymentRequest.txid 
+            message: 'Payment completion failed. Please try again.'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
         );
@@ -166,7 +171,7 @@ Deno.serve(async (req) => {
           });
 
           if (subscriptionError) {
-            console.error('Failed to create subscription:', subscriptionError);
+            console.error('Subscription creation error:', subscriptionError);
             // Don't fail the entire request since payment was successful
           } else {
             console.log('Subscription created successfully');

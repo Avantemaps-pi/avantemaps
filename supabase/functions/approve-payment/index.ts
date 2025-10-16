@@ -3,9 +3,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
-// Validation schema for payment requests
+// Validation schema for payment requests with strict input validation
 const PaymentRequestSchema = z.object({
-  paymentId: z.string().min(1, 'Payment ID is required').max(255, 'Payment ID too long'),
+  paymentId: z.string()
+    .min(1, 'Payment ID is required')
+    .max(100, 'Payment ID too long')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid payment ID format'),
   userId: z.string().uuid('Invalid user ID format'),
   amount: z.number().positive('Amount must be positive').max(1000000, 'Amount exceeds maximum'),
   memo: z.string().max(500, 'Memo too long').transform(val => 
@@ -15,7 +18,7 @@ const PaymentRequestSchema = z.object({
     subscriptionTier: z.enum(['individual', 'small-business', 'organization']).optional(),
     frequency: z.enum(['monthly', 'annual']).optional(),
     duration: z.number().int().positive().max(365).optional()
-  }).passthrough() // Allow other keys but validate known ones
+  }).strict() // Only allow known keys for security
 });
 
 type PaymentRequest = z.infer<typeof PaymentRequestSchema>;
@@ -104,7 +107,7 @@ Deno.serve(async (req) => {
     if (checkError && checkError.code !== 'PGRST116') {
       console.error('Database check error:', checkError);
       return new Response(
-        JSON.stringify({ success: false, message: `Database check error: ${checkError.message}`, paymentId: paymentRequest.paymentId }),
+        JSON.stringify({ success: false, message: 'Payment processing failed. Please try again.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
@@ -171,8 +174,9 @@ Deno.serve(async (req) => {
           }
         });
       if (error && error.code !== '23505') {
+        console.error('Payment creation error:', error);
         return new Response(
-          JSON.stringify({ success: false, message: `Database error: ${error.message}`, paymentId: paymentRequest.paymentId }),
+          JSON.stringify({ success: false, message: 'Payment processing failed. Please try again.' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
         );
       }
@@ -222,8 +226,9 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString()
         }).eq('payment_id', paymentRequest.paymentId);
 
+        console.error('Pi Network API error:', approveResult);
         return new Response(
-          JSON.stringify({ success: false, message: `Pi Network API error: ${approveResult.message || 'Unknown error'}`, paymentId: paymentRequest.paymentId }),
+          JSON.stringify({ success: false, message: 'Payment approval failed. Please try again.' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
         );
       }
@@ -291,6 +296,7 @@ Deno.serve(async (req) => {
       );
 
     } catch (apiError) {
+      console.error('Pi Network API call error:', apiError);
       await supabaseClient.from('payments').update({
         status: {
           approved: false,
@@ -303,14 +309,14 @@ Deno.serve(async (req) => {
       }).eq('payment_id', paymentRequest.paymentId);
 
       return new Response(
-        JSON.stringify({ success: false, message: `Error calling Pi Network API: ${apiError.message}`, paymentId: paymentRequest.paymentId }),
+        JSON.stringify({ success: false, message: 'Payment service temporarily unavailable. Please try again.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
       );
     }
   } catch (error) {
     console.error('Error in approve-payment function:', error);
     return new Response(
-      JSON.stringify({ success: false, message: `Server error: ${error.message}` }),
+      JSON.stringify({ success: false, message: 'Payment service error. Please try again later.' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

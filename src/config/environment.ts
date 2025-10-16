@@ -34,6 +34,29 @@ export const MAPS_CONFIG = {
   defaultZoom: 13,
 };
 
-// Development mode helpers
+// Development mode helpers with production safety checks
 export const isDevelopmentMode = (): boolean => import.meta.env.DEV;
-export const shouldBypassAuth = (): boolean => DEV_CONFIG.bypassAuth;
+
+const isProduction = (): boolean => {
+  if (typeof window !== 'undefined') {
+    const host = window.location.host;
+    return host.includes('lovable.app') || 
+           host.includes('app.lovable.dev') ||
+           host.includes('lovableproject.com') ||
+           import.meta.env.PROD;
+  }
+  return import.meta.env.PROD;
+};
+
+export const shouldBypassAuth = (): boolean => {
+  if (isProduction()) {
+    console.error('⚠️ SECURITY WARNING: Auth bypass attempted in production environment');
+    return false;
+  }
+  
+  if (DEV_CONFIG.bypassAuth) {
+    console.warn('🔓 Development mode: Authentication bypass is active');
+  }
+  
+  return DEV_CONFIG.bypassAuth;
+};
