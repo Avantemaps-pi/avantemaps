@@ -493,6 +493,24 @@ export type Database = {
         }
         Relationships: []
       }
+      spatial_ref_sys_public: {
+        Row: {
+          auth_name: string | null
+          proj4text: string | null
+          srid: number | null
+        }
+        Insert: {
+          auth_name?: string | null
+          proj4text?: string | null
+          srid?: number | null
+        }
+        Update: {
+          auth_name?: string | null
+          proj4text?: string | null
+          srid?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _postgis_deprecate: {
