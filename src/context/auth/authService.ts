@@ -184,9 +184,9 @@ export const performLogin = async (
         
         window.Pi!.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
           secureLog.info('Incomplete payment found');
-          // Store it to be handled after authentication
-          if (window.localStorage) {
-            window.localStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
+          // Store it to be handled after authentication (use sessionStorage for security)
+          if (window.sessionStorage) {
+            window.sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
           }
         })
         .then(result => {
@@ -309,9 +309,9 @@ export const refreshUserData = async (
       secureLog.info("Refreshing user permissions with authenticate");
       const authResult = await window.Pi!.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
         console.log('Incomplete payment found during refresh:', payment);
-        // Store it to be handled later
-        if (window.localStorage) {
-          window.localStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
+        // Store it to be handled later (use sessionStorage for security)
+        if (window.sessionStorage) {
+          window.sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
         }
       });
       

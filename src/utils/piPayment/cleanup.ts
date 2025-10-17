@@ -14,10 +14,13 @@ import { getPiAuthResult, clearPiAuth, initializePi, authenticateUser } from '..
  */
 export const clearLocalPaymentData = (): void => {
   try {
+    // Clear from both localStorage (legacy) and sessionStorage (new secure location)
     localStorage.removeItem('pi_incomplete_payment');
     localStorage.removeItem('pi_payment_in_progress');
+    sessionStorage.removeItem('pi_incomplete_payment');
+    sessionStorage.removeItem('pi_payment_in_progress');
     sessionStorage.removeItem('pi_current_payment');
-    console.log('Cleared local payment data');
+    console.log('Cleared local payment data from all storage locations');
   } catch (error) {
     console.error('Error clearing local payment data:', error);
   }

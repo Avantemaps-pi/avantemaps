@@ -148,9 +148,9 @@ class PiNetworkCore {
           this.incompletePaymentHandler(payment);
         } else {
           console.warn('No incomplete payment handler set. Payment:', payment.identifier);
-          // Store incomplete payment for later handling
+          // Store incomplete payment for later handling (use sessionStorage for security)
           try {
-            localStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
+            sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
           } catch (e) {
             console.error('Failed to store incomplete payment:', e);
           }
