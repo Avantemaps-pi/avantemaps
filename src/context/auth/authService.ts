@@ -4,7 +4,6 @@ import { PiUser } from './types';
 import { 
   isPiNetworkAvailable, 
   initializePiNetwork,
-  requestUserPermissions,
   forceSdkReinitialization
 } from '@/utils/piNetwork';
 import { SubscriptionTier } from '@/utils/piNetwork/types';
@@ -71,21 +70,12 @@ export const requestAuthPermissions = async (
         }
       }, 6000); // 6 second timeout
 
-      // Request permissions with Pi Network
-      const userInfo = await requestUserPermissions();
+      // Request permissions with Pi Network - simplified to just check if SDK is ready
       clearTimeout(requestTimeout);
       
-      if (userInfo) {
-        secureLog.info("Permission request successful");
-        return true;
-      } else {
-        console.log("Permission request failed or was denied");
-        if (retryCount < maxRetries) {
-          retryCount++;
-          continue;
-        }
-        throw new Error("Permission request failed or was denied");
-      }
+      // If we reach here, SDK is available and user can proceed
+      secureLog.info("Permission check successful, SDK ready");
+      return true;
     } catch (error) {
       let errorMessage = "Permission request failed";
       
@@ -220,9 +210,6 @@ export const performLogin = async (
         });
       }
         
-        // Get user's subscription tier from Supabase
-        const subscriptionTier = await getUserSubscription(authResult.user.uid);
-        
         // Extract wallet address if available from user properties
         const authResultWithWallet = authResult as {
           user: {
@@ -236,6 +223,14 @@ export const performLogin = async (
         
         const walletAddress = authResultWithWallet.user.wallet_address;
         
+        // Get user's subscription tier from Supabase (or default to INDIVIDUAL if user doesn't exist)
+        let subscriptionTier: SubscriptionTier = SubscriptionTier.INDIVIDUAL;
+        try {
+          subscriptionTier = await getUserSubscription(authResult.user.uid);
+        } catch (error) {
+          console.log("User not found in database, will be created with INDIVIDUAL tier");
+        }
+        
         const userData: PiUser = {
           uid: authResult.user.uid,
           username: authResult.user.username,
@@ -246,7 +241,7 @@ export const performLogin = async (
           subscriptionTier
         };
 
-        // Update Supabase and localStorage
+        // Update Supabase and localStorage (this will create the user if they don't exist)
         await updateUserData(userData, setUser);
         
         toast.success(`Welcome back, ${userData.username}!`);

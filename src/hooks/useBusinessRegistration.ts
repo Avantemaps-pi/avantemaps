@@ -116,6 +116,19 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
 
+      // Ensure user exists in database before registering business
+      const { data: existingUser, error: userCheckError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.uid)
+        .single();
+
+      if (userCheckError || !existingUser) {
+        console.error('User not found in database:', userCheckError);
+        toast.error('Your account is not properly set up. Please log out and log back in.');
+        return;
+      }
+
       // Validate content for malicious patterns
       if (containsInappropriateContent(values.businessName)) {
         toast.error('Business name contains inappropriate content or suspicious patterns.');
