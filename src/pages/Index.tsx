@@ -16,6 +16,7 @@ import '../styles/map.css';
 const Index = () => {
   const location = useLocation();
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const { places = [], filteredPlaces = [], isLoading = false, handleSearch } = useBusinessData();
   const { setOpenMobile } = useSidebar();
 
@@ -36,6 +37,11 @@ const Index = () => {
     window.dispatchEvent(new CustomEvent('centerMap', { 
       detail: { lat: place.lat, lng: place.lng, zoom: 15 } 
     }));
+  };
+
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term);
+    handleSearch(term);
   };
 
   useEffect(() => {
@@ -103,17 +109,25 @@ const Index = () => {
         </div>
         
         <div className="flex-1 max-w-xs sm:max-w-md md:max-w-lg mx-auto md:ml-6 lg:ml-8">
-          <SearchBar 
-            onSearch={handleSearch}
-            onPlaceSelect={handlePlaceSelect}
-            placeholders={[
-              "Search for Address", 
-              "Search for Business name", 
-              "Search for Business Type", 
-              "Search for Keywords"
-            ]} 
-            cycleInterval={3000} 
-          />
+          <div className="space-y-2">
+            <SearchBar 
+              onSearch={handleSearchChange}
+              onPlaceSelect={handlePlaceSelect}
+              enableAutocomplete={false}
+              placeholders={[
+                "Search for Address", 
+                "Search for Business name", 
+                "Search for Business Type", 
+                "Search for Keywords"
+              ]} 
+              cycleInterval={3000} 
+            />
+            {searchTerm && filteredPlaces.length === 0 && !isLoading && (
+              <div className="bg-background/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-sm border border-border">
+                <p className="text-sm text-muted-foreground">no businesses found.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       

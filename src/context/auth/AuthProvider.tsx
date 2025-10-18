@@ -22,9 +22,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Minimum time between refresh calls (15 minutes)
-  const REFRESH_COOLDOWN = 15 * 60 * 1000; 
-  // Reduced timeout to 6 seconds
-  const AUTH_TIMEOUT = 6 * 1000;
+  const REFRESH_COOLDOWN = 15 * 60 * 1000;
+  // Increased timeout to 45 seconds for better reliability
+  const AUTH_TIMEOUT = 45 * 1000;
 
   // Check for cached session on mount
   useEffect(() => {
@@ -100,11 +100,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearTimeout(authTimeoutRef.current);
     }
     
-    // Set new authentication timeout - reduced to 6s
+    // Set new authentication timeout
     authTimeoutRef.current = setTimeout(() => {
       setIsLoading(false);
-      setAuthError("Authentication timed out. Please try again.");
-      toast.error("Authentication timed out. Please try again.");
+      setAuthError("Authentication is taking longer than expected. Please check your connection and try again.");
+      toast.error("Authentication timeout. Please ensure you have a stable internet connection and try again.", {
+        duration: 6000,
+      });
       pendingAuthRef.current = false;
     }, AUTH_TIMEOUT);
     
@@ -161,7 +163,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLastRefresh(Date.now());
     } catch (error) {
       console.error("Login process error:", error);
-      toast.error("Authentication failed. Please try again.");
+      const errorMsg = error instanceof Error ? error.message : "Authentication failed. Please try again.";
+      toast.error(errorMsg, {
+        duration: 6000,
+      });
       pendingAuthRef.current = false;
     } finally {
       // Clear authentication timeout

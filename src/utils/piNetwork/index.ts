@@ -12,5 +12,8 @@ export { isPiNetworkAvailable, isSessionExpired } from './helpers';
 // Export subscription utilities
 export { hasFeatureAccess } from './subscription';
 
+// Export verification utilities
+export { verifyPiAuthentication, getDetailedAuthError } from './verification';
+
 // Export types
 export { SubscriptionTier } from './types';

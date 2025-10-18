@@ -9,12 +9,14 @@ interface SearchBarProps {
   onPlaceSelect?: (place: { name: string; lat: number; lng: number }) => void;
   placeholders?: string[];
   cycleInterval?: number;
+  enableAutocomplete?: boolean;
 }
 const SearchBar: React.FC<SearchBarProps> = ({
   onSearch,
   onPlaceSelect,
   placeholders = ["Search for business name", "Search by location", "Search by keywords (e.g., coffee, haircut)", "Search by description"],
-  cycleInterval = 3000
+  cycleInterval = 3000,
+  enableAutocomplete = true
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
@@ -82,7 +84,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setSelectedIndex(-1);
     
     if (value.trim()) {
-      debouncedAutocomplete(value);
+      if (enableAutocomplete) {
+        debouncedAutocomplete(value);
+      }
       debouncedSearch(value);
     } else {
       clearSuggestions();
@@ -156,7 +160,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         </div>
       </form>
 
-      {showDropdown && predictions.length > 0 && (
+      {enableAutocomplete && showDropdown && predictions.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-lg shadow-lg max-h-[300px] overflow-y-auto z-[2000]">
           {predictions.map((prediction, index) => (
             <button

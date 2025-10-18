@@ -64,34 +64,100 @@ class PiNetworkCore {
   private incompletePaymentHandler: ((payment: PaymentDTO) => void) | null = null;
 
   /**
-   * Initialize the Pi SDK
+   * Initialize the Pi SDK with retry logic and improved error handling
    */
   public async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
+    const maxRetries = 3;
+    const baseDelay = 1000;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        await this.initializeAttempt();
+        return;
+      } catch (error) {
+        console.error(`Pi SDK initialization attempt ${attempt + 1} failed:`, error);
+
+        if (attempt < maxRetries - 1) {
+          const delay = baseDelay * Math.pow(2, attempt);
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          throw new Error(`Failed to initialize Pi SDK after ${maxRetries} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+    }
+  }
+
+  private async initializeAttempt(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
+      if (typeof window === 'undefined') {
+        reject(new Error('Window object not available (not in browser environment)'));
+        return;
+      }
+
       // If SDK is already available, initialize it directly
-      if (typeof window !== 'undefined' && window.Pi) {
+      if (window.Pi) {
         console.log('Pi SDK already loaded, initializing...');
         const isSandbox = this.determineSandboxMode();
-        
+
         window.Pi.init({ version: "2.0", sandbox: isSandbox })
           .then(() => {
             console.log('Pi SDK initialized successfully');
             this.isInitialized = true;
             resolve();
           })
-          .catch(reject);
+          .catch((err) => {
+            reject(new Error(`Pi SDK init failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
+          });
+        return;
+      }
+
+      // Check if script is already being loaded
+      const existingScript = document.querySelector('script[src="https://sdk.minepi.com/pi-sdk.js"]');
+      if (existingScript) {
+        console.log('Pi SDK script already in DOM, waiting for load...');
+        const checkInterval = setInterval(() => {
+          if (window.Pi) {
+            clearInterval(checkInterval);
+            const isSandbox = this.determineSandboxMode();
+            window.Pi.init({ version: "2.0", sandbox: isSandbox })
+              .then(() => {
+                console.log('Pi SDK initialized successfully');
+                this.isInitialized = true;
+                resolve();
+              })
+              .catch((err) => {
+                reject(new Error(`Pi SDK init failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
+              });
+          }
+        }, 100);
+
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          if (!this.isInitialized) {
+            reject(new Error('Timeout waiting for Pi SDK to load'));
+          }
+        }, 10000);
         return;
       }
 
       // Load Pi SDK from CDN
-      console.log('Loading Pi SDK...');
+      console.log('Loading Pi SDK from CDN...');
       const script = document.createElement('script');
       script.src = 'https://sdk.minepi.com/pi-sdk.js';
       script.async = true;
-      
+
+      const timeout = setTimeout(() => {
+        script.onerror = null;
+        script.onload = null;
+        reject(new Error('Timeout loading Pi SDK script'));
+      }, 15000);
+
       script.onload = () => {
+        clearTimeout(timeout);
+
         if (window.Pi) {
           const isSandbox = this.determineSandboxMode();
           window.Pi.init({ version: "2.0", sandbox: isSandbox })
@@ -100,17 +166,25 @@ class PiNetworkCore {
               this.isInitialized = true;
               resolve();
             })
-            .catch(reject);
+            .catch((err) => {
+              reject(new Error(`Pi SDK init failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
+            });
         } else {
-          reject(new Error('Pi SDK loaded but not available'));
+          reject(new Error('Pi SDK loaded but window.Pi not available'));
         }
       };
-      
-      script.onerror = () => {
-        reject(new Error('Failed to load Pi SDK'));
+
+      script.onerror = (error) => {
+        clearTimeout(timeout);
+        reject(new Error(`Failed to load Pi SDK script: ${error}`));
       };
-      
-      document.head.appendChild(script);
+
+      try {
+        document.head.appendChild(script);
+      } catch (error) {
+        clearTimeout(timeout);
+        reject(new Error(`Failed to append script to DOM: ${error instanceof Error ? error.message : 'Unknown error'}`));
+      }
     });
   }
 
@@ -148,9 +222,9 @@ class PiNetworkCore {
           this.incompletePaymentHandler(payment);
         } else {
           console.warn('No incomplete payment handler set. Payment:', payment.identifier);
-          // Store incomplete payment for later handling
+          // Store incomplete payment for later handling (use sessionStorage for security)
           try {
-            localStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
+            sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
           } catch (e) {
             console.error('Failed to store incomplete payment:', e);
           }
@@ -220,6 +294,13 @@ class PiNetworkCore {
   }
 
   /**
+   * Check if SDK is properly initialized
+   */
+  public isSdkInitialized(): boolean {
+    return this.isInitialized && typeof window !== 'undefined' && !!window.Pi;
+  }
+
+  /**
    * Clear authentication state
    */
   public clearAuth(): void {
@@ -279,7 +360,7 @@ export const requestUserPermissions = async (): Promise<{
   }
 };
 
-export const isSdkInitialized = () => piNetworkCore.isAuthenticated();
+export const isSdkInitialized = () => piNetworkCore.isSdkInitialized();
 export const forceSdkReinitialization = async (): Promise<boolean> => {
   try {
     piNetworkCore.clearAuth();
