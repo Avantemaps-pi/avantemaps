@@ -11,95 +11,45 @@ import { getUserSubscription, updateUserData } from './authUtils';
 import { secureLog } from '@/utils/secureLogger';
 import { verifyPiAuthentication, getDetailedAuthError } from '@/utils/piNetwork/verification';
 
-// Request permissions before authenticating with improved error handling
+// Simplified permission check - actual permissions are requested during authentication
 export const requestAuthPermissions = async (
   isSdkInitialized: boolean,
   setIsLoading: (loading: boolean) => void,
   setAuthError: (error: string | null) => void
 ): Promise<boolean> => {
-  let retryCount = 0;
-  const maxRetries = 2; // Maximum number of retries for permission requests
-  
-  while (retryCount <= maxRetries) {
-    if (retryCount > 0) {
-      console.log(`Retrying permission request (attempt ${retryCount}/${maxRetries})...`);
-      // Wait briefly before retrying
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Try to re-initialize SDK if needed
-      if (!isSdkInitialized || retryCount > 1) {
-        try {
-          console.log("Re-initializing Pi SDK before retry");
-          await forceSdkReinitialization();
-        } catch (error) {
-          console.error("Failed to re-initialize SDK:", error);
-        }
-      }
+  try {
+    setIsLoading(true);
+    setAuthError(null);
+
+    // Check if online
+    if (!navigator.onLine) {
+      toast.warning("You're offline. Authentication will resume when you're back online.");
+      setIsLoading(false);
+      return false;
     }
 
-    try {
-      setIsLoading(true);
-      setAuthError(null);
-
-      // Check if online
-      if (!navigator.onLine) {
-        toast.warning("You're offline. Authentication will resume when you're back online.");
-        setIsLoading(false);
-        return false;
-      }
-
-      // Check if Pi SDK is available
-      if (!isPiNetworkAvailable()) {
-        if (retryCount < maxRetries) {
-          retryCount++;
-          continue;
-        }
-        console.error("Pi Network SDK is not available");
-        throw new Error("Pi Network SDK is not available");
-      }
-
-      // Set explicit permission request timeout - reduced to 6 seconds
-      const requestTimeout = setTimeout(() => {
-        if (retryCount < maxRetries) {
-          retryCount++;
-          setIsLoading(false);
-          console.log("Permission request timeout, retrying...");
-        } else {
-          setIsLoading(false);
-          setAuthError("Permission request timed out. Please try again.");
-          toast.error("Permission request timed out. Please try again.");
-        }
-      }, 6000); // 6 second timeout
-
-      // Request permissions with Pi Network - simplified to just check if SDK is ready
-      clearTimeout(requestTimeout);
-      
-      // If we reach here, SDK is available and user can proceed
-      secureLog.info("Permission check successful, SDK ready");
-      return true;
-    } catch (error) {
-      let errorMessage = "Permission request failed";
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
-      if (retryCount < maxRetries) {
-        console.log(`Permission error (attempt ${retryCount}): ${errorMessage}, retrying...`);
-        retryCount++;
-        continue;
-      }
-      
-      console.error("Permission error:", errorMessage);
+    // Check if Pi SDK is available
+    if (!isPiNetworkAvailable()) {
+      const errorMessage = "Pi Network SDK is not available. Please use the official Pi Browser app.";
+      console.error(errorMessage);
       setAuthError(errorMessage);
       toast.error(errorMessage);
-      return false;
-    } finally {
       setIsLoading(false);
+      return false;
     }
+
+    // SDK is available, user can proceed with authentication
+    secureLog.info("Pi SDK is available and ready");
+    return true;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Permission check failed";
+    console.error("Permission check error:", errorMessage);
+    setAuthError(errorMessage);
+    toast.error(errorMessage);
+    return false;
+  } finally {
+    setIsLoading(false);
   }
-  
-  return false;
 };
 
 // Optimized login with better error handling and timeout management
@@ -165,39 +115,47 @@ export const performLogin = async (
       }
 
       // Authenticate with Pi Network with required scopes
-      console.log("Authenticating with Pi Network, requesting scopes: username, payments, wallet_address");
+      secureLog.info("Requesting Pi Network authentication with scopes: username, payments, wallet_address");
       
-      // Create a promise with timeout for authentication - increased to 30 seconds for better reliability
+      // Create a promise with timeout for authentication - 15 seconds
       const authPromise = new Promise<any>((resolve, reject) => {
         const authTimeout = setTimeout(() => {
           reject(new Error('Authentication request timed out. Please try again.'));
-        }, 30000);
+        }, 15000);
 
         window.Pi!.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
-          secureLog.info('Incomplete payment found');
+          secureLog.info('Incomplete payment detected during authentication');
           if (window.sessionStorage) {
             window.sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
           }
         })
         .then(result => {
           clearTimeout(authTimeout);
+          secureLog.info("Pi SDK authenticate() resolved successfully");
           resolve(result);
         })
         .catch(err => {
           clearTimeout(authTimeout);
+          secureLog.error("Pi SDK authenticate() rejected:", err);
           reject(err);
         });
       });
       
       const authResult = await authPromise;
+      secureLog.info("Authentication result received", { hasUser: !!authResult?.user, hasToken: !!authResult?.accessToken });
 
       if (!authResult || !authResult.user || !authResult.accessToken) {
-        console.error("Authentication failed: incomplete auth result", authResult);
+        const errorMsg = "Authentication response was incomplete. Please try again.";
+        secureLog.error("Incomplete auth result:", { 
+          hasAuthResult: !!authResult, 
+          hasUser: !!authResult?.user, 
+          hasToken: !!authResult?.accessToken 
+        });
         if (authAttempt < maxAuthAttempts) {
           authAttempt++;
           continue;
         }
-        throw new Error("Authentication response was incomplete. Please try again.");
+        throw new Error(errorMsg);
       }
 
       secureLog.info("Pi SDK authentication successful, verifying with backend...");
@@ -209,15 +167,16 @@ export const performLogin = async (
       );
 
       if (!verificationResult.verified) {
-        console.error("Backend verification failed:", verificationResult);
+        secureLog.error("Backend verification failed:", verificationResult);
         if (authAttempt < maxAuthAttempts) {
           authAttempt++;
           continue;
         }
-        throw new Error(verificationResult.details || verificationResult.error || "Authentication verification failed");
+        // Use the detailed error message from verification
+        throw new Error(verificationResult.details || verificationResult.error || "Could not verify Pi Network credentials");
       }
 
-      console.log("Authentication verified successfully");
+      secureLog.info("Authentication verified successfully with backend");
         
         // Store the current user in the window.Pi object for later use
       // Store user data in Pi SDK object as read-only to prevent manipulation
