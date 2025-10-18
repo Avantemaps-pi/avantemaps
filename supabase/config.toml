@@ -2,3 +2,6 @@ project_id = "xvpwbocwasbtzrzrxyvu"
 
 [functions.chat-ai]
 verify_jwt = true
+
+[functions.verify-pi-auth]
+verify_jwt = false
