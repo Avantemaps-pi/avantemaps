@@ -198,6 +198,14 @@ export const getDetailedAuthError = (error: any): { message: string; userMessage
       };
     }
 
+    // Handle generic Pi SDK message
+    if (errorMessage === 'authentication failed' || errorMessage === 'authentication failed.') {
+      return {
+        message: originalMessage,
+        userMessage: 'Authentication failed. Please approve the Pi login prompt in Pi Browser and ensure you are online, then try again.',
+      };
+    }
+
     // Generic error - don't double-wrap
     return {
       message: originalMessage,
