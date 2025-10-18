@@ -1,14 +1,15 @@
 
 import { toast } from 'sonner';
 import { PiUser } from './types';
-import { 
-  isPiNetworkAvailable, 
+import {
+  isPiNetworkAvailable,
   initializePiNetwork,
   forceSdkReinitialization
 } from '@/utils/piNetwork';
 import { SubscriptionTier } from '@/utils/piNetwork/types';
 import { getUserSubscription, updateUserData } from './authUtils';
 import { secureLog } from '@/utils/secureLogger';
+import { verifyPiAuthentication, getDetailedAuthError } from '@/utils/piNetwork/verification';
 
 // Request permissions before authenticating with improved error handling
 export const requestAuthPermissions = async (
@@ -166,15 +167,14 @@ export const performLogin = async (
       // Authenticate with Pi Network with required scopes
       console.log("Authenticating with Pi Network, requesting scopes: username, payments, wallet_address");
       
-      // Create a promise with timeout for authentication - reduced to 6 seconds
+      // Create a promise with timeout for authentication - increased to 30 seconds for better reliability
       const authPromise = new Promise<any>((resolve, reject) => {
         const authTimeout = setTimeout(() => {
-          reject(new Error('Authentication request timed out'));
-        }, 6000); // 6 second timeout for this specific step
-        
+          reject(new Error('Authentication request timed out. Please try again.'));
+        }, 30000);
+
         window.Pi!.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
           secureLog.info('Incomplete payment found');
-          // Store it to be handled after authentication (use sessionStorage for security)
           if (window.sessionStorage) {
             window.sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
           }
@@ -190,11 +190,34 @@ export const performLogin = async (
       });
       
       const authResult = await authPromise;
-      
-      secureLog.info("Authentication successful");
-      
-      if (authResult && authResult.user && authResult.accessToken) {
-        console.log("Authentication successful");
+
+      if (!authResult || !authResult.user || !authResult.accessToken) {
+        console.error("Authentication failed: incomplete auth result", authResult);
+        if (authAttempt < maxAuthAttempts) {
+          authAttempt++;
+          continue;
+        }
+        throw new Error("Authentication response was incomplete. Please try again.");
+      }
+
+      secureLog.info("Pi SDK authentication successful, verifying with backend...");
+
+      const verificationResult = await verifyPiAuthentication(
+        authResult.accessToken,
+        authResult.user.uid,
+        authResult.user.username
+      );
+
+      if (!verificationResult.verified) {
+        console.error("Backend verification failed:", verificationResult);
+        if (authAttempt < maxAuthAttempts) {
+          authAttempt++;
+          continue;
+        }
+        throw new Error(verificationResult.details || verificationResult.error || "Authentication verification failed");
+      }
+
+      console.log("Authentication verified successfully");
         
         // Store the current user in the window.Pi object for later use
       // Store user data in Pi SDK object as read-only to prevent manipulation
@@ -245,31 +268,21 @@ export const performLogin = async (
         await updateUserData(userData, setUser);
         
         toast.success(`Welcome back, ${userData.username}!`);
-        return; // Success! Exit the retry loop
-      } else {
-        console.error("Authentication failed: auth result incomplete", authResult);
-        if (authAttempt < maxAuthAttempts) {
-          authAttempt++;
-          continue;
-        }
-        throw new Error("Authentication failed");
-      }
+        return;
     } catch (error) {
-      let errorMessage = "Authentication failed";
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
+      const { message, userMessage } = getDetailedAuthError(error);
+
       if (authAttempt < maxAuthAttempts) {
-        console.log(`Authentication error (attempt ${authAttempt}): ${errorMessage}, retrying...`);
+        console.log(`Authentication error (attempt ${authAttempt + 1}/${maxAuthAttempts + 1}): ${message}, retrying...`);
         authAttempt++;
         continue;
       }
-      
-      setAuthError(errorMessage);
-      toast.error(errorMessage);
+
       console.error("Auth error:", error);
+      setAuthError(userMessage);
+      toast.error(userMessage, {
+        duration: 6000,
+      });
     } finally {
       setPendingAuth(false);
       setIsLoading(false);

@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X, AlertCircle } from "lucide-react";
+import { X, AlertCircle, HelpCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from '@/context/auth';
 import { isPiNetworkAvailable } from '@/utils/piNetwork';
+import AuthTroubleshooting from './AuthTroubleshooting';
 
 interface LoginDialogProps {
   open: boolean;
@@ -16,6 +17,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const { login, isLoading, authError } = useAuth();
   const [sdkAvailable, setSdkAvailable] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState<number>(0);
+  const [showTroubleshooting, setShowTroubleshooting] = useState<boolean>(false);
   
   useEffect(() => {
     // Check if Pi SDK is available
@@ -80,16 +82,21 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
           {!sdkAvailable && (
             <div className="w-full bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300 p-3 rounded-md mb-4 flex items-start">
               <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <p className="text-sm">
-                Pi Network SDK not detected. Please ensure you're using the Pi Browser app.
-              </p>
+              <div className="text-sm">
+                <p className="font-semibold mb-1">Pi Network SDK not detected</p>
+                <p>Please ensure you're using the official Pi Browser app. This application requires Pi Network authentication to function properly.</p>
+              </div>
             </div>
           )}
           
           {authError && (
             <div className="w-full bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 p-3 rounded-md mb-4 flex items-start">
               <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <p className="text-sm">{authError}</p>
+              <div className="text-sm">
+                <p className="font-semibold mb-1">Authentication Error</p>
+                <p>{authError}</p>
+                <p className="mt-2 text-xs opacity-80">If this issue persists, please try closing and reopening the Pi Browser, or check your internet connection.</p>
+              </div>
             </div>
           )}
           
@@ -118,13 +125,24 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
             }
           </Button>
           
-          <Button 
-            variant="outline" 
-            className="w-full mb-6" 
+          <Button
+            variant="outline"
+            className="w-full mb-3"
             onClick={handleContinueBrowsing}
           >
             Continue Browsing
           </Button>
+
+          <Button
+            variant="ghost"
+            className="w-full mb-6 text-sm"
+            onClick={() => setShowTroubleshooting(!showTroubleshooting)}
+          >
+            <HelpCircle className="h-4 w-4 mr-2" />
+            {showTroubleshooting ? 'Hide' : 'Show'} Troubleshooting
+          </Button>
+
+          <AuthTroubleshooting isVisible={showTroubleshooting} />
           
           <div className="text-center text-sm text-muted-foreground px-4">
             <p>
