@@ -15,52 +15,37 @@ export const verifyPiAuthentication = async (
   try {
     secureLog.info(`Verifying Pi Network authentication for user: ${username}`);
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl) {
-      throw new Error('Supabase URL not configured');
-    }
 
-    const apiUrl = `${supabaseUrl}/functions/v1/verify-pi-auth`;
-    
-    secureLog.info(`Calling backend verification endpoint`);
+    secureLog.info('Invoking verify-pi-auth via Supabase client');
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-      },
-      body: JSON.stringify({
+    const { data, error } = await supabase.functions.invoke('verify-pi-auth', {
+      body: {
         accessToken,
         uid,
         username,
-      }),
+      },
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-
+    if (error) {
+      const status = (error as any)?.status ?? 500;
       secureLog.error('Backend verification failed:', {
-        status: response.status,
-        error: errorData.error,
-        details: errorData.details,
-        statusText: response.statusText
+        status,
+        error: error.message,
       });
 
-      // Provide more specific error messages based on status code
-      let errorMessage = errorData.error || 'Verification failed';
-      let errorDetails = errorData.details || `Server returned status ${response.status}`;
+      let errorMessage = 'Verification failed';
+      let errorDetails = `Server returned status ${status}`;
 
-      if (response.status === 401) {
+      if (status === 401) {
         errorMessage = 'Invalid authentication token';
         errorDetails = 'Your Pi Network session may have expired. Please try logging in again.';
-      } else if (response.status === 403) {
+      } else if (status === 403) {
         errorMessage = 'Authentication mismatch';
         errorDetails = 'The provided credentials do not match. Please try again.';
-      } else if (response.status === 502 || response.status === 503) {
+      } else if (status === 502 || status === 503) {
         errorMessage = 'Pi Network service unavailable';
         errorDetails = 'The Pi Network API is currently unavailable. Please try again in a moment.';
-      } else if (response.status === 500) {
+      } else if (status === 500) {
         errorMessage = 'Backend verification error';
         errorDetails = 'An error occurred while verifying your credentials. Please try again.';
       }
@@ -72,13 +57,11 @@ export const verifyPiAuthentication = async (
       };
     }
 
-    const result = await response.json();
+    const result = data as any;
 
-    if (result.verified) {
+    if (result?.verified) {
       secureLog.info('Pi Network authentication verified successfully');
-      return {
-        verified: true,
-      };
+      return { verified: true };
     }
 
     return {
