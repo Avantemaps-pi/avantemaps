@@ -159,6 +159,11 @@ export const performLogin = async (
       }
 
       secureLog.info("Pi SDK authentication successful, verifying with backend...");
+      secureLog.info("Verification payload being sent:", {
+        uid: authResult.user.uid,
+        username: authResult.user.username,
+        tokenLength: authResult.accessToken.length
+      });
 
       const verificationResult = await verifyPiAuthentication(
         authResult.accessToken,

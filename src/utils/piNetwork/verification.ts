@@ -18,19 +18,72 @@ export const verifyPiAuthentication = async (
     const sanitizedUsername = username.trim();
 
     secureLog.info(`Verifying Pi Network authentication for user: ${sanitizedUsername}`);
-    secureLog.info('Calling verify-pi-auth', { 
+    
+    const requestBody = {
+      accessToken,
+      uid: sanitizedUid,
+      username: sanitizedUsername,
+    };
+    
+    secureLog.info('Calling verify-pi-auth with payload', { 
       uid: sanitizedUid, 
       username: sanitizedUsername, 
-      tokenLen: accessToken.length 
+      tokenLen: accessToken.length,
+      bodyString: JSON.stringify(requestBody).substring(0, 100)
     });
 
-    const { data, error } = await supabase.functions.invoke('verify-pi-auth', {
-      body: {
-        accessToken,
-        uid: sanitizedUid,
-        username: sanitizedUsername,
-      },
-    });
+    // Try primary method: Supabase functions invoke
+    let data, error;
+    try {
+      const result = await supabase.functions.invoke('verify-pi-auth', {
+        body: requestBody,
+      });
+      data = result.data;
+      error = result.error;
+      
+      if (error) {
+        secureLog.error('Supabase invoke error:', { 
+          status: (error as any)?.status, 
+          message: error.message,
+          fullError: JSON.stringify(error).substring(0, 200)
+        });
+      }
+    } catch (invokeError) {
+      secureLog.error('Supabase invoke threw exception:', invokeError);
+      error = invokeError;
+    }
+
+    // If Supabase invoke failed, try fallback direct fetch
+    if (error && !data) {
+      secureLog.info('Primary method failed, trying fallback direct fetch...');
+      
+      try {
+        const response = await fetch(
+          'https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/verify-pi-auth',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cHdib2N3YXNidHpyenJ4eXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI4MDE2NjUsImV4cCI6MjA1ODM3NzY2NX0.J8yp04TRmdyM_l5FaOFP7Elz16n1ZlQkawH5Xp1vCs0',
+            },
+            body: JSON.stringify(requestBody),
+          }
+        );
+
+        if (response.ok) {
+          data = await response.json();
+          error = null;
+          secureLog.info('Fallback fetch succeeded');
+        } else {
+          const errorText = await response.text();
+          secureLog.error('Fallback fetch failed:', { status: response.status, body: errorText });
+          error = { status: response.status, message: errorText };
+        }
+      } catch (fetchError) {
+        secureLog.error('Fallback fetch threw exception:', fetchError);
+        // Keep the original error
+      }
+    }
 
     if (error) {
       const status = (error as any)?.status ?? 500;
