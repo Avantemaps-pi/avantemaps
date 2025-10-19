@@ -13,16 +13,22 @@ export const verifyPiAuthentication = async (
   username: string
 ): Promise<VerificationResult> => {
   try {
-    secureLog.info(`Verifying Pi Network authentication for user: ${username}`);
+    // Sanitize inputs
+    const sanitizedUid = uid.trim();
+    const sanitizedUsername = username.trim();
 
-
-    secureLog.info('Invoking verify-pi-auth via Supabase client');
+    secureLog.info(`Verifying Pi Network authentication for user: ${sanitizedUsername}`);
+    secureLog.info('Calling verify-pi-auth', { 
+      uid: sanitizedUid, 
+      username: sanitizedUsername, 
+      tokenLen: accessToken.length 
+    });
 
     const { data, error } = await supabase.functions.invoke('verify-pi-auth', {
       body: {
         accessToken,
-        uid,
-        username,
+        uid: sanitizedUid,
+        username: sanitizedUsername,
       },
     });
 
@@ -38,7 +44,7 @@ export const verifyPiAuthentication = async (
 
       if (status === 401) {
         errorMessage = 'Invalid authentication token';
-        errorDetails = 'Your Pi Network session may have expired. Please try logging in again.';
+        errorDetails = 'Your Pi session likely expired or is invalid. Please open the app in the official Pi Browser and try again.';
       } else if (status === 403) {
         errorMessage = 'Authentication mismatch';
         errorDetails = 'The provided credentials do not match. Please try again.';
@@ -156,7 +162,7 @@ export const getDetailedAuthError = (error: any): { message: string; userMessage
     if (errorMessage.includes('invalid') || errorMessage.includes('expired')) {
       return {
         message: originalMessage,
-        userMessage: 'Authentication token is invalid or expired. Please try authenticating again.',
+        userMessage: 'Your Pi session likely expired or is invalid. Please open the app in the official Pi Browser and try again.',
       };
     }
 
