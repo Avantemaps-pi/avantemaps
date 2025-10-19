@@ -15,7 +15,31 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { accessToken, uid, username }: VerifyAuthRequest = await req.json();
+    // Get raw request body for debugging
+    const rawBody = await req.text();
+    console.log('Raw request body received:', rawBody.substring(0, 100));
+
+    // Try to parse the request body
+    let parsedBody: VerifyAuthRequest;
+    try {
+      parsedBody = JSON.parse(rawBody);
+    } catch (parseError) {
+      console.error('Failed to parse request body as JSON:', parseError);
+      console.error('Body starts with:', rawBody.substring(0, 50));
+      return new Response(
+        JSON.stringify({
+          error: 'Invalid request format',
+          details: 'Request body must be valid JSON',
+          verified: false,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const { accessToken, uid, username } = parsedBody;
 
     if (!accessToken || !uid || !username) {
       return new Response(
