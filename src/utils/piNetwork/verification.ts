@@ -240,11 +240,11 @@ export const getDetailedAuthError = (error: any): { message: string; userMessage
       };
     }
 
-    // Handle generic Pi SDK message
+    // Handle generic Pi SDK message - provide more helpful guidance
     if (errorMessage === 'authentication failed' || errorMessage === 'authentication failed.') {
       return {
         message: originalMessage,
-        userMessage: 'Authentication failed. Please approve the Pi login prompt in Pi Browser and ensure you are online, then try again.',
+        userMessage: 'Unable to complete Pi Network authentication. Please ensure you:\n1. Are using the official Pi Browser app\n2. Have approved the login permissions\n3. Have a stable internet connection\n\nIf the issue persists, try restarting the Pi Browser app.',
       };
     }
 

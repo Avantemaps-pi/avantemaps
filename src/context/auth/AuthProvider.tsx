@@ -31,7 +31,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // In development mode, bypass authentication
     if (shouldBypassAuth()) {
       secureLog.info("Development mode: bypassing authentication");
-      setUser(DEV_CONFIG.mockUser);
+      const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
+      setUser(mockUser);
+      // Ensure dev user exists in database
+      import('@/context/auth/authUtils').then(({ updateUserData }) => {
+        updateUserData(mockUser, setUser).catch(err => 
+          secureLog.warn("Failed to create dev user in database:", err)
+        );
+      });
       return;
     }
 
@@ -81,7 +88,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // In development mode, automatically set mock user
     if (shouldBypassAuth()) {
       secureLog.info("Development mode: setting mock user");
-      setUser(DEV_CONFIG.mockUser);
+      const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
+      setUser(mockUser);
+      // Ensure dev user exists in database
+      import('@/context/auth/authUtils').then(({ updateUserData }) => {
+        updateUserData(mockUser, setUser).catch(err => 
+          secureLog.warn("Failed to create dev user in database:", err)
+        );
+      });
       toast.success("Development mode: Logged in as mock user");
       return;
     }
