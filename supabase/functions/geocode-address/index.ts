@@ -78,28 +78,46 @@ serve(async (req) => {
   }
 
   try {
-    // Get user identifier for rate limiting (IP or user ID)
+    // Require authentication
     const authHeader = req.headers.get('authorization');
-    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 'anonymous';
-    let userId = clientIP;
-
-    // If authenticated, use user ID instead of IP
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      const { data: { user } } = await supabase.auth.getUser(token);
-      if (user) {
-        userId = user.id;
-      }
+    
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Authentication required',
+          message: 'Please log in to use the geocoding service.'
+        }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    // Check rate limit
-    const rateLimitCheck = checkRateLimit(userId);
+    const token = authHeader.substring(7);
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Authentication required',
+          message: 'Invalid or expired authentication token.'
+        }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Check rate limit using authenticated user ID
+    const rateLimitCheck = checkRateLimit(user.id);
     if (!rateLimitCheck.allowed) {
-      console.warn(`Rate limit exceeded for user: ${userId.substring(0, 8)}...`);
+      console.warn(`Rate limit exceeded for user: ${user.id.substring(0, 8)}...`);
       return new Response(
         JSON.stringify({ error: rateLimitCheck.error }),
         { 
@@ -141,7 +159,7 @@ serve(async (req) => {
     // Use LocationIQ global autocomplete API endpoint
     const url = `https://api.locationiq.com/v1/autocomplete?key=${locationiqToken}&q=${encodeURIComponent(sanitizedAddress)}&format=json&limit=5`;
     
-    console.log(`Geocoding request for user ${userId.substring(0, 8)}... (length: ${sanitizedAddress.length})`);
+    console.log(`Geocoding request for user ${user.id.substring(0, 8)}... (length: ${sanitizedAddress.length})`);
     
     const response = await fetch(url);
     
