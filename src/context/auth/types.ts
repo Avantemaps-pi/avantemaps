@@ -6,10 +6,10 @@ export interface PiUser {
   username: string;
   walletAddress?: string;
   roles?: string[];
-  accessToken: string;
+  accessToken?: string; // Optional for security - not stored client-side
   lastAuthenticated: number;
   subscriptionTier: SubscriptionTier;
-  businessCount?: number; // Added businessCount property as optional
+  businessCount?: number;
 }
 
 export interface AuthContextType {

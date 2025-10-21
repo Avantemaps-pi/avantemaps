@@ -156,37 +156,70 @@ export const performLogin = async (
         tokenLen: authResult.accessToken.length
       });
 
-      const verificationResult = await verifyPiAuthentication(
-        authResult.accessToken,
-        authResult.user.uid,
-        authResult.user.username
-      );
+      // Attempt backend verification but don't fail authentication if it's just a network issue
+      let verificationSucceeded = false;
+      try {
+        const verificationResult = await verifyPiAuthentication(
+          authResult.accessToken,
+          authResult.user.uid,
+          authResult.user.username
+        );
 
-      // If backend explicitly requests reauth, retry once
-      if (!verificationResult.verified && (verificationResult as any).needsReauth && authAttempt < maxAuthAttempts) {
-        secureLog.warn("Backend requested re-auth. Retrying authenticate()");
-        authAttempt++;
-        await new Promise(r => setTimeout(r, 800));
-        continue;
+        // If backend explicitly requests reauth, retry once
+        if (!verificationResult.verified && (verificationResult as any).needsReauth && authAttempt < maxAuthAttempts) {
+          secureLog.warn("Backend requested re-auth. Retrying authenticate()");
+          authAttempt++;
+          await new Promise(r => setTimeout(r, 800));
+          continue;
+        }
+
+        if (!verificationResult.verified) {
+          const reason = (verificationResult.details || verificationResult.error || '').toLowerCase();
+          secureLog.error("Verification failed:", verificationResult);
+
+          // Only retry for expired/invalid tokens, not network errors
+          if ((reason.includes('expired') || reason.includes('invalid')) && authAttempt < maxAuthAttempts) {
+            secureLog.warn("Detected expired or invalid token — forcing re-authentication...");
+            authAttempt++;
+            await new Promise(r => setTimeout(r, 800));
+            continue;
+          }
+
+          // For network errors, allow login with warning
+          if (reason.includes('network') || reason.includes('connection') || reason.includes('timeout')) {
+            secureLog.warn("Backend verification failed due to network issue, allowing login with warning");
+            toast.warning("Authentication succeeded but couldn't verify with server. Some features may be limited.");
+            verificationSucceeded = false; // Continue without server verification
+          } else {
+            // For other errors, fail the authentication
+            throw new Error(verificationResult.details || verificationResult.error || "Verification failed");
+          }
+        } else {
+          verificationSucceeded = true;
+        }
+      } catch (verificationError) {
+        const errorMsg = verificationError instanceof Error ? verificationError.message : String(verificationError);
+        secureLog.warn("Backend verification threw error:", errorMsg);
+        
+        // Check if it's a network-related error
+        if (errorMsg.toLowerCase().includes('network') || 
+            errorMsg.toLowerCase().includes('fetch') || 
+            errorMsg.toLowerCase().includes('connection') ||
+            errorMsg.toLowerCase().includes('timeout')) {
+          secureLog.warn("Network error during verification, allowing login with warning");
+          toast.warning("Couldn't verify with server due to network issue. Some features may be limited.");
+          verificationSucceeded = false;
+        } else {
+          // For non-network errors, re-throw
+          throw verificationError;
+        }
       }
 
-      if (!verificationResult.verified) {
-  const reason = (verificationResult.details || verificationResult.error || '').toLowerCase();
-  secureLog.error("Verification failed:", verificationResult);
-
-  if (reason.includes('expired') || reason.includes('invalid')) {
-    secureLog.warn("Detected expired or invalid token — forcing re-authentication...");
-    if (authAttempt < maxAuthAttempts) {
-      authAttempt++;
-      await new Promise(r => setTimeout(r, 800));
-      continue;
-    }
-  }
-
-  throw new Error(verificationResult.details || verificationResult.error || "Verification failed");
-}
-
-      secureLog.info("Authentication verified successfully with backend");
+      if (verificationSucceeded) {
+        secureLog.info("Authentication verified successfully with backend");
+      } else {
+        secureLog.info("Authentication completed without backend verification (offline mode)");
+      }
 
       // Build user object WITHOUT accessToken (do NOT store accessToken client-side)
       const safeRoles = (authResult.user.roles ?? []) as string[];
