@@ -83,16 +83,19 @@ Deno.serve(async (req: Request) => {
       console.error(`❌ Pi API verification failed: ${verifyResponse.status} - ${rawResponse}`);
 
       if (verifyResponse.status === 401) {
+        console.warn('⚠️ Access token invalid or expired.');
+      
         return new Response(
           JSON.stringify({
             error: 'Invalid or expired access token',
             verified: false,
-            details: 'The Pi Network access token is invalid or has expired.',
+            needsReauth: true, // 👈 NEW FIELD
+            details: 'The Pi Network access token is invalid or has expired. Please reauthenticate.',
           }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
-
+      
       return new Response(
         JSON.stringify({
           error: 'Pi Network verification failed',
