@@ -5,3 +5,9 @@ verify_jwt = true
 
 [functions.verify-pi-auth]
 verify_jwt = false
+
+[functions.geocode-address]
+verify_jwt = true
+
+[functions.pinet-meta]
+verify_jwt = false

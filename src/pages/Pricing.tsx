@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { TIERS } from '@/components/pricing/pricingTiers';
 import { useAuth } from '@/context/auth';
 import { useSubscriptionPayment } from '@/components/pricing/useSubscriptionPayment';
+import MetaTags from '@/components/seo/MetaTags';
 
 const Pricing = () => {
   const { user, isAuthenticated } = useAuth();
@@ -66,6 +67,25 @@ const Pricing = () => {
 
   return (
     <AppLayout title="Pricing">
+      <MetaTags
+        title="Pricing & Subscriptions"
+        description="Choose the perfect subscription plan for your needs. Pay with Pi Network cryptocurrency. Individual, small business, and organization tiers available."
+        keywords={['pi network pricing', 'subscription plans', 'pi payment', 'business subscription', 'cryptocurrency pricing']}
+        ogType="website"
+        ogTitle="Avante Maps Pricing - Pay with Pi"
+        ogDescription="Flexible subscription plans powered by Pi Network"
+        ogImage={{
+          url: `${window.location.origin}/og-image.png`,
+          width: 1200,
+          height: 630,
+          alt: 'Avante Maps Pricing'
+        }}
+        twitter={{
+          card: 'summary_large_image',
+          title: 'Pricing - Avante Maps',
+          description: 'Choose your plan and pay with Pi cryptocurrency'
+        }}
+      />
       <PricingSection
         title="Simple, transparent pricing"
         subtitle="Choose the plan that's right for you and explore Avante Maps with premium features."

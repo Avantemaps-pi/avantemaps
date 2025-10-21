@@ -9,9 +9,6 @@ export const maxZoom = 18;
 export const worldBounds: [[number, number], [number, number]] = [[-85, -180], [85, 180]];
 export const maxBoundsViscosity = 1.0;
 
-// Google Maps API Key (replace with your own or use environment variables)
-export const GOOGLE_MAPS_API_KEY = 'YOUR_API_KEY'; // This should ideally come from environment variables
-
 // Tile layer configurations
 export const OSM_TILE_LAYER = {
   url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',

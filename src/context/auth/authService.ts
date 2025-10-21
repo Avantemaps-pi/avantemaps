@@ -1,10 +1,8 @@
-
 import { toast } from 'sonner';
 import { PiUser } from './types';
 import {
   isPiNetworkAvailable,
-  initializePiNetwork,
-  forceSdkReinitialization
+  initializePiNetwork
 } from '@/utils/piNetwork';
 import { SubscriptionTier } from '@/utils/piNetwork/types';
 import { getUserSubscription, updateUserData } from './authUtils';
@@ -31,7 +29,7 @@ export const requestAuthPermissions = async (
     // Check if Pi SDK is available
     if (!isPiNetworkAvailable()) {
       const errorMessage = "Pi Network SDK is not available. Please use the official Pi Browser app.";
-      console.error(errorMessage);
+      secureLog.warn(errorMessage);
       setAuthError(errorMessage);
       toast.error(errorMessage);
       setIsLoading(false);
@@ -43,7 +41,7 @@ export const requestAuthPermissions = async (
     return true;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Permission check failed";
-    console.error("Permission check error:", errorMessage);
+    secureLog.error("Permission check error:", error);
     setAuthError(errorMessage);
     toast.error(errorMessage);
     return false;
@@ -62,107 +60,100 @@ export const performLogin = async (
 ): Promise<void> => {
   let authAttempt = 0;
   const maxAuthAttempts = 2;
-  
-  // Initialize SDK if needed - before the auth flow starts
+
+  // Ensure SDK is initialized first (same semantics as yours)
   if (!isSdkInitialized) {
     setPendingAuth(true);
-    console.log("SDK not initialized during login attempt. Initializing now...");
     try {
+      secureLog.info("Initializing Pi SDK before login...");
       const initialized = await initializePiNetwork();
       if (!initialized) {
-        toast.warning("Could not initialize Pi Network. Please try again.");
         setIsLoading(false);
         setPendingAuth(false);
         setAuthError("SDK initialization failed");
+        toast.warning("Could not initialize Pi Network. Please try again.");
         return;
       }
-    } catch (error) {
-      console.error("SDK initialization error:", error);
-      toast.error("Failed to initialize Pi Network SDK. Please try again.");
+    } catch (err) {
+      secureLog.error("SDK initialization failed:", err);
       setIsLoading(false);
       setPendingAuth(false);
       setAuthError("SDK initialization failed");
+      toast.error("Failed to initialize Pi Network SDK. Please try again.");
       return;
     }
   }
-  
+
+  // Main retry loop
   while (authAttempt <= maxAuthAttempts) {
-    if (authAttempt > 0) {
-      console.log(`Retrying authentication (attempt ${authAttempt}/${maxAuthAttempts})...`);
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Brief pause between attempts
-    }
-    
-    setIsLoading(true);
     setAuthError(null);
+    setIsLoading(true);
+    setPendingAuth(true);
 
     try {
-      // Check if online
+      // offline / SDK checks
       if (!navigator.onLine) {
-        setPendingAuth(true);
         toast.warning("You're offline. Authentication will resume when you're back online.");
         setIsLoading(false);
+        setPendingAuth(false);
         return;
       }
-
-      // Check if Pi SDK is available
       if (!isPiNetworkAvailable()) {
-        if (authAttempt < maxAuthAttempts) {
-          authAttempt++;
-          continue;
-        }
-        console.error("Pi Network SDK is not available");
         throw new Error("Pi Network SDK is not available");
       }
 
-      // Authenticate with Pi Network with required scopes
+      // Request permission + authenticate with Pi SDK (with timeout)
       secureLog.info("Requesting Pi Network authentication with scopes: username, payments, wallet_address");
-      
-      // Create a promise with timeout for authentication - 15 seconds
+
       const authPromise = new Promise<any>((resolve, reject) => {
         const authTimeout = setTimeout(() => {
           reject(new Error('Authentication request timed out. Please try again.'));
         }, 15000);
 
-        window.Pi!.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
-          secureLog.info('Incomplete payment detected during authentication');
-          if (window.sessionStorage) {
-            window.sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
-          }
-        })
-        .then(result => {
+        try {
+          window.Pi!.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
+            secureLog.info('Incomplete payment detected during authentication');
+            try {
+              if (window.sessionStorage) {
+                window.sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
+              }
+            } catch (e) {
+              secureLog.warn('Failed to store incomplete payment in sessionStorage', e);
+            }
+          })
+          .then((res: any) => {
+            clearTimeout(authTimeout);
+            resolve(res);
+          })
+          .catch((err: any) => {
+            clearTimeout(authTimeout);
+            reject(err);
+          });
+        } catch (err) {
           clearTimeout(authTimeout);
-          secureLog.info("Pi SDK authenticate() resolved successfully");
-          resolve(result);
-        })
-        .catch(err => {
-          clearTimeout(authTimeout);
-          secureLog.error("Pi SDK authenticate() rejected:", err);
           reject(err);
-        });
+        }
       });
-      
+
       const authResult = await authPromise;
       secureLog.info("Authentication result received", { hasUser: !!authResult?.user, hasToken: !!authResult?.accessToken });
 
       if (!authResult || !authResult.user || !authResult.accessToken) {
         const errorMsg = "Authentication response was incomplete. Please try again.";
-        secureLog.error("Incomplete auth result:", { 
-          hasAuthResult: !!authResult, 
-          hasUser: !!authResult?.user, 
-          hasToken: !!authResult?.accessToken 
-        });
+        secureLog.error("Incomplete auth result:", { hasAuthResult: !!authResult, hasUser: !!authResult?.user, hasToken: !!authResult?.accessToken });
         if (authAttempt < maxAuthAttempts) {
           authAttempt++;
+          await new Promise(r => setTimeout(r, 800));
           continue;
         }
         throw new Error(errorMsg);
       }
 
-      secureLog.info("Pi SDK authentication successful, verifying with backend...");
-      secureLog.info("Verification payload being sent:", {
+      // Immediately verify with backend (do not persist token)
+      secureLog.info("Verifying token with backend", {
         uid: authResult.user.uid,
         username: authResult.user.username,
-        tokenLength: authResult.accessToken.length
+        tokenLen: authResult.accessToken.length
       });
 
       const verificationResult = await verifyPiAuthentication(
@@ -171,85 +162,73 @@ export const performLogin = async (
         authResult.user.username
       );
 
-      if (!verificationResult.verified) {
-        secureLog.error("Backend verification failed:", verificationResult);
-        if (authAttempt < maxAuthAttempts) {
-          authAttempt++;
-          continue;
-        }
-        // Use the detailed error message from verification
-        throw new Error(verificationResult.details || verificationResult.error || "Could not verify Pi Network credentials");
-      }
-
-      secureLog.info("Authentication verified successfully with backend");
-        
-        // Store the current user in the window.Pi object for later use
-      // Store user data in Pi SDK object as read-only to prevent manipulation
-      if (window.Pi) {
-        Object.defineProperty(window.Pi, 'currentUser', {
-          value: Object.freeze({
-            uid: authResult.user.uid,
-            username: authResult.user.username,
-            roles: Object.freeze([...authResult.user.roles])
-          }),
-          writable: false,
-          configurable: false
-        });
-      }
-        
-        // Extract wallet address if available from user properties
-        const authResultWithWallet = authResult as {
-          user: {
-            uid: string;
-            username: string;
-            roles?: string[];
-            wallet_address?: string;
-          };
-          accessToken: string;
-        };
-        
-        const walletAddress = authResultWithWallet.user.wallet_address;
-        
-        // Get user's subscription tier from Supabase (or default to INDIVIDUAL if user doesn't exist)
-        let subscriptionTier: SubscriptionTier = SubscriptionTier.INDIVIDUAL;
-        try {
-          subscriptionTier = await getUserSubscription(authResult.user.uid);
-        } catch (error) {
-          console.log("User not found in database, will be created with INDIVIDUAL tier");
-        }
-        
-        const userData: PiUser = {
-          uid: authResult.user.uid,
-          username: authResult.user.username,
-          walletAddress: walletAddress, 
-          roles: authResult.user.roles,
-          accessToken: authResult.accessToken,
-          lastAuthenticated: Date.now(),
-          subscriptionTier
-        };
-
-        // Update Supabase and localStorage (this will create the user if they don't exist)
-        await updateUserData(userData, setUser);
-        
-        toast.success(`Welcome back, ${userData.username}!`);
-        return;
-    } catch (error) {
-      const { message, userMessage } = getDetailedAuthError(error);
-
-      if (authAttempt < maxAuthAttempts) {
-        console.log(`Authentication error (attempt ${authAttempt + 1}/${maxAuthAttempts + 1}): ${message}, retrying...`);
+      // If backend explicitly requests reauth, retry once
+      if (!verificationResult.verified && (verificationResult as any).needsReauth && authAttempt < maxAuthAttempts) {
+        secureLog.warn("Backend requested re-auth. Retrying authenticate()");
         authAttempt++;
+        await new Promise(r => setTimeout(r, 800));
         continue;
       }
 
-      console.error("Auth error:", error);
+      if (!verificationResult.verified) {
+        // if verification failed, throw to trigger retry logic below or final error
+        const details = verificationResult.details || verificationResult.error || "Verification failed";
+        secureLog.error("Verification failed:", verificationResult);
+        throw new Error(details);
+      }
+
+      secureLog.info("Authentication verified successfully with backend");
+
+      // Build user object WITHOUT accessToken (do NOT store accessToken client-side)
+      const safeRoles = (authResult.user.roles ?? []) as string[];
+      const walletAddress = (authResult.user as any).wallet_address ?? null;
+
+      let subscriptionTier: SubscriptionTier = SubscriptionTier.INDIVIDUAL;
+      try {
+        subscriptionTier = await getUserSubscription(authResult.user.uid);
+      } catch (err) {
+        secureLog.info("User not found in DB; defaulting subscription tier to INDIVIDUAL");
+      }
+
+      const userData: PiUser = {
+        uid: authResult.user.uid,
+        username: authResult.user.username,
+        walletAddress,
+        roles: safeRoles,
+        // IMPORTANT: do NOT include accessToken here
+        lastAuthenticated: Date.now(),
+        subscriptionTier
+      };
+
+      // Persist user meta (the server-side updateUserData should not persist access tokens)
+      await updateUserData(userData, setUser);
+
+      toast.success(`Welcome back, ${userData.username}!`);
+      secureLog.info("User stored and login complete");
+
+      // success -> exit function
+      return;
+    } catch (err) {
+      const { message, userMessage } = getDetailedAuthError(err);
+      secureLog.error("Authentication attempt failed", { attempt: authAttempt + 1, message });
+
+      // If attempts remain, increment and retry
+      if (authAttempt < maxAuthAttempts) {
+        authAttempt++;
+        secureLog.info(`Retrying authentication (${authAttempt}/${maxAuthAttempts})`);
+        await new Promise(r => setTimeout(r, 800 + authAttempt * 300));
+        continue;
+      }
+
+      // Final failure: surface friendly message to user
       setAuthError(userMessage);
-      toast.error(userMessage, {
-        duration: 6000,
-      });
+      toast.error(userMessage, { duration: 6000 });
+      secureLog.error("Final authentication error surfaced to user:", userMessage);
+      return;
     } finally {
-      setPendingAuth(false);
+      // Ensure flags are reset after each attempt
       setIsLoading(false);
+      setPendingAuth(false);
     }
   }
 };
@@ -264,56 +243,75 @@ export const refreshUserData = async (
 
   try {
     setIsLoading(true);
-    
+
     // Ensure SDK is initialized before proceeding
     try {
       await initializePiNetwork();
     } catch (error) {
-      console.error("Failed to initialize Pi Network SDK:", error);
+      secureLog.error("Failed to initialize Pi Network SDK during refresh:", error);
       return;
     }
-    
+
     // Get user's current subscription
     const subscriptionTier = await getUserSubscription(user.uid);
 
-    // Request permissions again to ensure all required ones are granted
+    // Attempt a silent refresh only if SDK is available
     if (isPiNetworkAvailable()) {
-      secureLog.info("Refreshing user permissions with authenticate");
-      const authResult = await window.Pi!.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
-        console.log('Incomplete payment found during refresh:', payment);
-        // Store it to be handled later (use sessionStorage for security)
-        if (window.sessionStorage) {
-          window.sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
+      secureLog.info("Refreshing user permissions with authenticate (silent) - scopes: username, payments, wallet_address");
+      try {
+        const authResult = await window.Pi!.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
+          secureLog.info('Incomplete payment found during refresh', payment);
+          try {
+            if (window.sessionStorage) {
+              window.sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
+            }
+          } catch (e) {
+            secureLog.warn('Failed to store incomplete payment during refresh', e);
+          }
+        });
+
+        if (authResult && authResult.user) {
+          // Update Pi SDK currentUser read-only (no token stored)
+          if (window.Pi) {
+            try {
+              Object.defineProperty(window.Pi, 'currentUser', {
+                value: Object.freeze({
+                  uid: authResult.user.uid,
+                  username: authResult.user.username,
+                  roles: Object.freeze((authResult.user.roles ?? []) as string[])
+                }),
+                writable: false,
+                configurable: false
+              });
+            } catch (e) {
+              secureLog.warn('Could not set window.Pi.currentUser (refresh)', e);
+            }
+          }
+
+          const walletAddress = (authResult.user as any).wallet_address;
+          const updated = {
+            ...user,
+            walletAddress: walletAddress || user.walletAddress,
+            subscriptionTier
+          };
+
+          await updateUserData(updated, setUser);
+          toast.success("User profile updated");
+        } else {
+          // If authResult not provided, just update subscription tier if changed
+          if (user.subscriptionTier !== subscriptionTier) {
+            await updateUserData({
+              ...user,
+              subscriptionTier
+            }, setUser);
+          }
         }
-      });
-      
-      if (authResult) {
-        // Store refreshed user data in Pi SDK object as read-only
-        if (window.Pi) {
-          Object.defineProperty(window.Pi, 'currentUser', {
-            value: Object.freeze({
-              uid: authResult.user.uid,
-              username: authResult.user.username,
-              roles: Object.freeze([...authResult.user.roles])
-            }),
-            writable: false,
-            configurable: false
-          });
-        }
-        
-        // Extract wallet address if available
-        const authResultWithWallet = authResult as any;
-        const walletAddress = authResultWithWallet.user.wallet_address;
-        
-        await updateUserData({
-          ...user,
-          walletAddress: walletAddress || user.walletAddress,
-          subscriptionTier
-        }, setUser);
-        toast.success("User profile updated");
+      } catch (err) {
+        secureLog.error("Silent refresh authenticate failed:", err);
+        // Do not surface toast on silent refresh failure
       }
     } else {
-      // Just update the subscription
+      // Just update the subscription if offline or SDK not available
       if (user.subscriptionTier !== subscriptionTier) {
         await updateUserData({
           ...user,
@@ -322,7 +320,7 @@ export const refreshUserData = async (
       }
     }
   } catch (error) {
-    console.error("Error refreshing user data:", error);
+    secureLog.error("Error refreshing user data:", error);
     toast.error("Failed to refresh user data. Please try again.");
   } finally {
     setIsLoading(false);
