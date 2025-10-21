@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/auth';
 import LoginDialog from '@/components/auth/LoginDialog';
 import { toast } from 'sonner';
+import MetaTags from '@/components/seo/MetaTags';
 
 const Registration = () => {
   const isMobile = useIsMobile();
@@ -43,6 +44,35 @@ const Registration = () => {
       fullWidth={true}
       hideSidebar={true}
     >
+      <MetaTags
+        title="Register Your Business"
+        description="Register your business on Avante Maps and reach customers in your area. Accept Pi Network payments and grow your presence."
+        keywords={['business registration', 'register business', 'pi network business', 'list my business', 'add business']}
+        ogType="website"
+        ogTitle="Register Your Business on Avante Maps"
+        ogDescription="Join the Pi Network business community and reach local customers"
+        ogImage={{
+          url: `${window.location.origin}/og-image.png`,
+          width: 1200,
+          height: 630,
+          alt: 'Register Your Business - Avante Maps'
+        }}
+        twitter={{
+          card: 'summary_large_image',
+          title: 'Register Your Business - Avante Maps',
+          description: 'Join the Pi Network business community'
+        }}
+        structuredData={{
+          '@context': 'https://schema.org',
+          '@type': 'Service',
+          'name': 'Business Registration - Avante Maps',
+          'description': 'Register your business on Avante Maps platform',
+          'provider': {
+            '@type': 'Organization',
+            'name': 'Avante Maps'
+          }
+        }}
+      />
       <motion.div 
         className="w-full py-2 md:py-6 overflow-visible form-container"
         initial={{ opacity: 0, y: 20 }}

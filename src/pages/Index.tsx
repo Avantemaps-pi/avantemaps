@@ -11,6 +11,7 @@ import { useSidebar } from '@/components/ui/sidebar';
 import AvanteMapLogo from '@/components/layout/header/AvanteMapLogo';
 import AppSidebar from '@/components/layout/AppSidebar';
 import PlaceCardSEO from '@/components/seo/PlaceCardSEO';
+import MetaTags from '@/components/seo/MetaTags';
 import '../styles/map.css';
 
 const Index = () => {
@@ -76,9 +77,46 @@ const Index = () => {
 
   return (
     <div className="w-full h-screen relative overflow-hidden">
-      {/* SEO metadata for shared place */}
-      {selectedPlaceData && (
+      {/* SEO metadata */}
+      {selectedPlaceData ? (
         <PlaceCardSEO place={selectedPlaceData} isActive={true} />
+      ) : (
+        <MetaTags
+          title="Discover Local Businesses"
+          description="Find and explore local businesses on Avante Maps. Register your business, get discovered by customers, and transact with Pi cryptocurrency."
+          keywords={['pi network', 'local businesses', 'business directory', 'cryptocurrency', 'pi payment', 'avante maps', 'business map']}
+          authors={[{ name: 'Avante Maps Team' }]}
+          ogType="website"
+          ogImage={{
+            url: `${window.location.origin}/og-image.png`,
+            secure_url: `${window.location.origin}/og-image.png`,
+            type: 'image/png',
+            width: 1200,
+            height: 630,
+            alt: 'Avante Maps - Local Business Discovery'
+          }}
+          twitter={{
+            card: 'summary_large_image',
+            site: '@AvanteMap',
+            title: 'Avante Maps - Discover Local Businesses',
+            description: 'Find local businesses and pay with Pi Network',
+            image: `${window.location.origin}/og-image.png`,
+            image_alt: 'Avante Maps Preview'
+          }}
+          structuredData={{
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            'name': 'Avante Maps',
+            'description': 'Local business discovery platform powered by Pi Network',
+            'url': window.location.origin,
+            'applicationCategory': 'BusinessApplication',
+            'operatingSystem': 'Web',
+            'offers': {
+              '@type': 'Offer',
+              'category': 'Subscription'
+            }
+          }}
+        />
       )}
 
       <AppSidebar />

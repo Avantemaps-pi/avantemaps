@@ -8,6 +8,7 @@ import { useRecommendations } from '@/hooks/useRecommendations';
 import RecommendationSkeleton from '@/components/recommendations/RecommendationSkeleton';
 import EmptyRecommendationSection from '@/components/recommendations/EmptyRecommendationSection';
 import { Award, TrendingUp, Star } from 'lucide-react';
+import MetaTags from '@/components/seo/MetaTags';
 
 const Recommendations = () => {
   const navigate = useNavigate();
@@ -35,6 +36,25 @@ const Recommendations = () => {
   return (
     <AppLayout title="Recommendations" className="overflow-x-hidden">
       <RecommendationsSEO />
+      <MetaTags
+        title="Discover Recommended Businesses"
+        description="Browse curated recommendations for top local businesses. Find the best restaurants, shops, and services in your area."
+        keywords={['business recommendations', 'top businesses', 'local favorites', 'pi network businesses', 'recommended places']}
+        ogType="website"
+        ogTitle="Business Recommendations on Avante Maps"
+        ogDescription="Discover top-rated local businesses recommended by the community"
+        ogImage={{
+          url: `${window.location.origin}/og-image.png`,
+          width: 1200,
+          height: 630,
+          alt: 'Avante Maps Recommendations'
+        }}
+        twitter={{
+          card: 'summary_large_image',
+          title: 'Business Recommendations - Avante Maps',
+          description: 'Discover top-rated local businesses'
+        }}
+      />
       
       <div className="w-full mx-auto mt-4 pb-6 overflow-y-auto overflow-x-hidden px-0">
         <div className="space-y-6 pb-1 px-0 overflow-x-hidden lg:ml-[15px]">
