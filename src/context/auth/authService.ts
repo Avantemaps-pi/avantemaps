@@ -171,11 +171,20 @@ export const performLogin = async (
       }
 
       if (!verificationResult.verified) {
-        // if verification failed, throw to trigger retry logic below or final error
-        const details = verificationResult.details || verificationResult.error || "Verification failed";
-        secureLog.error("Verification failed:", verificationResult);
-        throw new Error(details);
-      }
+  const reason = (verificationResult.details || verificationResult.error || '').toLowerCase();
+  secureLog.error("Verification failed:", verificationResult);
+
+  if (reason.includes('expired') || reason.includes('invalid')) {
+    secureLog.warn("Detected expired or invalid token — forcing re-authentication...");
+    if (authAttempt < maxAuthAttempts) {
+      authAttempt++;
+      await new Promise(r => setTimeout(r, 800));
+      continue;
+    }
+  }
+
+  throw new Error(verificationResult.details || verificationResult.error || "Verification failed");
+}
 
       secureLog.info("Authentication verified successfully with backend");
 
