@@ -165,6 +165,16 @@ export const performLogin = async (
           authResult.user.username
         );
 
+        // Capture traceId from Supabase Edge Function if available
+        if ((verificationResult as any).traceId) {
+          secureLog.info(`🔗 Supabase verification traceId: ${(verificationResult as any).traceId}`);
+          if (secureLog.setTraceId) {
+            secureLog.setTraceId((verificationResult as any).traceId);
+          }
+        } else {
+          secureLog.warn("⚠️ No traceId returned from Supabase verification");
+        }
+        
         // If backend explicitly requests reauth, retry once
         if (!verificationResult.verified && (verificationResult as any).needsReauth && authAttempt < maxAuthAttempts) {
           secureLog.warn("Backend requested re-auth. Retrying authenticate()");

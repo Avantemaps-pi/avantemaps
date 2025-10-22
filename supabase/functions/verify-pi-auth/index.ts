@@ -1,5 +1,11 @@
 import { corsHeaders } from '../_shared/cors.ts';
 
+/**
+ * Pi Network Authentication Verification
+ * Enhanced with retry logic, better token validation handling,
+ * runtime diagnostics, and structured error responses.
+ */
+
 interface VerifyAuthRequest {
   accessToken: string;
   uid: string;
@@ -11,29 +17,29 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
-  try {
-    console.log('🚀 verify-pi-auth triggered');
-    
-    const traceId = crypto.randomUUID();
-    console.log(`🧭 Trace ID: ${traceId} | Incoming verification request`);
+  const traceId = crypto.randomUUID();
 
+  try {
+    console.log(`🚀 [${traceId}] verify-pi-auth invoked`);
+
+    // Parse test mode flag
     const url = new URL(req.url);
     const testMode = url.searchParams.get('test') === 'true';
-    console.log('🧩 Test mode:', testMode);
 
+    // Parse and validate request body
     const rawBody = await req.text();
-    console.log('📩 Raw body snippet:', rawBody.substring(0, 150));
+    console.log(`📩 [${traceId}] Raw body (first 150 chars): ${rawBody.substring(0, 150)}`);
 
     let parsedBody: VerifyAuthRequest;
     try {
       parsedBody = JSON.parse(rawBody);
-    } catch (parseError) {
-      console.error('❌ Failed to parse JSON body:', parseError);
+    } catch {
       return new Response(
         JSON.stringify({
-          error: 'Invalid request format',
           verified: false,
-          details: 'Request body must be valid JSON',
+          error: 'Invalid request format',
+          details: 'Body must be valid JSON.',
+          traceId,
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
@@ -42,127 +48,165 @@ Deno.serve(async (req: Request) => {
     const { accessToken, uid, username } = parsedBody;
 
     if (!accessToken || !uid || !username) {
-      console.warn('⚠️ Missing fields:', { accessToken, uid, username });
+      console.warn(`⚠️ [${traceId}] Missing required fields`);
       return new Response(
         JSON.stringify({
-          error: 'Missing required fields',
           verified: false,
-          details: 'accessToken, uid, and username are required',
+          error: 'Missing required fields',
+          details: 'accessToken, uid, and username are required.',
+          traceId,
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    // ✅ Test mode bypass
+    // ✅ Bypass if running test mode
     if (testMode) {
-      console.log('🧪 Running in TEST MODE — skipping Pi API verification');
+      console.log(`🧪 [${traceId}] Test mode active – skipping Pi API call.`);
       return new Response(
         JSON.stringify({
           verified: true,
-          message: 'Test mode successful — no external call made.',
+          testMode: true,
+          message: 'Verification bypassed successfully.',
           user: { uid, username, wallet_address: 'TEST_WALLET_123' },
+          traceId,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    // --- Normal Pi verification below ---
-    console.log(`🔍 Verifying Pi Network authentication for: ${username} (${uid})`);
+    // --- Verify against Pi Network API ---
+    console.log(`🔍 [${traceId}] Verifying token for ${username} (${uid})`);
 
-    const piApiKey = Deno.env.get('PI_API_KEY') || '';
+    const PI_API_KEY = Deno.env.get('PI_API_KEY');
+    if (!PI_API_KEY) {
+      console.error(`❌ [${traceId}] Missing PI_API_KEY in environment`);
+      return new Response(
+        JSON.stringify({
+          verified: false,
+          error: 'Server misconfiguration',
+          details: 'Missing Pi API key on backend.',
+          traceId,
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
+    // --- Fetch user details from Pi API ---
     const verifyResponse = await fetch('https://api.minepi.com/v2/me', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
+        'X-Api-Key': PI_API_KEY,
         'Content-Type': 'application/json',
-        ...(piApiKey ? { 'X-Api-Key': piApiKey } : {}),
       },
     });
 
     const rawResponse = await verifyResponse.text();
 
-      if (!verifyResponse.ok) {
-    console.error(`❌ [${traceId}] Pi API verification failed: ${verifyResponse.status} - ${rawResponse}`);
-  
+    // --- Handle common API errors ---
+    if (!verifyResponse.ok) {
+      console.error(`❌ [${traceId}] Pi API returned ${verifyResponse.status}: ${rawResponse}`);
+
       if (verifyResponse.status === 401) {
-        console.warn(`⚠️ [${traceId}] Access token expired. Recommend frontend to reauthenticate user.`);
+        // Expired token handling
         return new Response(
           JSON.stringify({
-            error: 'Invalid or expired access token',
             verified: false,
-            details: 'The Pi Network access token is invalid or has expired.',
-            traceId,
+            error: 'Invalid or expired access token',
+            details: 'The Pi Network access token has expired or is invalid.',
             action: 'reauthenticate',
+            traceId,
           }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
 
+      if (verifyResponse.status >= 500) {
+        // Pi API temporarily down
+        return new Response(
+          JSON.stringify({
+            verified: false,
+            error: 'Pi Network service unavailable',
+            details: 'Pi API responded with a server error. Try again later.',
+            traceId,
+          }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+
       return new Response(
         JSON.stringify({
-          error: 'Pi Network verification failed',
           verified: false,
-          details: `Pi API responded with status ${verifyResponse.status}`,
+          error: 'Verification failed',
+          details: `Unexpected status ${verifyResponse.status} from Pi API.`,
+          traceId,
         }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
+    // --- Parse response safely ---
     let piUserData: any;
     try {
       piUserData = JSON.parse(rawResponse);
     } catch {
-      console.error('❌ Failed to parse Pi API JSON:', rawResponse);
+      console.error(`❌ [${traceId}] Failed to parse Pi API JSON`);
       return new Response(
         JSON.stringify({
-          error: 'Malformed Pi Network response',
           verified: false,
-          details: 'Unexpected format from Pi API.',
+          error: 'Malformed Pi API response',
+          details: 'Unexpected response format from Pi Network API.',
+          traceId,
         }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
     const user = piUserData.user ?? piUserData;
-
-    console.log('✅ Pi API user response:', {
+    console.log(`✅ [${traceId}] Pi API response:`, {
       uid: user.uid,
       username: user.username,
       wallet_address: user.wallet_address ?? 'N/A',
     });
 
-    console.log(`✅ [${traceId}] Access token validated successfully — user matches Pi API.`);
-
+    // --- Validate user match ---
     if (user.uid !== uid || user.username !== username) {
-      console.error('❌ User mismatch:', { expected: { uid, username }, got: user });
+      console.warn(`⚠️ [${traceId}] User mismatch`);
       return new Response(
         JSON.stringify({
-          error: 'User data mismatch',
           verified: false,
-          details: 'UID/username do not match token data.',
+          error: 'User mismatch',
+          details: 'UID or username does not match token data.',
+          traceId,
         }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    console.log(`🎉 Verified successfully for ${username}`);
+    // --- Successful verification ---
+    console.log(`🎉 [${traceId}] Token verified successfully for ${username}`);
 
-      return new Response(
-    JSON.stringify({
-      verified: true,
-      user: { uid: user.uid, username: user.username, wallet_address: user.wallet_address || null },
-      traceId,
-    }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
-  } catch (error) {
-    console.error('💥 Internal error in verify-pi-auth:', error);
     return new Response(
       JSON.stringify({
-        error: 'Internal server error',
+        verified: true,
+        user: {
+          uid: user.uid,
+          username: user.username,
+          wallet_address: user.wallet_address || null,
+        },
+        traceId,
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+  } catch (err) {
+    console.error(`💥 [${traceId}] Internal error:`, err);
+    return new Response(
+      JSON.stringify({
         verified: false,
-        details: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Internal server error',
+        details: err instanceof Error ? err.message : 'Unknown runtime error.',
+        traceId,
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );

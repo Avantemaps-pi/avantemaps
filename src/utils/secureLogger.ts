@@ -22,28 +22,30 @@ const SENSITIVE_KEYS = [
   'pi_wallet_address',
 ];
 
+let currentTraceId: string | null = null;
+
 /**
  * Sanitizes an object by redacting sensitive fields
  */
 function sanitize(data: any): any {
   if (data === null || data === undefined) return data;
-  
+
   if (typeof data === 'string') {
     return data.length > 100 ? `${data.substring(0, 100)}...[truncated]` : data;
   }
-  
+
   if (Array.isArray(data)) {
     return data.map(item => sanitize(item));
   }
-  
+
   if (typeof data === 'object') {
     const sanitized: any = {};
     for (const [key, value] of Object.entries(data)) {
       const lowerKey = key.toLowerCase();
-      const isSensitive = SENSITIVE_KEYS.some(sensitive => 
+      const isSensitive = SENSITIVE_KEYS.some(sensitive =>
         lowerKey.includes(sensitive.toLowerCase())
       );
-      
+
       if (isSensitive) {
         sanitized[key] = '[REDACTED]';
       } else if (typeof value === 'object') {
@@ -54,31 +56,45 @@ function sanitize(data: any): any {
     }
     return sanitized;
   }
-  
+
   return data;
 }
 
 /**
- * Secure logger that sanitizes sensitive data before logging
+ * Secure logger that supports trace IDs for correlation between client and backend logs
  */
 export const secureLog = {
+  setTraceId: (trace: string) => {
+    currentTraceId = trace;
+  },
+
+  getTraceId: () => currentTraceId,
+
+  clearTraceId: () => {
+    currentTraceId = null;
+  },
+
   info: (message: string, data?: any) => {
+    const prefix = currentTraceId ? `[TRACE:${currentTraceId}]` : '[TRACE:none]';
     if (import.meta.env.DEV) {
-      console.info(`[INFO] ${message}`, data ? sanitize(data) : '');
+      console.info(`${prefix} [INFO] ${message}`, data ? sanitize(data) : '');
     }
   },
-  
+
   warn: (message: string, data?: any) => {
-    console.warn(`[WARN] ${message}`, data ? sanitize(data) : '');
+    const prefix = currentTraceId ? `[TRACE:${currentTraceId}]` : '[TRACE:none]';
+    console.warn(`${prefix} [WARN] ${message}`, data ? sanitize(data) : '');
   },
-  
+
   error: (message: string, error?: any) => {
-    console.error(`[ERROR] ${message}`, error ? sanitize(error) : '');
+    const prefix = currentTraceId ? `[TRACE:${currentTraceId}]` : '[TRACE:none]';
+    console.error(`${prefix} [ERROR] ${message}`, error ? sanitize(error) : '');
   },
-  
+
   debug: (message: string, data?: any) => {
+    const prefix = currentTraceId ? `[TRACE:${currentTraceId}]` : '[TRACE:none]';
     if (import.meta.env.DEV) {
-      console.debug(`[DEBUG] ${message}`, data ? sanitize(data) : '');
+      console.debug(`${prefix} [DEBUG] ${message}`, data ? sanitize(data) : '');
     }
   },
 };
