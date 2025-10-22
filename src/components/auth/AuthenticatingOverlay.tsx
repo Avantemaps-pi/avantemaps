@@ -24,20 +24,21 @@ const AuthenticatingOverlay: React.FC = () => {
   }, [isLoading]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
-      <div className="flex flex-col items-center space-y-4 p-8 rounded-lg bg-card border border-border shadow-lg">
-        <Shield className="h-12 w-12 text-primary animate-pulse" />
-        <div className="flex flex-col items-center space-y-2">
-          <h2 className="text-xl font-semibold">Authenticating</h2>
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">
-              {progress < 30 ? 'Connecting to Pi Network...' : 
-               progress < 60 ? 'Verifying credentials...' : 
-               'Finalizing...'}
-            </p>
-          </div>
-        </div>
+    <div 
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center animate-fade-in"
+      style={{
+        backgroundColor: '#8000ff',
+      }}
+    >
+      <Shield className="h-16 w-16 text-white animate-pulse mb-6" />
+      <h2 className="text-2xl font-semibold text-white mb-4">Authenticating</h2>
+      <div className="flex items-center gap-3">
+        <Loader2 className="h-5 w-5 animate-spin text-white" />
+        <p className="text-white/90">
+          {progress < 30 ? 'Connecting to Pi Network...' : 
+           progress < 60 ? 'Verifying credentials...' : 
+           'Finalizing...'}
+        </p>
       </div>
     </div>
   );
