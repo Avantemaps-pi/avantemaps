@@ -108,7 +108,7 @@ export const performLogin = async (
       const authPromise = new Promise<any>((resolve, reject) => {
         const authTimeout = setTimeout(() => {
           reject(new Error('Authentication request timed out. Please try again.'));
-        }, 15000);
+        }, 8000);
 
         try {
           window.Pi!.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
@@ -138,32 +138,39 @@ export const performLogin = async (
       const authResult = await authPromise;
       secureLog.info("Authentication result received", { hasUser: !!authResult?.user, hasToken: !!authResult?.accessToken });
 
-      if (!authResult || !authResult.user || !authResult.accessToken) {
+        if (!authResult || !authResult.user || !authResult.accessToken) {
         const errorMsg = "Authentication response was incomplete. Please try again.";
         secureLog.error("Incomplete auth result:", { hasAuthResult: !!authResult, hasUser: !!authResult?.user, hasToken: !!authResult?.accessToken });
         if (authAttempt < maxAuthAttempts) {
           authAttempt++;
-          await new Promise(r => setTimeout(r, 800));
+          await new Promise(r => setTimeout(r, 300));
           continue;
         }
         throw new Error(errorMsg);
       }
 
-      // Immediately verify with backend (do not persist token)
-      secureLog.info("Verifying token with backend", {
-        uid: authResult.user.uid,
-        username: authResult.user.username,
-        tokenLen: authResult.accessToken.length
-      });
-
-      // Attempt backend verification but don't fail authentication if it's just a network issue
+      // Skip backend verification in development mode to speed up auth
+      const isDevelopment = import.meta.env.DEV;
       let verificationSucceeded = false;
-      try {
-        const verificationResult = await verifyPiAuthentication(
-          authResult.accessToken,
-          authResult.user.uid,
-          authResult.user.username
-        );
+      
+      if (isDevelopment) {
+        secureLog.info("Development mode: Skipping backend verification");
+        verificationSucceeded = true;
+      } else {
+        // Immediately verify with backend (do not persist token)
+        secureLog.info("Verifying token with backend", {
+          uid: authResult.user.uid,
+          username: authResult.user.username,
+          tokenLen: authResult.accessToken.length
+        });
+
+        // Attempt backend verification but don't fail authentication if it's just a network issue
+        try {
+          const verificationResult = await verifyPiAuthentication(
+            authResult.accessToken,
+            authResult.user.uid,
+            authResult.user.username
+          );
 
         // Capture traceId from Supabase Edge Function if available
         if ((verificationResult as any).traceId) {
@@ -179,7 +186,7 @@ export const performLogin = async (
         if (!verificationResult.verified && (verificationResult as any).needsReauth && authAttempt < maxAuthAttempts) {
           secureLog.warn("Backend requested re-auth. Retrying authenticate()");
           authAttempt++;
-          await new Promise(r => setTimeout(r, 800));
+          await new Promise(r => setTimeout(r, 300));
           continue;
         }
 
@@ -191,7 +198,7 @@ export const performLogin = async (
           if ((reason.includes('expired') || reason.includes('invalid')) && authAttempt < maxAuthAttempts) {
             secureLog.warn("Detected expired or invalid token — forcing re-authentication...");
             authAttempt++;
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 300));
             continue;
           }
 
@@ -204,10 +211,10 @@ export const performLogin = async (
             // For other errors, fail the authentication
             throw new Error(verificationResult.details || verificationResult.error || "Verification failed");
           }
-        } else {
-          verificationSucceeded = true;
-        }
-      } catch (verificationError) {
+          } else {
+            verificationSucceeded = true;
+          }
+        } catch (verificationError) {
         const errorMsg = verificationError instanceof Error ? verificationError.message : String(verificationError);
         secureLog.warn("Backend verification threw error:", errorMsg);
         
@@ -222,6 +229,7 @@ export const performLogin = async (
         } else {
           // For non-network errors, re-throw
           throw verificationError;
+          }
         }
       }
 
@@ -268,7 +276,7 @@ export const performLogin = async (
       if (authAttempt < maxAuthAttempts) {
         authAttempt++;
         secureLog.info(`Retrying authentication (${authAttempt}/${maxAuthAttempts})`);
-        await new Promise(r => setTimeout(r, 800 + authAttempt * 300));
+        await new Promise(r => setTimeout(r, 300));
         continue;
       }
 

@@ -104,12 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       secureLog.info("Development mode: setting mock user");
       const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
       setUser(mockUser);
-      // Ensure dev user exists in database
-      import('@/context/auth/authUtils').then(({ updateUserData }) => {
-        updateUserData(mockUser, setUser).catch(err => 
-          secureLog.warn("Failed to create dev user in database:", err)
-        );
-      });
+      
       // Only show toast once
       if (!devModeToastShown.current) {
         toast.success("Development mode: Logged in as mock user");

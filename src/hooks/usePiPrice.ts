@@ -9,13 +9,24 @@ export const usePiPrice = () => {
   useEffect(() => {
     const fetchPiPrice = async () => {
       try {
-        // For now use a mock price, later integrate with OKX API
-        const mockPiPrice = 5; // $5 USD per Pi
-        setPiPrice(mockPiPrice);
-        setError(null);
+        // Fetch real-time Pi price from OKX API
+        const response = await fetch('https://www.okx.com/api/v5/market/ticker?instId=PI-USDT');
+        const data = await response.json();
+        
+        if (data.code === '0' && data.data && data.data[0]) {
+          const lastPrice = parseFloat(data.data[0].last);
+          setPiPrice(lastPrice);
+          setError(null);
+        } else {
+          throw new Error('Invalid OKX API response');
+        }
       } catch (err) {
-        setError('Failed to fetch Pi price');
-        console.error('Error fetching Pi price:', err);
+        console.error('Error fetching Pi price from OKX:', err);
+        // Fallback to cached price or default
+        if (!piPrice) {
+          setPiPrice(0.65); // Reasonable fallback based on current Pi market price
+        }
+        setError('Using cached Pi price');
       } finally {
         setIsLoading(false);
       }
