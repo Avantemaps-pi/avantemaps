@@ -103,7 +103,7 @@ const App = () => {
           }}
         />
         <p style={{ color: 'white', fontSize: '1.2rem', marginTop: '20px' }}>
-          Loading Avante Maps...
+          Avante Maps...
         </p>
         <style>
           {`

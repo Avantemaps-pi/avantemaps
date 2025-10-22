@@ -20,6 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const pendingAuthRef = useRef<boolean>(false);
   const initAttempted = useRef<boolean>(false);
   const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const devModeToastShown = useRef<boolean>(false);
   
   // Minimum time between refresh calls (15 minutes)
   const REFRESH_COOLDOWN = 15 * 60 * 1000;
@@ -103,13 +104,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       secureLog.info("Development mode: setting mock user");
       const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
       setUser(mockUser);
-      // Ensure dev user exists in database
-      import('@/context/auth/authUtils').then(({ updateUserData }) => {
-        updateUserData(mockUser, setUser).catch(err => 
-          secureLog.warn("Failed to create dev user in database:", err)
-        );
-      });
-      toast.success("Development mode: Logged in as mock user");
+      
+      // Only show toast once
+      if (!devModeToastShown.current) {
+        toast.success("Development mode: Logged in as mock user");
+        devModeToastShown.current = true;
+      }
       return;
     }
 
