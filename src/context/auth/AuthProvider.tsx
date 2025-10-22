@@ -26,6 +26,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Increased timeout to 45 seconds for better reliability
   const AUTH_TIMEOUT = 45 * 1000;
 
+  // ✅ Checks if Pi access token is still valid
+  const isTokenValid = async (accessToken: string): Promise<boolean> => {
+    try {
+      const response = await fetch("https://api.minepi.com/v2/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return response.ok; // returns true if token is still valid
+    } catch (error) {
+      console.error("Token validation error:", error);
+      return false;
+    }
+  };
+  
   // Check for cached session on mount
   useEffect(() => {
     // In development mode, bypass authentication
@@ -222,6 +235,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     secureLog.info("Refreshing user data...");
     setIsLoading(true);
     try {
+      const stillValid = await isTokenValid(user?.accessToken ?? "");
+    
+      if (!stillValid) {
+        secureLog.warn("Access token expired — reauthenticating via Pi Network...");
+        await login(); // 🔄 Trigger a new Pi login
+        return;
+      }
+    
       await refreshUserDataService(user, setUser, setIsLoading);
       secureLog.info("User data refreshed successfully");
       setLastRefresh(now);
@@ -255,6 +276,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return false;
     return checkAccess(user.subscriptionTier, requiredTier);
   }, [user]);
+
+  // ✅ Runtime token monitor (runs every 10 minutes)
+  useEffect(() => {
+    if (!user?.accessToken) return;
+  
+    const interval = setInterval(async () => {
+      const stillValid = await isTokenValid(user.accessToken);
+      if (!stillValid) {
+        secureLog.warn("Runtime check: token expired, triggering re-login");
+        await login();
+      }
+    }, 10 * 60 * 1000); // 10 minutes
+  
+    return () => clearInterval(interval);
+  }, [user, login]);
 
   return (
     <AuthContext.Provider

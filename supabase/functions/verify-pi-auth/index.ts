@@ -13,6 +13,9 @@ Deno.serve(async (req: Request) => {
 
   try {
     console.log('🚀 verify-pi-auth triggered');
+    
+    const traceId = crypto.randomUUID();
+    console.log(`🧭 Trace ID: ${traceId} | Incoming verification request`);
 
     const url = new URL(req.url);
     const testMode = url.searchParams.get('test') === 'true';
@@ -79,23 +82,23 @@ Deno.serve(async (req: Request) => {
 
     const rawResponse = await verifyResponse.text();
 
-    if (!verifyResponse.ok) {
-      console.error(`❌ Pi API verification failed: ${verifyResponse.status} - ${rawResponse}`);
-
+      if (!verifyResponse.ok) {
+    console.error(`❌ [${traceId}] Pi API verification failed: ${verifyResponse.status} - ${rawResponse}`);
+  
       if (verifyResponse.status === 401) {
-        console.warn('⚠️ Access token invalid or expired.');
-      
+        console.warn(`⚠️ [${traceId}] Access token expired. Recommend frontend to reauthenticate user.`);
         return new Response(
           JSON.stringify({
             error: 'Invalid or expired access token',
             verified: false,
-            needsReauth: true, // 👈 NEW FIELD
-            details: 'The Pi Network access token is invalid or has expired. Please reauthenticate.',
+            details: 'The Pi Network access token is invalid or has expired.',
+            traceId,
+            action: 'reauthenticate',
           }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
-      
+
       return new Response(
         JSON.stringify({
           error: 'Pi Network verification failed',
@@ -129,6 +132,8 @@ Deno.serve(async (req: Request) => {
       wallet_address: user.wallet_address ?? 'N/A',
     });
 
+    console.log(`✅ [${traceId}] Access token validated successfully — user matches Pi API.`);
+
     if (user.uid !== uid || user.username !== username) {
       console.error('❌ User mismatch:', { expected: { uid, username }, got: user });
       return new Response(
@@ -143,11 +148,12 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🎉 Verified successfully for ${username}`);
 
-    return new Response(
-      JSON.stringify({
-        verified: true,
-        user: { uid: user.uid, username: user.username, wallet_address: user.wallet_address || null },
-      }),
+      return new Response(
+    JSON.stringify({
+      verified: true,
+      user: { uid: user.uid, username: user.username, wallet_address: user.wallet_address || null },
+      traceId,
+    }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (error) {
