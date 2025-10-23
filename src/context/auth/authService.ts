@@ -98,8 +98,13 @@ export const performLogin = async (
         setPendingAuth(false);
         return;
       }
-      if (!isPiNetworkAvailable()) {
-        throw new Error("Pi Network SDK is not available");
+      if (!isPiNetworkAvailable() || !window.Pi) {
+        secureLog.warn("Pi SDK not detected — prompting user to open in Pi Browser.");
+        setAuthError("Please open this app in the Pi Browser to log in.");
+        toast.error("Please open this app in the Pi Browser to log in.");
+        setIsLoading(false);
+        setPendingAuth(false);
+        return;
       }
 
       // Request permission + authenticate with Pi SDK (with timeout)
