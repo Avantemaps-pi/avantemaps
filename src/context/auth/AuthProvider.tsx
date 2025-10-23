@@ -24,53 +24,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const devModeToastShown = useRef<boolean>(false);
 
     // ✅ Global error and unhandled promise rejection monitoring
-  useEffect(() => {
-    let reloadTimeout: NodeJS.Timeout | null = null;
+useEffect(() => {
+  let reloadTimeout: NodeJS.Timeout | null = null;
 
-    const handleError = (event: ErrorEvent) => {
-      const message = event?.error?.message || event?.message || "An unexpected error occurred.";
-      console.error("🌍 Global error caught:", event.error || event.message);
+  const logErrorToSupabase = async (message: string, stack?: string) => {
+    try {
+      const userAgent = navigator.userAgent;
+      await supabase.from('error_logs').insert([
+        {
+          message,
+          stack_trace: stack || '',
+          user_agent: userAgent,
+        },
+      ]);
+    } catch (loggingError) {
+      console.warn('Failed to log error to Supabase:', loggingError);
+    }
+  };
 
-      toast.error(`App error: ${message}`, {
-        duration: 6000,
-        description: "Trying to recover...",
-      });
+  const handleError = (event: ErrorEvent) => {
+    const message = event?.error?.message || event?.message || 'An unexpected error occurred.';
+    const stack = event?.error?.stack || '';
+    console.error('🌍 Global error caught:', event.error || event.message);
 
-      // If the error seems critical (render crash, blank screen), auto-reload
-      if (!reloadTimeout) {
-        reloadTimeout = setTimeout(() => {
-          console.warn("🔁 Reloading app to recover from fatal error...");
-          window.location.reload();
-        }, 5000); // reload after 5 seconds
-      }
-    };
+    toast.error(`App error: ${message}`, {
+      duration: 6000,
+      description: 'Trying to recover...',
+    });
 
-    const handleRejection = (event: PromiseRejectionEvent) => {
-      const reason = event?.reason?.message || event?.reason || "An unknown issue occurred.";
-      console.error("🚨 Unhandled promise rejection:", event.reason);
+    // 🔒 Log to Supabase
+    logErrorToSupabase(message, stack);
 
-      toast.error(`Unexpected issue: ${reason}`, {
-        duration: 6000,
-        description: "Attempting to recover...",
-      });
+    // Reload if fatal
+    if (!reloadTimeout) {
+      reloadTimeout = setTimeout(() => {
+        console.warn('🔁 Reloading app to recover from fatal error...');
+        window.location.reload();
+      }, 5000);
+    }
+  };
 
-      if (!reloadTimeout) {
-        reloadTimeout = setTimeout(() => {
-          console.warn("🔁 Reloading app to recover from fatal rejection...");
-          window.location.reload();
-        }, 5000);
-      }
-    };
+  const handleRejection = (event: PromiseRejectionEvent) => {
+    const reason = event?.reason?.message || event?.reason || 'An unknown issue occurred.';
+    const stack = event?.reason?.stack || '';
+    console.error('🚨 Unhandled promise rejection:', event.reason);
 
-    window.addEventListener("error", handleError);
-    window.addEventListener("unhandledrejection", handleRejection);
+    toast.error(`Unexpected issue: ${reason}`, {
+      duration: 6000,
+      description: 'Attempting to recover...',
+    });
 
-    return () => {
-      window.removeEventListener("error", handleError);
-      window.removeEventListener("unhandledrejection", handleRejection);
-      if (reloadTimeout) clearTimeout(reloadTimeout);
-    };
-  }, []);
+    // 🔒 Log to Supabase
+    logErrorToSupabase(reason, stack);
+
+    // Reload if fatal
+    if (!reloadTimeout) {
+      reloadTimeout = setTimeout(() => {
+        console.warn('🔁 Reloading app to recover from fatal rejection...');
+        window.location.reload();
+      }, 5000);
+    }
+  };
+
+  window.addEventListener('error', handleError);
+  window.addEventListener('unhandledrejection', handleRejection);
+
+  return () => {
+    window.removeEventListener('error', handleError);
+    window.removeEventListener('unhandledrejection', handleRejection);
+    if (reloadTimeout) clearTimeout(reloadTimeout);
+  };
+}, []);
   
   // Minimum time between refresh calls (15 minutes)
   const REFRESH_COOLDOWN = 15 * 60 * 1000;
