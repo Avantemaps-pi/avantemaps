@@ -25,14 +25,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // ✅ Global error and unhandled promise rejection monitoring
   useEffect(() => {
+    let reloadTimeout: NodeJS.Timeout | null = null;
+
     const handleError = (event: ErrorEvent) => {
       const message = event?.error?.message || event?.message || "An unexpected error occurred.";
       console.error("🌍 Global error caught:", event.error || event.message);
 
       toast.error(`App error: ${message}`, {
         duration: 6000,
-        description: "Please refresh or try again.",
+        description: "Trying to recover...",
       });
+
+      // If the error seems critical (render crash, blank screen), auto-reload
+      if (!reloadTimeout) {
+        reloadTimeout = setTimeout(() => {
+          console.warn("🔁 Reloading app to recover from fatal error...");
+          window.location.reload();
+        }, 5000); // reload after 5 seconds
+      }
     };
 
     const handleRejection = (event: PromiseRejectionEvent) => {
@@ -41,8 +51,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       toast.error(`Unexpected issue: ${reason}`, {
         duration: 6000,
-        description: "If this persists, please restart the Pi Browser.",
+        description: "Attempting to recover...",
       });
+
+      if (!reloadTimeout) {
+        reloadTimeout = setTimeout(() => {
+          console.warn("🔁 Reloading app to recover from fatal rejection...");
+          window.location.reload();
+        }, 5000);
+      }
     };
 
     window.addEventListener("error", handleError);
@@ -51,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       window.removeEventListener("error", handleError);
       window.removeEventListener("unhandledrejection", handleRejection);
+      if (reloadTimeout) clearTimeout(reloadTimeout);
     };
   }, []);
   
