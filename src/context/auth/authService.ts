@@ -110,6 +110,10 @@ export const performLogin = async (
       // Request permission + authenticate with Pi SDK (with timeout)
       secureLog.info("Requesting Pi Network authentication with scopes: username, payments, wallet_address");
 
+      if (!window.Pi) {
+        throw new Error("Pi SDK not loaded. Please open this app in the Pi Browser or reload the page.");
+      }
+
       const authPromise = new Promise<any>((resolve, reject) => {
         const authTimeout = setTimeout(() => {
           reject(new Error('Authentication request timed out. Please try again.'));
