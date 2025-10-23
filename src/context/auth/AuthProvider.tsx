@@ -17,6 +17,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSdkInitialized, setIsSdkInitialized] = useState<boolean>(false);
   const [lastRefresh, setLastRefresh] = useState<number>(0);
+  const [appReady, setAppReady] = useState<boolean>(true);
   const pendingAuthRef = useRef<boolean>(false);
   const initAttempted = useRef<boolean>(false);
   const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -121,6 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     pendingAuthRef.current = true;
     setIsLoading(true);
+    setAppReady(false);
     
     // Reset any existing timeout
     if (authTimeoutRef.current) {
@@ -292,6 +294,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearInterval(interval);
   }, [user, login]);
 
+  // Listen for app-ready event from main components
+  useEffect(() => {
+    const handleAppReady = () => {
+      secureLog.info("App components ready");
+      setAppReady(true);
+    };
+
+    window.addEventListener('app-ready', handleAppReady);
+    return () => window.removeEventListener('app-ready', handleAppReady);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -299,6 +312,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isLoading,
         isOffline,
+        appReady,
         login,
         logout,
         authError,

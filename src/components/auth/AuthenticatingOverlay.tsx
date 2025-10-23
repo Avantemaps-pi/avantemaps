@@ -4,11 +4,11 @@ import { Shield, Loader2 } from 'lucide-react';
 import { shouldBypassAuth } from '@/config/environment';
 
 const AuthenticatingOverlay: React.FC = () => {
-  const { isLoading } = useAuth();
+  const { isLoading, appReady } = useAuth();
   const [progress, setProgress] = useState(0);
 
   // Don't show overlay in development mode when auth is bypassed
-  if (!isLoading || shouldBypassAuth()) {
+  if (shouldBypassAuth() || (appReady && !isLoading)) {
     return null;
   }
 
@@ -31,13 +31,17 @@ const AuthenticatingOverlay: React.FC = () => {
       }}
     >
       <Shield className="h-16 w-16 text-white animate-pulse mb-6" />
-      <h2 className="text-2xl font-semibold text-white mb-4">Authenticating</h2>
+      <h2 className="text-2xl font-semibold text-white mb-4">
+        {isLoading ? 'Authenticating' : 'Success!'}
+      </h2>
       <div className="flex items-center gap-3">
         <Loader2 className="h-5 w-5 animate-spin text-white" />
         <p className="text-white/90">
-          {progress < 30 ? 'Connecting to Pi Network...' : 
-           progress < 60 ? 'Verifying credentials...' : 
-           'Finalizing...'}
+          {isLoading 
+            ? (progress < 30 ? 'Connecting to Pi Network...' : 
+               progress < 60 ? 'Verifying credentials...' : 
+               'Finalizing...')
+            : 'Preparing your map...'}
         </p>
       </div>
     </div>
