@@ -23,23 +23,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const devModeToastShown = useRef<boolean>(false);
 
-  // ✅ Global error and promise rejection logging
+    // ✅ Global error and unhandled promise rejection monitoring
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
-      console.error("Global error:", event.error || event.message);
+      const message = event?.error?.message || event?.message || "An unexpected error occurred.";
+      console.error("🌍 Global error caught:", event.error || event.message);
+
+      toast.error(`App error: ${message}`, {
+        duration: 6000,
+        description: "Please refresh or try again.",
+      });
     };
 
     const handleRejection = (event: PromiseRejectionEvent) => {
-      console.error("Unhandled promise rejection:", event.reason);
+      const reason = event?.reason?.message || event?.reason || "An unknown issue occurred.";
+      console.error("🚨 Unhandled promise rejection:", event.reason);
+
+      toast.error(`Unexpected issue: ${reason}`, {
+        duration: 6000,
+        description: "If this persists, please restart the Pi Browser.",
+      });
     };
 
-    window.addEventListener('error', handleError);
-    window.addEventListener('unhandledrejection', handleRejection);
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleRejection);
 
-    // Cleanup on unmount
     return () => {
-      window.removeEventListener('error', handleError);
-      window.removeEventListener('unhandledrejection', handleRejection);
+      window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleRejection);
     };
   }, []);
   
