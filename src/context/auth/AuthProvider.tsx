@@ -22,6 +22,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const initAttempted = useRef<boolean>(false);
   const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const devModeToastShown = useRef<boolean>(false);
+
+  // ✅ Global error and promise rejection logging
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error("Global error:", event.error || event.message);
+    };
+
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      console.error("Unhandled promise rejection:", event.reason);
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+
+    // Cleanup on unmount
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+    };
+  }, []);
   
   // Minimum time between refresh calls (15 minutes)
   const REFRESH_COOLDOWN = 15 * 60 * 1000;
