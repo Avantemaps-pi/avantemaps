@@ -17,6 +17,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isOffline: boolean;
+  appReady: boolean;
   login: () => Promise<void>;
   logout: () => void;
   authError: string | null;

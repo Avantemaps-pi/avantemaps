@@ -39,6 +39,14 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
     return places;
   }, [places, isLoading]);
 
+  // Signal that the map is ready
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('app-ready'));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Ensure map centers on San Francisco or a selected place, and handle zoom accordingly
   useEffect(() => {
     if (selectedPlaceId) {
