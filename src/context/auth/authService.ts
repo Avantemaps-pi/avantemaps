@@ -147,10 +147,13 @@ export const performLogin = async (
         clearTimeout(authTimeout);
         reject(err);
       }
-
+    });
 
       const authResult = await authPromise;
-      secureLog.info("Authentication result received", { hasUser: !!authResult?.user, hasToken: !!authResult?.accessToken });
+      secureLog.info("Authentication result received", { 
+        hasUser: !!authResult?.user, 
+        hasToken: !!authResult?.accessToken
+      });
 
         if (!authResult || !authResult.user || !authResult.accessToken) {
         const errorMsg = "Authentication response was incomplete. Please try again.";
