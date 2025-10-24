@@ -10,6 +10,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/context/auth";
 import { useSessionRestoration } from "@/hooks/useSessionRestoration";
 import AuthenticatingOverlay from "@/components/auth/AuthenticatingOverlay";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import 'leaflet/dist/leaflet.css';
 import Index from "./pages/Index";
 import Recommendations from "./pages/Recommendations";
@@ -132,36 +133,38 @@ const App = () => {
       <HelmetProvider>
         <BrowserRouter>
           <TooltipProvider>
-            <AuthProvider>
-              <AuthenticatingOverlay />
-              <SidebarProvider>
-                <SessionManager />
-                <Toaster />
-                <Sonner />
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/recommendations" element={<Recommendations />} />
-                  <Route path="/recommendations/:placeId" element={<Recommendations />} />
-                  <Route path="/bookmarks" element={<Bookmarks />} />
-                  <Route path="/communicon" element={<Communicon />} />
-                  <Route path="/notifications" element={<Notifications />} />
-                  <Route path="/registered-business" element={<RegisteredBusiness />} />
-                  <Route path="/verification-info" element={<VerificationInfo />} />
-                  <Route path="/review/:businessId?" element={<Review />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/terms" element={<TermsOfService />} />
-                  <Route path="/privacy" element={<PrivacyPolicy />} />
-                  <Route path="/cookies" element={<CookiePolicy />} />
-                  <Route path="/registration" element={<Registration />} />
-                  <Route path="/update-registration/:businessId?" element={<UpdateRegistration />} />
-                  <Route path="/pricing" element={<Pricing />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </SidebarProvider>
-            </AuthProvider>
+            <ErrorBoundary>
+              <AuthProvider>
+                <AuthenticatingOverlay />
+                <SidebarProvider>
+                  <SessionManager />
+                  <Toaster />
+                  <Sonner />
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/recommendations" element={<Recommendations />} />
+                    <Route path="/recommendations/:placeId" element={<Recommendations />} />
+                    <Route path="/bookmarks" element={<Bookmarks />} />
+                    <Route path="/communicon" element={<Communicon />} />
+                    <Route path="/notifications" element={<Notifications />} />
+                    <Route path="/registered-business" element={<RegisteredBusiness />} />
+                    <Route path="/verification-info" element={<VerificationInfo />} />
+                    <Route path="/review/:businessId?" element={<Review />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/terms" element={<TermsOfService />} />
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/cookies" element={<CookiePolicy />} />
+                    <Route path="/registration" element={<Registration />} />
+                    <Route path="/update-registration/:businessId?" element={<UpdateRegistration />} />
+                    <Route path="/pricing" element={<Pricing />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </SidebarProvider>
+              </AuthProvider>
+            </ErrorBoundary>
           </TooltipProvider>
         </BrowserRouter>
       </HelmetProvider>
