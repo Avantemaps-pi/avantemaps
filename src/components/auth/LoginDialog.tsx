@@ -7,6 +7,8 @@ import { Link } from "react-router-dom";
 import { useAuth } from '@/context/auth';
 import { isPiNetworkAvailable } from '@/utils/piNetwork';
 import AuthTroubleshooting from './AuthTroubleshooting';
+import { authenticateUser } from '@/utils/piNetwork/core';
+import { secureLog } from '@/utils/secureLogger';
 
 interface LoginDialogProps {
   open: boolean;
@@ -49,14 +51,27 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
     }
   }, [open, sdkAvailable, retryCount]);
   
-  const handleLogin = async () => {
-    try {
-      await login();
-      // Only close on successful login - this will be handled by the auth flow
-    } catch (error) {
-      console.error('Login failed:', error);
+ const handleLogin = async () => {
+  try {
+    secureLog.info("Starting Pi authentication...");
+    
+    const result = await authenticateUser();
+    
+    if (result?.user) {
+      secureLog.info("✅ Pi login success:", result.user);
+      alert(`Welcome ${result.user.username}!`);
+      
+      // Optionally call your Supabase edge function here
+      // await verifyPiUser(result.accessToken, result.user.uid, result.user.username);
+    } else {
+      secureLog.warn("⚠️ No user data returned from Pi authentication.");
+      alert("Login failed. Please try again.");
     }
-  };
+  } catch (error) {
+    secureLog.error("❌ Pi login error:", error);
+    alert("Pi Network login failed. Please try again.");
+  }
+};
   
   const handleContinueBrowsing = () => {
     onOpenChange(false);
