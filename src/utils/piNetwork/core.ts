@@ -332,15 +332,6 @@ export const initializePi = async (): Promise<boolean> => {
         return true;
       }
     }
-  
-    await piNetworkCore.initialize();
-    return true;
-  
-  } catch (error) {
-    console.error('❌ Failed to initialize Pi:', error);
-    return false;
-  }
-
 
     // Initialize via your core wrapper (safe)
     await piNetworkCore.initialize();
