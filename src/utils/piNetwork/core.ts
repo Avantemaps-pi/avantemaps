@@ -234,17 +234,6 @@ class PiNetworkCore {
     }
   }
 
-      // Authenticate with Pi Network
-      this.authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound);
-      
-      console.log('Pi authentication successful:', this.authResult.user.username);
-      return this.authResult;
-    } catch (error) {
-      console.error('Pi authentication failed:', error);
-      throw new Error(`Pi authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
   /**
    * Set handler for incomplete payments
    */
