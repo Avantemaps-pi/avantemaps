@@ -7,10 +7,8 @@ const AuthenticatingOverlay: React.FC = () => {
   const { isLoading, appReady } = useAuth();
   const [progress, setProgress] = useState(0);
 
-  // Don't show overlay in development mode when auth is bypassed
-  if (shouldBypassAuth() || (appReady && !isLoading)) {
-    return null;
-  }
+  // Compute visibility first but do not early-return before hooks are declared
+  const hideOverlay = shouldBypassAuth() || (appReady && !isLoading);
 
   // Simulate progress for better UX
   useEffect(() => {
@@ -22,6 +20,10 @@ const AuthenticatingOverlay: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [isLoading]);
+
+  if (hideOverlay) {
+    return null;
+  }
 
   return (
     <div 
