@@ -78,31 +78,18 @@ Deno.serve(async (req: Request) => {
     // --- Verify against Pi Network API ---
     console.log(`🔍 [${traceId}] Verifying token for ${username} (${uid})`);
 
-    const PI_API_KEY = Deno.env.get('PI_API_KEY');
-    if (!PI_API_KEY) {
-      console.error(`❌ [${traceId}] Missing PI_API_KEY in environment`);
-      return new Response(
-        JSON.stringify({
-          verified: false,
-          error: 'Server misconfiguration',
-          details: 'Missing Pi API key on backend.',
-          traceId,
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
     // --- Fetch user details from Pi API ---
+    // ❌ Removed X-Api-Key header (this caused 401 errors)
     const verifyResponse = await fetch('https://api.minepi.com/v2/me', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'X-Api-Key': PI_API_KEY,
         'Content-Type': 'application/json',
       },
     });
 
     const rawResponse = await verifyResponse.text();
+    console.log(`📡 [${traceId}] Pi API raw response: ${rawResponse}`);
 
     // --- Handle common API errors ---
     if (!verifyResponse.ok) {
