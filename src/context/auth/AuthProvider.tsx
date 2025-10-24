@@ -22,6 +22,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const initAttempted = useRef<boolean>(false);
   const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const devModeToastShown = useRef<boolean>(false);
+
+    // ✅ Global error and unhandled promise rejection monitoring
+useEffect(() => {
+  let reloadTimeout: NodeJS.Timeout | null = null;
+
+  const logErrorToSupabase = async (message: string, stack?: string) => {
+    try {
+      const userAgent = navigator.userAgent;
+      await supabase.from('error_logs').insert([
+        {
+          message,
+          stack_trace: stack || '',
+          user_agent: userAgent,
+        },
+      ]);
+    } catch (loggingError) {
+      console.warn('Failed to log error to Supabase:', loggingError);
+    }
+  };
+
+  const handleError = (event: ErrorEvent) => {
+    const message = event?.error?.message || event?.message || 'An unexpected error occurred.';
+    const stack = event?.error?.stack || '';
+    console.error('🌍 Global error caught:', event.error || event.message);
+
+    toast.error(`App error: ${message}`, {
+      duration: 6000,
+      description: 'Trying to recover...',
+    });
+
+    // 🔒 Log to Supabase
+    logErrorToSupabase(message, stack);
+
+    // Reload if fatal
+    if (!reloadTimeout) {
+      reloadTimeout = setTimeout(() => {
+        console.warn('🔁 Reloading app to recover from fatal error...');
+        window.location.reload();
+      }, 5000);
+    }
+  };
+
+  const handleRejection = (event: PromiseRejectionEvent) => {
+    const reason = event?.reason?.message || event?.reason || 'An unknown issue occurred.';
+    const stack = event?.reason?.stack || '';
+    console.error('🚨 Unhandled promise rejection:', event.reason);
+
+    toast.error(`Unexpected issue: ${reason}`, {
+      duration: 6000,
+      description: 'Attempting to recover...',
+    });
+
+    // 🔒 Log to Supabase
+    logErrorToSupabase(reason, stack);
+
+    // Reload if fatal
+    if (!reloadTimeout) {
+      reloadTimeout = setTimeout(() => {
+        console.warn('🔁 Reloading app to recover from fatal rejection...');
+        window.location.reload();
+      }, 5000);
+    }
+  };
+
+  window.addEventListener('error', handleError);
+  window.addEventListener('unhandledrejection', handleRejection);
+
+  return () => {
+    window.removeEventListener('error', handleError);
+    window.removeEventListener('unhandledrejection', handleRejection);
+    if (reloadTimeout) clearTimeout(reloadTimeout);
+  };
+}, []);
   
   // Minimum time between refresh calls (15 minutes)
   const REFRESH_COOLDOWN = 15 * 60 * 1000;

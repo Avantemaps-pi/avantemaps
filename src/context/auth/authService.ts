@@ -98,45 +98,62 @@ export const performLogin = async (
         setPendingAuth(false);
         return;
       }
-      if (!isPiNetworkAvailable()) {
-        throw new Error("Pi Network SDK is not available");
+      if (!isPiNetworkAvailable() || !window.Pi) {
+        secureLog.warn("Pi SDK not detected — prompting user to open in Pi Browser.");
+        setAuthError("Please open this app in the Pi Browser to log in.");
+        toast.error("Please open this app in the Pi Browser to log in.");
+        setIsLoading(false);
+        setPendingAuth(false);
+        return;
       }
 
       // Request permission + authenticate with Pi SDK (with timeout)
       secureLog.info("Requesting Pi Network authentication with scopes: username, payments, wallet_address");
+
+      if (!window.Pi) {
+        throw new Error("Pi SDK not loaded. Please open this app in the Pi Browser or reload the page.");
+      }
 
       const authPromise = new Promise<any>((resolve, reject) => {
         const authTimeout = setTimeout(() => {
           reject(new Error('Authentication request timed out. Please try again.'));
         }, 8000);
 
-        try {
-          window.Pi!.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
-            secureLog.info('Incomplete payment detected during authentication');
-            try {
-              if (window.sessionStorage) {
-                window.sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
-              }
-            } catch (e) {
-              secureLog.warn('Failed to store incomplete payment in sessionStorage', e);
+      try {
+        // ✅ Defensive check before calling Pi.authenticate
+        if (!window.Pi || typeof window.Pi.authenticate !== 'function') {
+          throw new Error("Pi SDK not loaded yet. Please refresh the page or try again.");
+        }
+      
+        window.Pi.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
+          secureLog.info('Incomplete payment detected during authentication');
+          try {
+            if (window.sessionStorage) {
+              window.sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
             }
-          })
-          .then((res: any) => {
-            clearTimeout(authTimeout);
-            resolve(res);
-          })
-          .catch((err: any) => {
-            clearTimeout(authTimeout);
-            reject(err);
-          });
-        } catch (err) {
+          } catch (e) {
+            secureLog.warn('Failed to store incomplete payment in sessionStorage', e);
+          }
+        })
+        .then((res: any) => {
+          clearTimeout(authTimeout);
+          resolve(res);
+        })
+        .catch((err: any) => {
           clearTimeout(authTimeout);
           reject(err);
-        }
-      });
+        });
+      } catch (err) {
+        clearTimeout(authTimeout);
+        reject(err);
+      }
+    });
 
       const authResult = await authPromise;
-      secureLog.info("Authentication result received", { hasUser: !!authResult?.user, hasToken: !!authResult?.accessToken });
+      secureLog.info("Authentication result received", { 
+        hasUser: !!authResult?.user, 
+        hasToken: !!authResult?.accessToken
+      });
 
         if (!authResult || !authResult.user || !authResult.accessToken) {
         const errorMsg = "Authentication response was incomplete. Please try again.";

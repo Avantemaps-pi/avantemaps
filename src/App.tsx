@@ -51,19 +51,28 @@ const App = () => {
 
   useEffect(() => {
     const initPiSdk = async () => {
+      if (typeof window === "undefined") return;
+      if (window.Pi) {
+        console.log("✅ Pi SDK already loaded.");
+        return;
+      }
+  
       try {
-        console.log("Initializing Pi SDK...");
-        const success = await initializePiNetwork();
-        if (success) {
-          console.log("Pi SDK initialized successfully in App.tsx");
-        } else {
-          console.warn("Pi SDK initialization failed in App.tsx");
-        }
+        console.log("📦 Loading Pi SDK...");
+        await initializePiNetwork();
+        console.log("✅ Pi SDK initialized successfully");
       } catch (err) {
-        console.error("Error initializing Pi SDK:", err);
+        console.error("❌ Failed to initialize Pi SDK:", err);
       }
     };
-    initPiSdk();
+  
+    // Wait until DOM is ready
+    if (document.readyState === "complete") {
+      initPiSdk();
+    } else {
+      window.addEventListener("load", initPiSdk);
+      return () => window.removeEventListener("load", initPiSdk);
+    }
   }, []);
 
   useEffect(() => {

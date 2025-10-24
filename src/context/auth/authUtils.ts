@@ -6,19 +6,12 @@ import { supabase } from '@/integrations/supabase/client';
 // Update user data in Supabase and local storage
 export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) => void): Promise<void> => {
   try {
-    // Save to Supabase if we have a valid connection
-    const { error } = await supabase
-      .from('users')
-      .upsert({
-        id: userData.uid,
-        username: userData.username,
-        // Required field in the schema
-        email: `${userData.username}@placeholder.com`, // Using placeholder email since Pi Network doesn't provide email
-        subscription: userData.subscriptionTier,
-        created_at: new Date().toISOString() // Use created_at instead of last_login
-      }, {
-        onConflict: 'id'
-      });
+    // Save to Supabase using security definer function to bypass RLS
+    const { error } = await supabase.rpc('upsert_user_profile', {
+      p_user_id: userData.uid,
+      p_username: userData.username,
+      p_subscription: userData.subscriptionTier
+    });
 
     if (error) {
       console.error("Error updating user in Supabase:", error);

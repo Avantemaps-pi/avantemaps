@@ -314,10 +314,33 @@ export const piNetworkCore = new PiNetworkCore();
 // Export utility functions
 export const initializePi = async (): Promise<boolean> => {
   try {
+    if (typeof window === 'undefined') {
+      console.warn("❌ Pi SDK initialization skipped — not running in a browser environment.");
+      return false;
+    }
+
+    if (!window.Pi) {
+      console.warn("⚠️ Pi SDK not detected on window — attempting to load or using mock in DEV mode.");
+
+      // Optional: provide a mock SDK during local development
+      if (import.meta.env.DEV) {
+        window.Pi = {
+          init: async () => console.log("Mock Pi.init() called (DEV mode)"),
+          authenticate: async () => ({
+            user: { uid: "dev123", username: "pi_mock_user" },
+            accessToken: "mock_token"
+          }),
+          createPayment: () => console.log("Mock createPayment() called")
+        };
+        return true;
+      }
+    }
+
+    // Initialize via your core wrapper (safe)
     await piNetworkCore.initialize();
     return true;
   } catch (error) {
-    console.error('Failed to initialize Pi:', error);
+    console.error('❌ Failed to initialize Pi:', error);
     return false;
   }
 };
