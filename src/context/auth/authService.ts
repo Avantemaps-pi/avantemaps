@@ -146,6 +146,7 @@ export const performLogin = async (
       } catch (err) {
         clearTimeout(authTimeout);
         reject(err);
+      }
     });
 
       const authResult = await authPromise;
