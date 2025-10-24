@@ -119,35 +119,37 @@ export const performLogin = async (
           reject(new Error('Authentication request timed out. Please try again.'));
         }, 8000);
 
-      try {
-        // ✅ Defensive check before calling Pi.authenticate
-        if (!window.Pi || typeof window.Pi.authenticate !== 'function') {
-          throw new Error("Pi SDK not loaded yet. Please refresh the page or try again.");
-        }
-      
-        window.Pi.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
-          secureLog.info('Incomplete payment detected during authentication');
-          try {
-            if (window.sessionStorage) {
-              window.sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
-            }
-          } catch (e) {
-            secureLog.warn('Failed to store incomplete payment in sessionStorage', e);
+        try {
+          // ✅ Defensive check before calling Pi.authenticate
+          if (!window.Pi || typeof window.Pi.authenticate !== 'function') {
+            clearTimeout(authTimeout);
+            reject(new Error("Pi SDK not loaded yet. Please refresh the page or try again."));
+            return;
           }
-        })
-        .then((res: any) => {
-          clearTimeout(authTimeout);
-          resolve(res);
-        })
-        .catch((err: any) => {
+        
+          window.Pi.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
+            secureLog.info('Incomplete payment detected during authentication');
+            try {
+              if (window.sessionStorage) {
+                window.sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
+              }
+            } catch (e) {
+              secureLog.warn('Failed to store incomplete payment in sessionStorage', e);
+            }
+          })
+          .then((res: any) => {
+            clearTimeout(authTimeout);
+            resolve(res);
+          })
+          .catch((err: any) => {
+            clearTimeout(authTimeout);
+            reject(err);
+          });
+        } catch (err) {
           clearTimeout(authTimeout);
           reject(err);
-        });
-      } catch (err) {
-        clearTimeout(authTimeout);
-        reject(err);
-      }
-    });
+        }
+      });
 
       const authResult = await authPromise;
       secureLog.info("Authentication result received", { 

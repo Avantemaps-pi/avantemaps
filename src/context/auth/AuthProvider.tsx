@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { initializePiNetwork } from '@/utils/piNetwork';
 import { PiUser, AuthContextType, STORAGE_KEY } from './types';
 import { checkAccess } from './authUtils';
@@ -22,38 +23,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const initAttempted = useRef<boolean>(false);
   const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const devModeToastShown = useRef<boolean>(false);
+  const isMountedRef = useRef<boolean>(true);
+
+  // ✅ Cleanup on unmount to prevent state updates
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // ✅ Safe state setters that check if component is still mounted
+  const safeSetUser = useCallback((user: PiUser | null) => {
+    if (isMountedRef.current) setUser(user);
+  }, []);
+
+  const safeSetIsLoading = useCallback((loading: boolean) => {
+    if (isMountedRef.current) setIsLoading(loading);
+  }, []);
+
+  const safeSetAuthError = useCallback((error: string | null) => {
+    if (isMountedRef.current) setAuthError(error);
+  }, []);
+
+  const safeSetIsSdkInitialized = useCallback((initialized: boolean) => {
+    if (isMountedRef.current) setIsSdkInitialized(initialized);
+  }, []);
 
     // ✅ Global error and unhandled promise rejection monitoring
 useEffect(() => {
   let reloadTimeout: NodeJS.Timeout | null = null;
 
-  const logErrorToSupabase = async (message: string, stack?: string) => {
-    try {
-      const userAgent = navigator.userAgent;
-      await supabase.from('error_logs').insert([
-        {
-          message,
-          stack_trace: stack || '',
-          user_agent: userAgent,
-        },
-      ]);
-    } catch (loggingError) {
-      console.warn('Failed to log error to Supabase:', loggingError);
-    }
-  };
-
   const handleError = (event: ErrorEvent) => {
     const message = event?.error?.message || event?.message || 'An unexpected error occurred.';
-    const stack = event?.error?.stack || '';
     console.error('🌍 Global error caught:', event.error || event.message);
 
     toast.error(`App error: ${message}`, {
       duration: 6000,
       description: 'Trying to recover...',
     });
-
-    // 🔒 Log to Supabase
-    logErrorToSupabase(message, stack);
 
     // Reload if fatal
     if (!reloadTimeout) {
@@ -66,16 +77,12 @@ useEffect(() => {
 
   const handleRejection = (event: PromiseRejectionEvent) => {
     const reason = event?.reason?.message || event?.reason || 'An unknown issue occurred.';
-    const stack = event?.reason?.stack || '';
     console.error('🚨 Unhandled promise rejection:', event.reason);
 
     toast.error(`Unexpected issue: ${reason}`, {
       duration: 6000,
       description: 'Attempting to recover...',
     });
-
-    // 🔒 Log to Supabase
-    logErrorToSupabase(reason, stack);
 
     // Reload if fatal
     if (!reloadTimeout) {
@@ -159,17 +166,17 @@ useEffect(() => {
       try {
         secureLog.info("Starting Pi Network SDK initialization...");
         const result = await initializePiNetwork();
-        setIsSdkInitialized(result);
+        safeSetIsSdkInitialized(result);
         secureLog.info("Pi Network SDK initialization complete:", result);
       } catch (error) {
         secureLog.error("Failed to initialize Pi Network SDK:", error);
         toast.error("Failed to initialize Pi Network SDK. Some features may be unavailable.");
-        setIsSdkInitialized(false);
+        safeSetIsSdkInitialized(false);
       }
     };
     
     initSdk();
-  }, []);
+  }, [safeSetIsSdkInitialized]);
 
   // Optimized login process
   const login = useCallback(async (): Promise<void> => {
@@ -194,7 +201,7 @@ useEffect(() => {
     }
 
     pendingAuthRef.current = true;
-    setIsLoading(true);
+    safeSetIsLoading(true);
     setAppReady(false);
     
     // Reset any existing timeout
@@ -204,8 +211,8 @@ useEffect(() => {
     
     // Set new authentication timeout
     authTimeoutRef.current = setTimeout(() => {
-      setIsLoading(false);
-      setAuthError("Authentication is taking longer than expected. Please check your connection and try again.");
+      safeSetIsLoading(false);
+      safeSetAuthError("Authentication is taking longer than expected. Please check your connection and try again.");
       toast.error("Authentication timeout. Please ensure you have a stable internet connection and try again.", {
         duration: 6000,
       });
@@ -218,7 +225,7 @@ useEffect(() => {
         secureLog.info("Attempting to initialize SDK before login...");
         try {
           const result = await initializePiNetwork();
-          setIsSdkInitialized(result);
+          safeSetIsSdkInitialized(result);
           if (!result) {
             throw new Error("SDK initialization failed");
           }
@@ -226,7 +233,7 @@ useEffect(() => {
           secureLog.error("Failed to initialize Pi Network SDK during login:", error);
           toast.error("Failed to initialize Pi Network SDK. Please try again later.");
           pendingAuthRef.current = false;
-          setIsLoading(false);
+          safeSetIsLoading(false);
           if (authTimeoutRef.current) {
             clearTimeout(authTimeoutRef.current);
           }
@@ -237,14 +244,14 @@ useEffect(() => {
       // First step: Request permissions
       const permissionsGranted = await requestAuthPermissions(
         isSdkInitialized, 
-        setIsLoading, 
-        setAuthError
+        safeSetIsLoading, 
+        safeSetAuthError
       );
       
       if (!permissionsGranted) {
         console.log("Permissions not granted. Authentication aborted.");
         pendingAuthRef.current = false;
-        setIsLoading(false);
+        safeSetIsLoading(false);
         if (authTimeoutRef.current) {
           clearTimeout(authTimeoutRef.current);
           authTimeoutRef.current = null;
@@ -255,10 +262,10 @@ useEffect(() => {
       // Second step: Authenticate with Pi Network
       await performLogin(
         isSdkInitialized,
-        setIsLoading,
-        setAuthError,
+        safeSetIsLoading,
+        safeSetAuthError,
         (pending) => { pendingAuthRef.current = pending; },
-        setUser
+        safeSetUser
       );
       
       // Update last refresh timestamp
@@ -276,9 +283,9 @@ useEffect(() => {
         clearTimeout(authTimeoutRef.current);
         authTimeoutRef.current = null;
       }
-      setIsLoading(false);
+      safeSetIsLoading(false);
     }
-  }, [isSdkInitialized, AUTH_TIMEOUT]);
+  }, [isSdkInitialized, AUTH_TIMEOUT, safeSetIsLoading, safeSetAuthError, safeSetIsSdkInitialized, safeSetUser]);
 
   // Handle online/offline status
   const isOffline = useNetworkStatus(pendingAuthRef, login);
