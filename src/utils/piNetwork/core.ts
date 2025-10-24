@@ -60,35 +60,28 @@ export interface PaymentDTO {
 
 class PiNetworkCore {
   private isInitialized = false;
+  private sdkReady: Promise<void> | null = null; // 🆕 Ensures all SDK init calls share one promise
   private authResult: AuthResult | null = null;
   private incompletePaymentHandler: ((payment: PaymentDTO) => void) | null = null;
 
   /**
    * Initialize the Pi SDK with retry logic and improved error handling
    */
-  public async initialize(): Promise<void> {
+    public async initialize(): Promise<void> {
     if (this.isInitialized) return;
-
-    const maxRetries = 3;
-    const baseDelay = 1000;
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        await this.initializeAttempt();
-        return;
-      } catch (error) {
-        console.error(`Pi SDK initialization attempt ${attempt + 1} failed:`, error);
-
-        if (attempt < maxRetries - 1) {
-          const delay = baseDelay * Math.pow(2, attempt);
-          console.log(`Retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        } else {
-          throw new Error(`Failed to initialize Pi SDK after ${maxRetries} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-      }
+  
+    // 🆕 Ensure all parallel initialization attempts use the same promise
+    if (!this.sdkReady) {
+      this.sdkReady = this.initializeAttempt().catch((error) => {
+        console.error("❌ Pi SDK initialization failed:", error);
+        this.sdkReady = null;
+        throw error;
+      });
     }
+  
+    return this.sdkReady;
   }
+
 
   private async initializeAttempt(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
@@ -203,26 +196,22 @@ class PiNetworkCore {
    * Authenticate user with Pi Network
    */
   public async authenticate(): Promise<AuthResult> {
-    if (!this.isInitialized) {
-      await this.initialize();
-    }
-
-    if (!window.Pi) {
-      throw new Error('Pi SDK not available');
-    }
-
     try {
-      // Request all necessary scopes as per documentation
+      if (!this.isInitialized) {
+        await this.initialize();
+      }
+  
+      if (!window.Pi) {
+        throw new Error('Pi SDK not available');
+      }
+  
       const scopes = ['payments', 'username', 'wallet_address'];
-      
-      // Set up incomplete payment handler
+  
       const onIncompletePaymentFound = (payment: PaymentDTO) => {
-        console.log('Incomplete payment found:', payment);
+        console.log('⚠️ Incomplete payment found:', payment);
         if (this.incompletePaymentHandler) {
           this.incompletePaymentHandler(payment);
         } else {
-          console.warn('No incomplete payment handler set. Payment:', payment.identifier);
-          // Store incomplete payment for later handling (use sessionStorage for security)
           try {
             sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
           } catch (e) {
@@ -230,15 +219,18 @@ class PiNetworkCore {
           }
         }
       };
-
-      // Authenticate with Pi Network
-      this.authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound);
-      
-      console.log('Pi authentication successful:', this.authResult.user.username);
+  
+      this.authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound);    
+      console.log('✅ Pi authentication successful:', this.authResult.user.username);
       return this.authResult;
+      
     } catch (error) {
-      console.error('Pi authentication failed:', error);
-      throw new Error(`Pi authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ Pi authentication failed:', error);
+      // 🆕 Prevent app crash and provide structured rejection
+      return Promise.reject({
+        error: error instanceof Error ? error.message : String(error),
+        success: false,
+      });
     }
   }
 
@@ -318,11 +310,16 @@ export const initializePi = async (): Promise<boolean> => {
       console.warn("❌ Pi SDK initialization skipped — not running in a browser environment.");
       return false;
     }
-
+  
     if (!window.Pi) {
-      console.warn("⚠️ Pi SDK not detected on window — attempting to load or using mock in DEV mode.");
-
-      // Optional: provide a mock SDK during local development
+      console.warn("⚠️ Pi SDK not detected — attempting to load or mock (if DEV).");
+  
+      // 🆕 Fail-safe: add console error if in production and still missing
+      if (!import.meta.env.DEV) {
+        console.error("❌ Pi SDK not found. Make sure you’re running inside Pi Browser or SDK is loaded.");
+      }
+  
+      // Provide mock SDK in DEV mode
       if (import.meta.env.DEV) {
         window.Pi = {
           init: async () => console.log("Mock Pi.init() called (DEV mode)"),
