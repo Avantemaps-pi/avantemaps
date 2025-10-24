@@ -220,7 +220,7 @@ class PiNetworkCore {
         }
       };
   
-      this.authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound);
+      this.authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound);    
       console.log('✅ Pi authentication successful:', this.authResult.user.username);
       return this.authResult;
       
