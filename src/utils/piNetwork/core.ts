@@ -222,6 +222,33 @@ class PiNetworkCore {
   
       this.authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound);    
       console.log('✅ Pi authentication successful:', this.authResult.user.username);
+      // 🆕 Verify token with backend
+try {
+  const { data, error } = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-pi-auth`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${this.authResult.accessToken}`
+    },
+    body: JSON.stringify({
+      accessToken: this.authResult.accessToken,
+      uid: this.authResult.user.uid,
+      username: this.authResult.user.username
+    })
+  }).then((r) => r.json());
+
+  console.log("🧩 Server verification response:", data || error);
+
+  if (error || !data?.verified) {
+    throw new Error(data?.error || "Token verification failed on backend.");
+  }
+
+  console.log("✅ Token successfully verified with backend.");
+} catch (verifyErr) {
+  console.error("❌ Backend token verification failed:", verifyErr);
+  alert("Authentication failed. Please try again.");
+  throw verifyErr;
+}
       return this.authResult;
       
     } catch (error) {
