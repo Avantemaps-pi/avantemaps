@@ -248,6 +248,9 @@ class PiNetworkCore {
 
         const responseData = await verifyResponse.json();
         console.log("🧩 Server verification response:", responseData);
+        if (!verifyResponse.ok) {
+          console.warn("⚠️ Supabase verification endpoint returned:", verifyResponse.status, verifyResponse.statusText);
+        }
 
         if (!verifyResponse.ok || !responseData?.verified) {
           const errorMsg = responseData?.error || responseData?.details || "Token verification failed on backend";
