@@ -83,98 +83,77 @@ class PiNetworkCore {
   }
 
 
-  private async initializeAttempt(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      if (typeof window === 'undefined') {
-        reject(new Error('Window object not available (not in browser environment)'));
+private async initializeAttempt(): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    if (typeof window === 'undefined') {
+      reject(new Error('Window object not available (not in browser environment)'));
+      return;
+    }
+
+    // ✅ If SDK already available, just init
+    if (window.Pi && typeof window.Pi.authenticate === "function") {
+      console.log("✅ Pi SDK detected, skipping re-initialization.");
+      this.isInitialized = true;
+      (window as any).__piInitialized = true;
+      resolve();
+      return;
+    }
+
+    console.log('⚙️ Pi SDK not detected, dynamically loading...');
+
+    // 🧠 Step 1: dynamically inject SDK script
+    const script = document.createElement('script');
+    script.src = 'https://sdk.minepi.com/pi-sdk.js';
+    script.async = true;
+
+    const timeout = setTimeout(() => {
+      reject(new Error('⏰ Timeout loading Pi SDK script'));
+    }, 15000);
+
+    script.onload = () => {
+      clearTimeout(timeout);
+
+      // 🧠 Step 2: verify SDK is available
+      const Pi = (window as any).Pi;
+      if (!Pi) {
+        reject(new Error('Pi SDK loaded but window.Pi is undefined'));
         return;
       }
 
-      // If SDK is already available, initialize it directly
-      if (window.Pi && typeof window.Pi.authenticate === "function") {
-        console.log("✅ Pi SDK detected, skipping re-initialization.");
-        this.isInitialized = true;
-        (window as any).__piInitialized = true;
-        resolve();
-        return;
-      }
+      console.log('✅ Pi SDK loaded successfully, initializing...');
+      const isSandbox = this.determineSandboxMode();
 
-      // Otherwise, load the SDK
-      console.log('Pi SDK not detected, attempting to initialize...');
-
-      // Check if script is already being loaded
-      const existingScript = document.querySelector('script[src*="pi-sdk.js"]');
-      if (existingScript) {
-        console.log('Pi SDK script already in DOM, waiting for load...');
-        const checkInterval = setInterval(() => {
-          if (window.Pi) {
-            clearInterval(checkInterval);
-            const isSandbox = this.determineSandboxMode();
-            window.Pi.init({ version: "2.0", sandbox: isSandbox })
-              .then(() => {
-                console.log('Pi SDK initialized successfully');
-                this.isInitialized = true;
-                resolve();
-              })
-              .catch((err) => {
-                reject(new Error(`Pi SDK init failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
-              });
-          }
-        }, 100);
-
-        setTimeout(() => {
-          clearInterval(checkInterval);
-          if (!this.isInitialized) {
-            reject(new Error('Timeout waiting for Pi SDK to load'));
-          }
-        }, 10000);
-        return;
-      }
-
-      // Load Pi SDK from CDN
-      console.log('Loading Pi SDK from CDN...');
-      const script = document.createElement('script');
-      script.src = 'https://sdk.minepi.com/pi-sdk.js';
-      script.async = true;
-
-      const timeout = setTimeout(() => {
-        script.onerror = null;
-        script.onload = null;
-        reject(new Error('Timeout loading Pi SDK script'));
-      }, 15000);
-
-      script.onload = () => {
-        clearTimeout(timeout);
-
-        if (window.Pi) {
-          const isSandbox = this.determineSandboxMode();
-          window.Pi.init({ version: "2.0", sandbox: isSandbox })
-            .then(() => {
-              console.log('Pi SDK initialized successfully');
-              this.isInitialized = true;
-              resolve();
-            })
-            .catch((err) => {
-              reject(new Error(`Pi SDK init failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
-            });
-        } else {
-          reject(new Error('Pi SDK loaded but window.Pi not available'));
-        }
-      };
-
-      script.onerror = (error) => {
-        clearTimeout(timeout);
-        reject(new Error(`Failed to load Pi SDK script: ${error}`));
-      };
-
+      // 🧠 Step 3: initialize the SDK
       try {
-        document.head.appendChild(script);
-      } catch (error) {
-        clearTimeout(timeout);
-        reject(new Error(`Failed to append script to DOM: ${error instanceof Error ? error.message : 'Unknown error'}`));
+        Pi.init({ version: "2.0", sandbox: isSandbox })
+          .then(() => {
+            console.log('✅ Pi SDK initialized successfully');
+            this.isInitialized = true;
+            (window as any).__piInitialized = true;
+            resolve();
+          })
+          .catch((err: any) => {
+            reject(new Error(`❌ Pi SDK init failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
+          });
+      } catch (err) {
+        reject(new Error(`Pi SDK init exception: ${err instanceof Error ? err.message : 'Unknown error'}`));
       }
-    });
-  }
+    };
+
+    script.onerror = (error) => {
+      clearTimeout(timeout);
+      reject(new Error(`❌ Failed to load Pi SDK script: ${error}`));
+    };
+
+    // 🧠 Step 4: ensure only one script tag
+    const existingScript = document.querySelector('script[src*="pi-sdk.js"]');
+    if (!existingScript) {
+      document.head.appendChild(script);
+    } else {
+      console.log('⚠️ SDK script already exists, waiting for load...');
+    }
+  });
+}
 
   /**
    * Determines sandbox mode based on environment
