@@ -99,6 +99,7 @@ class PiNetworkCore {
           .then(() => {
             console.log('Pi SDK initialized successfully');
             this.isInitialized = true;
+            (window as any).__piInitialized = true;
             resolve();
           })
           .catch((err) => {
