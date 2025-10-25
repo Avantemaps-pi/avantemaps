@@ -5,7 +5,21 @@
 
 // Check if Pi Network SDK is available
 export const isPiNetworkAvailable = (): boolean => {
-  return typeof window !== 'undefined' && !!window.Pi;
+  if (typeof window === "undefined") return false;
+
+  const pi = (window as any).Pi;
+  if (!pi) return false;
+
+  // ✅ Make sure all key SDK methods exist
+  const hasCoreMethods =
+    typeof pi.init === "function" &&
+    typeof pi.authenticate === "function" &&
+    typeof pi.createPayment === "function";
+
+  // ✅ Check if we’ve already marked SDK as ready
+  const isInitialized = (window as any).__piInitialized === true;
+
+  return hasCoreMethods && isInitialized;
 };
 
 // Check if a session is expired
