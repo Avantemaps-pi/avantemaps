@@ -91,11 +91,13 @@ class PiNetworkCore {
       }
 
       // If SDK is already available, initialize it directly
-      if (window.Pi) {
-        console.log('Pi SDK already loaded, initializing...');
-        const isSandbox = this.determineSandboxMode();
-
-        window.Pi.init({ version: "2.0", sandbox: isSandbox })
+          if (window.Pi && typeof window.Pi.authenticate === "function") {
+            console.log("✅ Pi SDK detected, skipping re-initialization.");
+            this.isInitialized = true;
+            (window as any).__piInitialized = true;
+            resolve();
+            return;
+          }
           .then(() => {
             console.log('Pi SDK initialized successfully');
             this.isInitialized = true;
