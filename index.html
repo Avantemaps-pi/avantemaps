@@ -21,10 +21,20 @@
     "/>
     
     <title>Avante Maps - Discover Local Businesses with Pi Network</title>
+    
+    <!-- ✅ Load Pi SDK first -->
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script>
       const isSandbox = window.location.hostname.includes("sandbox.minepi.com");
-      Pi.init({ version: "2.0", sandbox: isSandbox });
+
+      window.addEventListener("load", () => {
+        if (window.Pi) {
+          console.log("✅ Pi SDK loaded successfully");
+          Pi.init({ version: "2.0", sandbox: isSandbox });
+        } else {
+          console.error("❌ Pi SDK failed to load — window.Pi is undefined");
+        }
+      });
     </script>
     
     <!-- Primary Meta Tags -->
