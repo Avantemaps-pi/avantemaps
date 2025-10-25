@@ -91,11 +91,21 @@ private async initializeAttempt(): Promise<void> {
     }
 
     // ✅ If SDK already available, just init
-    if (window.Pi && typeof window.Pi.authenticate === "function") {
-      console.log("✅ Pi SDK detected, skipping re-initialization.");
-      this.isInitialized = true;
-      (window as any).__piInitialized = true;
-      resolve();
+        if (window.Pi && typeof window.Pi.authenticate === "function") {
+      console.log("✅ Pi SDK detected, forcing initialization...");
+    
+      const isSandbox = this.determineSandboxMode();
+    
+      try {
+        await window.Pi.init({ version: "2.0", sandbox: isSandbox });
+        console.log("✅ Pi SDK initialized successfully (forced).");
+        this.isInitialized = true;
+        (window as any).__piInitialized = true;
+        resolve();
+      } catch (err) {
+        console.error("❌ Pi SDK init() failed during forced re-init:", err);
+        reject(new Error(`Pi SDK init failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
+      }
       return;
     }
 
