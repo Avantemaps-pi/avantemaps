@@ -222,33 +222,37 @@ class PiNetworkCore {
   
       this.authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound);    
       console.log('✅ Pi authentication successful:', this.authResult.user.username);
+      
       // 🆕 Verify token with backend
-try {
-  const { data, error } = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-pi-auth`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${this.authResult.accessToken}`
-    },
-    body: JSON.stringify({
-      accessToken: this.authResult.accessToken,
-      uid: this.authResult.user.uid,
-      username: this.authResult.user.username
-    })
-  }).then((r) => r.json());
+      try {
+        const verifyResponse = await fetch(`https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/verify-pi-auth`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${this.authResult.accessToken}`
+          },
+          body: JSON.stringify({
+            accessToken: this.authResult.accessToken,
+            uid: this.authResult.user.uid,
+            username: this.authResult.user.username
+          })
+        });
 
-  console.log("🧩 Server verification response:", data || error);
+        const responseData = await verifyResponse.json();
+        console.log("🧩 Server verification response:", responseData);
 
-  if (error || !data?.verified) {
-    throw new Error(data?.error || "Token verification failed on backend.");
-  }
+        if (!verifyResponse.ok || !responseData?.verified) {
+          const errorMsg = responseData?.error || responseData?.details || "Token verification failed on backend";
+          console.error("❌ Verification failed:", errorMsg);
+          throw new Error(errorMsg);
+        }
 
-  console.log("✅ Token successfully verified with backend.");
-} catch (verifyErr) {
-  console.error("❌ Backend token verification failed:", verifyErr);
-  alert("Authentication failed. Please try again.");
-  throw verifyErr;
-}
+        console.log("✅ Token successfully verified with backend");
+      } catch (verifyErr) {
+        console.error("❌ Backend token verification failed:", verifyErr);
+        throw new Error(`Authentication failed: ${verifyErr instanceof Error ? verifyErr.message : 'Unknown error'}`);
+      }
+      
       return this.authResult;
       
     } catch (error) {
