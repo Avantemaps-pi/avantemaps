@@ -11,6 +11,8 @@ import { SubscriptionTier } from '@/utils/piNetwork/types';
 import { shouldBypassAuth, DEV_CONFIG } from '@/config/environment';
 import AuthContext from './useAuth';
 import { secureLog } from '@/utils/secureLogger';
+import { getPiAuthResult } from '@/utils/piNetwork/core';
+import { verifyPiAuthentication } from '@/utils/piNetwork/verification';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<PiUser | null>(null);
@@ -108,19 +110,27 @@ useEffect(() => {
   // Increased timeout to 45 seconds for better reliability
   const AUTH_TIMEOUT = 45 * 1000;
 
-  // ✅ Checks if Pi access token is still valid
-  const isTokenValid = async (accessToken: string): Promise<boolean> => {
+  // ✅ Checks if Pi access token is still valid (server-side verification; no direct Pi API calls from client)
+  const isTokenValid = async (accessToken?: string): Promise<boolean> => {
     try {
-      const response = await fetch("https://api.minepi.com/v2/me", {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      return response.ok; // returns true if token is still valid
+      // In dev bypass, always treat as valid
+      if (shouldBypassAuth()) return true;
+
+      // Prefer an in-memory token from the Pi SDK session
+      const token = accessToken || getPiAuthResult()?.accessToken || '';
+      if (!token) {
+        // No token available on client (we don't persist it) — skip client validation
+        return true;
+      }
+
+      // Verify via our Edge Function to avoid exposing Pi API from client
+      const result = await verifyPiAuthentication(token, user?.uid ?? '', user?.username ?? '');
+      return !!result.verified;
     } catch (error) {
-      console.error("Token validation error:", error);
+      console.error('Token validation error:', error);
       return false;
     }
   };
-  
   // Check for cached session on mount
   useEffect(() => {
     // In development mode, bypass authentication

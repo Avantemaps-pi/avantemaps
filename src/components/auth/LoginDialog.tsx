@@ -50,28 +50,45 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
       return () => clearTimeout(timer);
     }
   }, [open, sdkAvailable, retryCount]);
+
+  console.log("SDK check:", {
+    hasPi: !!window.Pi,
+    hasAuthenticate: typeof window.Pi?.authenticate,
+    isSdkAvailable: sdkAvailable,
+  });
+
   
- const handleLogin = async () => {
-  try {
-    secureLog.info("Starting Pi authentication...");
-    
-    const result = await authenticateUser();
-    
-    if (result?.user) {
-      secureLog.info("✅ Pi login success:", result.user);
-      alert(`Welcome ${result.user.username}!`);
-      
-      // Optionally call your Supabase edge function here
-      // await verifyPiUser(result.accessToken, result.user.uid, result.user.username);
-    } else {
-      secureLog.warn("⚠️ No user data returned from Pi authentication.");
-      alert("Login failed. Please try again.");
+  const handleLogin = async () => {
+    try {
+      secureLog.info("Starting Pi authentication...");
+  
+      // ✅ STEP 1: Check SDK readiness
+      if (!window.Pi || typeof window.Pi.authenticate !== "function") {
+        secureLog.warn("⚠️ Pi SDK not ready. Attempting to reinitialize...");
+        const { piNetworkCore } = await import("@/utils/piNetwork/core");
+        await piNetworkCore.initialize();
+        
+        if (!window.Pi || typeof window.Pi.authenticate !== "function") {
+          alert("Pi SDK not loaded yet. Please refresh or open this page in Pi Browser.");
+          return;
+        }
+      }
+  
+      // ✅ STEP 2: Attempt authentication
+      const result = await authenticateUser();
+  
+      if (result?.user) {
+        secureLog.info("✅ Pi login success:", result.user);
+        alert(`Welcome ${result.user.username}!`);
+      } else {
+        secureLog.warn("⚠️ No user data returned from Pi authentication.");
+        alert("Login failed. Please try again.");
+      }
+    } catch (error) {
+      secureLog.error("❌ Pi login error:", error);
+      alert("Pi Network login failed. Please try again.");
     }
-  } catch (error) {
-    secureLog.error("❌ Pi login error:", error);
-    alert("Pi Network login failed. Please try again.");
-  }
-};
+  };
   
   const handleContinueBrowsing = () => {
     onOpenChange(false);
