@@ -23,7 +23,8 @@
     <title>Avante Maps - Discover Local Businesses with Pi Network</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script>
-      Pi.init({ version: "2.0" });
+      const isSandbox = window.location.hostname.includes("sandbox.minepi.com");
+      Pi.init({ version: "2.0", sandbox: isSandbox });
     </script>
     
     <!-- Primary Meta Tags -->
