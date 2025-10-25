@@ -91,24 +91,16 @@ class PiNetworkCore {
       }
 
       // If SDK is already available, initialize it directly
-          if (window.Pi && typeof window.Pi.authenticate === "function") {
-            console.log("✅ Pi SDK detected, skipping re-initialization.");
-            this.isInitialized = true;
-            (window as any).__piInitialized = true;
-            resolve();
-            return;
-          }
-          .then(() => {
-            console.log('Pi SDK initialized successfully');
-            this.isInitialized = true;
-            (window as any).__piInitialized = true;
-            resolve();
-          })
-          .catch((err) => {
-            reject(new Error(`Pi SDK init failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
-          });
+      if (window.Pi && typeof window.Pi.authenticate === "function") {
+        console.log("✅ Pi SDK detected, skipping re-initialization.");
+        this.isInitialized = true;
+        (window as any).__piInitialized = true;
+        resolve();
         return;
       }
+
+      // Otherwise, load the SDK
+      console.log('Pi SDK not detected, attempting to initialize...');
 
       // Check if script is already being loaded
       const existingScript = document.querySelector('script[src*="pi-sdk.js"]');
