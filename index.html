@@ -7,18 +7,19 @@
     
     <!-- Security: Content Security Policy to mitigate XSS attacks -->
     <meta http-equiv="Content-Security-Policy" content="
-      default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://sdk.minepi.com https://unpkg.com https://cdn.gpteng.co;
-      style-src 'self' 'unsafe-inline' https://unpkg.com;
-      img-src 'self' data: blob: https: http:;
-      font-src 'self' data:;
-      connect-src 'self' https://*.supabase.co https://api.minepi.com wss://*.supabase.co https://nominatim.openstreetmap.org https://*.locationiq.com;
-      frame-src 'self';
+      default-src * data: blob:;
+      script-src * 'unsafe-inline' 'unsafe-eval' blob:;
+      style-src * 'unsafe-inline';
+      img-src * data: blob:;
+      font-src * data:;
+      connect-src *;
+      frame-src *;
       object-src 'none';
       base-uri 'self';
       form-action 'self';
       upgrade-insecure-requests;
-    "/>
+    " />
+
     
     <title>Avante Maps - Discover Local Businesses with Pi Network</title>
     
