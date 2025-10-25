@@ -111,7 +111,7 @@ class PiNetworkCore {
       }
 
       // Check if script is already being loaded
-      const existingScript = document.querySelector('script[src="https://sdk.minepi.com/pi-sdk.js"]');
+      const existingScript = document.querySelector('script[src*="pi-sdk.js"]');
       if (existingScript) {
         console.log('Pi SDK script already in DOM, waiting for load...');
         const checkInterval = setInterval(() => {
@@ -187,13 +187,16 @@ class PiNetworkCore {
   /**
    * Determines sandbox mode based on environment
    */
-  private determineSandboxMode(): boolean {
-    const hostname = window.location.hostname;
-    return hostname === 'localhost' || 
-           hostname.includes('127.0.0.1') ||
-           hostname.includes('dev') ||
-           hostname.includes('sandbox');
-  }
+ private determineSandboxMode(): boolean {
+  const hostname = window.location.hostname;
+  return (
+    hostname === "localhost" ||
+    hostname.includes("127.0.0.1") ||
+    hostname.includes("dev") ||
+    hostname.includes("sandbox") ||
+    hostname.endsWith("minepi.com")
+  );
+}
 
   /**
    * Authenticate user with Pi Network
@@ -222,7 +225,9 @@ class PiNetworkCore {
           }
         }
       };
-  
+
+      // Wait briefly to ensure Pi Messaging channel is ready
+      await new Promise(res => setTimeout(res, 500));
       this.authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound);    
       console.log('✅ Pi authentication successful:', this.authResult.user.username);
       
