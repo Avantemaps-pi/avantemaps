@@ -51,18 +51,28 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
     }
   }, [open, sdkAvailable, retryCount]);
   
- const handleLogin = async () => {
+const handleLogin = async () => {
   try {
     secureLog.info("Starting Pi authentication...");
-    
+
+    // ✅ STEP 1: Check SDK readiness
+    if (!window.Pi || typeof window.Pi.authenticate !== "function") {
+      secureLog.warn("⚠️ Pi SDK not ready. Attempting to reinitialize...");
+      const { piNetworkCore } = await import("@/utils/piNetwork/core");
+      await piNetworkCore.initialize();
+      
+      if (!window.Pi || typeof window.Pi.authenticate !== "function") {
+        alert("Pi SDK not loaded yet. Please refresh or open this page in Pi Browser.");
+        return;
+      }
+    }
+
+    // ✅ STEP 2: Attempt authentication
     const result = await authenticateUser();
-    
+
     if (result?.user) {
       secureLog.info("✅ Pi login success:", result.user);
       alert(`Welcome ${result.user.username}!`);
-      
-      // Optionally call your Supabase edge function here
-      // await verifyPiUser(result.accessToken, result.user.uid, result.user.username);
     } else {
       secureLog.warn("⚠️ No user data returned from Pi authentication.");
       alert("Login failed. Please try again.");
