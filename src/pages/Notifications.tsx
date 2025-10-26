@@ -36,12 +36,13 @@ const Notifications = () => {
   const unreadCount = notifications.filter(notification => !notification.read).length;
   return <AppLayout title="Avante Maps">
       <div className="max-w-3xl mx-auto mt-6">
-        <div className="mb-6">
-          
-          <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0} className="mb-3 mx-[20px]">
-            Mark all as read
-          </Button>
-        </div>
+        {notifications.length > 0 && (
+          <div className="mb-6">
+            <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0} className="mb-3 mx-[20px]">
+              Mark all as read
+            </Button>
+          </div>
+        )}
         
         <Card>
           <CardContent className="p-0">
