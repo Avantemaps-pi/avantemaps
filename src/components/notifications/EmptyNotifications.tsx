@@ -1,11 +1,8 @@
-
 import React from 'react';
 import { Bell, MessageSquare, DollarSign, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-
 const EmptyNotifications: React.FC = () => {
-  return (
-    <div className="py-20 px-6 text-center">
+  return <div className="py-20 px-6 text-center">
       {/* Icon with animation */}
       <div className="mb-6">
         <Bell className="h-24 w-24 mx-auto text-primary/20 animate-pulse" />
@@ -22,19 +19,7 @@ const EmptyNotifications: React.FC = () => {
       </p>
       
       {/* Info badges */}
-      <div className="flex gap-3 justify-center flex-wrap mt-8">
-        <Badge variant="outline" className="gap-2">
-          <MessageSquare className="h-4 w-4" /> Reviews
-        </Badge>
-        <Badge variant="outline" className="gap-2">
-          <DollarSign className="h-4 w-4" /> Payments
-        </Badge>
-        <Badge variant="outline" className="gap-2">
-          <ShieldCheck className="h-4 w-4" /> Verifications
-        </Badge>
-      </div>
-    </div>
-  );
+      
+    </div>;
 };
-
 export default EmptyNotifications;
