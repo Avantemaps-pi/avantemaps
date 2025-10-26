@@ -1,13 +1,16 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { filterInappropriateContent, isSafeForAI } from '@/utils/contentFilter';
 import { useToast } from '@/hooks/use-toast';
 import { ChatMode } from '@/components/chat/ChatInterface';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/auth';
 
 export function useChatState() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Array<{
     id: number;
@@ -15,20 +18,73 @@ export function useChatState() {
     sender: string;
     timestamp: string;
   }>>([
-    { id: 1, text: "Welcome to Avante Maps!", sender: "system", timestamp: "10:30 AM" },
-    { id: 2, text: "Hi there! How can I help with Avante Maps today?", sender: "support", timestamp: "10:32 AM" },
+    { id: 1, text: "Welcome to Avante Maps!", sender: "system", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+    { id: 2, text: "Hi there! How can I help with Avante Maps today?", sender: "support", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
   ]);
   const [chatMode, setChatMode] = useState<ChatMode>("ai");
   const [awaitingVerificationConfirmation, setAwaitingVerificationConfirmation] = useState(false);
   const [awaitingBusinessSelection, setAwaitingBusinessSelection] = useState(false);
   const [awaitingVerificationBusinessSelection, setAwaitingVerificationBusinessSelection] = useState(false);
+  const [selectedBusinessForVerification, setSelectedBusinessForVerification] = useState<any>(null);
+  const [userBusinesses, setUserBusinesses] = useState<any[]>([]);
 
-  // Mock businesses data - in a real app this would come from a database
-  const mockBusinesses = [
-    { id: 1, name: "Your Restaurant Name" },
-    { id: 2, name: "Your Shop Name" },
-    { id: 3, name: "Your Service Business" }
-  ];
+  // Fetch user's businesses from Supabase
+  const fetchUserBusinesses = useCallback(async () => {
+    if (!user?.uid) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('id, name, verification_status, is_verified, created_at')
+        .eq('owner_id', user.uid)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching businesses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch your businesses. Please try again.",
+        variant: "destructive",
+      });
+      return [];
+    }
+  }, [user?.uid, toast]);
+
+  // Update verification status in database
+  const updateVerificationStatus = async (businessId: number, status: string) => {
+    try {
+      const { error } = await supabase
+        .from('businesses')
+        .update({ verification_status: status })
+        .eq('id', businessId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error updating verification status:', error);
+      return false;
+    }
+  };
+
+  // Log verification request to audit table
+  const logVerificationRequest = async (businessId: number, action: string) => {
+    if (!user?.uid) return;
+
+    try {
+      await supabase
+        .from('verification_audit')
+        .insert({
+          business_id: businessId,
+          performed_by: user.uid,
+          action: action,
+          notes: `Verification request submitted via chat interface`
+        });
+    } catch (error) {
+      console.error('Error logging verification request:', error);
+    }
+  };
 
   const streamAIResponse = async (conversationMessages: typeof messages) => {
     try {
@@ -167,48 +223,17 @@ export function useChatState() {
 
       const filteredMessage = chatMode === "ai" ? filterInappropriateContent(message.trim()) : message.trim();
 
-      // Handle business selection for verification
+      // Handle business selection for verification - now handled by button clicks
       if (awaitingVerificationBusinessSelection) {
-        const selectedBusiness = mockBusinesses.find(business => 
-          business.name.toLowerCase().includes(message.toLowerCase()) ||
-          message.toLowerCase().includes(business.name.toLowerCase())
-        );
-        
-        if (selectedBusiness) {
-          const selectionMessage = {
-            id: messages.length + 1,
-            text: `Selected business: ${selectedBusiness.name}`,
-            sender: "user",
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          };
-          
-          setMessages([...messages, selectionMessage]);
-          
-          setTimeout(() => {
-            const confirmationMessage = {
-              id: messages.length + 2,
-              text: `Request a new verification check for "${selectedBusiness.name}"? Yes | No`,
-              sender: "support",
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            setMessages(prev => [...prev, confirmationMessage]);
-          }, 500);
-          
-          setAwaitingVerificationBusinessSelection(false);
-          setAwaitingVerificationConfirmation(true);
-          setMessage("");
-          return;
-        } else {
-          const errorMessage = {
-            id: messages.length + 1,
-            text: "Business not found. Please select from the available options:",
-            sender: "support",
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          };
-          setMessages([...messages, errorMessage]);
-          setMessage("");
-          return;
-        }
+        const errorMessage = {
+          id: messages.length + 1,
+          text: "Please click one of the business buttons above to select.",
+          sender: "support",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages([...messages, errorMessage]);
+        setMessage("");
+        return;
       }
 
       // Handle verification confirmation responses
@@ -262,29 +287,27 @@ export function useChatState() {
       
       // Check for special commands
       if (message.includes('/verification')) {
-        // Show business selection buttons for verification
-        const businessSelectionMessage = {
-          id: messages.length + 1,
-          text: "Please select which business you'd like to verify:",
-          sender: "support",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        
-        const businessOptionsMessage = {
-          id: messages.length + 2,
-          text: "Select your business:",
-          sender: "business-selection",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        
-        setMessages([...messages, businessSelectionMessage, businessOptionsMessage]);
-        setAwaitingVerificationBusinessSelection(true);
+        await triggerVerificationFlow('verification');
         setMessage("");
         return;
       }
       
       if (message.includes('/certification')) {
         // Show business selection for certification
+        const businesses = await fetchUserBusinesses();
+        
+        if (businesses.length === 0) {
+          const noBusinessMessage = {
+            id: messages.length + 1,
+            text: "You don't have any registered businesses yet. Please register a business first.",
+            sender: "support",
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+          setMessages([...messages, noBusinessMessage]);
+          setMessage("");
+          return;
+        }
+        
         const businessSelectionMessage = {
           id: messages.length + 1,
           text: "Please select which business you'd like to certify:",
@@ -292,9 +315,10 @@ export function useChatState() {
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         
+        const businessList = businesses.map(b => `• ${b.name}`).join('\n');
         const businessOptionsMessage = {
           id: messages.length + 2,
-          text: "Available businesses:\n" + mockBusinesses.map(b => `• ${b.name}`).join('\n') + "\n\nPlease type the name of the business you want to certify:",
+          text: `Available businesses:\n${businessList}\n\nPlease type the name of the business you want to certify:`,
           sender: "support",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
@@ -414,11 +438,65 @@ export function useChatState() {
     }, 1000);
   };
 
+  // Trigger verification flow
+  const triggerVerificationFlow = useCallback(async (type: 'verification' | 'certification') => {
+    // Add user's message to chat
+    const userMessage = {
+      id: Date.now(),
+      text: `/verification`,
+      sender: "user",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+
+    // Fetch user's businesses
+    const businesses = await fetchUserBusinesses();
+    setUserBusinesses(businesses);
+
+    if (businesses.length === 0) {
+      // No businesses registered
+      const noBusinessMessage = {
+        id: Date.now() + 1,
+        text: "You don't have any registered businesses yet. Please register a business first to request verification.",
+        sender: "support",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => [...prev, noBusinessMessage]);
+
+      setTimeout(() => {
+        navigate('/registration');
+      }, 2000);
+      return;
+    }
+
+    // Show business selection
+    const businessSelectionMessage = {
+      id: Date.now() + 2,
+      text: "Please select which business you'd like to verify:",
+      sender: "support",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    
+    const businessOptionsMessage = {
+      id: Date.now() + 3,
+      text: "Select your business:",
+      sender: "business-selection",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      businesses: businesses // Pass businesses data
+    };
+    
+    setMessages(prev => [...prev, businessSelectionMessage, businessOptionsMessage]);
+    setAwaitingVerificationBusinessSelection(true);
+  }, [fetchUserBusinesses, navigate]);
+
   // Handle business selection from buttons
-  const handleBusinessSelection = (business: { id: number; name: string }) => {
+  const handleBusinessSelection = useCallback(async (business: any) => {
     if (awaitingVerificationBusinessSelection) {
+      setSelectedBusinessForVerification(business);
+      
       const selectionMessage = {
-        id: messages.length + 1,
+        id: Date.now(),
         text: `Selected business: ${business.name}`,
         sender: "user",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -426,20 +504,34 @@ export function useChatState() {
       
       setMessages(prev => [...prev, selectionMessage]);
       
+      // Check verification status
+      let statusMessage = "";
+      if (business.is_verified || business.verification_status === 'verified') {
+        statusMessage = `"${business.name}" is already verified! ✓`;
+      } else if (business.verification_status === 'pending') {
+        statusMessage = `Your verification request for "${business.name}" is already being processed. Our team will review it and get back to you shortly.`;
+      } else {
+        // New verification request
+        statusMessage = `Verification process for "${business.name}" has just begun! Our team will review your business and contact you within 2-3 business days.`;
+        
+        // Update status to pending
+        await updateVerificationStatus(business.id, 'pending');
+        await logVerificationRequest(business.id, 'verification_requested');
+      }
+      
       setTimeout(() => {
-        const confirmationMessage = {
-          id: messages.length + 2,
-          text: `Request a new verification check for "${business.name}"? Yes | No`,
+        const responseMessage = {
+          id: Date.now() + 1,
+          text: statusMessage,
           sender: "support",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
-        setMessages(prev => [...prev, confirmationMessage]);
+        setMessages(prev => [...prev, responseMessage]);
       }, 500);
       
       setAwaitingVerificationBusinessSelection(false);
-      setAwaitingVerificationConfirmation(true);
     }
-  };
+  }, [awaitingVerificationBusinessSelection, updateVerificationStatus, logVerificationRequest]);
 
   return {
     message,
@@ -452,6 +544,7 @@ export function useChatState() {
     handleChatModeChange,
     handleAttachmentOption,
     sendVerificationRequest,
-    handleBusinessSelection
+    handleBusinessSelection,
+    triggerVerificationFlow
   };
 }

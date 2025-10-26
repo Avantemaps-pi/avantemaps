@@ -7,11 +7,12 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { SubscriptionTier } from '@/utils/piNetwork';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 const Communicon = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const { hasPermission, isLoading } = useFeatureAccess(
     SubscriptionTier.ORGANIZATION,
@@ -28,7 +29,8 @@ const Communicon = () => {
     handleSendMessage,
     handleAttachmentOption,
     sendVerificationRequest,
-    handleBusinessSelection
+    handleBusinessSelection,
+    triggerVerificationFlow
   } = useChatState();
 
   useEffect(() => {
@@ -44,6 +46,17 @@ const Communicon = () => {
       }
     };
   }, [sendVerificationRequest, handleBusinessSelection]);
+
+  // Handle verification trigger from navigation state
+  useEffect(() => {
+    if (location.state?.triggerVerification) {
+      const verificationType = location.state.verificationType || 'verification';
+      // Clear the state to prevent re-triggering
+      window.history.replaceState({}, document.title);
+      // Trigger verification flow
+      triggerVerificationFlow(verificationType);
+    }
+  }, [location.state, triggerVerificationFlow]);
 
   // Create wrapper function to match expected signature
   const handleSendMessageWrapper = () => {

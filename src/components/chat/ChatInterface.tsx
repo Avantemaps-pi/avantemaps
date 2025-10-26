@@ -101,18 +101,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const renderBusinessSelectionButtons = (msg: any) => {
     if (msg.sender === "business-selection") {
-      const mockBusinesses = [
-        { id: 1, name: "Your Restaurant Name" },
-        { id: 2, name: "Your Shop Name" },
-        { id: 3, name: "Your Service Business" }
-      ];
+      // Use businesses from message data if available
+      const businesses = msg.businesses || [];
+
+      if (businesses.length === 0) {
+        return null;
+      }
 
       return (
         <BusinessSelectionButtons 
-          businesses={mockBusinesses}
+          businesses={businesses}
           onBusinessSelect={(business) => {
-            // This would normally be handled by the parent component
-            console.log('Business selected:', business.name);
             // Trigger the business selection logic
             if (window.handleBusinessSelection) {
               window.handleBusinessSelection(business);
