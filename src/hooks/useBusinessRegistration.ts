@@ -117,15 +117,54 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       }
 
       // Ensure user exists in database before registering business
+      // Use maybeSingle() to avoid errors when user not found
       const { data: existingUser, error: userCheckError } = await supabase
         .from('users')
         .select('id')
         .eq('id', user.uid)
-        .single();
+        .maybeSingle();
 
-      if (userCheckError || !existingUser) {
-        console.error('User not found in database:', userCheckError);
-        toast.error('Your account is not properly set up. Please log out and log back in.');
+      // If user doesn't exist, try to create them via upsert_user_profile
+      if (!existingUser) {
+        console.log('User not found in database, attempting to create...');
+        
+        try {
+          const { error: upsertError } = await supabase.rpc('upsert_user_profile', {
+            p_user_id: user.uid,
+            p_username: user.username,
+            p_subscription: user.subscriptionTier || 'individual'
+          });
+          
+          if (upsertError) {
+            console.error('Failed to create user profile:', upsertError);
+            toast.error('Failed to set up your account. Please try logging out and back in.');
+            return;
+          }
+          
+          // Verify the user was created successfully
+          const { data: verifyUser, error: verifyError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', user.uid)
+            .maybeSingle();
+            
+          if (verifyError || !verifyUser) {
+            console.error('User creation verification failed:', verifyError);
+            toast.error('Account setup incomplete. Please log out and log back in.');
+            return;
+          }
+          
+          toast.success('Account setup completed successfully!');
+        } catch (error) {
+          console.error('Error during user creation:', error);
+          toast.error('Failed to set up your account. Please try again.');
+          return;
+        }
+      }
+
+      if (userCheckError) {
+        console.error('Error checking user existence:', userCheckError);
+        toast.error('Unable to verify account. Please ensure you\'re properly logged in.');
         return;
       }
 
