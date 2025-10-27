@@ -1,17 +1,16 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-
 interface DangerZoneProps {
   onDeleteAccount: () => void;
   onReinstateAccount: () => void;
 }
-
-const DangerZone = ({ onDeleteAccount, onReinstateAccount }: DangerZoneProps) => {
-  return (
-    <Card>
+const DangerZone = ({
+  onDeleteAccount,
+  onReinstateAccount
+}: DangerZoneProps) => {
+  return <Card>
       <CardHeader>
         <CardTitle className="text-red-600">Danger Zone</CardTitle>
         <CardDescription>
@@ -33,13 +32,9 @@ const DangerZone = ({ onDeleteAccount, onReinstateAccount }: DangerZoneProps) =>
           <Button variant="outline" onClick={onReinstateAccount} className="w-full">
             Reinstate Account
           </Button>
-          <p className="text-xs text-muted-foreground mt-2">
-            If your account is scheduled for deletion, you can reinstate it.
-          </p>
+          <p className="text-xs text-muted-foreground mt-2">If your account is scheduled for deletion, you can reinstate it within 15days.</p>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default DangerZone;
