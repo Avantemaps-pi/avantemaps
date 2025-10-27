@@ -11,8 +11,8 @@ interface TabNavigationProps {
 const TabNavigation: React.FC<TabNavigationProps> = ({ isMobile, disabled }) => {
   const tabs = [
     { value: "business-owner", label: isMobile ? "Owner" : "Business Owner" },
-    { value: "contact", label: "Contact" },
     { value: "address", label: "Address" },
+    { value: "contact", label: "Contact" },
     { value: "hours", label: "Hours" },
     { value: "details", label: "Details" },
   ];

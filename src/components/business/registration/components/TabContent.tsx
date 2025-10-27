@@ -26,23 +26,23 @@ const TabContent: React.FC<TabContentProps> = ({
     <div className="w-full min-h-[500px]">
       <TabsContent value="business-owner" className="space-y-4 w-full">
         <BusinessOwnerTab 
-          onNext={() => setSelectedTab('contact')}
+          onNext={() => setSelectedTab('address')}
           disabled={isSubmitting} 
-        />
-      </TabsContent>
-
-      <TabsContent value="contact" className="space-y-4 w-full">
-        <ContactTab 
-          onNext={() => setSelectedTab('address')} 
-          onPrevious={() => setSelectedTab('business-owner')} 
-          disabled={isSubmitting}
         />
       </TabsContent>
 
       <TabsContent value="address" className="space-y-4 w-full">
         <AddressTab 
+          onNext={() => setSelectedTab('contact')} 
+          onPrevious={() => setSelectedTab('business-owner')} 
+          disabled={isSubmitting}
+        />
+      </TabsContent>
+
+      <TabsContent value="contact" className="space-y-4 w-full">
+        <ContactTab 
           onNext={() => setSelectedTab('hours')} 
-          onPrevious={() => setSelectedTab('contact')} 
+          onPrevious={() => setSelectedTab('address')} 
           disabled={isSubmitting}
         />
       </TabsContent>
@@ -50,7 +50,7 @@ const TabContent: React.FC<TabContentProps> = ({
       <TabsContent value="hours" className="space-y-4 w-full">
         <HoursTab 
           onNext={() => setSelectedTab('details')} 
-          onPrevious={() => setSelectedTab('address')} 
+          onPrevious={() => setSelectedTab('contact')} 
           disabled={isSubmitting}
         />
       </TabsContent>
