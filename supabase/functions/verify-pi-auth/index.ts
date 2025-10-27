@@ -22,9 +22,10 @@ Deno.serve(async (req: Request) => {
   try {
     console.log(`🚀 [${traceId}] verify-pi-auth invoked`);
 
-    // Parse test mode flag
+    // Parse test mode flag - only available in development
     const url = new URL(req.url);
-    const testMode = url.searchParams.get('test') === 'true';
+    const isDev = Deno.env.get('ENVIRONMENT') === 'development';
+    const testMode = isDev && url.searchParams.get('test') === 'true';
 
     // Parse and validate request body
     const rawBody = await req.text();
@@ -60,14 +61,14 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ✅ Bypass if running test mode
+    // ✅ Bypass if running test mode (development only)
     if (testMode) {
-      console.log(`🧪 [${traceId}] Test mode active – skipping Pi API call.`);
+      console.log(`🧪 [${traceId}] Test mode active (development only) – skipping Pi API call.`);
       return new Response(
         JSON.stringify({
           verified: true,
           testMode: true,
-          message: 'Verification bypassed successfully.',
+          message: 'Verification bypassed successfully (development mode).',
           user: { uid, username, wallet_address: 'TEST_WALLET_123' },
           traceId,
         }),
