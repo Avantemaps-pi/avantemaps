@@ -124,22 +124,25 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         .eq('id', user.uid)
         .maybeSingle();
 
-      // If user doesn't exist, try to create them via upsert_user_profile
+      // Replace the toast/error block with something like:
       if (!existingUser) {
-        console.log('User not found in database, attempting to create...');
-        
         try {
           const { error: upsertError } = await supabase.rpc('upsert_user_profile', {
             p_user_id: user.uid,
             p_username: user.username,
             p_subscription: user.subscriptionTier || 'individual'
           });
-          
+      
           if (upsertError) {
-            console.error('Failed to create user profile:', upsertError);
-            toast.error('Failed to set up your account. Please try logging out and back in.');
-            return;
+            console.warn('User profile upsert failed, proceeding anyway:', upsertError);
           }
+      
+          // Optionally verify user exists, but do not block submission
+        } catch (err) {
+          console.warn('RPC error, proceeding anyway:', err);
+        }
+      }
+
           
           // Verify the user was created successfully
           const { data: verifyUser, error: verifyError } = await supabase
