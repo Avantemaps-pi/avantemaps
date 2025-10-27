@@ -28,7 +28,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
       clearTimeout(timeoutRef.current);
     }
 
-    // Set new timeout for debounced search
+    // Minimal debounce for instant feel while preventing API spam
     timeoutRef.current = setTimeout(async () => {
       if (value.length < 3) {
         setSuggestions([]);
@@ -46,7 +46,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
       } finally {
         setIsLoading(false);
       }
-    }, 300);
+    }, 100);
   };
 
   const handleSuggestionClick = (suggestion: AddressSuggestion) => {
