@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const countryCodes = [
   { code: '+61', country: 'Australia' },
   { code: '+55', country: 'Brazil' },
+  { code: '+1', country: 'Canada' },
   { code: '+86', country: 'China' },
   { code: '+45', country: 'Denmark' },
   { code: '+33', country: 'France' },
@@ -37,10 +38,17 @@ const countryCodes = [
   { code: '+46', country: 'Sweden' },
   { code: '+66', country: 'Thailand' },
   { code: '+971', country: 'UAE' },
-  { code: '+44', country: 'UK' },
-  { code: '+1', country: 'US/Canada' },
+  { code: '+44', country: 'United Kingdom' },
+  { code: '+1', country: 'United States' },
   { code: '+84', country: 'Vietnam' },
 ];
+
+// Map country names to country codes
+const getCountryCodeFromCountry = (country: string): string => {
+  const normalized = country.toLowerCase().trim();
+  const match = countryCodes.find(c => c.country.toLowerCase() === normalized);
+  return match?.code || '+1'; // Default to +1 if not found
+};
 
 interface ContactTabProps {
   onNext: () => void;
@@ -51,9 +59,20 @@ interface ContactTabProps {
 const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled }) => {
   const form = useFormContext<FormValues>();
   
-  // Initialize countryCode from form or default to +1
+  // Initialize countryCode based on the country from address section
   const [countryCode, setCountryCode] = React.useState(() => {
-    return form.getValues("countryCode") || "+1";
+    const formCountryCode = form.getValues("countryCode");
+    if (formCountryCode) return formCountryCode;
+    
+    // Get country from address section and map to country code
+    const addressCountry = form.getValues("country");
+    if (addressCountry) {
+      const mappedCode = getCountryCodeFromCountry(addressCountry);
+      form.setValue("countryCode", mappedCode);
+      return mappedCode;
+    }
+    
+    return "+1";
   });
 
   // Update countryCode in the form when it changes
