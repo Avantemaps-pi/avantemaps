@@ -120,7 +120,7 @@ const VerificationInfo = () => {
 
           <div className="flex justify-center gap-4">
             <Button asChild variant="outline">
-              <Link to="/registered-business">My Businesses</Link>
+              <Link to="/registered-business">MyBusinesses</Link>
             </Button>
             <Button asChild variant="outline">
               
