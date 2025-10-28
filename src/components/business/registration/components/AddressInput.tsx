@@ -12,6 +12,7 @@ interface AddressInputProps {
 }
 
 const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
+  const [selectedSuggestion, setSelectedSuggestion] = useState<string>('');
   const form = useFormContext<FormValues>();
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -48,16 +49,20 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
 
   const handleSuggestionClick = (suggestion: AddressSuggestion) => {
     const streetAddress = `${suggestion.address.house_number} ${suggestion.address.road}`.trim();
-
+  
     form.setValue('streetAddress', streetAddress);
     form.setValue('city', suggestion.address.city);
     form.setValue('state', suggestion.address.state);
     form.setValue('zipCode', suggestion.address.postcode);
     form.setValue('country', suggestion.address.country);
-
+  
+    // Set the input to show the selected suggestion
+    setSelectedSuggestion(streetAddress);
+  
     setSuggestions([]);
     setShowSuggestions(false);
   };
+
 
   useEffect(() => {
     return () => {
@@ -111,7 +116,9 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
                   placeholder="Start typing your business address..."
                   {...field}
                   ref={inputRef}
+                  value={selectedSuggestion || field.value}
                   onChange={(e) => {
+                    setSelectedSuggestion(''); // reset if user starts typing again
                     field.onChange(e);
                     handleAddressChange(e.target.value);
                   }}
