@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,16 +5,12 @@ import { CheckCircle, AlertTriangle, Info, ArrowLeft, Shield, Lock } from 'lucid
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
-
 const VerificationInfo = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-  
   const navigate = useNavigate();
-
-  return (
-    <AppLayout title="Verification & Certification">
+  return <AppLayout title="Verification & Certification">
       <div className="flex-1 p-4">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
@@ -128,7 +123,7 @@ const VerificationInfo = () => {
               <Link to="/registered-business">My Businesses</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link to="/settings">Settings</Link>
+              
             </Button>
             <Button asChild>
               <Link to="/registration">Register a Business</Link>
@@ -136,8 +131,6 @@ const VerificationInfo = () => {
           </div>
         </div>
       </div>
-    </AppLayout>
-  );
+    </AppLayout>;
 };
-
 export default VerificationInfo;
