@@ -23,4 +23,7 @@ export const fetchAddressSuggestions = async (query: string): Promise<AddressSug
     console.error('Error calling geocode function:', error);
     return [];
   }
+
+  console.log('Response from geocode-address:', data);
 };
+
