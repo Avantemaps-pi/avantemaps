@@ -71,6 +71,11 @@ const MobileSidebar = ({
     onClose();
   };
 
+  const handleProfileClick = () => {
+    navigate('/settings');
+    onClose();
+  };
+
   return (
     <>
       {isOpen && (
@@ -84,15 +89,15 @@ const MobileSidebar = ({
       <div className={`fixed inset-y-0 left-0 w-4/5 max-w-[300px] bg-background z-50 transform transition-transform duration-300 ease-in-out shadow-xl ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
           <div className="p-4 flex items-center justify-between border-b border-sidebar-border">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-9 w-9">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={handleProfileClick}>
+              <Avatar className="h-9 w-9 cursor-pointer hover:opacity-80 transition-opacity">
                 <AvatarImage src="/placeholder.svg" />
                 <AvatarFallback>
                   <UserRound className="h-5 w-5" />
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
-                <span className="font-medium text-sm">{username}</span>
+                <span className="font-medium text-sm cursor-pointer hover:text-primary transition-colors">{username}</span>
                 <span className="text-xs text-muted-foreground">
                   <span 
                     className={cn(

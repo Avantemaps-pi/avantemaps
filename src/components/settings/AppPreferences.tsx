@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Shield, ExternalLink, Monitor, Sun, Moon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AppPreferencesProps {
@@ -91,51 +91,45 @@ const AppPreferences = ({
           <p className="text-sm text-muted-foreground mt-1 text-left">As a Business Owner, you need to complete these steps to get verified:</p>
         </div>
 
-        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-100 dark:border-blue-900 rounded-md w-full overflow-hidden">
-          <div className="h-60 w-full">
-            <ScrollArea className="h-full w-full pr-0" orientation="both">
-              <div className="pr-4 min-w-[300px]">
-                <div className="flex items-start text-left">
-                  <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
-                  <div className="w-full text-left">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-blue-800 dark:text-blue-300 text-left">Verification Process</h4>
-                    </div>
-                    <ul className="mt-2 space-y-3 text-sm text-left">
-                      <li className="flex items-start text-left">
-                        <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2">1</Badge>
-                        <div className="text-left">
-                          <p className="font-medium text-left">Submit all required business information</p>
-                          <p className="text-muted-foreground text-left">Complete all required business details</p>
-                        </div>
-                      </li>
-                      <li className="flex items-start text-left">
-                        <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2">2</Badge>
-                        <div className="text-left">
-                          <p className="font-medium text-left">Request Verification</p>
-                          <p className="text-muted-foreground text-left">Navigate to the "My Business" page, and click the "Request" button to begin the verification process, but only if you meet the requirements</p>
-                        </div>
-                      </li>
-                      <li className="flex items-start text-left">
-                        <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2">3</Badge>
-                        <div className="text-left">
-                          <p className="font-medium text-left">Get Verified Badge</p>
-                          <p className="text-muted-foreground text-left">Once approved, your business will show as verified</p>
-                          <div className="mt-2 text-left">
-                            <Button variant="link" size="sm" asChild className="text-blue-700 dark:text-blue-400 p-0">
-                              <Link to="/verification-info">
-                                <span>View verification and certification details</span>
-                                <ExternalLink className="h-3.5 w-3.5 ml-1" />
-                              </Link>
-                            </Button>
-                          </div>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-100 dark:border-blue-900 rounded-md w-full">
+          <div className="flex items-start text-left">
+            <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
+            <div className="w-full text-left">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-blue-800 dark:text-blue-300 text-left">Verification Process</h4>
               </div>
-            </ScrollArea>
+              <ul className="mt-2 space-y-3 text-sm text-left">
+                <li className="flex items-start text-left">
+                  <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2">1</Badge>
+                  <div className="text-left">
+                    <p className="font-medium text-left">Submit all required business information</p>
+                    <p className="text-muted-foreground text-left">Complete all required business details</p>
+                  </div>
+                </li>
+                <li className="flex items-start text-left">
+                  <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2">2</Badge>
+                  <div className="text-left">
+                    <p className="font-medium text-left">Request Verification</p>
+                    <p className="text-muted-foreground text-left">Navigate to the "My Business" page, and click the "Request" button to begin the verification process, but only if you meet the requirements</p>
+                  </div>
+                </li>
+                <li className="flex items-start text-left">
+                  <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2">3</Badge>
+                  <div className="text-left">
+                    <p className="font-medium text-left">Get Verified Badge</p>
+                    <p className="text-muted-foreground text-left">Once approved, your business will show as verified</p>
+                    <div className="mt-2 text-left">
+                      <Button variant="link" size="sm" asChild className="text-blue-700 dark:text-blue-400 p-0">
+                        <Link to="/verification-info">
+                          <span>View verification and certification details</span>
+                          <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </CardContent>

@@ -25,5 +25,8 @@ export interface AuthContextType {
   refreshUserData: () => Promise<void>;
 }
 
+// Session expires after 24 hours of inactivity
+// Note: useSessionRestoration uses a 15-minute threshold for silent refresh
+// when browser is closed, but the session itself remains valid for 24 hours
 export const SESSION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 export const STORAGE_KEY = 'avante_maps_auth';
