@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -22,13 +21,11 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
 
   const handleAddressChange = (value: string) => {
     form.setValue('streetAddress', value);
-    
-    // Clear existing timeout
+
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Minimal debounce for instant feel while preventing API spam
     timeoutRef.current = setTimeout(async () => {
       if (value.length < 3) {
         setSuggestions([]);
@@ -51,18 +48,17 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
 
   const handleSuggestionClick = (suggestion: AddressSuggestion) => {
     const streetAddress = `${suggestion.address.house_number} ${suggestion.address.road}`.trim();
-    
+
     form.setValue('streetAddress', streetAddress);
     form.setValue('city', suggestion.address.city);
     form.setValue('state', suggestion.address.state);
     form.setValue('zipCode', suggestion.address.postcode);
     form.setValue('country', suggestion.address.country);
-    
+
     setSuggestions([]);
     setShowSuggestions(false);
   };
 
-  // Clean up timeout on unmount
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -71,7 +67,6 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
     };
   }, []);
 
-  // Hide suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
@@ -84,6 +79,13 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // 🟢 Log suggestions whenever they change
+  useEffect(() => {
+    if (suggestions.length > 0) {
+      console.log('Address suggestions:', suggestions);
+    }
+  }, [suggestions]);
 
   return (
     <div className="space-y-2">
