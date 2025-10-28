@@ -1,13 +1,18 @@
 import { supabase } from '@/integrations/supabase/client';
 import { AddressSuggestion } from '../components/AddressSuggestions';
 
+/**
+ * Fetches address suggestions from the supabase edge function
+ * using the logged-in user's JWT for authentication.
+ */
 export const fetchAddressSuggestions = async (query: string): Promise<AddressSuggestion[]> => {
   if (query.length < 3) return [];
 
   try {
-    // Get current user session
+    // Get current session & JWT
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
+
     if (!token) {
       console.error('User not logged in. Cannot fetch address suggestions.');
       return [];
