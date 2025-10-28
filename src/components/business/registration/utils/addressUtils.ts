@@ -2,15 +2,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { AddressSuggestion } from '../components/AddressSuggestions';
 
 export const fetchAddressSuggestions = async (query: string): Promise<AddressSuggestion[]> => {
-  if (query.length < 3) {
-    return [];
-  }
+  if (query.length < 3) return [];
 
   try {
-    // Get the current logged-in user's JWT
+    // Get current user session
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
-
     if (!token) {
       console.error('User not logged in. Cannot fetch address suggestions.');
       return [];
@@ -29,13 +26,13 @@ export const fetchAddressSuggestions = async (query: string): Promise<AddressSug
       return [];
     }
 
-    if (!data?.suggestions) {
+    if (!data?.suggestions || !Array.isArray(data.suggestions)) {
       console.warn('No suggestions returned from geocode-address function.');
       return [];
     }
 
-    // Optional: log for debugging
-    console.log('Response from geocode-address:', data.suggestions);
+    // Optional debug logging
+    console.log('Fetched suggestions:', data.suggestions);
 
     return data.suggestions;
   } catch (err) {
