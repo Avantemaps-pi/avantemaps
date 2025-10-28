@@ -267,7 +267,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
           if (urls.length > 0) {
             await supabase
               .from('businesses')
-              .update({ image_urls: urls })
+              .update({ image_urls: urls } as any)
               .eq('id', createdBusiness.id);
           }
         } catch (uploadErr) {
