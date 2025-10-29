@@ -34,18 +34,19 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
     }, 200);
   };
 
-  const handleSuggestionClick = async (placeId: string) => {
-    const placeDetails = await getPlaceDetails(placeId);
+  const handleSuggestionClick = (prediction: typeof predictions[0]) => {
+    // Build street address from house number and road
+    const streetAddress = [
+      prediction.address.house_number,
+      prediction.address.road
+    ].filter(Boolean).join(' ') || prediction.mainText;
     
-    if (placeDetails) {
-      // Parse the address to extract components
-      const addressParts = placeDetails.address.split(',').map(s => s.trim());
-      
-      form.setValue('streetAddress', placeDetails.name);
-      if (addressParts.length > 1) form.setValue('city', addressParts[addressParts.length - 3] || '');
-      if (addressParts.length > 2) form.setValue('state', addressParts[addressParts.length - 2] || '');
-      if (addressParts.length > 0) form.setValue('country', addressParts[addressParts.length - 1] || '');
-    }
+    // Fill all address fields
+    form.setValue('streetAddress', streetAddress);
+    if (prediction.address.city) form.setValue('city', prediction.address.city);
+    if (prediction.address.state) form.setValue('state', prediction.address.state);
+    if (prediction.address.postcode) form.setValue('zipCode', prediction.address.postcode);
+    if (prediction.address.country) form.setValue('country', prediction.address.country);
 
     clearSuggestions();
     setShowSuggestions(false);
@@ -110,7 +111,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
                       key={prediction.placeId}
                       type="button"
                       className="w-full px-4 py-3 text-left hover:bg-primary/10 rounded-lg transition-colors border-b border-border/50 last:border-b-0 group"
-                      onClick={() => handleSuggestionClick(prediction.placeId)}
+                      onClick={() => handleSuggestionClick(prediction)}
                     >
                       <div className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-start gap-2">
                         <span className="text-primary mt-0.5">📍</span>

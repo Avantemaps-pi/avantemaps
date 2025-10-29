@@ -6,6 +6,16 @@ export interface PlacePrediction {
   description: string;
   mainText: string;
   secondaryText: string;
+  lat: number;
+  lon: number;
+  address: {
+    house_number?: string;
+    road?: string;
+    city?: string;
+    state?: string;
+    postcode?: string;
+    country?: string;
+  };
 }
 
 export interface PlaceDetails {
@@ -46,8 +56,18 @@ export const useLocationIQAutocomplete = () => {
           data.suggestions.map((suggestion: any) => ({
             placeId: suggestion.place_id || suggestion.osm_id || `${suggestion.lat}-${suggestion.lon}`,
             description: suggestion.display_name || suggestion.name || '',
-            mainText: suggestion.name || suggestion.display_name?.split(',')[0] || '',
+            mainText: suggestion.display_name?.split(',')[0] || '',
             secondaryText: suggestion.display_name?.split(',').slice(1).join(',').trim() || '',
+            lat: suggestion.lat,
+            lon: suggestion.lon,
+            address: {
+              house_number: suggestion.address?.house_number || '',
+              road: suggestion.address?.road || '',
+              city: suggestion.address?.city || '',
+              state: suggestion.address?.state || '',
+              postcode: suggestion.address?.postcode || '',
+              country: suggestion.address?.country || '',
+            }
           }))
         );
       } else {
