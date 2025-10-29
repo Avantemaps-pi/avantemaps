@@ -1,79 +1,84 @@
-
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { FormValues } from '../formSchema';
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { FormValues } from './formSchema';
-import BusinessImageUpload from './components/BusinessImageUpload';
-import BusinessDescriptionField from './components/BusinessDescriptionField';
-import WalletAddressField from './components/WalletAddressField';
-import BusinessTypeSelector from './components/BusinessTypeSelector';
-import { Loader2 } from 'lucide-react';
+import AddressInput from './components/AddressInput';
+import { Separator } from '@/components/ui/separator';
 
 interface DetailsTabProps {
-  onPrevious: () => void;
-  selectedImages: File[];
-  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleImageRemove?: (index: number) => void;
-  disabled?: boolean;
+  onSubmit: (values: FormValues) => Promise<void>;
 }
 
-const DetailsTab: React.FC<DetailsTabProps> = ({ 
-  onPrevious, 
-  selectedImages, 
-  handleImageUpload,
-  handleImageRemove,
-  disabled
-}) => {
+const DetailsTab = ({ onSubmit }: DetailsTabProps) => {
   const form = useFormContext<FormValues>();
-  
+  const { isSubmitting } = form.formState;
+
   return (
-    <div className="w-full">
-      <Card className="border shadow-sm">
-      <CardHeader className="pb-4 space-y-2">
-        <CardTitle className="text-2xl sm:text-xl">Additional Details</CardTitle>
-        <CardDescription className="text-base sm:text-sm">
-          Tell customers more about your business.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <BusinessTypeSelector disabled={disabled} />
-        <BusinessImageUpload 
-          selectedImages={selectedImages}
-          handleImageUpload={handleImageUpload}
-          handleImageRemove={handleImageRemove}
-          maxImages={3}
-          disabled={disabled}
-        />
-        <BusinessDescriptionField disabled={disabled} />
-        <WalletAddressField disabled={disabled} />
-      </CardContent>
-      <CardFooter className="flex justify-between pt-2">
-        <Button 
-          type="button" 
-          variant="outline" 
-          onClick={onPrevious}
-          className="min-w-24"
-          disabled={disabled}
-        >
-          Back
-        </Button>
-        <Button 
-          type="submit" 
-          className="bg-avante-blue hover:bg-avante-blue/90 min-w-40"
-          disabled={disabled}
-        >
-          {disabled ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Submitting...
-            </>
-          ) : (
-            'Submit'
+    <div className="space-y-6">
+      <Separator />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Business Name */}
+        <FormField
+          control={form.control}
+          name="business_name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Business Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter your business name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
+        />
+
+        {/* Business Email */}
+        <FormField
+          control={form.control}
+          name="business_email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Business Email</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g. example@business.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Business Address */}
+        <AddressInput />
+
+        {/* Contact Number */}
+        <FormField
+          control={form.control}
+          name="contact_number"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Contact Number</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter contact number" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      {/* Submit Button */}
+      <div className="flex justify-end">
+        <Button
+          type="submit"
+          className="bg-avante-blue hover:bg-avante-blue/90 min-w-40"
+          disabled={isSubmitting}
+          onClick={form.handleSubmit(onSubmit)}
+        >
+          {isSubmitting ? 'Submitting...' : 'Submit'}
         </Button>
-      </CardFooter>
-      </Card>
+      </div>
     </div>
   );
 };
