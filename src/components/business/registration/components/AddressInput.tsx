@@ -35,29 +35,31 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
   };
 
   const handleSuggestionClick = (prediction: typeof predictions[0]) => {
-    // Build street address from house number and road
     const streetAddress = [
       prediction.address.house_number,
       prediction.address.road
     ].filter(Boolean).join(' ') || prediction.mainText;
 
-    // Fill all address fields with validation trigger
     form.setValue('streetAddress', streetAddress, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
 
-    if (prediction.address.city) {
-      form.setValue('city', prediction.address.city, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+    const city = prediction.address.city;
+    if (city) {
+      form.setValue('city', city, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
     }
 
-    if (prediction.address.state) {
-      form.setValue('state', prediction.address.state, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+    const state = prediction.address.state;
+    if (state) {
+      form.setValue('state', state, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
     }
 
-    if (prediction.address.postcode) {
-      form.setValue('zipCode', prediction.address.postcode, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+    const postcode = prediction.address.postcode;
+    if (postcode) {
+      form.setValue('zipCode', postcode, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
     }
 
-    if (prediction.address.country) {
-      form.setValue('country', prediction.address.country, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+    const country = prediction.address.country;
+    if (country) {
+      form.setValue('country', country, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
     }
 
     clearSuggestions();
