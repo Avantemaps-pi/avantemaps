@@ -53,12 +53,16 @@ const checkRateLimit = (id: string) => {
 };
 
 const getUserFromToken = async (token: string) => {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) throw new Error('Authentication failed');
-  return user;
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) return null;
+    return user;
+  } catch {
+    return null;
+  }
 };
 
 const fetchLocationIQSuggestions = async (query: string): Promise<Suggestion[]> => {
@@ -90,13 +94,19 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS });
 
   try {
+    // Try to get user from token, but allow unauthenticated requests
+    let rateLimitKey = 'anon';
     const authHeader = req.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) return new Response(JSON.stringify({ error: 'Auth required' }), { status: 401, headers: CORS_HEADERS });
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const user = await getUserFromToken(token);
+      if (user) {
+        rateLimitKey = user.id;
+      }
+    }
 
-    const token = authHeader.substring(7);
-    const user = await getUserFromToken(token);
-
-    const rateCheck = checkRateLimit(user.id);
+    const rateCheck = checkRateLimit(rateLimitKey);
     if (!rateCheck.allowed) return new Response(JSON.stringify({ error: rateCheck.error }), { status: 429, headers: CORS_HEADERS });
 
     const { address } = await req.json();
