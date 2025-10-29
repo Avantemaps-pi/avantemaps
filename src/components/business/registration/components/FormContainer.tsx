@@ -1,27 +1,23 @@
-
 import React from 'react';
-import { FormProvider, UseFormReturn } from 'react-hook-form';
-import { Form } from '@/components/ui/form';
+import { FormProvider } from 'react-hook-form';
 import { FormValues } from '../formSchema';
 
 interface FormContainerProps {
-  form: UseFormReturn<FormValues>;
+  form: any;
   onSubmit: (values: FormValues) => Promise<void>;
   children: React.ReactNode;
-  isSubmitting?: boolean;
 }
 
-const FormContainer = ({ form, onSubmit, children, isSubmitting }: FormContainerProps) => {
+const FormContainer = ({ form, onSubmit, children }: FormContainerProps) => {
   return (
     <FormProvider {...form}>
-      <Form {...form}>
-        <form 
-          onSubmit={form.handleSubmit(onSubmit)} 
-          className="space-y-6 w-full max-w-4xl"
-        >
-          {children}
-        </form>
-      </Form>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-6 w-full max-w-4xl"
+        noValidate
+      >
+        {children}
+      </form>
     </FormProvider>
   );
 };
