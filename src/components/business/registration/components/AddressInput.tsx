@@ -3,8 +3,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { useFormContext } from 'react-hook-form';
 import { FormValues } from '../formSchema';
-import AddressSuggestions, { AddressSuggestion } from './AddressSuggestions';
-import { fetchAddressSuggestions } from '../utils/addressUtils';
+import { useLocationIQAutocomplete } from '@/hooks/useLocationIQAutocomplete';
 import { MapPin, Loader2 } from 'lucide-react';
 
 interface AddressInputProps {
@@ -13,10 +12,8 @@ interface AddressInputProps {
 
 const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
   const form = useFormContext<FormValues>();
-  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const { predictions, isLoading, getSuggestions, getPlaceDetails, clearSuggestions } = useLocationIQAutocomplete();
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedSuggestion, setSelectedSuggestion] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout>();
 
@@ -25,44 +22,39 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    timeoutRef.current = setTimeout(async () => {
-      if (value.length < 3) {
-        setSuggestions([]);
-        setShowSuggestions(false);
-        return;
-      }
+    if (value.length < 3) {
+      clearSuggestions();
+      setShowSuggestions(false);
+      return;
+    }
 
-      setIsLoading(true);
-      try {
-        const fetchedSuggestions = await fetchAddressSuggestions(value);
-        setSuggestions(fetchedSuggestions);
-        setShowSuggestions(fetchedSuggestions.length > 0);
-      } catch (error) {
-        console.error('Error fetching address suggestions:', error);
-        setSuggestions([]);
-        setShowSuggestions(false);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 200); // Slightly longer debounce for efficiency
+    timeoutRef.current = setTimeout(() => {
+      getSuggestions(value);
+      setShowSuggestions(true);
+    }, 200);
   };
 
-  const handleSuggestionClick = (suggestion: AddressSuggestion) => {
-    const streetAddress = `${suggestion.address.house_number} ${suggestion.address.road}`.trim();
+  const handleSuggestionClick = async (placeId: string) => {
+    const placeDetails = await getPlaceDetails(placeId);
+    
+    if (placeDetails) {
+      // Parse the address to extract components
+      const addressParts = placeDetails.address.split(',').map(s => s.trim());
+      
+      form.setValue('streetAddress', placeDetails.name);
+      if (addressParts.length > 1) form.setValue('city', addressParts[addressParts.length - 3] || '');
+      if (addressParts.length > 2) form.setValue('state', addressParts[addressParts.length - 2] || '');
+      if (addressParts.length > 0) form.setValue('country', addressParts[addressParts.length - 1] || '');
+    }
 
-    form.setValue('streetAddress', streetAddress);
-    form.setValue('city', suggestion.address.city);
-    form.setValue('state', suggestion.address.state);
-    form.setValue('zipCode', suggestion.address.postcode);
-    form.setValue('country', suggestion.address.country);
-
-    setSelectedSuggestion(streetAddress);
-    setSuggestions([]);
+    clearSuggestions();
     setShowSuggestions(false);
   };
 
   // Cleanup timeout on unmount
-  useEffect(() => () => timeoutRef.current && clearTimeout(timeoutRef.current), []);
+  useEffect(() => () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  }, []);
 
   // Hide suggestions when clicking outside
   useEffect(() => {
@@ -96,9 +88,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
                   placeholder="Start typing your business address..."
                   {...field}
                   ref={inputRef}
-                  value={selectedSuggestion || field.value}
                   onChange={(e) => {
-                    setSelectedSuggestion(''); // Reset selected if user types again
                     field.onChange(e);
                     handleAddressChange(e.target.value);
                   }}
@@ -112,11 +102,28 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
               We'll automatically fill in city, province, and postal code
             </p>
             <FormMessage />
-            <AddressSuggestions
-              suggestions={suggestions}
-              isVisible={showSuggestions}
-              onSuggestionClick={handleSuggestionClick}
-            />
+            {showSuggestions && predictions.length > 0 && (
+              <div className="absolute z-50 w-full mt-2 bg-background border-2 border-primary/20 rounded-xl shadow-2xl max-h-80 overflow-auto backdrop-blur-sm">
+                <div className="p-2">
+                  {predictions.map((prediction) => (
+                    <button
+                      key={prediction.placeId}
+                      type="button"
+                      className="w-full px-4 py-3 text-left hover:bg-primary/10 rounded-lg transition-colors border-b border-border/50 last:border-b-0 group"
+                      onClick={() => handleSuggestionClick(prediction.placeId)}
+                    >
+                      <div className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-start gap-2">
+                        <span className="text-primary mt-0.5">📍</span>
+                        <span>{prediction.mainText}</span>
+                      </div>
+                      <div className="text-muted-foreground text-sm mt-1 ml-6">
+                        {prediction.secondaryText}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </FormItem>
         )}
       />
