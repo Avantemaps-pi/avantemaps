@@ -95,7 +95,7 @@ const AppPreferences = ({
           <div className="flex items-start text-left">
             <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
             <div className="flex-1 min-w-0 text-left">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center">
                 <h4 className="font-medium text-blue-800 dark:text-blue-300 text-left">Verification Process</h4>
               </div>
               <ul className="mt-2 space-y-3 text-sm text-left ml-0">
