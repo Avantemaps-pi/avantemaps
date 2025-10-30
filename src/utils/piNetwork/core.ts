@@ -227,6 +227,21 @@ private async initializeAttempt(): Promise<void> {
 
         const responseData = await verifyResponse.json();
         console.log("🧩 Server verification response:", responseData);
+
+        // ✅ Establish Supabase session if the edge function returned a token
+        if (responseData?.supabase_token) {
+          try {
+            const { supabase } = await import('@/integrations/supabase/client');
+            await supabase.auth.setSession({
+              access_token: responseData.supabase_token,
+              refresh_token: responseData.supabase_token, // optional if you don't issue refresh tokens
+            });
+            console.log("✅ Supabase session established for Pi user");
+          } catch (sessionErr) {
+            console.error("❌ Failed to set Supabase session:", sessionErr);
+          }
+        }
+        
         if (!verifyResponse.ok) {
           console.warn("⚠️ Supabase verification endpoint returned:", verifyResponse.status, verifyResponse.statusText);
         }
