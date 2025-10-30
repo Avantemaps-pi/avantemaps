@@ -1,24 +1,24 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { usePiAuth } from '@/hooks/usePiAuth';
-import { Loader2 } from 'lucide-react';
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { usePiAuth } from "@/hooks/usePiAuth";
+import { Loader2 } from "lucide-react";
 
 export const PiAuthButton = () => {
-  const { handlePiAuth, loading } = usePiAuth();
+  const { loginWithPi, loading } = usePiAuth();
 
   return (
     <Button
-      onClick={handlePiAuth}
+      onClick={loginWithPi}
       disabled={loading}
-      className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-all duration-150"
+      className="bg-[#5a00cc] hover:bg-[#4a00aa] text-white"
     >
       {loading ? (
         <>
-          <Loader2 className="animate-spin w-4 h-4 mr-2" />
-          Authenticating with Pi…
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Authenticating...
         </>
       ) : (
-        'Continue with Pi Network'
+        "Sign in with Pi Network"
       )}
     </Button>
   );
