@@ -1,74 +1,112 @@
-import { useState } from 'react';
-import { verifyPiAuthentication } from '@/utils/pi/verifyPiAuthentication';
-import { toast } from 'sonner';
-import { secureLog } from '@/utils/secureLogger';
-import { supabase } from '@/integrations/supabase/client';
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { verifyPiAuthentication } from "@/utils/verifyPiAuthentication";
+import { toast } from "sonner";
 
-export const usePiAuth = () => {
+declare global {
+  interface Window {
+    Pi?: any;
+  }
+}
+
+export function usePiAuth() {
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
-  const handlePiAuth = async () => {
+  // 🔹 Main Pi Login Function
+  const loginWithPi = async () => {
+    if (!window.Pi) {
+      toast.error("Pi Network SDK not available. Please open this in the Pi Browser.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      setLoading(true);
-      secureLog.info('Starting Pi authentication...');
-
-      if (!window.Pi) {
-        toast.error('Pi Network SDK not detected. Please open this in the Pi Browser.');
-        return;
-      }
-
-      await window.Pi.init({ version: '2.0' });
-
-      const scopes = ['username', 'payments'];
+      // Step 1: Authenticate with Pi Network SDK
+      const scopes = ["username", "payments"];
       const authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound);
 
-      if (!authResult || !authResult.accessToken || !authResult.user) {
-        toast.error('Authentication failed or cancelled. Please try again.');
+      if (!authResult) {
+        toast.error("No authentication result received from Pi Network.");
         return;
       }
 
-      const { accessToken, user } = authResult;
-      secureLog.info('Received Pi auth data', { uid: user.uid, username: user.username });
+      const { accessToken, user: piUser } = authResult;
 
-      const verification = await verifyPiAuthentication(accessToken, user.uid, user.username);
-
-      if (verification.verified) {
-        toast.success('Pi authentication successful!');
-        let { error: signInError } = await supabase.auth.signInWithPassword({
-          email: `${user.username}@pi.network`,
-          password: user.uid,
-        });
-        
-        if (signInError) {
-          // If user doesn’t exist yet, sign them up automatically
-          const { error: signUpError } = await supabase.auth.signUp({
-            email: `${user.username}@pi.network`,
-            password: user.uid,
-          });
-        
-          if (signUpError) {
-            toast.error('Unable to create new Pi user');
-            console.error(signUpError);
-          } else {
-            toast.success('Pi account created successfully!');
-          }
-        }
-
-      } else {
-        toast.error(verification.error || 'Verification failed');
-        secureLog.error('Verification details:', verification.details);
+      if (!accessToken || !piUser) {
+        toast.error("Incomplete authentication result. Please try again.");
+        return;
       }
-    } catch (error) {
-      secureLog.error('Pi auth failed:', error);
-      toast.error('Pi authentication failed. Please try again.');
+
+      const uid = piUser.uid;
+      const username = piUser.username;
+
+      // Step 2: Verify authentication with your Supabase function
+      const verifyResult = await verifyPiAuthentication(accessToken, uid, username);
+
+      if (!verifyResult.verified) {
+        toast.error(verifyResult.error || "Verification failed", {
+          description: verifyResult.details || "Could not verify Pi credentials.",
+        });
+        return;
+      }
+
+      // Step 3: Exchange token for Supabase session
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: `${username}@pi-network.local`,
+        password: uid, // lightweight pseudo password for Supabase
+      });
+
+      if (error) {
+        // If user doesn’t exist — create automatically
+        const { data: signupData, error: signupError } = await supabase.auth.signUp({
+          email: `${username}@pi-network.local`,
+          password: uid,
+          options: {
+            data: {
+              username,
+              pi_uid: uid,
+              pi_verified: true,
+            },
+          },
+        });
+
+        if (signupError) throw signupError;
+
+        setUser(signupData.user);
+        toast.success(`Welcome to Avante Maps, ${username}!`);
+      } else {
+        setUser(data.user);
+        toast.success(`Welcome back, ${username}!`);
+      }
+
+    } catch (error: any) {
+      console.error("❌ Pi Authentication Error:", error);
+      toast.error("Authentication Failed", {
+        description:
+          error.message ||
+          "Unable to verify your Pi Network account. Please try again in the Pi Browser.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const onIncompletePaymentFound = (payment: any) => {
-    secureLog.info('Incomplete payment found:', payment);
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    toast("You’ve been signed out.");
   };
 
-  return { handlePiAuth, loading };
-};
+  const onIncompletePaymentFound = (payment: any) => {
+    console.log("⚠️ Incomplete payment detected:", payment);
+    toast.warning("Incomplete Pi payment found — resolving...");
+  };
+
+  return {
+    loginWithPi,
+    logout,
+    user,
+    loading,
+  };
+}
