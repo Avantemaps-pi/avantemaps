@@ -175,6 +175,71 @@ Deno.serve(async (req: Request) => {
     // --- Successful verification ---
     console.log(`🎉 [${traceId}] Token verified successfully for ${username}`);
 
+    // --- Create or link Supabase Auth session ---
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+// Create Supabase Admin client (with Service Role Key)
+const supabaseAdmin = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+)
+
+try {
+  const email = `${username}@pi.local` // pseudo-email for Pi users
+
+  // Check if the user already exists
+  const { data: usersList } = await supabaseAdmin.auth.admin.listUsers()
+  const existingUser = usersList?.users.find((u) => u.id === uid)
+
+  // If not, create a new user in Supabase Auth
+  if (!existingUser) {
+    await supabaseAdmin.auth.admin.createUser({
+      id: uid,
+      email,
+      email_confirm: true,
+    })
+  }
+
+  // Generate a Supabase session token
+  const { data: jwt } = await supabaseAdmin.auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+  })
+
+  console.log(`🔑 [${traceId}] Supabase session created for ${username}`)
+
+  // Attach Supabase token to your existing successful response
+  return new Response(
+    JSON.stringify({
+      verified: true,
+      user: {
+        uid: user.uid,
+        username: user.username,
+        wallet_address: user.wallet_address || null,
+      },
+      supabase_token: jwt?.properties?.action_link ?? null,
+      traceId,
+    }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+  )
+} catch (sessionError) {
+  console.error(`⚠️ [${traceId}] Failed to create Supabase session`, sessionError)
+  // Fallback to old response if session creation fails
+  return new Response(
+    JSON.stringify({
+      verified: true,
+      user: {
+        uid: user.uid,
+        username: user.username,
+        wallet_address: user.wallet_address || null,
+      },
+      warning: 'Supabase session could not be created',
+      traceId,
+    }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+  )
+}
+    
     return new Response(
       JSON.stringify({
         verified: true,
