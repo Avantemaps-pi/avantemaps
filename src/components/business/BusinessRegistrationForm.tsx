@@ -3,6 +3,7 @@ import React from 'react';
 import { Tabs } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useBusinessRegistration } from '@/hooks/useBusinessRegistration';
+import { PiAuthButton } from './registration/PiAuthButton';
 import FormContainer from './registration/components/FormContainer';
 import TabNavigation from './registration/components/TabNavigation';
 import TabContent from './registration/components/TabContent';
