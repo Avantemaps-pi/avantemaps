@@ -36,7 +36,7 @@ const Contact = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm">+27 (68) 342-2444</p>
-              <p className="text-xs text-muted-foreground mt-1">Mon-Fri, 9am-5pm PST</p>
+              <p className="text-xs text-muted-foreground mt-1">+27 (62) 476-7535</p>
             </CardContent>
           </Card>
 
