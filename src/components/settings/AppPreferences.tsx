@@ -98,7 +98,7 @@ const AppPreferences = ({
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-blue-800 dark:text-blue-300 text-left">Verification Process</h4>
               </div>
-              <ul className="mt-2 space-y-3 text-sm text-left -ml-5">
+              <ul className="mt-2 space-y-3 text-sm text-left -ml-10">
                 <li className="flex items-start text-left">
                   <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2">1</Badge>
                   <div className="text-left">
