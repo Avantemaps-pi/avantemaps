@@ -34,10 +34,26 @@ export const usePiAuth = () => {
 
       if (verification.verified) {
         toast.success('Pi authentication successful!');
-        await supabase.auth.signInWithPassword({
+        let { error: signInError } = await supabase.auth.signInWithPassword({
           email: `${user.username}@pi.network`,
           password: user.uid,
         });
+        
+        if (signInError) {
+          // If user doesn’t exist yet, sign them up automatically
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: `${user.username}@pi.network`,
+            password: user.uid,
+          });
+        
+          if (signUpError) {
+            toast.error('Unable to create new Pi user');
+            console.error(signUpError);
+          } else {
+            toast.success('Pi account created successfully!');
+          }
+        }
+
       } else {
         toast.error(verification.error || 'Verification failed');
         secureLog.error('Verification details:', verification.details);
