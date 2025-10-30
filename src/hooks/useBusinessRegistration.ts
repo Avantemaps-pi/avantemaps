@@ -189,11 +189,10 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
 
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      
+      // ✅ Prepare business payload
       const businessData = {
         name: values.businessName,
-        owner_id: authUser?.id, // ✅ matches auth.uid() from your RLS policy
+        owner_id: user.uid,
         location: fullAddress,
         description: values.businessDescription,
         category: values.businessTypes[0] || 'Other',
