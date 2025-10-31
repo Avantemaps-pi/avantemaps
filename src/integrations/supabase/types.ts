@@ -520,18 +520,42 @@ export type Database = {
       spatial_ref_sys_public: {
         Row: {
           auth_name: string | null
-          proj4text: string | null
+          auth_srid: string | null
           srid: number | null
         }
         Insert: {
           auth_name?: string | null
-          proj4text?: string | null
+          auth_srid?: string | null
           srid?: number | null
         }
         Update: {
           auth_name?: string | null
+          auth_srid?: string | null
+          srid?: number | null
+        }
+        Relationships: []
+      }
+      spatial_ref_sys_public_v2: {
+        Row: {
+          auth_name: string | null
+          auth_srid: number | null
+          proj4text: string | null
+          srid: number | null
+          srtext: string | null
+        }
+        Insert: {
+          auth_name?: string | null
+          auth_srid?: number | null
           proj4text?: string | null
           srid?: number | null
+          srtext?: string | null
+        }
+        Update: {
+          auth_name?: string | null
+          auth_srid?: number | null
+          proj4text?: string | null
+          srid?: number | null
+          srtext?: string | null
         }
         Relationships: []
       }
@@ -1000,10 +1024,6 @@ export type Database = {
         | { Args: { "": string }; Returns: string }
       st_asgml:
         | {
-            Args: { geom: unknown; maxdecimaldigits?: number; options?: number }
-            Returns: string
-          }
-        | {
             Args: {
               geom: unknown
               id?: string
@@ -1012,6 +1032,10 @@ export type Database = {
               options?: number
               version: number
             }
+            Returns: string
+          }
+        | {
+            Args: { geom: unknown; maxdecimaldigits?: number; options?: number }
             Returns: string
           }
         | {
@@ -1222,11 +1246,11 @@ export type Database = {
         Returns: unknown
       }
       st_generatepoints:
-        | { Args: { area: unknown; npoints: number }; Returns: unknown }
         | {
             Args: { area: unknown; npoints: number; seed: number }
             Returns: unknown
           }
+        | { Args: { area: unknown; npoints: number }; Returns: unknown }
       st_geogfromtext: { Args: { "": string }; Returns: unknown }
       st_geographyfromtext: { Args: { "": string }; Returns: unknown }
       st_geohash:
@@ -1494,11 +1518,11 @@ export type Database = {
           }
       st_triangulatepolygon: { Args: { g1: unknown }; Returns: unknown }
       st_union:
-        | { Args: { geom1: unknown; geom2: unknown }; Returns: unknown }
         | {
             Args: { geom1: unknown; geom2: unknown; gridsize: number }
             Returns: unknown
           }
+        | { Args: { geom1: unknown; geom2: unknown }; Returns: unknown }
       st_voronoilines: {
         Args: { extend_to?: unknown; g1: unknown; tolerance?: number }
         Returns: unknown
@@ -1514,6 +1538,9 @@ export type Database = {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
       }
+      subscription_limit:
+        | { Args: never; Returns: number }
+        | { Args: { user_id: string }; Returns: number }
       unlockrows: { Args: { "": string }; Returns: number }
       updategeometrysrid: {
         Args: {

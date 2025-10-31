@@ -18,19 +18,65 @@ const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
+// Rate limiting tracking
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const MAX_REQUESTS = 10; // 10 requests per minute
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+  
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return { allowed: true };
+  }
+  
+  if (record.count >= MAX_REQUESTS) {
+    return { allowed: false, retryAfter: Math.ceil((record.resetTime - now) / 1000) };
+  }
+  
+  record.count++;
+  return { allowed: true };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   const traceId = crypto.randomUUID();
+  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                   req.headers.get('x-real-ip') || 
+                   'unknown';
 
   try {
-    console.log(`🚀 [${traceId}] verify-pi-auth invoked`);
+    // 🛡️ Rate limiting check
+    const rateLimitCheck = checkRateLimit(clientIP);
+    if (!rateLimitCheck.allowed) {
+      console.warn(`⚠️ [${traceId}] Rate limit exceeded for IP: ${clientIP}`);
+      return new Response(JSON.stringify({
+        verified: false,
+        error: 'Too many requests',
+        details: `Please wait ${rateLimitCheck.retryAfter} seconds before trying again.`,
+        retryAfter: rateLimitCheck.retryAfter,
+        traceId,
+      }), { 
+        status: 429, 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'Retry-After': String(rateLimitCheck.retryAfter)
+        } 
+      });
+    }
+
+    console.log(`🚀 [${traceId}] verify-pi-auth invoked from IP: ${clientIP}`);
 
     const url = new URL(req.url);
     const isDev = Deno.env.get('ENVIRONMENT') === 'development';
-    const testMode = isDev && url.searchParams.get('test') === 'true';
+    const allowTestMode = Deno.env.get('ALLOW_TEST_MODE') === 'true';
+    const testMode = isDev && allowTestMode && url.searchParams.get('test') === 'true';
 
     const rawBody = await req.text();
     let parsedBody: VerifyAuthRequest;
