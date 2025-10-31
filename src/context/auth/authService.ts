@@ -8,6 +8,7 @@ import { SubscriptionTier } from '@/utils/piNetwork/types';
 import { getUserSubscription, updateUserData } from './authUtils';
 import { secureLog } from '@/utils/secureLogger';
 import { verifyPiAuthentication, getDetailedAuthError } from '@/utils/piNetwork/verification';
+import { supabase } from '@/integrations/supabase/client';
 
 // Simplified permission check - actual permissions are requested during authentication
 export const requestAuthPermissions = async (
@@ -232,6 +233,25 @@ export const performLogin = async (
           }
           } else {
             verificationSucceeded = true;
+            
+            // 🔧 FIX: Set Supabase session with the JWT token
+            if (verificationResult.supabaseToken) {
+              secureLog.info("Setting Supabase session with JWT token");
+              const { error: sessionError } = await supabase.auth.setSession({
+                access_token: verificationResult.supabaseToken,
+                refresh_token: verificationResult.supabaseToken // Use same token for both
+              });
+              
+              if (sessionError) {
+                secureLog.error("Failed to set Supabase session:", sessionError);
+                toast.error("Failed to establish secure session. Please try again.");
+                throw new Error("Session setup failed");
+              }
+              
+              secureLog.info("✅ Supabase session established successfully");
+            } else {
+              secureLog.warn("⚠️ No supabaseToken returned from verification");
+            }
           }
         } catch (verificationError) {
         const errorMsg = verificationError instanceof Error ? verificationError.message : String(verificationError);

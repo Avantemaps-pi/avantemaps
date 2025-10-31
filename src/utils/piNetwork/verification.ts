@@ -3,8 +3,10 @@ import { secureLog } from '@/utils/secureLogger';
 
 export interface VerificationResult {
   verified: boolean;
+  supabaseToken?: string | null;
   error?: string;
   details?: string;
+  traceId?: string;
 }
 
 export const verifyPiAuthentication = async (
@@ -119,14 +121,22 @@ export const verifyPiAuthentication = async (
     const result = data as any;
 
     if (result?.verified) {
-      secureLog.info('Pi Network authentication verified successfully');
-      return { verified: true };
+      secureLog.info('Pi Network authentication verified successfully', {
+        hasSupabaseToken: !!result.supabase_token,
+        hasTraceId: !!result.traceId
+      });
+      return { 
+        verified: true,
+        supabaseToken: result.supabase_token ?? null,
+        traceId: result.traceId
+      };
     }
 
     return {
       verified: false,
       error: result.error || 'Verification failed',
       details: result.details || 'Unknown verification error',
+      traceId: result.traceId
     };
 
   } catch (error) {
