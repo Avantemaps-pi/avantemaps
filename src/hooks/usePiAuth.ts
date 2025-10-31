@@ -1,55 +1,79 @@
-// src/utils/verifyPiAuthentication.ts
-export interface VerifyPiAuthResult {
-  verified: boolean;
-  user?: {
-    uid: string;
-    username: string;
-    wallet_address?: string | null;
-  };
-  supabase_token?: string | null;
+import { useState } from 'react';
+import { useAuth } from '@/context/auth';
+import { verifyPiAuthentication, VerifyPiAuthResult } from '@/utils/verifyPiAuthentication';
+import { toast } from 'sonner';
+
+interface UsePiAuthReturn {
+  loginWithPi: () => Promise<void>;
+  loading: boolean;
   error?: string;
-  details?: string;
-  traceId?: string;
 }
 
-interface VerifyPiAuthParams {
-  accessToken: string;
-  uid: string;
-  username: string;
-}
+export function usePiAuth(): UsePiAuthReturn {
+  const { setUser, refreshUser } = useAuth(); // assumes you have setUser in context
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
 
-/**
- * Call the Supabase serverless function to verify Pi authentication.
- */
-export async function verifyPiAuthentication({
-  accessToken,
-  uid,
-  username,
-}: VerifyPiAuthParams): Promise<VerifyPiAuthResult> {
-  try {
-    const response = await fetch('/api/verify-pi-auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accessToken, uid, username }),
-    });
+  const loginWithPi = async () => {
+    try {
+      setLoading(true);
+      setError(undefined);
 
-    const data: VerifyPiAuthResult = await response.json();
+      // 1️⃣ Trigger Pi login
+      const pi = (window as any).Pi;
+      if (!pi) throw new Error('Pi SDK not loaded');
 
-    if (!response.ok) {
-      return {
-        verified: false,
-        error: data.error || 'Verification failed',
-        details: data.details,
-        traceId: data.traceId,
-      };
+      const authResponse = await pi.authenticate({
+        // Optional: requested scopes
+        scopes: ['username', 'wallet_address'],
+      });
+
+      const { uid, username, accessToken } = authResponse;
+
+      if (!uid || !username || !accessToken) {
+        throw new Error('Pi authentication failed or incomplete');
+      }
+
+      // 2️⃣ Verify on Supabase serverless function
+      const verification: VerifyPiAuthResult = await verifyPiAuthentication({
+        accessToken,
+        uid,
+        username,
+      });
+
+      if (!verification.verified || !verification.supabase_token) {
+        throw new Error(verification.error || 'Pi verification failed');
+      }
+
+      // 3️⃣ Set Supabase session with returned token
+      const token = verification.supabase_token;
+      const { error: sessionError } = await fetch('/api/supabase-set-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: token }),
+      }).then(res => res.json());
+
+      if (sessionError) {
+        throw new Error('Failed to set Supabase session');
+      }
+
+      // 4️⃣ Update user context
+      setUser({
+        uid: verification.user!.uid,
+        username: verification.user!.username,
+        walletAddress: verification.user!.wallet_address || '',
+        subscriptionTier: 'individual', // default, replace if needed
+      });
+
+      toast.success(`Welcome, ${verification.user!.username}!`);
+    } catch (err: any) {
+      console.error('Pi login error:', err);
+      setError(err.message);
+      toast.error(err.message || 'Pi login failed');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return data;
-  } catch (err: any) {
-    console.error('❌ verifyPiAuthentication error:', err);
-    return {
-      verified: false,
-      error: err.message || 'Network or unexpected error',
-    };
-  }
+  return { loginWithPi, loading, error };
 }
