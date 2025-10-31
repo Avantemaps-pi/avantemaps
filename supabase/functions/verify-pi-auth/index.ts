@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 /**
  * Pi Network Authentication Verification
- * with Supabase Auth integration
+ * with Supabase Auth integration (fixed JWT)
  */
 
 interface VerifyAuthRequest {
@@ -12,6 +12,7 @@ interface VerifyAuthRequest {
   username: string;
 }
 
+// Create Supabase Admin client (Service Role Key)
 const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -115,12 +116,8 @@ Deno.serve(async (req: Request) => {
       console.log(`✅ [${traceId}] Created new Supabase user ${uid}`);
     }
 
-    const { data: jwt } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-    });
-
-    const token = jwt?.properties?.action_link?.split('token=')[1] ?? null;
+    // --- FIX: generate proper JWT with `sub` claim ---
+    const jwt = await supabaseAdmin.auth.admin.generateUserAccessToken(uid);
 
     return new Response(JSON.stringify({
       verified: true,
@@ -129,7 +126,7 @@ Deno.serve(async (req: Request) => {
         username: user.username,
         wallet_address: user.wallet_address || null,
       },
-      supabase_token: token,
+      supabase_token: jwt.access_token, // valid token with `sub`
       traceId,
     }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
