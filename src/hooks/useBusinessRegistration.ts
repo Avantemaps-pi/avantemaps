@@ -11,7 +11,7 @@ import { containsInappropriateContent } from '@/utils/contentFilter';
 export const useBusinessRegistration = (onSuccess?: () => void) => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user, refreshUser } = useAuth(); // Get updated session info
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [piWalletAddress, setPiWalletAddress] = useState(user?.walletAddress || '');
@@ -169,23 +169,10 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
 
-      // ✅ Handle images
+      // ✅ Handle images - temporarily disabled until storage bucket is created
       if (selectedImages.length && data[0]?.id) {
-        const uploadPromises = selectedImages.map(async (img, idx) => {
-          const filePath = `businesses/${data[0].id}/${Date.now()}-${img.name}`;
-          const { error: uploadError } = await supabase.storage.from('business-images').upload(filePath, img);
-          if (uploadError) {
-            console.warn(`Image ${idx + 1} upload failed:`, uploadError);
-            return null;
-          }
-          const { data: urlData } = supabase.storage.from('business-images').getPublicUrl(filePath);
-          return urlData?.publicUrl || null;
-        });
-
-        const urls = (await Promise.all(uploadPromises)).filter(Boolean);
-        if (urls.length) {
-          await supabase.from('businesses').update({ image_urls: urls }).eq('id', data[0].id);
-        }
+        console.log('Image upload disabled: business-images bucket not yet created');
+        toast.info('Business registered successfully. Image upload will be available soon.');
       }
 
       toast.success('Business registered successfully!');

@@ -407,7 +407,8 @@ useEffect(() => {
         logout,
         authError,
         hasAccess,
-        refreshUserData: () => refreshUserData(true)
+        refreshUserData: () => refreshUserData(true),
+        setUser: safeSetUser
       }}
     >
       {children}
