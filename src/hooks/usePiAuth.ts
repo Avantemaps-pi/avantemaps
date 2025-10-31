@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface UsePiAuthReturn {
-  loginWithPi: () => Promise<void>;
+  loginWithPi: () => Promise<VerifyPiAuthResult | undefined>;
   loading: boolean;
   error?: string;
 }
@@ -15,7 +15,7 @@ export function usePiAuth(): UsePiAuthReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
 
-  const loginWithPi = async () => {
+  const loginWithPi = async (): Promise<VerifyPiAuthResult | undefined> => {
     try {
       setLoading(true);
       setError(undefined);
@@ -34,38 +34,19 @@ export function usePiAuth(): UsePiAuthReturn {
       }
 
       // 2️⃣ Verify with serverless function
-      const verification: VerifyPiAuthResult = await verifyPiAuthentication({
-        accessToken,
-        uid,
-        username,
-      });
+      const verification = await verifyPiAuthentication(accessToken, uid, username);
 
-      if (!verification.verified || !verification.supabase_token) {
+      if (!verification.verified || !verification.supabaseToken) {
         throw new Error(verification.error || 'Pi verification failed');
       }
 
-      // 3️⃣ Set Supabase session directly
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession(
-        verification.supabase_token
-      );
-
-      if (sessionError) {
-        throw new Error('Failed to set Supabase session');
-      }
-
-      // 4️⃣ Update Auth context
-      setUser({
-        uid: verification.user!.uid,
-        username: verification.user!.username,
-        walletAddress: verification.user!.wallet_address || '',
-        session: sessionData?.session || null,
-      });
-
-      toast.success(`Welcome, ${verification.user!.username}!`);
+      toast.success(`Welcome, ${verification.user?.username || 'User'}!`);
+      return verification;
     } catch (err: any) {
       console.error('Pi login error:', err);
       setError(err.message);
       toast.error(err.message || 'Pi login failed');
+      return undefined;
     } finally {
       setLoading(false);
     }

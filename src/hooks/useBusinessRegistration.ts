@@ -11,7 +11,7 @@ import { containsInappropriateContent } from '@/utils/contentFilter';
 export const useBusinessRegistration = (onSuccess?: () => void) => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user, refreshUser } = useAuth(); // ✅ Add refreshUser for updated session info
+  const { user, refreshUser } = useAuth(); // Get updated session info
   const navigate = useNavigate();
 
   const [piWalletAddress, setPiWalletAddress] = useState(user?.walletAddress || '');

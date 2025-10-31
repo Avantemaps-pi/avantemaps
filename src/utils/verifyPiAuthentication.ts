@@ -15,14 +15,16 @@ export interface VerificationResult {
   traceId?: string;
 }
 
+export type VerifyPiAuthResult = VerificationResult;
+
 export const verifyPiAuthentication = async (
   accessToken: string,
   uid: string,
   username: string
 ): Promise<VerificationResult> => {
-  // Use full URL to Supabase Edge Function if needed, e.g.:
-  // const endpoint = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/verify-pi-auth`;
-  const endpoint = '/api/verify-pi-auth';
+  // Use full Supabase URL for edge function
+  const SUPABASE_URL = 'https://xvpwbocwasbtzrzrxyvu.supabase.co';
+  const endpoint = `${SUPABASE_URL}/functions/v1/verify-pi-auth`;
 
   const payload = { accessToken, uid, username };
 
