@@ -61,12 +61,14 @@ const MobileSidebar = ({
     onClose();
   };
 
-  const handlePlanClick = () => {
+  const handlePlanClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     navigate('/pricing');
     onClose();
   };
 
-  const handleIndividualPlanClick = () => {
+  const handleIndividualPlanClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     navigate('/pricing');
     onClose();
   };
