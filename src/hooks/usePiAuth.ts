@@ -3,12 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { verifyPiAuthentication } from "@/utils/verifyPiAuthentication";
 import { toast } from "sonner";
 
-declare global {
-  interface Window {
-    Pi?: any;
-  }
-}
-
 export function usePiAuth() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
