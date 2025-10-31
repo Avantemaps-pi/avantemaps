@@ -1,7 +1,7 @@
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { usePiAuth } from "@/hooks/usePiAuth";
-import { Loader2 } from "lucide-react";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { usePiAuth } from '@/hooks/usePiAuth';
+import { Loader2 } from 'lucide-react';
 
 export const PiAuthButton = () => {
   const { loginWithPi, loading } = usePiAuth();
@@ -18,7 +18,7 @@ export const PiAuthButton = () => {
           Authenticating...
         </>
       ) : (
-        "Sign in with Pi Network"
+        'Sign in with Pi Network'
       )}
     </Button>
   );
