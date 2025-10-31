@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/auth';
 import { verifyPiAuthentication, VerifyPiAuthResult } from '@/utils/verifyPiAuthentication';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface UsePiAuthReturn {
@@ -10,7 +11,7 @@ interface UsePiAuthReturn {
 }
 
 export function usePiAuth(): UsePiAuthReturn {
-  const { setUser, refreshUser } = useAuth(); // assumes you have setUser in context
+  const { setUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -24,17 +25,15 @@ export function usePiAuth(): UsePiAuthReturn {
       if (!pi) throw new Error('Pi SDK not loaded');
 
       const authResponse = await pi.authenticate({
-        // Optional: requested scopes
         scopes: ['username', 'wallet_address'],
       });
 
       const { uid, username, accessToken } = authResponse;
-
       if (!uid || !username || !accessToken) {
         throw new Error('Pi authentication failed or incomplete');
       }
 
-      // 2️⃣ Verify on Supabase serverless function
+      // 2️⃣ Verify with serverless function
       const verification: VerifyPiAuthResult = await verifyPiAuthentication({
         accessToken,
         uid,
@@ -45,24 +44,21 @@ export function usePiAuth(): UsePiAuthReturn {
         throw new Error(verification.error || 'Pi verification failed');
       }
 
-      // 3️⃣ Set Supabase session with returned token
-      const token = verification.supabase_token;
-      const { error: sessionError } = await fetch('/api/supabase-set-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken: token }),
-      }).then(res => res.json());
+      // 3️⃣ Set Supabase session directly
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession(
+        verification.supabase_token
+      );
 
       if (sessionError) {
         throw new Error('Failed to set Supabase session');
       }
 
-      // 4️⃣ Update user context
+      // 4️⃣ Update Auth context
       setUser({
         uid: verification.user!.uid,
         username: verification.user!.username,
         walletAddress: verification.user!.wallet_address || '',
-        subscriptionTier: 'individual', // default, replace if needed
+        session: sessionData?.session || null,
       });
 
       toast.success(`Welcome, ${verification.user!.username}!`);
