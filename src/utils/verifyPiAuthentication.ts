@@ -20,7 +20,9 @@ export const verifyPiAuthentication = async (
   uid: string,
   username: string
 ): Promise<VerificationResult> => {
-  const endpoint = '/api/verify-pi-auth'; // or full Supabase function URL
+  // Use full URL to Supabase Edge Function if needed, e.g.:
+  // const endpoint = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/verify-pi-auth`;
+  const endpoint = '/api/verify-pi-auth';
 
   const payload = { accessToken, uid, username };
 
@@ -35,7 +37,7 @@ export const verifyPiAuthentication = async (
 
     const data = await response.json();
 
-    if (!response.ok) {
+    if (!response.ok || !data.verified) {
       secureLog.error('Pi verification failed', { status: response.status, body: data });
       return {
         verified: false,
@@ -45,19 +47,11 @@ export const verifyPiAuthentication = async (
       };
     }
 
-    if (!data.verified) {
-      return {
-        verified: false,
-        error: data.error || 'Verification failed',
-        details: data.details || 'Pi backend did not verify the token',
-        traceId: data.traceId,
-      };
-    }
-
+    // ✅ Successful verification: return real Supabase JWT
     return {
       verified: true,
       user: data.user,
-      supabaseToken: data.supabase_token ?? null,
+      supabaseToken: data.supabase_token ?? null, // JWT with 'sub'
       traceId: data.traceId,
     };
   } catch (err: any) {
