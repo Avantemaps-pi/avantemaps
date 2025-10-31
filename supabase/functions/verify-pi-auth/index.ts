@@ -103,16 +103,38 @@ Deno.serve(async (req: Request) => {
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // ✅ Test mode (no API call)
-    if (testMode) {
-      return new Response(JSON.stringify({
-        verified: true,
-        testMode: true,
-        message: 'Verification bypassed (development mode).',
-        user: { uid, username, wallet_address: 'TEST_WALLET_123' },
-        traceId,
-      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
+  // ✅ Test mode (development, create Supabase session)
+if (testMode) {
+  console.log(`🧪 [${traceId}] Test mode: Creating Supabase user and JWT`);
+
+  const email = `${username}@pi.local`;
+
+  // Check if user exists
+  const { data: usersList } = await supabaseAdmin.auth.admin.listUsers();
+  const existingUser = usersList?.users.find((u) => u.id === uid);
+
+  if (!existingUser) {
+    await supabaseAdmin.auth.admin.createUser({
+      id: uid,
+      email,
+      email_confirm: true,
+      user_metadata: { username },
+    });
+    console.log(`✅ [${traceId}] Created test Supabase user ${uid}`);
+  }
+
+  // Generate valid JWT even in test mode
+  const jwt = await supabaseAdmin.auth.admin.generateUserAccessToken(uid);
+
+  return new Response(JSON.stringify({
+    verified: true,
+    testMode: true,
+    message: 'Verification bypassed (development mode with session).',
+    user: { uid, username, wallet_address: 'TEST_WALLET_123' },
+    supabase_token: jwt.access_token, // ✅ Include token for session
+    traceId,
+  }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+}
 
     // --- Verify token with Pi API ---
     const verifyResponse = await fetch('https://api.minepi.com/v2/me', {
