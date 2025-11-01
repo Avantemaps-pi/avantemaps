@@ -158,7 +158,7 @@ export const performLogin = async (
         hasToken: !!authResult?.accessToken
       });
 
-        if (!authResult || !authResult.user || !authResult.accessToken) {
+      if (!authResult || !authResult.user || !authResult.accessToken) {
         const errorMsg = "Authentication response was incomplete. Please try again.";
         secureLog.error("Incomplete auth result:", { hasAuthResult: !!authResult, hasUser: !!authResult?.user, hasToken: !!authResult?.accessToken });
         if (authAttempt < maxAuthAttempts) {
@@ -169,6 +169,46 @@ export const performLogin = async (
         throw new Error(errorMsg);
       }
 
+      // ✅ Step: Generate Supabase-compatible JWT via API
+      try {
+        secureLog.info("Generating Supabase JWT for Pi user...");
+      
+        const response = await fetch('/api/pi-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uid: authResult.user.uid,
+            username: authResult.user.username,
+            wallet_address: authResult.user.wallet_address
+          })
+        });
+      
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`Pi login API failed: ${errText}`);
+        }
+      
+        const { token } = await response.json();
+      
+        // ✅ Establish Supabase session using the JWT
+        const { data: sessionData, error: supabaseError } = await supabase.auth.setSession({
+          access_token: token,
+          refresh_token: token
+        });
+      
+        if (supabaseError) {
+          secureLog.error("Supabase session setup failed:", supabaseError);
+          toast.error("Could not establish session. Please try again.");
+          throw supabaseError;
+        }
+      
+        secureLog.info("✅ Supabase session established successfully via Pi login");
+      } catch (error) {
+        secureLog.error("Failed to generate or set Supabase JWT session:", error);
+        toast.error("Secure session setup failed. Please retry login.");
+        throw error;
+      }
+      
       // Skip backend verification in development mode to speed up auth
       const isDevelopment = import.meta.env.DEV;
       let verificationSucceeded = false;
