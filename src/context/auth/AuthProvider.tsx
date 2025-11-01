@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,20 +26,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const devModeToastShown = useRef<boolean>(false);
   const isMountedRef = useRef<boolean>(true);
 
-  // ✅ Cleanup on unmount to prevent state updates
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      if (authTimeoutRef.current) {
-        clearTimeout(authTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // ✅ Safe state setters that check if component is still mounted
-  const safeSetUser = useCallback((user: PiUser | null) => {
-    if (isMountedRef.current) setUser(user);
+  // ✅ Safe state setters
+  const safeSetUser = useCallback((u: PiUser | null) => {
+    if (isMountedRef.current) setUser(u);
   }, []);
 
   const safeSetIsLoading = useCallback((loading: boolean) => {
@@ -55,75 +43,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (isMountedRef.current) setIsSdkInitialized(initialized);
   }, []);
 
-    // ✅ Global error and unhandled promise rejection monitoring
-useEffect(() => {
-  let reloadTimeout: NodeJS.Timeout | null = null;
+  const safeSetAppReady = useCallback((ready: boolean) => {
+    if (isMountedRef.current) setAppReady(ready);
+  }, []);
 
-  const handleError = (event: ErrorEvent) => {
-    const message = event?.error?.message || event?.message || 'An unexpected error occurred.';
-    console.error('🌍 Global error caught:', event.error || event.message);
+  // ✅ Lifecycle cleanup
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
+    };
+  }, []);
 
-    toast.error(`App error: ${message}`, {
-      duration: 6000,
-      description: 'Trying to recover...',
-    });
+  // ✅ Global error and unhandled rejection monitoring
+  useEffect(() => {
+    let reloadTimeout: NodeJS.Timeout | null = null;
 
-    // Reload if fatal
-    if (!reloadTimeout) {
-      reloadTimeout = setTimeout(() => {
-        console.warn('🔁 Reloading app to recover from fatal error...');
-        window.location.reload();
-      }, 5000);
-    }
-  };
+    const handleError = (event: ErrorEvent) => {
+      const message = event?.error?.message || event?.message || 'An unexpected error occurred.';
+      console.error('🌍 Global error caught:', event.error || event.message);
+      toast.error(`App error: ${message}`, { duration: 6000, description: 'Trying to recover...' });
 
-  const handleRejection = (event: PromiseRejectionEvent) => {
-    const reason = event?.reason?.message || event?.reason || 'An unknown issue occurred.';
-    console.error('🚨 Unhandled promise rejection:', event.reason);
+      if (!reloadTimeout && !document.hidden) {
+        reloadTimeout = setTimeout(() => {
+          console.warn('🔁 Reloading app to recover...');
+          window.location.reload();
+        }, 5000);
+      }
+    };
 
-    toast.error(`Unexpected issue: ${reason}`, {
-      duration: 6000,
-      description: 'Attempting to recover...',
-    });
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      const reason = event?.reason?.message || event?.reason || 'An unknown issue occurred.';
+      console.error('🚨 Unhandled promise rejection:', event.reason);
+      toast.error(`Unexpected issue: ${reason}`, { duration: 6000, description: 'Attempting to recover...' });
 
-    // Reload if fatal
-    if (!reloadTimeout) {
-      reloadTimeout = setTimeout(() => {
-        console.warn('🔁 Reloading app to recover from fatal rejection...');
-        window.location.reload();
-      }, 5000);
-    }
-  };
+      if (!reloadTimeout && !document.hidden) {
+        reloadTimeout = setTimeout(() => {
+          console.warn('🔁 Reloading app to recover...');
+          window.location.reload();
+        }, 5000);
+      }
+    };
 
-  window.addEventListener('error', handleError);
-  window.addEventListener('unhandledrejection', handleRejection);
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+      if (reloadTimeout) clearTimeout(reloadTimeout);
+    };
+  }, []);
 
-  return () => {
-    window.removeEventListener('error', handleError);
-    window.removeEventListener('unhandledrejection', handleRejection);
-    if (reloadTimeout) clearTimeout(reloadTimeout);
-  };
-}, []);
-  
-  // Minimum time between refresh calls (15 minutes)
   const REFRESH_COOLDOWN = 15 * 60 * 1000;
-  // Increased timeout to 45 seconds for better reliability
   const AUTH_TIMEOUT = 45 * 1000;
 
-  // ✅ Checks if Pi access token is still valid (server-side verification; no direct Pi API calls from client)
+  // ✅ Token verification
   const isTokenValid = async (accessToken?: string): Promise<boolean> => {
     try {
-      // In dev bypass, always treat as valid
       if (shouldBypassAuth()) return true;
 
-      // Prefer an in-memory token from the Pi SDK session
       const token = accessToken || getPiAuthResult()?.accessToken || '';
-      if (!token) {
-        // No token available on client (we don't persist it) — skip client validation
-        return true;
-      }
+      if (!token) return true;
 
-      // Verify via our Edge Function to avoid exposing Pi API from client
       const result = await verifyPiAuthentication(token, user?.uid ?? '', user?.username ?? '');
       return !!result.verified;
     } catch (error) {
@@ -131,145 +113,104 @@ useEffect(() => {
       return false;
     }
   };
-  // Check for cached session on mount
+
+  // ✅ Cached session restoration
   useEffect(() => {
-    // In development mode, bypass authentication
     if (shouldBypassAuth()) {
-      secureLog.info("Development mode: bypassing authentication");
+      secureLog.info('Development mode: bypassing authentication');
       const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
-      setUser(mockUser);
-      // Ensure dev user exists in database
-      import('@/context/auth/authUtils').then(({ updateUserData }) => {
-        updateUserData(mockUser, setUser).catch(err => 
-          secureLog.warn("Failed to create dev user in database:", err)
+      safeSetUser(mockUser);
+      import('./authUtils').then(({ updateUserData }) => {
+        updateUserData(mockUser, safeSetUser).catch(err =>
+          secureLog.warn('Failed to create dev user in database:', err)
         );
       });
       return;
     }
 
-    const cachedSession = localStorage.getItem(STORAGE_KEY);
-    
-    if (cachedSession) {
+    const restoreSession = () => {
+      const cachedSession = localStorage.getItem(STORAGE_KEY);
+      if (!cachedSession) return;
+
       try {
         const userData = JSON.parse(cachedSession) as PiUser;
-        // Check if the session is still relatively fresh (less than 24 hours old)
         if (Date.now() - userData.lastAuthenticated < 24 * 60 * 60 * 1000) {
-          secureLog.info("Restoring user from cached session");
-          setUser(userData);
+          secureLog.info('Restoring user from cached session');
+          safeSetUser(userData);
         } else {
-          secureLog.info("Cached session expired");
+          secureLog.info('Cached session expired');
           localStorage.removeItem(STORAGE_KEY);
         }
       } catch (error) {
-        secureLog.error("Error parsing cached session:", error);
+        secureLog.error('Error parsing cached session:', error);
         localStorage.removeItem(STORAGE_KEY);
       }
-    }
+    };
+
+    // Delay session restore until SDK initializes
+    const timer = setTimeout(restoreSession, 1500);
+    return () => clearTimeout(timer);
   }, []);
 
-  // Initialize Pi Network SDK efficiently
+  // ✅ Initialize Pi SDK
   useEffect(() => {
     if (initAttempted.current) return;
-    
     initAttempted.current = true;
+
     const initSdk = async () => {
       try {
-        secureLog.info("Starting Pi Network SDK initialization...");
+        secureLog.info('Starting Pi Network SDK initialization...');
         const result = await initializePiNetwork();
         safeSetIsSdkInitialized(result);
-        secureLog.info("Pi Network SDK initialization complete:", result);
+        secureLog.info('Pi Network SDK initialization complete:', result);
       } catch (error) {
-        secureLog.error("Failed to initialize Pi Network SDK:", error);
-        toast.error("Failed to initialize Pi Network SDK. Some features may be unavailable.");
+        secureLog.error('Failed to initialize Pi SDK:', error);
+        toast.error('Failed to initialize Pi Network SDK. Some features may not work.');
         safeSetIsSdkInitialized(false);
       }
     };
-    
     initSdk();
   }, [safeSetIsSdkInitialized]);
 
-  // Optimized login process
+  // ✅ Login
   const login = useCallback(async (): Promise<void> => {
-    // In development mode, automatically set mock user
     if (shouldBypassAuth()) {
-      secureLog.info("Development mode: setting mock user");
       const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
-      setUser(mockUser);
-      
-      // Only show toast once
+      safeSetUser(mockUser);
       if (!devModeToastShown.current) {
-        toast.success("Development mode: Logged in as mock user");
+        toast.success('Development mode: Logged in as mock user');
         devModeToastShown.current = true;
       }
       return;
     }
 
     if (pendingAuthRef.current) {
-      console.log("Authentication already in progress");
-      toast.info("Authentication in progress, please wait...");
+      toast.info('Authentication in progress, please wait...');
       return;
     }
 
     pendingAuthRef.current = true;
     safeSetIsLoading(true);
-    setAppReady(false);
-    
-    // Reset any existing timeout
-    if (authTimeoutRef.current) {
-      clearTimeout(authTimeoutRef.current);
-    }
-    
-    // Set new authentication timeout
+    safeSetAppReady(false);
+
+    if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
     authTimeoutRef.current = setTimeout(() => {
       safeSetIsLoading(false);
-      safeSetAuthError("Authentication is taking longer than expected. Please check your connection and try again.");
-      toast.error("Authentication timeout. Please ensure you have a stable internet connection and try again.", {
-        duration: 6000,
-      });
+      safeSetAuthError('Authentication timed out. Please retry.');
+      toast.error('Authentication timeout. Check your connection.', { duration: 6000 });
       pendingAuthRef.current = false;
     }, AUTH_TIMEOUT);
-    
+
     try {
-      // Initialize SDK if needed
       if (!isSdkInitialized) {
-        secureLog.info("Attempting to initialize SDK before login...");
-        try {
-          const result = await initializePiNetwork();
-          safeSetIsSdkInitialized(result);
-          if (!result) {
-            throw new Error("SDK initialization failed");
-          }
-        } catch (error) {
-          secureLog.error("Failed to initialize Pi Network SDK during login:", error);
-          toast.error("Failed to initialize Pi Network SDK. Please try again later.");
-          pendingAuthRef.current = false;
-          safeSetIsLoading(false);
-          if (authTimeoutRef.current) {
-            clearTimeout(authTimeoutRef.current);
-          }
-          return;
-        }
+        const sdkResult = await initializePiNetwork();
+        safeSetIsSdkInitialized(sdkResult);
+        if (!sdkResult) throw new Error('SDK initialization failed');
       }
-      
-      // First step: Request permissions
-      const permissionsGranted = await requestAuthPermissions(
-        isSdkInitialized, 
-        safeSetIsLoading, 
-        safeSetAuthError
-      );
-      
-      if (!permissionsGranted) {
-        console.log("Permissions not granted. Authentication aborted.");
-        pendingAuthRef.current = false;
-        safeSetIsLoading(false);
-        if (authTimeoutRef.current) {
-          clearTimeout(authTimeoutRef.current);
-          authTimeoutRef.current = null;
-        }
-        return;
-      }
-      
-      // Second step: Authenticate with Pi Network
+
+      const permissionsGranted = await requestAuthPermissions(isSdkInitialized, safeSetIsLoading, safeSetAuthError);
+      if (!permissionsGranted) return;
+
       await performLogin(
         isSdkInitialized,
         safeSetIsLoading,
@@ -278,125 +219,101 @@ useEffect(() => {
         safeSetUser
       );
 
-      // ✅ Restore app readiness
-      setAppReady(true);
-      
-      // Update last refresh timestamp
       setLastRefresh(Date.now());
+      safeSetAppReady(true); // ✅ ensure app resumes
     } catch (error) {
-      console.error("Login process error:", error);
-      const errorMsg = error instanceof Error ? error.message : "Authentication failed. Please try again.";
-      toast.error(errorMsg, {
-        duration: 6000,
-      });
-      pendingAuthRef.current = false;
+      console.error('Login process error:', error);
+      toast.error(error instanceof Error ? error.message : 'Authentication failed.');
     } finally {
-      // Clear authentication timeout
-      if (authTimeoutRef.current) {
-        clearTimeout(authTimeoutRef.current);
-        authTimeoutRef.current = null;
-      }
+      if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
+      authTimeoutRef.current = null;
       safeSetIsLoading(false);
+      pendingAuthRef.current = false; // ✅ ensure reset
     }
-  }, [isSdkInitialized, AUTH_TIMEOUT, safeSetIsLoading, safeSetAuthError, safeSetIsSdkInitialized, safeSetUser]);
+  }, [isSdkInitialized, AUTH_TIMEOUT, safeSetIsLoading, safeSetAuthError, safeSetIsSdkInitialized, safeSetUser, safeSetAppReady]);
 
-  // Handle online/offline status
+  // ✅ Offline handler
   const isOffline = useNetworkStatus(pendingAuthRef, login);
 
-  // Refresh user data without full login
-  const refreshUserData = useCallback(async (force: boolean = false): Promise<void> => {
-    // Skip refresh if called too frequently unless forced
+  // ✅ Refresh user data
+  const refreshUserData = useCallback(async (force = false): Promise<void> => {
     const now = Date.now();
-    if (!force && now - lastRefresh < REFRESH_COOLDOWN) {
-      console.log("Skipping refresh, too soon since last refresh");
-      return;
-    }
-    
+    if (!force && now - lastRefresh < REFRESH_COOLDOWN) return;
+
     if (!isSdkInitialized) {
       try {
         const result = await initializePiNetwork();
-        setIsSdkInitialized(result);
+        safeSetIsSdkInitialized(result);
       } catch (error) {
-        console.error("Failed to initialize Pi Network SDK during refresh:", error);
+        console.error('Failed to init SDK during refresh:', error);
         return;
       }
     }
-    
+
     if (!user) {
-      secureLog.info("No user to refresh data for");
+      secureLog.info('No user to refresh');
       return;
     }
-    
-    secureLog.info("Refreshing user data...");
-    setIsLoading(true);
+
+    safeSetIsLoading(true);
     try {
-      const stillValid = await isTokenValid(user?.accessToken ?? "");
-    
+      const stillValid = await isTokenValid(user?.accessToken ?? '');
       if (!stillValid) {
-        secureLog.warn("Access token expired — reauthenticating via Pi Network...");
-        await login(); // 🔄 Trigger a new Pi login
+        secureLog.warn('Token expired — triggering re-login');
+        await login();
         return;
       }
-    
-      await refreshUserDataService(user, setUser, setIsLoading);
-      secureLog.info("User data refreshed successfully");
+
+      await refreshUserDataService(user, safeSetUser, safeSetIsLoading);
+      secureLog.info('User data refreshed');
       setLastRefresh(now);
     } catch (error) {
-      secureLog.error("Failed to refresh user data:", error);
+      secureLog.error('Failed to refresh user data:', error);
     } finally {
-      setIsLoading(false);
+      safeSetIsLoading(false);
     }
-  }, [user, isSdkInitialized, lastRefresh]);
-  
-  // Silent refresh when app starts or becomes online
+  }, [user, isSdkInitialized, lastRefresh, login, safeSetIsSdkInitialized]);
+
+  // ✅ Silent refresh
   useEffect(() => {
     if (user && !isOffline && isSdkInitialized) {
-      // Use setTimeout to avoid refreshing immediately during initial render
-      const timer = setTimeout(() => {
-        refreshUserData(false);
-      }, 1000);
-      
+      const timer = setTimeout(() => refreshUserData(false), 1000);
       return () => clearTimeout(timer);
     }
   }, [user, isOffline, isSdkInitialized, refreshUserData]);
 
+  // ✅ Logout
   const logout = (): void => {
     localStorage.removeItem(STORAGE_KEY);
-    setUser(null);
+    safeSetUser(null);
     toast.info("You've been logged out");
   };
 
-  // Check if user has access to a feature based on their subscription
-  const hasAccess = useCallback((requiredTier: SubscriptionTier): boolean => {
-    if (!user) return false;
-    return checkAccess(user.subscriptionTier, requiredTier);
-  }, [user]);
+  // ✅ Subscription check
+  const hasAccess = useCallback(
+    (requiredTier: SubscriptionTier): boolean => user ? checkAccess(user.subscriptionTier, requiredTier) : false,
+    [user]
+  );
 
-  // ✅ Runtime token monitor (runs every 10 minutes)
+  // ✅ Runtime token monitor
   useEffect(() => {
     if (!user?.accessToken) return;
-  
     const interval = setInterval(async () => {
       const stillValid = await isTokenValid(user.accessToken);
       if (!stillValid) {
-        secureLog.warn("Runtime check: token expired, triggering re-login");
+        secureLog.warn('Runtime token expired, reauthenticating');
         await login();
       }
-    }, 10 * 60 * 1000); // 10 minutes
-  
+    }, 10 * 60 * 1000);
     return () => clearInterval(interval);
   }, [user, login]);
 
-  // Listen for app-ready event from main components
+  // ✅ Listen for "app-ready" events
   useEffect(() => {
-    const handleAppReady = () => {
-      secureLog.info("App components ready");
-      setAppReady(true);
-    };
-
+    const handleAppReady = () => safeSetAppReady(true);
     window.addEventListener('app-ready', handleAppReady);
     return () => window.removeEventListener('app-ready', handleAppReady);
-  }, []);
+  }, [safeSetAppReady]);
 
   return (
     <AuthContext.Provider
@@ -411,7 +328,7 @@ useEffect(() => {
         authError,
         hasAccess,
         refreshUserData: () => refreshUserData(true),
-        setUser: safeSetUser
+        setUser: safeSetUser,
       }}
     >
       {children}
