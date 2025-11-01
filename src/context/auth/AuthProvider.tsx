@@ -277,6 +277,9 @@ useEffect(() => {
         (pending) => { pendingAuthRef.current = pending; },
         safeSetUser
       );
+
+      // ✅ Restore app readiness
+      setAppReady(true);
       
       // Update last refresh timestamp
       setLastRefresh(Date.now());
