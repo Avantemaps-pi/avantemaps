@@ -169,53 +169,40 @@ export const performLogin = async (
         throw new Error(errorMsg);
       }
 
-      // ✅ Step: Generate Supabase-compatible JWT via API
-      try {
-        secureLog.info("Generating Supabase JWT for Pi user...");
       
-        const response = await fetch('/api/pi-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            uid: authResult.user.uid,
-            username: authResult.user.username,
-            wallet_address: authResult.user.wallet_address
-          })
-        });
-      
-        if (!response.ok) {
-          const errText = await response.text();
-          throw new Error(`Pi login API failed: ${errText}`);
-        }
-      
-        const { token } = await response.json();
-      
-        // ✅ Establish Supabase session using the JWT
-        const { data: sessionData, error: supabaseError } = await supabase.auth.setSession({
-          access_token: token,
-          refresh_token: token
-        });
-      
-        if (supabaseError) {
-          secureLog.error("Supabase session setup failed:", supabaseError);
-          toast.error("Could not establish session. Please try again.");
-          throw supabaseError;
-        }
-      
-        secureLog.info("✅ Supabase session established successfully via Pi login");
-      } catch (error) {
-        secureLog.error("Failed to generate or set Supabase JWT session:", error);
-        toast.error("Secure session setup failed. Please retry login.");
-        throw error;
-      }
-      
-      // Skip backend verification in development mode to speed up auth
+      // Always verify with backend to establish Supabase session
       const isDevelopment = import.meta.env.DEV;
       let verificationSucceeded = false;
       
       if (isDevelopment) {
-        secureLog.info("Development mode: Skipping backend verification");
-        verificationSucceeded = true;
+        secureLog.info("Development mode: Using test verification to create Supabase session");
+        
+        try {
+          const verificationResult = await verifyPiAuthentication(
+            authResult.accessToken,
+            authResult.user.uid,
+            authResult.user.username,
+            true  // testMode flag
+          );
+          
+          if (verificationResult.verified && verificationResult.supabaseToken) {
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token: verificationResult.supabaseToken,
+              refresh_token: verificationResult.supabaseToken
+            });
+            
+            if (sessionError) {
+              throw new Error("Development session setup failed");
+            }
+            
+            secureLog.info("✅ Development Supabase session established");
+            verificationSucceeded = true;
+          }
+        } catch (err) {
+          secureLog.error("Development verification failed:", err);
+          toast.error("Development session setup failed");
+          throw err;
+        }
       } else {
         // Immediately verify with backend (do not persist token)
         secureLog.info("Verifying token with backend", {

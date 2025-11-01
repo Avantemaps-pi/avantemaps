@@ -159,8 +159,9 @@ Deno.serve(async (req) => {
       if (paymentRequest.metadata?.subscriptionTier) {
         try {
           // Get user data from metadata or create defaults
-          const username = paymentRequest.metadata.username || `user_${paymentRequest.userId.slice(0, 8)}`;
-          const email = paymentRequest.metadata.email || `${username}@pi.app`;
+          const metadata = paymentRequest.metadata as any;
+          const username = metadata?.username || `user_${paymentRequest.userId.slice(0, 8)}`;
+          const email = metadata?.email || `${username}@pi.app`;
           
           // Call the database function to handle subscription
           const { error: subscriptionError } = await supabaseClient.rpc('handle_subscription_after_payment', {
@@ -205,7 +206,7 @@ Deno.serve(async (req) => {
           verified: false,
           completed: false,
           cancelled: true,
-          error: `API call error: ${apiError.message}`
+          error: `API call error: ${apiError instanceof Error ? apiError.message : String(apiError)}`
         },
         updated_at: new Date().toISOString()
       }).eq('payment_id', paymentRequest.paymentId);

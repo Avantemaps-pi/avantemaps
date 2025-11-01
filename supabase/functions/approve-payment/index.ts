@@ -303,7 +303,7 @@ Deno.serve(async (req) => {
           verified: false,
           completed: false,
           cancelled: true,
-          error: `API call error: ${apiError.message}`
+          error: `API call error: ${apiError instanceof Error ? apiError.message : String(apiError)}`
         },
         updated_at: new Date().toISOString()
       }).eq('payment_id', paymentRequest.paymentId);

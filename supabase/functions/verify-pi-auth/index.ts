@@ -123,15 +123,23 @@ if (testMode) {
     console.log(`✅ [${traceId}] Created test Supabase user ${uid}`);
   }
 
-  // Generate valid JWT even in test mode
-  const jwt = await supabaseAdmin.auth.admin.generateUserAccessToken(uid);
+  // Generate valid JWT token using generateLink
+  const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+  });
+  
+  if (tokenError || !tokenData) {
+    console.error(`❌ [${traceId}] Failed to generate JWT:`, tokenError);
+    throw new Error('Failed to generate test JWT');
+  }
 
   return new Response(JSON.stringify({
     verified: true,
     testMode: true,
     message: 'Verification bypassed (development mode with session).',
     user: { uid, username, wallet_address: 'TEST_WALLET_123' },
-    supabase_token: jwt.access_token, // ✅ Include token for session
+    supabase_token: tokenData.properties.access_token, // ✅ Include token for session
     traceId,
   }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
@@ -184,8 +192,16 @@ if (testMode) {
       console.log(`✅ [${traceId}] Created new Supabase user ${uid}`);
     }
 
-    // --- FIX: generate proper JWT with `sub` claim ---
-    const jwt = await supabaseAdmin.auth.admin.generateUserAccessToken(uid);
+    // --- Generate proper JWT with `sub` claim ---
+    const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+    });
+    
+    if (tokenError || !tokenData) {
+      console.error(`❌ [${traceId}] Failed to generate JWT:`, tokenError);
+      throw new Error('Failed to generate JWT token');
+    }
 
     return new Response(JSON.stringify({
       verified: true,
@@ -194,7 +210,7 @@ if (testMode) {
         username: user.username,
         wallet_address: user.wallet_address || null,
       },
-      supabase_token: jwt.access_token, // valid token with `sub`
+      supabase_token: tokenData.properties.access_token, // valid token with `sub`
       traceId,
     }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 

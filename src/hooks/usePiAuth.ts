@@ -33,18 +33,17 @@ export function usePiAuth(): UsePiAuthReturn {
         throw new Error('Pi authentication failed or incomplete');
       }
 
-      // 2️⃣ Verify with serverless function (support test mode)
-      const testMode = import.meta.env.DEV === true;
-      const verification = await verifyPiAuthentication(accessToken, uid, username, testMode);
+      // 2️⃣ Verify with serverless function
+      const verification = await verifyPiAuthentication(accessToken, uid, username);
 
-      if (!verification.verified || !verification.supabase_token || !verification.user) {
+      if (!verification.verified || !verification.supabaseToken || !verification.user) {
         throw new Error(verification.error || 'Pi verification failed');
       }
 
-      // 3️⃣ Always set Supabase session (even in dev/test mode)
+      // 3️⃣ Always set Supabase session
       const { error: sessionError } = await supabase.auth.setSession({
-        access_token: verification.supabase_token,
-        refresh_token: verification.supabase_token,
+        access_token: verification.supabaseToken,
+        refresh_token: verification.supabaseToken,
       });
 
       if (sessionError) throw new Error('Failed to create Supabase session');
@@ -54,7 +53,8 @@ export function usePiAuth(): UsePiAuthReturn {
         uid: verification.user.uid,
         username: verification.user.username,
         walletAddress: verification.user.wallet_address || '',
-        session: supabase.auth.session(),
+        lastAuthenticated: Date.now(),
+        subscriptionTier: 'individual' as any,
       });
 
       toast.success(`Welcome, ${verification.user.username}!`);
