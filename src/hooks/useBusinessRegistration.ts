@@ -133,44 +133,44 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
 
-      // ✅ Insert business
-      const { data, error } = await supabase
-        .from('businesses')
-        .insert({
-          name: values.businessName,
+      // ✅ Insert business via Edge Function (bypasses RLS with service role)
+      const { data: insertRes, error: insertError } = await supabase.functions.invoke('insert-business', {
+        body: {
           owner_id: user.uid,
-          location: fullAddress,
-          description: values.businessDescription,
-          category: values.businessTypes[0] || 'Other',
-          coordinates: JSON.stringify({ lat: geocodedData.lat, lng: geocodedData.lng }),
-          contact_info: {
+          businessName: values.businessName,
+          businessDescription: values.businessDescription,
+          businessTypes: values.businessTypes,
+          contact: {
+            firstName: values.firstName,
+            lastName: values.lastName,
             phone: values.phone,
             email: values.email,
             website: values.website,
-            owner_first_name: values.firstName,
-            owner_last_name: values.lastName,
           },
-          hours: {
-            monday: values.mondayClosed ? 'Closed' : `${values.mondayOpen}-${values.mondayClose}`,
-            tuesday: values.tuesdayClosed ? 'Closed' : `${values.tuesdayOpen}-${values.tuesdayClose}`,
-            wednesday: values.wednesdayClosed ? 'Closed' : `${values.wednesdayOpen}-${values.wednesdayClose}`,
-            thursday: values.thursdayClosed ? 'Closed' : `${values.thursdayOpen}-${values.thursdayClose}`,
-            friday: values.fridayClosed ? 'Closed' : `${values.fridayOpen}-${values.fridayClose}`,
-            saturday: values.saturdayClosed ? 'Closed' : `${values.saturdayOpen}-${values.saturdayClose}`,
-            sunday: values.sundayClosed ? 'Closed' : `${values.sundayOpen}-${values.sundayClose}`,
+          address: {
+            streetAddress: values.streetAddress,
+            apartment: values.apartment,
+            city: values.city,
+            state: values.state,
+            zipCode: values.zipCode,
+            country: values.country,
+            lat: parseFloat(String(geocodedData.lat)),
+            lng: parseFloat(String(geocodedData.lng)),
           },
-          business_types: values.businessTypes,
-          pi_wallet_address: values.piWalletAddress,
-        })
-        .select();
+          piWalletAddress: values.piWalletAddress,
+        },
+      });
 
-      if (error || !data?.length) {
-        toast.error(`Business registration failed: ${error?.message}`);
+      if (insertError || !insertRes?.success || !insertRes?.business) {
+        const errMsg = (insertError as any)?.message || (insertRes as any)?.error || 'Unknown error';
+        toast.error(`Business registration failed: ${errMsg}`);
         return;
       }
 
+      const newBusiness = insertRes.business;
+
       // ✅ Handle images - temporarily disabled until storage bucket is created
-      if (selectedImages.length && data[0]?.id) {
+      if (selectedImages.length && newBusiness?.id) {
         console.log('Image upload disabled: business-images bucket not yet created');
         toast.info('Business registered successfully. Image upload will be available soon.');
       }
@@ -179,7 +179,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       if (onSuccess) onSuccess();
 
       navigate('/', {
-        state: { newBusiness: true, businessData: { ...data[0], position: { lat: geocodedData.lat, lng: geocodedData.lng } } }
+        state: { newBusiness: true, businessData: { ...newBusiness, position: { lat: geocodedData.lat, lng: geocodedData.lng } } }
       });
 
     } catch (err) {
