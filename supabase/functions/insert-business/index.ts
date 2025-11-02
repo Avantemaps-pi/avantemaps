@@ -67,7 +67,6 @@ Deno.serve(async (req: Request) => {
         business_types: body.businessTypes,
         contact_info: body.contact,
         street_address: body.address.streetAddress,
-        apartment: body.address.apartment || null,
         city: body.address.city,
         state: body.address.state,
         postal_code: body.address.zipCode,
