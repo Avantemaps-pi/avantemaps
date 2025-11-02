@@ -85,6 +85,7 @@ export type Database = {
           geo_location: unknown
           hours: Json | null
           id: number
+          images: string[] | null
           is_certified: boolean
           is_verified: boolean
           keywords: string[] | null
@@ -111,6 +112,7 @@ export type Database = {
           geo_location?: unknown
           hours?: Json | null
           id?: number
+          images?: string[] | null
           is_certified?: boolean
           is_verified?: boolean
           keywords?: string[] | null
@@ -137,6 +139,7 @@ export type Database = {
           geo_location?: unknown
           hours?: Json | null
           id?: number
+          images?: string[] | null
           is_certified?: boolean
           is_verified?: boolean
           keywords?: string[] | null

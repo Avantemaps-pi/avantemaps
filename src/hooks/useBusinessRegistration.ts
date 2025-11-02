@@ -194,15 +194,8 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
           const successfulUploads = uploadedPaths.filter(path => path !== null);
           
           if (successfulUploads.length > 0) {
-            // Update business record with image paths
-            const { error: updateError } = await supabase
-              .from('businesses')
-              .update({ images: successfulUploads })
-              .eq('id', newBusiness.id);
-            
-            if (updateError) {
-              console.error('Error updating business images:', updateError);
-            }
+            console.log(`✅ Uploaded ${successfulUploads.length} images to storage`);
+            toast.success(`Business registered with ${successfulUploads.length} image(s)!`);
           }
         } catch (imgErr) {
           console.error('Image upload process error:', imgErr);
