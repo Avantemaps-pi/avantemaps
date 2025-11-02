@@ -169,10 +169,45 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
 
       const newBusiness = insertRes.business;
 
-      // ✅ Handle images - temporarily disabled until storage bucket is created
+      // ✅ Upload business images to storage
       if (selectedImages.length && newBusiness?.id) {
-        console.log('Image upload disabled: business-images bucket not yet created');
-        toast.info('Business registered successfully. Image upload will be available soon.');
+        try {
+          const uploadPromises = selectedImages.map(async (file, index) => {
+            const fileExt = file.name.split('.').pop();
+            const filePath = `${newBusiness.id}/image-${index}-${Date.now()}.${fileExt}`;
+            
+            const { error: uploadError } = await supabase.storage
+              .from('business-images')
+              .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false
+              });
+            
+            if (uploadError) {
+              console.error('Image upload error:', uploadError);
+              return null;
+            }
+            return filePath;
+          });
+
+          const uploadedPaths = await Promise.all(uploadPromises);
+          const successfulUploads = uploadedPaths.filter(path => path !== null);
+          
+          if (successfulUploads.length > 0) {
+            // Update business record with image paths
+            const { error: updateError } = await supabase
+              .from('businesses')
+              .update({ images: successfulUploads })
+              .eq('id', newBusiness.id);
+            
+            if (updateError) {
+              console.error('Error updating business images:', updateError);
+            }
+          }
+        } catch (imgErr) {
+          console.error('Image upload process error:', imgErr);
+          toast.warning('Business registered but some images failed to upload');
+        }
       }
 
       toast.success('Business registered successfully!');
