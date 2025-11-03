@@ -60,17 +60,35 @@ export const useBusinessBookmarks = () => {
     try {
       setIsLoading(true);
       
-      const { error } = await supabase
+      // Check if already bookmarked
+      if (bookmarks.includes(businessId)) {
+        toast.info('Business is already bookmarked');
+        return true;
+      }
+      
+      const businessIdInt = parseInt(businessId);
+      if (isNaN(businessIdInt)) {
+        console.error('Invalid business ID:', businessId);
+        toast.error('Invalid business ID');
+        return false;
+      }
+      
+      const { data, error } = await supabase
         .from('bookmarks')
         .insert({
           user_id: user.uid,
-          business_id: parseInt(businessId),
-        });
+          business_id: businessIdInt,
+        })
+        .select();
 
       if (error) {
-        throw error;
+        console.error('Bookmark insert error:', error);
+        toast.error(`Failed to add bookmark: ${error.message}`);
+        return false;
       }
 
+      console.log('Bookmark added successfully:', data);
+      
       // Update local state
       setBookmarks(prev => [...prev, businessId]);
       toast.success('Business added to your bookmarks');
