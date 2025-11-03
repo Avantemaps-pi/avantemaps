@@ -11,6 +11,7 @@ import { useAuth } from '@/context/auth';
 import { Business } from '@/types/business';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 const RegisteredBusiness = () => {
   const navigate = useNavigate();
@@ -23,17 +24,25 @@ const RegisteredBusiness = () => {
   useEffect(() => {
     const fetchUserBusinesses = async () => {
       if (!user?.uid) {
+        console.log('🏢 No user UID, skipping business fetch');
         setIsLoading(false);
         return;
       }
 
       try {
+        console.log('🏢 Fetching businesses for user:', user.uid);
+        
         const { data, error } = await supabase
           .from('businesses')
           .select('*')
           .eq('owner_id', user.uid);
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Error fetching businesses:', error);
+          throw error;
+        }
+
+        console.log('✅ Businesses fetched:', data?.length || 0, 'businesses');
 
         // Transform to Business type
         const transformedBusinesses: Business[] = (data || []).map(b => ({
@@ -52,7 +61,8 @@ const RegisteredBusiness = () => {
 
         setBusinesses(transformedBusinesses);
       } catch (error) {
-        console.error('Error fetching businesses:', error);
+        console.error('❌ Error in fetchUserBusinesses:', error);
+        toast.error('Failed to load your businesses');
       } finally {
         setIsLoading(false);
       }
@@ -60,6 +70,9 @@ const RegisteredBusiness = () => {
 
     if (isAuthenticated) {
       fetchUserBusinesses();
+    } else {
+      console.log('🔒 User not authenticated, skipping business fetch');
+      setIsLoading(false);
     }
   }, [user?.uid, isAuthenticated]);
 

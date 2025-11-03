@@ -72,6 +72,21 @@ export const useBusinessBookmarks = () => {
         toast.error('Invalid business ID');
         return false;
       }
+
+      console.log('📌 Adding bookmark:', { userId: user.uid, businessId: businessIdInt });
+      
+      // First verify the business exists
+      const { data: businessCheck, error: businessError } = await supabase
+        .from('businesses')
+        .select('id')
+        .eq('id', businessIdInt)
+        .single();
+
+      if (businessError || !businessCheck) {
+        console.error('Business not found:', businessError);
+        toast.error('Business not found');
+        return false;
+      }
       
       const { data, error } = await supabase
         .from('bookmarks')
@@ -82,25 +97,26 @@ export const useBusinessBookmarks = () => {
         .select();
 
       if (error) {
-        console.error('Bookmark insert error:', error);
+        console.error('❌ Bookmark insert error:', error);
+        console.error('Error details:', { code: error.code, message: error.message, hint: error.hint });
         toast.error(`Failed to add bookmark: ${error.message}`);
         return false;
       }
 
-      console.log('Bookmark added successfully:', data);
+      console.log('✅ Bookmark added successfully:', data);
       
       // Update local state
       setBookmarks(prev => [...prev, businessId]);
       toast.success('Business added to your bookmarks');
       return true;
     } catch (error) {
-      console.error('Error adding bookmark:', error);
+      console.error('❌ Error adding bookmark:', error);
       toast.error('Failed to add bookmark');
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, bookmarks]);
 
   // Remove a bookmark
   const removeBookmark = useCallback(async (businessId: string) => {
