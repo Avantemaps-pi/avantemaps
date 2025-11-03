@@ -118,25 +118,27 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
             </p>
             <FormMessage />
             {showSuggestions && predictions.length > 0 && (
-              <div className="absolute z-50 w-full mt-2 bg-background border-2 border-primary/20 rounded-xl shadow-2xl max-h-80 overflow-auto backdrop-blur-sm">
-                <div className="p-2">
-                  {predictions.map((prediction) => (
-                    <button
-                      key={prediction.placeId}
-                      type="button"
-                      className="w-full px-4 py-3 text-left hover:bg-primary/10 rounded-lg transition-colors border-b border-border/50 last:border-b-0 group"
-                      onClick={() => handleSuggestionClick(prediction)}
-                    >
-                      <div className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-start gap-2">
-                        <span className="text-primary mt-0.5">📍</span>
-                        <span>{prediction.mainText}</span>
+              <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-80 overflow-auto">
+                {predictions.map((prediction) => (
+                  <button
+                    key={prediction.placeId}
+                    type="button"
+                    className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border last:border-b-0 flex items-start gap-3"
+                    onClick={() => handleSuggestionClick(prediction)}
+                  >
+                    <span className="text-muted-foreground mt-0.5 flex-shrink-0">
+                      📍
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-foreground truncate">
+                        {prediction.address.house_number} {prediction.address.road}
                       </div>
-                      <div className="text-muted-foreground text-sm mt-1 ml-6">
-                        {prediction.secondaryText}
+                      <div className="text-sm text-muted-foreground truncate">
+                        {prediction.address.city}, {prediction.address.state}
                       </div>
-                    </button>
-                  ))}
-                </div>
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
           </FormItem>
