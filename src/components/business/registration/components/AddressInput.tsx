@@ -35,33 +35,45 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
   };
 
   const handleSuggestionClick = (prediction: typeof predictions[0]) => {
+    console.log('📍 Address selected:', prediction);
+    
     const streetAddress = [
       prediction.address.house_number,
       prediction.address.road
     ].filter(Boolean).join(' ') || prediction.mainText;
 
+    // Set street address
     form.setValue('streetAddress', streetAddress, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
 
+    // Auto-fill city
     const city = prediction.address.city;
     if (city) {
+      console.log('Setting city:', city);
       form.setValue('city', city, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
     }
 
+    // Auto-fill state/province
     const state = prediction.address.state;
     if (state) {
+      console.log('Setting state:', state);
       form.setValue('state', state, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
     }
 
+    // Auto-fill postal code
     const postcode = prediction.address.postcode;
     if (postcode) {
+      console.log('Setting zipCode:', postcode);
       form.setValue('zipCode', postcode, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
     }
 
+    // Auto-fill country
     const country = prediction.address.country;
     if (country) {
+      console.log('Setting country:', country);
       form.setValue('country', country, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
     }
 
+    console.log('✅ All address fields updated');
     clearSuggestions();
     setShowSuggestions(false);
   };
