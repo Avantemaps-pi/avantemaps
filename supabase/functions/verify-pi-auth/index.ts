@@ -76,7 +76,18 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const isDev = Deno.env.get('ENVIRONMENT') === 'development';
     const allowTestMode = Deno.env.get('ALLOW_TEST_MODE') === 'true';
-    const testMode = isDev && allowTestMode && url.searchParams.get('test') === 'true';
+    const testParam = url.searchParams.get('test') === 'true';
+    const testMode = isDev && allowTestMode && testParam;
+    
+    console.log(`🔍 [${traceId}] Test mode check:`, {
+      ENVIRONMENT: Deno.env.get('ENVIRONMENT'),
+      isDev,
+      ALLOW_TEST_MODE: Deno.env.get('ALLOW_TEST_MODE'),
+      allowTestMode,
+      testParam,
+      testMode,
+      url: req.url
+    });
 
     const rawBody = await req.text();
     let parsedBody: VerifyAuthRequest;
