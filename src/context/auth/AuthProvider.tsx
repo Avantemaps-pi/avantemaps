@@ -120,6 +120,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       secureLog.info('Development mode: bypassing authentication');
       const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
       safeSetUser(mockUser);
+      
+      // Setup Supabase session in dev mode to ensure RLS works
+      const setupDevSession = async () => {
+        try {
+          const response = await fetch('https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/verify-pi-auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              accessToken: 'dev-test-token',
+              uid: DEV_CONFIG.mockUser.uid,
+              username: DEV_CONFIG.mockUser.username
+            })
+          });
+
+          const data = await response.json();
+          
+          if (data.verified && data.supabase_token) {
+            await supabase.auth.setSession({
+              access_token: data.supabase_token,
+              refresh_token: data.supabase_token
+            });
+            secureLog.info('✅ Dev mode Supabase session established');
+          } else {
+            secureLog.warn('⚠️ Dev mode: verify-pi-auth did not return session token');
+          }
+        } catch (error) {
+          secureLog.error('Failed to setup dev Supabase session:', error);
+          toast.error('Dev mode: Failed to setup database session. RLS may block queries.');
+        }
+      };
+
+      setupDevSession();
+      
       import('./authUtils').then(({ updateUserData }) => {
         updateUserData(mockUser, safeSetUser).catch(err =>
           secureLog.warn('Failed to create dev user in database:', err)
@@ -177,6 +210,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (shouldBypassAuth()) {
       const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
       safeSetUser(mockUser);
+      
+      // Setup Supabase session in dev mode
+      try {
+        const response = await fetch('https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/verify-pi-auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: 'dev-test-token',
+            uid: DEV_CONFIG.mockUser.uid,
+            username: DEV_CONFIG.mockUser.username
+          })
+        });
+
+        const data = await response.json();
+        
+        if (data.verified && data.supabase_token) {
+          await supabase.auth.setSession({
+            access_token: data.supabase_token,
+            refresh_token: data.supabase_token
+          });
+          secureLog.info('✅ Dev mode Supabase session established');
+        }
+      } catch (error) {
+        secureLog.error('Failed to setup dev Supabase session:', error);
+      }
+      
       if (!devModeToastShown.current) {
         toast.success('Development mode: Logged in as mock user');
         devModeToastShown.current = true;

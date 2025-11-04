@@ -18,7 +18,7 @@ const RegisteredBusiness = () => {
   const { isAuthenticated, login, user } = useAuth();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string>('all');
 
   // Fetch user's businesses from database
   useEffect(() => {
@@ -43,6 +43,12 @@ const RegisteredBusiness = () => {
         }
 
         console.log('✅ Businesses fetched:', data?.length || 0, 'businesses');
+        
+        if (!data || data.length === 0) {
+          console.log('⚠️ No businesses found. Check:');
+          console.log('  - owner_id in businesses table matches user uid:', user.uid);
+          console.log('  - Supabase session exists (for RLS):', await supabase.auth.getSession());
+        }
 
         // Transform to Business type
         const transformedBusinesses: Business[] = (data || []).map(b => ({
@@ -76,12 +82,10 @@ const RegisteredBusiness = () => {
     }
   }, [user?.uid, isAuthenticated]);
 
-  // Filter businesses based on selection, but only show them if something is selected
-  const filteredBusinesses = selectedBusinessId 
-    ? (selectedBusinessId === "all" 
-        ? businesses 
-        : businesses.filter(business => business.id.toString() === selectedBusinessId))
-    : [];
+  // Filter businesses by selected business ID - default to showing all
+  const filteredBusinesses = selectedBusinessId === 'all'
+    ? businesses
+    : businesses.filter(business => business.id.toString() === selectedBusinessId);
 
   const handleEditBusiness = (businessId: number) => {
     const business = businesses.find(b => b.id === businessId);
