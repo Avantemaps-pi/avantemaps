@@ -143,8 +143,8 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
       
       <CardContent className="pt-2 px-3 pb-3">
         <PlaceCardAddress address={place.address} onClick={handleAddressClick} />
-        
-        <div className="h-20 mb-2 overflow-hidden">
+
+        <div className="mb-2">
           <ExpandableDescription text={place.description} maxLines={4} />
         </div>
         

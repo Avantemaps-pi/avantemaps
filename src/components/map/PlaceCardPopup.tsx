@@ -80,31 +80,29 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
         onClick={handlePlaceClick} 
       />
       
-      <CardContent className="pt-3 px-3">
-        <PlaceAddress 
-          address={location.address} 
-          onClick={handlePlaceClick} 
+      <CardContent className="pt-3 px-3 space-y-3">
+        <PlaceAddress
+          address={location.address}
+          onClick={handlePlaceClick}
         />
-        
-        <div className="h-16 mb-2">
-          <ExpandableDescription text={location.description} maxLines={4} />
-        </div>
-        
-        <div className="flex justify-between items-start mt-4">
+
+        <ExpandableDescription text={location.description} maxLines={4} />
+
+        <div className="flex justify-between items-start gap-2">
           <div className="flex flex-col items-start gap-2">
-            <PlaceRating 
-              rating={location.rating} 
-              onClick={handleRatingClick} 
+            <PlaceRating
+              rating={location.rating}
+              onClick={handleRatingClick}
             />
             <CategoryBadge category={location.category} />
           </div>
-          
-          <div className="flex flex-col gap-2 items-end">
+
+          <div className="flex flex-col gap-2 items-end flex-shrink-0">
             <WebsiteButton url={location.website} />
-            
+
             <Popover>
               <PopoverTrigger asChild>
-                <div className="text-blue-500 font-medium text-sm cursor-pointer flex items-center">
+                <div className="text-blue-500 font-medium text-sm cursor-pointer flex items-center whitespace-nowrap">
                   <Info className="h-3 w-3 mr-1" />
                   Details
                 </div>

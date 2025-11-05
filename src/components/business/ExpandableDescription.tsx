@@ -38,21 +38,23 @@ const ExpandableDescription: React.FC<ExpandableDescriptionProps> = ({
   }, [text, maxLines]);
 
   return (
-    <Collapsible 
-      open={isExpanded} 
+    <Collapsible
+      open={isExpanded}
       onOpenChange={setIsExpanded}
       className={`w-full ${className}`}
     >
-      <div className="relative overflow-hidden" style={!isExpanded ? {maxHeight: `${maxLines * 1.5}em`} : {}}>
-        <p 
-          ref={textRef} 
-          className={`text-sm text-gray-700 dark:text-gray-300 ${!isExpanded ? `line-clamp-${maxLines}` : ''}`}
-        >
-          {text}
-        </p>
-        
+      <div className="space-y-2">
+        <div className="relative overflow-hidden" style={!isExpanded ? {maxHeight: `${maxLines * 1.5}em`} : {}}>
+          <p
+            ref={textRef}
+            className={`text-sm text-gray-700 dark:text-gray-300 break-words ${!isExpanded ? `line-clamp-${maxLines}` : ''}`}
+          >
+            {text}
+          </p>
+        </div>
+
         {needsExpansion && !isExpanded && (
-          <CollapsibleTrigger className="absolute bottom-0 right-0 text-xs text-primary cursor-pointer bg-gradient-to-l from-card pl-2">
+          <CollapsibleTrigger className="text-xs text-primary cursor-pointer font-medium">
             read more...
           </CollapsibleTrigger>
         )}
