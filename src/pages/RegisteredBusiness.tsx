@@ -6,7 +6,7 @@ import BusinessSelector from '@/components/business/BusinessSelector';
 import EmptyBusinessState from '@/components/business/EmptyBusinessState';
 import BusinessHeader from '@/components/business/BusinessHeader';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/auth';
 import { Business } from '@/types/business';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,10 +15,14 @@ import { toast } from 'sonner';
 
 const RegisteredBusiness = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, login, user } = useAuth();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBusinessId, setSelectedBusinessId] = useState<string>('all');
+  
+  // Get newly registered business ID from navigation state
+  const newBusinessId = (location.state as { newBusinessId?: number })?.newBusinessId;
 
   // Fetch user's businesses from database
   useEffect(() => {
@@ -50,22 +54,42 @@ const RegisteredBusiness = () => {
           console.log('  - Supabase session exists (for RLS):', await supabase.auth.getSession());
         }
 
-        // Transform to Business type
-        const transformedBusinesses: Business[] = (data || []).map(b => ({
-          id: b.id,
-          name: b.name,
-          address: b.location || '',
-          description: b.description || '',
-          isCertified: b.is_certified,
-          isVerified: b.is_verified,
-          category: b.category,
-          coordinates: b.coordinates,
-          business_types: b.business_types,
-          keywords: b.keywords,
-          created_at: b.created_at
-        }));
+        // Transform to Business type - build address from components
+        const transformedBusinesses: Business[] = (data || []).map(b => {
+          // Build address string from individual components
+          const addressParts = [
+            b.street_address,
+            b.city,
+            b.state,
+            b.postal_code,
+            b.country
+          ].filter(Boolean);
+          const address = addressParts.join(', ');
+
+          return {
+            id: b.id,
+            name: b.name,
+            address: address || b.location || '',
+            description: b.description || '',
+            isCertified: b.is_certified,
+            isVerified: b.is_verified,
+            category: b.category,
+            coordinates: b.coordinates,
+            business_types: b.business_types,
+            keywords: b.keywords,
+            created_at: b.created_at
+          };
+        });
 
         setBusinesses(transformedBusinesses);
+
+        // Auto-select newly registered business if present in state
+        if (newBusinessId && transformedBusinesses.some(b => b.id === newBusinessId)) {
+          setSelectedBusinessId(String(newBusinessId));
+          toast.success('Your business has been registered successfully!');
+          // Clear navigation state to prevent re-triggering
+          navigate('.', { replace: true, state: {} });
+        }
       } catch (error) {
         console.error('❌ Error in fetchUserBusinesses:', error);
         toast.error('Failed to load your businesses');

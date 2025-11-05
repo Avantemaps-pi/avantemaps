@@ -206,8 +206,9 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       toast.success('Business registered successfully!');
       if (onSuccess) onSuccess();
 
-      navigate('/', {
-        state: { newBusiness: true, businessData: { ...newBusiness, position: { lat: geocodedData.lat, lng: geocodedData.lng } } }
+      // Navigate to registered-business page with the new business ID
+      navigate('/registered-business', {
+        state: { newBusinessId: newBusiness.id }
       });
 
     } catch (err) {
