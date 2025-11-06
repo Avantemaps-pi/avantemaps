@@ -185,10 +185,11 @@ export const performLogin = async (
             true  // testMode flag
           );
           
-          if (verificationResult.verified && verificationResult.supabaseToken) {
+          const token = (verificationResult as any).supabase_token || (verificationResult as any).supabaseToken;
+          if (verificationResult.verified && token) {
             const { error: sessionError } = await supabase.auth.setSession({
-              access_token: verificationResult.supabaseToken,
-              refresh_token: verificationResult.supabaseToken
+              access_token: token,
+              refresh_token: token
             });
             
             if (sessionError) {
@@ -262,11 +263,12 @@ export const performLogin = async (
             verificationSucceeded = true;
             
             // 🔧 FIX: Set Supabase session with the JWT token
-            if (verificationResult.supabaseToken) {
+            const token = (verificationResult as any).supabase_token || (verificationResult as any).supabaseToken;
+            if (token) {
               secureLog.info("Setting Supabase session with JWT token");
               const { error: sessionError } = await supabase.auth.setSession({
-                access_token: verificationResult.supabaseToken,
-                refresh_token: verificationResult.supabaseToken // Use same token for both
+                access_token: token,
+                refresh_token: token // Use same token for both
               });
               
               if (sessionError) {
@@ -277,7 +279,7 @@ export const performLogin = async (
               
               secureLog.info("✅ Supabase session established successfully");
             } else {
-              secureLog.warn("⚠️ No supabaseToken returned from verification");
+              secureLog.warn("⚠️ No supabase_token returned from verification");
             }
           }
         } catch (verificationError) {
