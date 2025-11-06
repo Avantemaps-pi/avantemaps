@@ -35,28 +35,48 @@ const RegisteredBusiness = () => {
 
       try {
         console.log('🏢 Fetching businesses for user:', user.uid);
-        
-        const { data, error } = await supabase
-          .from('businesses')
-          .select('*')
-          .eq('owner_id', user.uid);
 
-        if (error) {
-          console.error('❌ Error fetching businesses:', error);
-          throw error;
+        // Check Supabase session first (RLS requires it to view own businesses)
+        const { data: sessionResp } = await supabase.auth.getSession();
+        const sessionUserId = sessionResp?.session?.user?.id;
+        console.log('🔐 Supabase session user:', sessionUserId || 'none');
+
+        let rows: any[] | null = null;
+
+        if (sessionUserId) {
+          const { data, error } = await supabase
+            .from('businesses')
+            .select('*')
+            .eq('owner_id', user.uid);
+
+          if (error) {
+            console.error('❌ Error fetching businesses:', error);
+            throw error;
+          }
+          rows = data ?? [];
+        } else {
+          // Fallback: use Edge Function scoped by owner_id when no session is present
+          console.warn('⚠️ No Supabase session – using secure fallback');
+          const { data: fnData, error: fnError } = await supabase.functions.invoke('list-user-businesses', {
+            body: { owner_id: user.uid }
+          });
+          if (fnError) {
+            console.error('❌ Edge function error:', fnError);
+            throw fnError;
+          }
+          rows = (fnData as any)?.businesses ?? [];
         }
 
-        console.log('✅ Businesses fetched:', data?.length || 0, 'businesses');
-        
-        if (!data || data.length === 0) {
+        console.log('✅ Businesses fetched:', rows?.length || 0, 'businesses');
+
+        if (!rows || rows.length === 0) {
           console.log('⚠️ No businesses found. Check:');
           console.log('  - owner_id in businesses table matches user uid:', user.uid);
           console.log('  - Supabase session exists (for RLS):', await supabase.auth.getSession());
         }
 
         // Transform to Business type - build address from components
-        const transformedBusinesses: Business[] = (data || []).map(b => {
-          // Build address string from individual components
+        const transformedBusinesses: Business[] = (rows || []).map((b: any) => {
           const addressParts = [
             b.street_address,
             b.city,
@@ -78,7 +98,7 @@ const RegisteredBusiness = () => {
             business_types: b.business_types,
             keywords: b.keywords,
             created_at: b.created_at
-          };
+          } as any;
         });
 
         setBusinesses(transformedBusinesses);
@@ -87,7 +107,6 @@ const RegisteredBusiness = () => {
         if (newBusinessId && transformedBusinesses.some(b => b.id === newBusinessId)) {
           setSelectedBusinessId(String(newBusinessId));
           toast.success('Your business has been registered successfully!');
-          // Clear navigation state to prevent re-triggering
           navigate('.', { replace: true, state: {} });
         }
       } catch (error) {
