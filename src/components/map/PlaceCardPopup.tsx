@@ -86,8 +86,9 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
           onClick={handlePlaceClick}
         />
 
-        <div className="h-20 overflow-hidden">
+        <div className="relative h-20 overflow-hidden">
           <ExpandableDescription text={location.description} maxLines={4} />
+          <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
         </div>
 
         <div className="flex justify-between items-start gap-2">

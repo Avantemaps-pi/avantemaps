@@ -144,8 +144,9 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
       <CardContent className="pt-2 px-3 pb-3">
         <PlaceCardAddress address={place.address} onClick={handleAddressClick} />
 
-        <div className="h-20 mb-3 overflow-hidden">
+        <div className="relative h-20 mb-3 overflow-hidden">
           <ExpandableDescription text={place.description} maxLines={4} />
+          <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
         </div>
 
         <div className="flex flex-wrap justify-between items-start gap-2">
