@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import BusinessCard from '@/components/business/BusinessCard';
 import BusinessSelector from '@/components/business/BusinessSelector';
@@ -16,10 +16,11 @@ import { toast } from 'sonner';
 const RegisteredBusiness = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, login, user } = useAuth();
+  const { isAuthenticated, login, user, refreshUserData } = useAuth();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBusinessId, setSelectedBusinessId] = useState<string>('all');
+  const toastShownRef = useRef(false);
   
   // Get newly registered business ID from navigation state
   const newBusinessId = (location.state as { newBusinessId?: number })?.newBusinessId;
@@ -37,13 +38,44 @@ const RegisteredBusiness = () => {
         console.log('🏢 Fetching businesses for user:', user.uid);
 
         // ✅ SECURITY: Get Supabase session and use session.user.id for consistency
-        const { data: sessionResp } = await supabase.auth.getSession();
-        const sessionUserId = sessionResp?.session?.user?.id;
-        console.log('🔐 Supabase session user:', sessionUserId || 'none');
+        const getSessionUserId = async () => {
+          const { data: sessionResp } = await supabase.auth.getSession();
+          return sessionResp?.session?.user?.id;
+        };
+
+        let sessionUserId = await getSessionUserId();
+        console.log('🔐 Supabase session user (initial):', sessionUserId || 'none');
+
+        // Attempt a silent refresh if no session is available yet
+        if (!sessionUserId) {
+          try {
+            console.log('🌀 Attempting silent refresh of user data...');
+            await refreshUserData();
+            sessionUserId = await getSessionUserId();
+            console.log('🔐 Supabase session user (after refresh):', sessionUserId || 'none');
+          } catch (e) {
+            console.warn('⚠️ Silent refresh failed:', e);
+          }
+        }
+
+        // As a last resort, try a full login once if still missing and online
+        if (!sessionUserId && navigator.onLine) {
+          try {
+            console.log('🔑 No session after refresh — attempting login() to restore session');
+            await login();
+            sessionUserId = await getSessionUserId();
+            console.log('🔐 Supabase session user (after login):', sessionUserId || 'none');
+          } catch (e) {
+            console.warn('⚠️ Login attempt failed:', e);
+          }
+        }
 
         if (!sessionUserId) {
-          console.error("❌ No valid Supabase session found");
-          toast.error("Please log in again to view your businesses");
+          console.error('❌ No valid Supabase session found after refresh/login attempts');
+          if (!toastShownRef.current) {
+            toast.error('Please log in again to view your businesses');
+            toastShownRef.current = true;
+          }
           setIsLoading(false);
           return;
         }
