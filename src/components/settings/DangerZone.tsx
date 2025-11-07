@@ -32,7 +32,7 @@ const DangerZone = ({
           <Button variant="outline" onClick={onReinstateAccount} className="w-full">
             Reinstate Account
           </Button>
-          <p className="text-xs text-muted-foreground mt-2">If your account is scheduled for deletion, you can reinstate it within 15days.</p>
+          <p className="text-xs text-muted-foreground mt-2">If your account is scheduled for deletion, you can reinstate it within 15 Days.</p>
         </div>
       </CardContent>
     </Card>;
