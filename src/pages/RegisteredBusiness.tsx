@@ -36,47 +36,63 @@ const RegisteredBusiness = () => {
       try {
         console.log('🏢 Fetching businesses for user:', user.uid);
 
-        // Check Supabase session first (RLS requires it to view own businesses)
+        // ✅ SECURITY: Get Supabase session and use session.user.id for consistency
         const { data: sessionResp } = await supabase.auth.getSession();
         const sessionUserId = sessionResp?.session?.user?.id;
         console.log('🔐 Supabase session user:', sessionUserId || 'none');
 
-        let rows: any[] | null = null;
-
-        if (sessionUserId) {
-          const { data, error } = await supabase
-            .from('businesses')
-            .select('*')
-            .eq('owner_id', user.uid);
-
-          if (error) {
-            console.error('❌ Error fetching businesses:', error);
-            throw error;
-          }
-          rows = data ?? [];
-        } else {
-          // Fallback: use Edge Function scoped by owner_id when no session is present
-          console.warn('⚠️ No Supabase session – using secure fallback');
-          const { data: fnData, error: fnError } = await supabase.functions.invoke('list-user-businesses', {
-            body: { owner_id: user.uid }
-          });
-          if (fnError) {
-            console.error('❌ Edge function error:', fnError);
-            throw fnError;
-          }
-          rows = (fnData as any)?.businesses ?? [];
+        if (!sessionUserId) {
+          console.error("❌ No valid Supabase session found");
+          toast.error("Please log in again to view your businesses");
+          setIsLoading(false);
+          return;
         }
 
-        console.log('✅ Businesses fetched:', rows?.length || 0, 'businesses');
+        // ✅ SECURITY: Verify session user matches the authenticated Pi user
+        if (sessionUserId !== user.uid) {
+          console.error("🚨 Security warning: Session user mismatch", {
+            sessionUserId,
+            piUserId: user.uid
+          });
+          toast.error("Authentication mismatch. Please log in again.");
+          setIsLoading(false);
+          return;
+        }
 
-        if (!rows || rows.length === 0) {
-          console.log('⚠️ No businesses found. Check:');
-          console.log('  - owner_id in businesses table matches user uid:', user.uid);
-          console.log('  - Supabase session exists (for RLS):', await supabase.auth.getSession());
+        // Use direct Supabase query with RLS (most secure approach)
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('owner_id', sessionUserId)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('❌ Error fetching businesses:', error);
+          throw error;
+        }
+
+        const rows = data ?? [];
+        console.log('✅ Businesses fetched:', rows.length, 'businesses');
+
+        // ✅ SECURITY: Runtime validation - filter out any businesses not owned by user
+        const validRows = rows.filter((b: any) => {
+          if (b.owner_id !== sessionUserId) {
+            console.error('🚨 Security warning: Business owner mismatch detected', {
+              businessId: b.id,
+              businessOwnerId: b.owner_id,
+              sessionUserId
+            });
+            return false;
+          }
+          return true;
+        });
+
+        if (validRows.length !== rows.length) {
+          console.warn(`⚠️ Filtered out ${rows.length - validRows.length} invalid businesses`);
         }
 
         // Transform to Business type - build address from components
-        const transformedBusinesses: Business[] = (rows || []).map((b: any) => {
+        const transformedBusinesses: Business[] = validRows.map((b: any) => {
           const addressParts = [
             b.street_address,
             b.city,

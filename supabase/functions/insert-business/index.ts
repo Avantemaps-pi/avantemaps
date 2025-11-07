@@ -45,6 +45,28 @@ Deno.serve(async (req: Request) => {
   const traceId = crypto.randomUUID();
 
   try {
+    // ✅ SECURITY: Validate authentication token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Unauthorized: Missing authentication',
+        traceId,
+      }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error(`[${traceId}] Auth validation failed:`, authError);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Unauthorized: Invalid token',
+        traceId,
+      }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const body = await req.json() as InsertBusinessRequest;
 
     // Validate required fields
@@ -54,6 +76,16 @@ Deno.serve(async (req: Request) => {
         error: 'Missing required fields',
         traceId,
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // ✅ SECURITY: Ensure owner_id matches authenticated user
+    if (user.id !== body.owner_id) {
+      console.error(`[${traceId}] Owner ID mismatch. User: ${user.id}, Requested: ${body.owner_id}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Forbidden: Owner ID mismatch',
+        traceId,
+      }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // Insert the business using service role (bypasses RLS)
