@@ -24,19 +24,27 @@
     <title>Avante Maps - Discover Local Businesses with Pi Network</title>
     
     <!-- ✅ Load Pi SDK first -->
-    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <script>
-      const isSandbox = window.location.hostname.includes("sandbox.minepi.com");
+    <!-- ✅ Load the correct Pi SDK dynamically -->
+<script>
+  const isSandbox = window.location.hostname.includes("sandbox.minepi.com");
+  const script = document.createElement("script");
+  script.src = isSandbox
+    ? "https://sandbox.minepi.com/pi-sdk.js"
+    : "https://sdk.minepi.com/pi-sdk.js";
+  script.async = true;
 
-      window.addEventListener("load", () => {
-        if (window.Pi) {
-          console.log("✅ Pi SDK loaded successfully");
-          Pi.init({ version: "2.0", sandbox: isSandbox });
-        } else {
-          console.error("❌ Pi SDK failed to load — window.Pi is undefined");
-        }
-      });
-    </script>
+  script.onload = () => {
+    if (window.Pi) {
+      console.log(`✅ Pi SDK loaded (${isSandbox ? "sandbox" : "production"})`);
+      Pi.init({ version: "2.0", sandbox: isSandbox });
+    } else {
+      console.error("❌ Pi SDK failed to load — window.Pi is undefined");
+    }
+  };
+
+  document.head.appendChild(script);
+</script>
+
     
     <!-- Primary Meta Tags -->
     <meta name="title" content="Avante Maps - Local Business Discovery" />
