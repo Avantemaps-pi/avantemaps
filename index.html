@@ -26,9 +26,10 @@
     <!-- ✅ Load Pi SDK first -->
     <!-- ✅ Load the correct Pi SDK dynamically -->
 <script>
+  const ref = document.referrer || "";
   const isSandbox =
     window.location.hostname.includes("sandbox.minepi.com") ||
-    document.referrer.includes("sandbox.minepi.com");
+    ref.includes("sandbox.minepi.com");
 
   const script = document.createElement("script");
   script.src = isSandbox
@@ -47,6 +48,7 @@
 
   document.head.appendChild(script);
 </script>
+
     
     <!-- Primary Meta Tags -->
     <meta name="title" content="Avante Maps - Local Business Discovery" />
