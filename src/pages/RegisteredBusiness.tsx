@@ -189,7 +189,7 @@ console.log('✅ Businesses fetched from Edge Function:', rows.length);
       console.log('🔒 User not authenticated, skipping business fetch');
       setIsLoading(false);
     }
-  }, [user?.uid, isAuthenticated]);
+  }, [user?.uid, isAuthenticated, refreshUserData, login]);
 
   // Filter businesses by selected business ID - default to showing all
   const filteredBusinesses = selectedBusinessId === 'all'

@@ -44,7 +44,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const safeSetAppReady = useCallback((ready: boolean) => {
-    if (isMountedRef.current) setAppReady(ready);
+    if (isMountedRef.current) {
+      console.log('🚀 Setting appReady to:', ready);
+      setAppReady(ready);
+    }
   }, []);
 
   // ✅ Lifecycle cleanup

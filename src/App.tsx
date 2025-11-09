@@ -46,8 +46,22 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 2000);
-    return () => clearTimeout(timer);
+    // Ensure loading screen doesn't get stuck
+    const timer = setTimeout(() => {
+      console.log('✅ Initial loading complete');
+      setIsLoading(false);
+    }, 2000);
+    
+    // Safety fallback in case something blocks the timer
+    const fallbackTimer = setTimeout(() => {
+      console.warn('⚠️ Safety fallback: forcing loading to false');
+      setIsLoading(false);
+    }, 5000);
+    
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(fallbackTimer);
+    };
   }, []);
 
   useEffect(() => {
