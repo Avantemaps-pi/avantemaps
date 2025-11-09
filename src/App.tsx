@@ -31,7 +31,7 @@ import VerificationInfo from "./pages/VerificationInfo";
 import Review from "./pages/Review";
 import Pricing from "./pages/Pricing";
 import Analytics from "./pages/Analytics";
-import { initializePiNetwork } from "./utils/piNetwork";
+import { initializePiNetwork, isPiBrowser } from "./utils/piNetwork";
 // Removed incomplete payments check - handled automatically by Pi Network flow
 
 const queryClient = new QueryClient();
@@ -67,6 +67,10 @@ const App = () => {
   useEffect(() => {
     const initPiSdk = async () => {
       if (typeof window === "undefined") return;
+      if (!isPiBrowser()) {
+        console.warn("Pi SDK init skipped — not Pi Browser");
+        return;
+      }
       if (window.Pi) {
         console.log("✅ Pi SDK already loaded.");
         return;
@@ -118,8 +122,8 @@ const App = () => {
         zIndex: 9999,
       }}>
         <img
-          src="/lovable-uploads/Avante Maps ICON (2).png"
-          alt="Loading..."
+          src="/lovable-uploads/Avante-Maps-icon.svg"
+          alt="Avante Maps logo loading"
           style={{
             width: '150px',
             height: '150px',
