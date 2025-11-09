@@ -37,40 +37,22 @@ export const MAPS_CONFIG = {
 export const isDevelopmentMode = (): boolean => import.meta.env.DEV;
 
 const isProduction = (): boolean => {
-  if (typeof window !== 'undefined') {
-    const host = window.location.host;
-
-    // ✅ Treat Pi sandbox and main Pi domains as non-production
-    const isMinePiSandbox =
-      host.includes('minepi.com') || host.includes('sandbox.minepi.com');
-
-    return (
-      (host.includes('avantemaps.app') ||
-        host.includes('lovable.app') ||
-        host.includes('app.lovable.dev')) &&
-      !host.includes('lovableproject.com') &&
-      !isMinePiSandbox // ✅ prevent sandbox from being flagged as prod
-    );
-  }
-  return import.meta.env.PROD;
+  // Only allow auth bypass in true local development
+  return !import.meta.env.DEV;
 };
 
 /**
  * Determines whether to bypass Pi authentication.
- * In production, this always returns false silently.
+ * ONLY works in local development (npm run dev).
  */
 export const shouldBypassAuth = (): boolean => {
-  if (isProduction()) {
-    // No need to log this in production — just enforce false
-    return false;
-  }
-
-  if (import.meta.env.PROD) {
+  // Only bypass in true local dev mode
+  if (!import.meta.env.DEV) {
     return false;
   }
 
   if (DEV_CONFIG.bypassAuth) {
-    console.warn('🔓 Development mode: Authentication bypass is active');
+    console.warn('🔓 Local development mode: Authentication bypass is active');
   }
 
   return DEV_CONFIG.bypassAuth;
