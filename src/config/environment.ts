@@ -39,11 +39,17 @@ export const isDevelopmentMode = (): boolean => import.meta.env.DEV;
 const isProduction = (): boolean => {
   if (typeof window !== 'undefined') {
     const host = window.location.host;
+
+    // ✅ Treat Pi sandbox and main Pi domains as non-production
+    const isMinePiSandbox =
+      host.includes('minepi.com') || host.includes('sandbox.minepi.com');
+
     return (
-      (host.includes('avantemaps.app') || // ✅ your production domain
+      (host.includes('avantemaps.app') ||
         host.includes('lovable.app') ||
         host.includes('app.lovable.dev')) &&
-      !host.includes('lovableproject.com')
+      !host.includes('lovableproject.com') &&
+      !isMinePiSandbox // ✅ prevent sandbox from being flagged as prod
     );
   }
   return import.meta.env.PROD;
