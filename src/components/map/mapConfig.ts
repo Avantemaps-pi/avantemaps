@@ -1,8 +1,8 @@
 
 // Map configuration constants
-export const defaultCenter = { lat: 37.7749, lng: -122.4194 }; // San Francisco
-export const defaultZoom = 12;
-export const minZoom = 3;
+export const defaultCenter = { lat: 0, lng: 0 }; // World center
+export const defaultZoom = 2;
+export const minZoom = 2;
 export const maxZoom = 18;
 
 // World boundary restrictions to prevent infinite scrolling

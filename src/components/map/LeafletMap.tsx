@@ -3,7 +3,7 @@ import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Place } from '@/types/business';
 import { toast } from 'sonner';
-import { defaultCenter, defaultZoom, OSM_TILE_LAYER, worldBounds, maxBoundsViscosity } from './mapConfig';
+import { defaultCenter, defaultZoom, minZoom, maxZoom, OSM_TILE_LAYER, worldBounds, maxBoundsViscosity } from './mapConfig';
 import MapMarkers from './map-components/MapMarkers';
 import MapViewUpdater from './map-components/MapViewUpdater';
 import PlaceOverlay from './map-components/PlaceOverlay';
@@ -135,7 +135,12 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
       <MapContainer 
         style={{ height: '100%', width: '100%', zIndex: 1 }}
         className="leaflet-container"
-        bounds={worldBounds}
+        center={mapCenter}
+        zoom={zoom}
+        minZoom={minZoom}
+        maxZoom={maxZoom}
+        maxBounds={worldBounds}
+        maxBoundsViscosity={maxBoundsViscosity}
       >
         <TileLayer 
           url={OSM_TILE_LAYER.url}
