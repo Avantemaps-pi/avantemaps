@@ -110,6 +110,29 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
 
+      // Check business count limit
+      const { count: businessCount } = await supabase
+        .from('businesses')
+        .select('*', { count: 'exact', head: true })
+        .eq('owner_id', user.uid);
+
+      const BUSINESS_LIMITS: Record<string, number> = {
+        'individual': 1,
+        'small-business': 3,
+        'organization': 5,
+      };
+
+      const limit = BUSINESS_LIMITS[user.subscriptionTier] || 1;
+      const currentCount = businessCount || 0;
+
+      if (currentCount >= limit) {
+        toast.error(`Business limit reached`, {
+          description: `Your ${user.subscriptionTier} plan allows up to ${limit} business${limit > 1 ? 'es' : ''}. Please upgrade to register more.`,
+          action: { label: "Upgrade Now", onClick: () => navigate('/pricing') }
+        });
+        return;
+      }
+
       setIsSubmitting(true);
 
       // Always use latest wallet address from Pi user
