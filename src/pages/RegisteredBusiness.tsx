@@ -1,58 +1,165 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import BusinessCard from '@/components/business/BusinessCard';
 import BusinessSelector from '@/components/business/BusinessSelector';
 import EmptyBusinessState from '@/components/business/EmptyBusinessState';
 import BusinessHeader from '@/components/business/BusinessHeader';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/auth';
 import { Business } from '@/types/business';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 const RegisteredBusiness = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, login, user } = useAuth();
+  const location = useLocation();
+  const { isAuthenticated, login, user, refreshUserData } = useAuth();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string>('all');
+  const toastShownRef = useRef(false);
+  
+  // Get newly registered business ID from navigation state
+  const newBusinessId = (location.state as { newBusinessId?: number })?.newBusinessId;
 
   // Fetch user's businesses from database
   useEffect(() => {
     const fetchUserBusinesses = async () => {
       if (!user?.uid) {
+        console.log('🏢 No user UID, skipping business fetch');
         setIsLoading(false);
         return;
       }
 
       try {
+        console.log('🏢 Fetching businesses for user:', user.uid);
+
+        // ✅ SECURITY: Get Supabase session and use session.user.id for consistency
+        const getSessionUserId = async () => {
+          const { data: sessionResp } = await supabase.auth.getSession();
+          return sessionResp?.session?.user?.id;
+        };
+
+        let sessionUserId = await getSessionUserId();
+        console.log('🔐 Supabase session user (initial):', sessionUserId || 'none');
+
+        // Attempt a silent refresh if no session is available yet
+        if (!sessionUserId) {
+          try {
+            console.log('🌀 Attempting silent refresh of user data...');
+            await refreshUserData();
+            sessionUserId = await getSessionUserId();
+            console.log('🔐 Supabase session user (after refresh):', sessionUserId || 'none');
+          } catch (e) {
+            console.warn('⚠️ Silent refresh failed:', e);
+          }
+        }
+
+        // As a last resort, try a full login once if still missing and online
+        if (!sessionUserId && navigator.onLine) {
+          try {
+            console.log('🔑 No session after refresh — attempting login() to restore session');
+            await login();
+            sessionUserId = await getSessionUserId();
+            console.log('🔐 Supabase session user (after login):', sessionUserId || 'none');
+          } catch (e) {
+            console.warn('⚠️ Login attempt failed:', e);
+          }
+        }
+
+        if (!sessionUserId) {
+          console.error('❌ No valid Supabase session found after refresh/login attempts');
+          if (!toastShownRef.current) {
+            toast.error('Please log in again to view your businesses');
+            toastShownRef.current = true;
+          }
+          setIsLoading(false);
+          return;
+        }
+
+        // ✅ SECURITY: Verify session user matches the authenticated Pi user
+        if (sessionUserId !== user.uid) {
+          console.error("🚨 Security warning: Session user mismatch", {
+            sessionUserId,
+            piUserId: user.uid
+          });
+          toast.error("Authentication mismatch. Please log in again.");
+          setIsLoading(false);
+          return;
+        }
+
+        // Use direct Supabase query with RLS (most secure approach)
         const { data, error } = await supabase
           .from('businesses')
           .select('*')
-          .eq('owner_id', user.uid);
+          .eq('owner_id', sessionUserId)
+          .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Error fetching businesses:', error);
+          throw error;
+        }
 
-        // Transform to Business type
-        const transformedBusinesses: Business[] = (data || []).map(b => ({
-          id: b.id,
-          name: b.name,
-          address: b.location || '',
-          description: b.description || '',
-          isCertified: b.is_certified,
-          isVerified: b.is_verified,
-          category: b.category,
-          coordinates: b.coordinates,
-          business_types: b.business_types,
-          keywords: b.keywords,
-          created_at: b.created_at
-        }));
+        const rows = data ?? [];
+        console.log('✅ Businesses fetched:', rows.length, 'businesses');
+
+        // ✅ SECURITY: Runtime validation - filter out any businesses not owned by user
+        const validRows = rows.filter((b: any) => {
+          if (b.owner_id !== sessionUserId) {
+            console.error('🚨 Security warning: Business owner mismatch detected', {
+              businessId: b.id,
+              businessOwnerId: b.owner_id,
+              sessionUserId
+            });
+            return false;
+          }
+          return true;
+        });
+
+        if (validRows.length !== rows.length) {
+          console.warn(`⚠️ Filtered out ${rows.length - validRows.length} invalid businesses`);
+        }
+
+        // Transform to Business type - build address from components
+        const transformedBusinesses: Business[] = validRows.map((b: any) => {
+          const addressParts = [
+            b.street_address,
+            b.city,
+            b.state,
+            b.postal_code,
+            b.country
+          ].filter(Boolean);
+          const address = addressParts.join(', ');
+
+          return {
+            id: b.id,
+            name: b.name,
+            address: address || b.location || '',
+            description: b.description || '',
+            isCertified: b.is_certified,
+            isVerified: b.is_verified,
+            category: b.category,
+            coordinates: b.coordinates,
+            business_types: b.business_types,
+            keywords: b.keywords,
+            created_at: b.created_at
+          } as any;
+        });
 
         setBusinesses(transformedBusinesses);
+
+        // Auto-select newly registered business if present in state
+        if (newBusinessId && transformedBusinesses.some(b => b.id === newBusinessId)) {
+          setSelectedBusinessId(String(newBusinessId));
+          toast.success('Your business has been registered successfully!');
+          navigate('.', { replace: true, state: {} });
+        }
       } catch (error) {
-        console.error('Error fetching businesses:', error);
+        console.error('❌ Error in fetchUserBusinesses:', error);
+        toast.error('Failed to load your businesses');
       } finally {
         setIsLoading(false);
       }
@@ -60,15 +167,16 @@ const RegisteredBusiness = () => {
 
     if (isAuthenticated) {
       fetchUserBusinesses();
+    } else {
+      console.log('🔒 User not authenticated, skipping business fetch');
+      setIsLoading(false);
     }
   }, [user?.uid, isAuthenticated]);
 
-  // Filter businesses based on selection, but only show them if something is selected
-  const filteredBusinesses = selectedBusinessId 
-    ? (selectedBusinessId === "all" 
-        ? businesses 
-        : businesses.filter(business => business.id.toString() === selectedBusinessId))
-    : [];
+  // Filter businesses by selected business ID - default to showing all
+  const filteredBusinesses = selectedBusinessId === 'all'
+    ? businesses
+    : businesses.filter(business => business.id.toString() === selectedBusinessId);
 
   const handleEditBusiness = (businessId: number) => {
     const business = businesses.find(b => b.id === businessId);

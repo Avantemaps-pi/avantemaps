@@ -92,10 +92,22 @@ private async initializeAttempt(): Promise<void> {
 
     // ✅ If SDK already available, just init
     if (window.Pi && typeof window.Pi.authenticate === "function") {
-      console.log("✅ Pi SDK detected, skipping re-initialization.");
-      this.isInitialized = true;
-      (window as any).__piInitialized = true;
-      resolve();
+      console.log("✅ Pi SDK detected, forcing initialization...");
+
+      const isSandbox = this.determineSandboxMode();
+
+      window.Pi.init({ version: "2.0", sandbox: isSandbox })
+        .then(() => {
+          console.log("✅ Pi SDK initialized successfully (forced).");
+          this.isInitialized = true;
+          (window as any).__piInitialized = true;
+          resolve();
+        })
+        .catch((err: any) => {
+          console.error("❌ Pi SDK init() failed during forced re-init:", err);
+          reject(new Error(`Pi SDK init failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
+        });
+
       return;
     }
 
@@ -124,20 +136,16 @@ private async initializeAttempt(): Promise<void> {
       const isSandbox = this.determineSandboxMode();
 
       // 🧠 Step 3: initialize the SDK
-      try {
-        Pi.init({ version: "2.0", sandbox: isSandbox })
-          .then(() => {
-            console.log('✅ Pi SDK initialized successfully');
-            this.isInitialized = true;
-            (window as any).__piInitialized = true;
-            resolve();
-          })
-          .catch((err: any) => {
-            reject(new Error(`❌ Pi SDK init failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
-          });
-      } catch (err) {
-        reject(new Error(`Pi SDK init exception: ${err instanceof Error ? err.message : 'Unknown error'}`));
-      }
+      Pi.init({ version: "2.0", sandbox: isSandbox })
+        .then(() => {
+          console.log('✅ Pi SDK initialized successfully');
+          this.isInitialized = true;
+          (window as any).__piInitialized = true;
+          resolve();
+        })
+        .catch((err: any) => {
+          reject(new Error(`❌ Pi SDK init failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
+        });
     };
 
     script.onerror = (error) => {
@@ -219,6 +227,21 @@ private async initializeAttempt(): Promise<void> {
 
         const responseData = await verifyResponse.json();
         console.log("🧩 Server verification response:", responseData);
+
+        // ✅ Establish Supabase session if the edge function returned a token
+        if (responseData?.supabase_token) {
+          try {
+            const { supabase } = await import('@/integrations/supabase/client');
+            await supabase.auth.setSession({
+              access_token: responseData.supabase_token,
+              refresh_token: responseData.supabase_token, // optional if you don't issue refresh tokens
+            });
+            console.log("✅ Supabase session established for Pi user");
+          } catch (sessionErr) {
+            console.error("❌ Failed to set Supabase session:", sessionErr);
+          }
+        }
+        
         if (!verifyResponse.ok) {
           console.warn("⚠️ Supabase verification endpoint returned:", verifyResponse.status, verifyResponse.statusText);
         }
@@ -230,6 +253,25 @@ private async initializeAttempt(): Promise<void> {
         }
 
         console.log("✅ Token successfully verified with backend");
+
+        // 🆕 Automatically log user into Supabase (if token returned)
+      if (responseData?.supabase_token) {
+        try {
+          const { supabase } = await import('@/integrations/supabase/client');
+          const { data: session, error } = await supabase.auth.setSession({
+            access_token: responseData.supabase_token,
+            refresh_token: responseData.supabase_token, // fallback
+          });
+          if (error) {
+            console.warn("⚠️ Supabase session setup failed:", error.message);
+          } else {
+            console.log("✅ Supabase session established:", session);
+          }
+        } catch (sessionErr) {
+          console.error("⚠️ Could not initialize Supabase session:", sessionErr);
+        }
+      }
+
       } catch (verifyErr) {
         console.error("❌ Backend token verification failed:", verifyErr);
         throw new Error(`Authentication failed: ${verifyErr instanceof Error ? verifyErr.message : 'Unknown error'}`);

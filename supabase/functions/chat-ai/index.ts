@@ -37,7 +37,8 @@ const supabase = createClient(
 
 async function checkRateLimit(userId: string, userTier: string = 'individual'): Promise<{ allowed: boolean; resetAt: number; remaining: number }> {
   const now = Date.now();
-  const config = RATE_LIMITS[userTier] || RATE_LIMITS.individual;
+  const tierKey = userTier as keyof typeof RATE_LIMITS;
+  const config = RATE_LIMITS[tierKey] || RATE_LIMITS.individual;
   const windowStart = new Date(now - config.windowMs);
   
   const { data, error } = await supabase
@@ -159,7 +160,7 @@ serve(async (req) => {
             ...corsHeaders,
             'Content-Type': 'application/json',
             'Retry-After': String(retryAfter),
-            'X-RateLimit-Limit': String(RATE_LIMITS[userTier].requests),
+            'X-RateLimit-Limit': String(RATE_LIMITS[userTier as keyof typeof RATE_LIMITS]?.requests || RATE_LIMITS.individual.requests),
             'X-RateLimit-Remaining': '0',
             'X-RateLimit-Reset': String(Math.floor(rateLimit.resetAt / 1000))
           }
@@ -211,8 +212,8 @@ serve(async (req) => {
       throw new Error('AI service not configured');
     }
 
-    // Filter out any system messages (extra safety)
-    const userMessages = messages.filter(m => m.role !== 'system');
+    // Use all messages directly
+    const userMessages = messages;
     
     console.log('Streaming AI chat with', userMessages.length, 'messages');
 

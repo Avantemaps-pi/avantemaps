@@ -11,14 +11,29 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === "development" && componentTagger(),
   ].filter(Boolean),
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "react": path.resolve(__dirname, "./node_modules/react"),
+      react: path.resolve(__dirname, "./node_modules/react"),
       "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+    },
+  },
+
+  // ✅ Add build configuration here
+  build: {
+    chunkSizeWarningLimit: 2000, // Raise warning limit to 2MB
+    sourcemap: mode === "development", // Optional: keep sourcemaps only in dev
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // 🧠 Split heavy deps into separate chunks (helps load time)
+          react: ["react", "react-dom"],
+          supabase: ["@supabase/supabase-js"],
+        },
+      },
     },
   },
 }));

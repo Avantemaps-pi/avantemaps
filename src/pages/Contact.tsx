@@ -1,4 +1,3 @@
-
 import React from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -37,7 +36,7 @@ const Contact = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm">+27 (68) 342-2444</p>
-              <p className="text-xs text-muted-foreground mt-1">Mon-Fri, 9am-5pm PST</p>
+              <p className="text-xs text-muted-foreground mt-1">+27 (62) 476-7535</p>
             </CardContent>
           </Card>
 
@@ -49,7 +48,7 @@ const Contact = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm">123 Pi Street</p>
+              <p className="text-sm">113 Jabu Ndlovu</p>
               <p className="text-xs text-muted-foreground mt-1">Pietermaritzburg, KZN 3201</p>
             </CardContent>
           </Card>

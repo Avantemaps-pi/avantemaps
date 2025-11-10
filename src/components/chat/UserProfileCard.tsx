@@ -4,18 +4,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Link as LinkIcon } from 'lucide-react';
+import { useAuth } from '@/context/auth';
 
 const UserProfileCard: React.FC = () => {
+  const { user } = useAuth();
   return (
     <Card className="mb-6">
       <CardContent className="pt-6">
         <div className="flex flex-col items-center">
           <Avatar className="h-20 w-20 mb-4">
             <AvatarImage src="/placeholder.svg" alt="User" />
-            <AvatarFallback>JD</AvatarFallback>
+            <AvatarFallback>{user?.username?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
           </Avatar>
           
-          <h2 className="text-xl font-semibold mb-2">**** ***</h2>
+          <h2 className="text-xl font-semibold mb-2">{user?.username || 'Guest User'}</h2>
           
           <div className="space-y-3 w-full max-w-md">
             <div className="flex items-center">

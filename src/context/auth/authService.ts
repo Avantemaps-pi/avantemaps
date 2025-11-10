@@ -8,6 +8,7 @@ import { SubscriptionTier } from '@/utils/piNetwork/types';
 import { getUserSubscription, updateUserData } from './authUtils';
 import { secureLog } from '@/utils/secureLogger';
 import { verifyPiAuthentication, getDetailedAuthError } from '@/utils/piNetwork/verification';
+import { supabase } from '@/integrations/supabase/client';
 
 // Simplified permission check - actual permissions are requested during authentication
 export const requestAuthPermissions = async (
@@ -157,7 +158,7 @@ export const performLogin = async (
         hasToken: !!authResult?.accessToken
       });
 
-        if (!authResult || !authResult.user || !authResult.accessToken) {
+      if (!authResult || !authResult.user || !authResult.accessToken) {
         const errorMsg = "Authentication response was incomplete. Please try again.";
         secureLog.error("Incomplete auth result:", { hasAuthResult: !!authResult, hasUser: !!authResult?.user, hasToken: !!authResult?.accessToken });
         if (authAttempt < maxAuthAttempts) {
@@ -168,13 +169,41 @@ export const performLogin = async (
         throw new Error(errorMsg);
       }
 
-      // Skip backend verification in development mode to speed up auth
+      
+      // Always verify with backend to establish Supabase session
       const isDevelopment = import.meta.env.DEV;
       let verificationSucceeded = false;
       
       if (isDevelopment) {
-        secureLog.info("Development mode: Skipping backend verification");
-        verificationSucceeded = true;
+        secureLog.info("Development mode: Using test verification to create Supabase session");
+        
+        try {
+          const verificationResult = await verifyPiAuthentication(
+            authResult.accessToken,
+            authResult.user.uid,
+            authResult.user.username,
+            true  // testMode flag
+          );
+          
+          const token = (verificationResult as any).supabase_token || (verificationResult as any).supabaseToken;
+          if (verificationResult.verified && token) {
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token: token,
+              refresh_token: token
+            });
+            
+            if (sessionError) {
+              throw new Error("Development session setup failed");
+            }
+            
+            secureLog.info("✅ Development Supabase session established");
+            verificationSucceeded = true;
+          }
+        } catch (err) {
+          secureLog.error("Development verification failed:", err);
+          toast.error("Development session setup failed");
+          throw err;
+        }
       } else {
         // Immediately verify with backend (do not persist token)
         secureLog.info("Verifying token with backend", {
@@ -232,6 +261,26 @@ export const performLogin = async (
           }
           } else {
             verificationSucceeded = true;
+            
+            // 🔧 FIX: Set Supabase session with the JWT token
+            const token = (verificationResult as any).supabase_token || (verificationResult as any).supabaseToken;
+            if (token) {
+              secureLog.info("Setting Supabase session with JWT token");
+              const { error: sessionError } = await supabase.auth.setSession({
+                access_token: token,
+                refresh_token: token // Use same token for both
+              });
+              
+              if (sessionError) {
+                secureLog.error("Failed to set Supabase session:", sessionError);
+                toast.error("Failed to establish secure session. Please try again.");
+                throw new Error("Session setup failed");
+              }
+              
+              secureLog.info("✅ Supabase session established successfully");
+            } else {
+              secureLog.warn("⚠️ No supabase_token returned from verification");
+            }
           }
         } catch (verificationError) {
         const errorMsg = verificationError instanceof Error ? verificationError.message : String(verificationError);

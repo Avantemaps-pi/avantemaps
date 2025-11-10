@@ -3,21 +3,24 @@ import { secureLog } from '@/utils/secureLogger';
 
 export interface VerificationResult {
   verified: boolean;
+  supabaseToken?: string | null;
   error?: string;
   details?: string;
+  traceId?: string;
 }
 
 export const verifyPiAuthentication = async (
   accessToken: string,
   uid: string,
-  username: string
+  username: string,
+  testMode: boolean = false
 ): Promise<VerificationResult> => {
   try {
     // Sanitize inputs
     const sanitizedUid = uid.trim();
     const sanitizedUsername = username.trim();
 
-    secureLog.info(`Verifying Pi Network authentication for user: ${sanitizedUsername}`);
+    secureLog.info(`Verifying Pi Network authentication for user: ${sanitizedUsername}${testMode ? ' (test mode)' : ''}`);
     
     const requestBody = {
       accessToken,
@@ -29,13 +32,15 @@ export const verifyPiAuthentication = async (
       uid: sanitizedUid, 
       username: sanitizedUsername, 
       tokenLen: accessToken.length,
+      testMode,
       bodyString: JSON.stringify(requestBody).substring(0, 100)
     });
 
     // Try primary method: Supabase functions invoke
     let data, error;
     try {
-      const result = await supabase.functions.invoke('verify-pi-auth', {
+      const functionName = testMode ? 'verify-pi-auth?test=true' : 'verify-pi-auth';
+      const result = await supabase.functions.invoke(functionName, {
         body: requestBody,
       });
       data = result.data;
@@ -58,17 +63,18 @@ export const verifyPiAuthentication = async (
       secureLog.info('Primary method failed, trying fallback direct fetch...');
       
       try {
-        const response = await fetch(
-          'https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/verify-pi-auth',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cHdib2N3YXNidHpyenJ4eXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI4MDE2NjUsImV4cCI6MjA1ODM3NzY2NX0.J8yp04TRmdyM_l5FaOFP7Elz16n1ZlQkawH5Xp1vCs0',
-            },
-            body: JSON.stringify(requestBody),
-          }
-        );
+        const fallbackUrl = testMode 
+          ? 'https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/verify-pi-auth?test=true'
+          : 'https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/verify-pi-auth';
+        
+        const response = await fetch(fallbackUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cHdib2N3YXNidHpyenJ4eXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI4MDE2NjUsImV4cCI6MjA1ODM3NzY2NX0.J8yp04TRmdyM_l5FaOFP7Elz16n1ZlQkawH5Xp1vCs0',
+          },
+          body: JSON.stringify(requestBody),
+        });
 
         if (response.ok) {
           data = await response.json();
@@ -119,14 +125,22 @@ export const verifyPiAuthentication = async (
     const result = data as any;
 
     if (result?.verified) {
-      secureLog.info('Pi Network authentication verified successfully');
-      return { verified: true };
+      secureLog.info('Pi Network authentication verified successfully', {
+        hasSupabaseToken: !!result.supabase_token,
+        hasTraceId: !!result.traceId
+      });
+      return { 
+        verified: true,
+        supabaseToken: result.supabase_token ?? null,
+        traceId: result.traceId
+      };
     }
 
     return {
       verified: false,
       error: result.error || 'Verification failed',
       details: result.details || 'Unknown verification error',
+      traceId: result.traceId
     };
 
   } catch (error) {

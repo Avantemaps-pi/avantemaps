@@ -26,7 +26,7 @@ export const DEV_CONFIG = {
   // CRITICAL: Remove this entire config before deploying to production
   bypassAuth: import.meta.env.DEV && import.meta.env.VITE_ALLOW_AUTH_BYPASS !== 'false', // Only bypass in development mode
   mockUser: {
-    uid: "00000000-0000-0000-0000-000000000001", // Valid UUID format
+    uid: "79f9f9a7-a8b8-4724-9f04-51a58c183899", // Match the actual business owner in database
     username: "Developer",
     walletAddress: "dev-wallet-address",
     roles: ["user"],

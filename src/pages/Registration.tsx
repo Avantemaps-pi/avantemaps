@@ -33,8 +33,8 @@ const Registration = () => {
   };
 
   const handleFormSuccess = () => {
-    toast.success("Business registered successfully!");
-    navigate('/');
+    // Navigation is now handled in useBusinessRegistration hook
+    // No need to navigate here as the hook redirects to /registered-business
   };
   
   return (

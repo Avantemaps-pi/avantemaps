@@ -13,16 +13,13 @@ const BusinessVerificationStatus = ({ isCertification = false }: BusinessVerific
   const navigate = useNavigate();
 
   const handleRequestClick = () => {
-    // Navigate to Communicon page
-    navigate('/communicon');
-    
-    // Use setTimeout to ensure the page has loaded before trying to call the function
-    setTimeout(() => {
-      // Access the global function we added to the window object
-      if (window.sendVerificationRequest) {
-        window.sendVerificationRequest(isCertification ? 'certification' : 'verification');
-      }
-    }, 500);
+    // Navigate to Communicon page with verification trigger
+    navigate('/communicon', { 
+      state: { 
+        triggerVerification: true,
+        verificationType: isCertification ? 'certification' : 'verification'
+      } 
+    });
   };
 
   return (

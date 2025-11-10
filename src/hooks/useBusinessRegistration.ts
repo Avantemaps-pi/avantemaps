@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { formSchema, FormValues } from '@/components/business/registration/formSchema';
@@ -13,7 +13,14 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
+  const [piWalletAddress, setPiWalletAddress] = useState(user?.walletAddress || '');
+
+  useEffect(() => {
+    // Update wallet address automatically if user logs in via Pi
+    if (user?.walletAddress) setPiWalletAddress(user.walletAddress);
+  }, [user]);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -31,7 +38,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       country: '',
       businessTypes: [],
       businessDescription: '',
-      piWalletAddress: user?.walletAddress || '',
+      piWalletAddress, // ✅ Automatically filled from Pi user
       mondayOpen: '09:00',
       mondayClose: '17:00',
       mondayClosed: false,
@@ -51,18 +58,18 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       saturdayClose: '16:00',
       saturdayClosed: false,
       sundayOpen: '10:00',
-      sundayClose: '16:00', 
+      sundayClose: '16:00',
       sundayClosed: false,
     },
   });
 
+  // ---------------------------
+  // IMAGE HANDLERS
+  // ---------------------------
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const newImage = e.target.files[0];
-      setSelectedImages(prev => {
-        const updatedImages = [...prev, newImage].slice(0, 3);
-        return updatedImages;
-      });
+      setSelectedImages(prev => [...prev, newImage].slice(0, 3));
     }
   };
 
@@ -70,209 +77,166 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const geocodeAddress = async (address: string): Promise<{ 
-    lat: number; 
-    lng: number;
-    address_components?: {
-      house_number: string;
-      road: string;
-      city: string;
-      state: string;
-      postcode: string;
-      country: string;
-    }
-  } | null> => {
+  // ---------------------------
+  // GEOCODE FUNCTION
+  // ---------------------------
+  const geocodeAddress = async (address: string) => {
     try {
-      // Use our LocationIQ edge function for geocoding
       const { data, error } = await supabase.functions.invoke('geocode-address', {
         body: { address }
       });
-
       if (error) {
         console.error('Error geocoding address:', error);
         return null;
       }
-
-      if (data?.suggestions && data.suggestions.length > 0) {
+      if (data?.suggestions?.length > 0) {
         const firstResult = data.suggestions[0];
-        return {
-          lat: firstResult.lat,
-          lng: firstResult.lon,
-          address_components: firstResult.address
-        };
+        return { lat: firstResult.lat, lng: firstResult.lon, address_components: firstResult.address };
       }
-
       return null;
-    } catch (error) {
-      console.error('Error geocoding address:', error);
+    } catch (err) {
+      console.error('Geocode error:', err);
       return null;
     }
   };
 
+  // ---------------------------
+  // FORM SUBMISSION
+  // ---------------------------
   const onSubmit = async (values: FormValues) => {
     try {
       if (!user?.uid) {
-        toast.error('You must be logged in to register a business.');
+        toast.error('You must be logged in via Pi to register a business.');
         return;
       }
 
-      // Ensure user exists in database before registering business
-      const { data: existingUser, error: userCheckError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', user.uid)
-        .single();
+      // Check business count limit
+      const { count: businessCount } = await supabase
+        .from('businesses')
+        .select('*', { count: 'exact', head: true })
+        .eq('owner_id', user.uid);
 
-      if (userCheckError || !existingUser) {
-        console.error('User not found in database:', userCheckError);
-        toast.error('Your account is not properly set up. Please log out and log back in.');
-        return;
-      }
+      const BUSINESS_LIMITS: Record<string, number> = {
+        'individual': 1,
+        'small-business': 3,
+        'organization': 5,
+      };
 
-      // Validate content for malicious patterns
-      if (containsInappropriateContent(values.businessName)) {
-        toast.error('Business name contains inappropriate content or suspicious patterns.');
-        return;
-      }
+      const limit = BUSINESS_LIMITS[user.subscriptionTier] || 1;
+      const currentCount = businessCount || 0;
 
-      if (values.businessDescription && containsInappropriateContent(values.businessDescription)) {
-        toast.error('Business description contains inappropriate content or suspicious patterns.');
-        return;
-      }
-
-      if (values.website && containsInappropriateContent(values.website)) {
-        toast.error('Website URL contains suspicious patterns.');
+      if (currentCount >= limit) {
+        toast.error(`Business limit reached`, {
+          description: `Your ${user.subscriptionTier} plan allows up to ${limit} business${limit > 1 ? 'es' : ''}. Please upgrade to register more.`,
+          action: { label: "Upgrade Now", onClick: () => navigate('/pricing') }
+        });
         return;
       }
 
       setIsSubmitting(true);
 
-      // Create full address string including the new city and country fields
-      const fullAddress = `${values.streetAddress}${values.apartment ? `, ${values.apartment}` : ''}, ${values.city}, ${values.state}, ${values.zipCode}, ${values.country}`;
-      
-      // Geocode the address
-      const geocodedData = await geocodeAddress(fullAddress);
-      
-      if (!geocodedData) {
-        toast.error('Could not locate address. Please check and try again.');
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // Prepare business data with all submitted information
-      const businessData = {
-        name: values.businessName,
-        owner_id: user?.uid,
-        location: fullAddress,
-        description: values.businessDescription,
-        category: values.businessTypes.length > 0 ? values.businessTypes[0] : 'Other',
-        coordinates: JSON.stringify({
-          lat: geocodedData.lat,
-          lng: geocodedData.lng
-        }),
-        // Enhanced structured address fields
-        street_address: values.streetAddress,
-        city: values.city,
-        state: values.state,
-        postal_code: values.zipCode,
-        country: values.country,
-        contact_info: {
-          phone: values.phone,
-          email: values.email,
-          website: values.website,
-          owner_first_name: values.firstName,
-          owner_last_name: values.lastName,
-        },
-        hours: {
-          monday: values.mondayClosed ? 'Closed' : `${values.mondayOpen}-${values.mondayClose}`,
-          tuesday: values.tuesdayClosed ? 'Closed' : `${values.tuesdayOpen}-${values.tuesdayClose}`,
-          wednesday: values.wednesdayClosed ? 'Closed' : `${values.wednesdayOpen}-${values.wednesdayClose}`,
-          thursday: values.thursdayClosed ? 'Closed' : `${values.thursdayOpen}-${values.thursdayClose}`,
-          friday: values.fridayClosed ? 'Closed' : `${values.fridayOpen}-${values.fridayClose}`,
-          saturday: values.saturdayClosed ? 'Closed' : `${values.saturdayOpen}-${values.saturdayClose}`,
-          sunday: values.sundayClosed ? 'Closed' : `${values.sundayOpen}-${values.sundayClose}`,
-        },
-        business_types: values.businessTypes,
-        pi_wallet_address: values.piWalletAddress,
-        keywords: [...values.businessTypes, values.businessName.split(' ')].flat(),
-      };
-      
-      console.log('Submitting business data:', businessData);
-      
-      // Insert business data into Supabase
-      const { data, error } = await supabase
-        .from('businesses')
-        .insert(businessData)
-        .select();
-        
-      if (error) {
-        console.error('Error submitting business data:', error);
-        toast.error(`Failed to register business: ${error.message}`);
-        setIsSubmitting(false);
-        return;
-      }
-      
-      console.log('Business registered successfully:', data);
+      // Always use latest wallet address from Pi user
+      values.piWalletAddress = piWalletAddress;
 
-      // Handle image uploads if any
-      if (selectedImages.length > 0 && data[0]?.id) {
-        const businessId = data[0].id;
-        
-        // Check if business-images bucket exists
-        const { data: buckets, error: bucketError } = await supabase
-          .storage
-          .listBuckets();
-        
-        const businessBucketExists = buckets?.some(bucket => bucket.name === 'business-images');
-        
-        if (businessBucketExists) {
-          for (let i = 0; i < selectedImages.length; i++) {
-            const image = selectedImages[i];
-            const filePath = `businesses/${businessId}/${Date.now()}-${image.name}`;
+      // ✅ Validation of inappropriate content
+      if (containsInappropriateContent(values.businessName)) {
+        toast.error('Business name contains inappropriate content.');
+        return;
+      }
+      if (values.businessDescription && containsInappropriateContent(values.businessDescription)) {
+        toast.error('Business description contains inappropriate content.');
+        return;
+      }
+
+      // ✅ Geocode address
+      const fullAddress = `${values.streetAddress}${values.apartment ? `, ${values.apartment}` : ''}, ${values.city}, ${values.state}, ${values.zipCode}, ${values.country}`;
+      const geocodedData = await geocodeAddress(fullAddress);
+      if (!geocodedData?.lat || !geocodedData?.lng) {
+        toast.error('Address could not be located.');
+        return;
+      }
+
+      // ✅ Insert business via Edge Function (bypasses RLS with service role)
+      const { data: insertRes, error: insertError } = await supabase.functions.invoke('insert-business', {
+        body: {
+          owner_id: user.uid,
+          businessName: values.businessName,
+          businessDescription: values.businessDescription,
+          businessTypes: values.businessTypes,
+          contact: {
+            firstName: values.firstName,
+            lastName: values.lastName,
+            phone: values.phone,
+            email: values.email,
+            website: values.website,
+          },
+          address: {
+            streetAddress: values.streetAddress,
+            apartment: values.apartment,
+            city: values.city,
+            state: values.state,
+            zipCode: values.zipCode,
+            country: values.country,
+            lat: parseFloat(String(geocodedData.lat)),
+            lng: parseFloat(String(geocodedData.lng)),
+          },
+          piWalletAddress: values.piWalletAddress,
+        },
+      });
+
+      if (insertError || !insertRes?.success || !insertRes?.business) {
+        const errMsg = (insertError as any)?.message || (insertRes as any)?.error || 'Unknown error';
+        toast.error(`Business registration failed: ${errMsg}`);
+        return;
+      }
+
+      const newBusiness = insertRes.business;
+
+      // ✅ Upload business images to storage
+      if (selectedImages.length && newBusiness?.id) {
+        try {
+          const uploadPromises = selectedImages.map(async (file, index) => {
+            const fileExt = file.name.split('.').pop();
+            const filePath = `${newBusiness.id}/image-${index}-${Date.now()}.${fileExt}`;
             
-            try {
-              const { error: uploadError } = await supabase.storage
-                .from('business-images')
-                .upload(filePath, image);
-                
-              if (uploadError) {
-                console.error(`Error uploading image ${i+1}:`, uploadError);
-                toast.warning(`Business registered, but image ${i+1} upload failed.`);
-              }
-            } catch (uploadError) {
-              console.error(`Error uploading image ${i+1}:`, uploadError);
+            const { error: uploadError } = await supabase.storage
+              .from('business-images')
+              .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false
+              });
+            
+            if (uploadError) {
+              console.error('Image upload error:', uploadError);
+              return null;
             }
+            return filePath;
+          });
+
+          const uploadedPaths = await Promise.all(uploadPromises);
+          const successfulUploads = uploadedPaths.filter(path => path !== null);
+          
+          if (successfulUploads.length > 0) {
+            console.log(`✅ Uploaded ${successfulUploads.length} images to storage`);
+            toast.success(`Business registered with ${successfulUploads.length} image(s)!`);
           }
-        } else {
-          console.warn('Business images bucket not found, skipping image upload');
-          toast.warning("Business registered successfully, but image upload is not configured.");
+        } catch (imgErr) {
+          console.error('Image upload process error:', imgErr);
+          toast.warning('Business registered but some images failed to upload');
         }
       }
 
-      toast.success('Business registration submitted successfully!');
-      
+      toast.success('Business registered successfully!');
       if (onSuccess) onSuccess();
-      
-      // Navigate with business data
-      if (geocodedData) {
-        navigate('/', { 
-          state: { 
-            newBusiness: true,
-            businessData: {
-              ...data[0],
-              position: {
-                lat: geocodedData.lat,
-                lng: geocodedData.lng
-              },
-            }
-          } 
-        });
-      } else {
-        navigate('/');
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      toast.error('Failed to register business. Please try again.');
+
+      // Navigate to registered-business page with the new business ID
+      navigate('/registered-business', {
+        state: { newBusinessId: newBusiness.id }
+      });
+
+    } catch (err) {
+      console.error('Registration error:', err);
+      toast.error('Failed to register business.');
     } finally {
       setIsSubmitting(false);
     }
@@ -284,6 +248,6 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
     handleImageUpload,
     handleImageRemove,
     onSubmit,
-    isSubmitting
+    isSubmitting,
   };
 };

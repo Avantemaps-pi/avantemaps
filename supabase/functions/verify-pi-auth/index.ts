@@ -1,9 +1,9 @@
 import { corsHeaders } from '../_shared/cors.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 /**
  * Pi Network Authentication Verification
- * Enhanced with retry logic, better token validation handling,
- * runtime diagnostics, and structured error responses.
+ * with Supabase Auth integration (fixed JWT)
  */
 
 interface VerifyAuthRequest {
@@ -12,74 +12,162 @@ interface VerifyAuthRequest {
   username: string;
 }
 
+// Create Supabase Admin client (Service Role Key)
+const supabaseAdmin = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+);
+
+// Rate limiting tracking
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const MAX_REQUESTS = 10; // 10 requests per minute
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+  
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return { allowed: true };
+  }
+  
+  if (record.count >= MAX_REQUESTS) {
+    return { allowed: false, retryAfter: Math.ceil((record.resetTime - now) / 1000) };
+  }
+  
+  record.count++;
+  return { allowed: true };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   const traceId = crypto.randomUUID();
+  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                   req.headers.get('x-real-ip') || 
+                   'unknown';
 
   try {
-    console.log(`🚀 [${traceId}] verify-pi-auth invoked`);
+    // 🛡️ Rate limiting check
+    const rateLimitCheck = checkRateLimit(clientIP);
+    if (!rateLimitCheck.allowed) {
+      console.warn(`⚠️ [${traceId}] Rate limit exceeded for IP: ${clientIP}`);
+      return new Response(JSON.stringify({
+        verified: false,
+        error: 'Too many requests',
+        details: `Please wait ${rateLimitCheck.retryAfter} seconds before trying again.`,
+        retryAfter: rateLimitCheck.retryAfter,
+        traceId,
+      }), { 
+        status: 429, 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'Retry-After': String(rateLimitCheck.retryAfter)
+        } 
+      });
+    }
 
-    // Parse test mode flag
+    console.log(`🚀 [${traceId}] verify-pi-auth invoked from IP: ${clientIP}`);
+
     const url = new URL(req.url);
-    const testMode = url.searchParams.get('test') === 'true';
+    const isDev = Deno.env.get('ENVIRONMENT') === 'development';
+    const originHeader = req.headers.get('origin') || req.headers.get('referer') || '';
+    const isPreviewOrigin = originHeader.includes('lovableproject.com') || originHeader.includes('lovable.app');
+    const allowTestMode = Deno.env.get('ALLOW_TEST_MODE') === 'true';
+    const testParam = url.searchParams.get('test') === 'true';
+    // Allow test mode on previews or dev when explicitly requested via query OR dev token
+    let testMode = (testParam && (isDev || isPreviewOrigin));
+    
+    console.log(`🔍 [${traceId}] Test mode pre-check:`, {
+      ENVIRONMENT: Deno.env.get('ENVIRONMENT'),
+      isDev,
+      ALLOW_TEST_MODE: Deno.env.get('ALLOW_TEST_MODE'),
+      allowTestMode,
+      isPreviewOrigin,
+      originHeader,
+      testParam,
+      testMode,
+      url: req.url
+    });
 
-    // Parse and validate request body
     const rawBody = await req.text();
-    console.log(`📩 [${traceId}] Raw body (first 150 chars): ${rawBody.substring(0, 150)}`);
-
     let parsedBody: VerifyAuthRequest;
+
     try {
       parsedBody = JSON.parse(rawBody);
     } catch {
-      return new Response(
-        JSON.stringify({
-          verified: false,
-          error: 'Invalid request format',
-          details: 'Body must be valid JSON.',
-          traceId,
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+      return new Response(JSON.stringify({
+        verified: false,
+        error: 'Invalid request format',
+        details: 'Body must be valid JSON.',
+        traceId,
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const { accessToken, uid, username } = parsedBody;
 
+    // If known dev token is used, allow test mode for preview/dev origins even without env flags
+    const tokenLooksDev = accessToken === 'dev-test-token';
+    if (tokenLooksDev && (isDev || isPreviewOrigin)) {
+      testMode = true;
+    }
+    console.log(`🧪 [${traceId}] Test mode post-check:`, { tokenLooksDev, testMode });
+
     if (!accessToken || !uid || !username) {
-      console.warn(`⚠️ [${traceId}] Missing required fields`);
-      return new Response(
-        JSON.stringify({
-          verified: false,
-          error: 'Missing required fields',
-          details: 'accessToken, uid, and username are required.',
-          traceId,
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+      return new Response(JSON.stringify({
+        verified: false,
+        error: 'Missing required fields',
+        details: 'accessToken, uid, and username are required.',
+        traceId,
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // ✅ Bypass if running test mode
-    if (testMode) {
-      console.log(`🧪 [${traceId}] Test mode active – skipping Pi API call.`);
-      return new Response(
-        JSON.stringify({
-          verified: true,
-          testMode: true,
-          message: 'Verification bypassed successfully.',
-          user: { uid, username, wallet_address: 'TEST_WALLET_123' },
-          traceId,
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
+  // ✅ Test mode (development, create Supabase session)
+if (testMode) {
+  console.log(`🧪 [${traceId}] Test mode: Creating Supabase user and JWT`);
 
-    // --- Verify against Pi Network API ---
-    console.log(`🔍 [${traceId}] Verifying token for ${username} (${uid})`);
+  const email = `${username}@pi.local`;
 
-    // --- Fetch user details from Pi API ---
-    // ❌ Removed X-Api-Key header (this caused 401 errors)
+  // Check if user exists
+  const { data: usersList } = await supabaseAdmin.auth.admin.listUsers();
+  const existingUser = usersList?.users.find((u) => u.id === uid);
+
+  if (!existingUser) {
+    await supabaseAdmin.auth.admin.createUser({
+      id: uid,
+      email,
+      email_confirm: true,
+      user_metadata: { username },
+    });
+    console.log(`✅ [${traceId}] Created test Supabase user ${uid}`);
+  }
+
+  // Generate valid JWT token using generateLink
+  const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+  });
+  
+  if (tokenError || !tokenData) {
+    console.error(`❌ [${traceId}] Failed to generate JWT:`, tokenError);
+    throw new Error('Failed to generate test JWT');
+  }
+
+  return new Response(JSON.stringify({
+    verified: true,
+    testMode: true,
+    message: 'Verification bypassed (development mode with session).',
+    user: { uid, username, wallet_address: 'TEST_WALLET_123' },
+    supabase_token: tokenData.properties.access_token, // ✅ Include token for session
+    traceId,
+  }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+}
+
+    // --- Verify token with Pi API ---
     const verifyResponse = await fetch('https://api.minepi.com/v2/me', {
       method: 'GET',
       headers: {
@@ -89,113 +177,73 @@ Deno.serve(async (req: Request) => {
     });
 
     const rawResponse = await verifyResponse.text();
-    console.log(`📡 [${traceId}] Pi API raw response: ${rawResponse}`);
 
-    // --- Handle common API errors ---
     if (!verifyResponse.ok) {
-      console.error(`❌ [${traceId}] Pi API returned ${verifyResponse.status}: ${rawResponse}`);
-
-      if (verifyResponse.status === 401) {
-        // Expired token handling
-        return new Response(
-          JSON.stringify({
-            verified: false,
-            error: 'Invalid or expired access token',
-            details: 'The Pi Network access token has expired or is invalid.',
-            action: 'reauthenticate',
-            traceId,
-          }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        );
-      }
-
-      if (verifyResponse.status >= 500) {
-        // Pi API temporarily down
-        return new Response(
-          JSON.stringify({
-            verified: false,
-            error: 'Pi Network service unavailable',
-            details: 'Pi API responded with a server error. Try again later.',
-            traceId,
-          }),
-          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        );
-      }
-
-      return new Response(
-        JSON.stringify({
-          verified: false,
-          error: 'Verification failed',
-          details: `Unexpected status ${verifyResponse.status} from Pi API.`,
-          traceId,
-        }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    // --- Parse response safely ---
-    let piUserData: any;
-    try {
-      piUserData = JSON.parse(rawResponse);
-    } catch {
-      console.error(`❌ [${traceId}] Failed to parse Pi API JSON`);
-      return new Response(
-        JSON.stringify({
-          verified: false,
-          error: 'Malformed Pi API response',
-          details: 'Unexpected response format from Pi Network API.',
-          traceId,
-        }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    const user = piUserData.user ?? piUserData;
-    console.log(`✅ [${traceId}] Pi API response:`, {
-      uid: user.uid,
-      username: user.username,
-      wallet_address: user.wallet_address ?? 'N/A',
-    });
-
-    // --- Validate user match ---
-    if (user.uid !== uid || user.username !== username) {
-      console.warn(`⚠️ [${traceId}] User mismatch`);
-      return new Response(
-        JSON.stringify({
-          verified: false,
-          error: 'User mismatch',
-          details: 'UID or username does not match token data.',
-          traceId,
-        }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    // --- Successful verification ---
-    console.log(`🎉 [${traceId}] Token verified successfully for ${username}`);
-
-    return new Response(
-      JSON.stringify({
-        verified: true,
-        user: {
-          uid: user.uid,
-          username: user.username,
-          wallet_address: user.wallet_address || null,
-        },
+      return new Response(JSON.stringify({
+        verified: false,
+        error: 'Pi API verification failed',
+        details: rawResponse,
         traceId,
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+      }), { status: verifyResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const piUserData = JSON.parse(rawResponse);
+    const user = piUserData.user ?? piUserData;
+
+    if (user.uid !== uid || user.username !== username) {
+      return new Response(JSON.stringify({
+        verified: false,
+        error: 'User mismatch',
+        details: 'UID or username does not match token data.',
+        traceId,
+      }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // --- Supabase Auth Integration ---
+    const email = `${username}@pi.local`;
+
+    const { data: usersList } = await supabaseAdmin.auth.admin.listUsers();
+    const existingUser = usersList?.users.find((u) => u.id === uid);
+
+    if (!existingUser) {
+      await supabaseAdmin.auth.admin.createUser({
+        id: uid,
+        email,
+        email_confirm: true,
+        user_metadata: { username },
+      });
+      console.log(`✅ [${traceId}] Created new Supabase user ${uid}`);
+    }
+
+    // --- Generate proper JWT with `sub` claim ---
+    const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+    });
+    
+    if (tokenError || !tokenData) {
+      console.error(`❌ [${traceId}] Failed to generate JWT:`, tokenError);
+      throw new Error('Failed to generate JWT token');
+    }
+
+    return new Response(JSON.stringify({
+      verified: true,
+      user: {
+        uid: user.uid,
+        username: user.username,
+        wallet_address: user.wallet_address || null,
+      },
+      supabase_token: tokenData.properties.access_token, // valid token with `sub`
+      traceId,
+    }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
   } catch (err) {
     console.error(`💥 [${traceId}] Internal error:`, err);
-    return new Response(
-      JSON.stringify({
-        verified: false,
-        error: 'Internal server error',
-        details: err instanceof Error ? err.message : 'Unknown runtime error.',
-        traceId,
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+    return new Response(JSON.stringify({
+      verified: false,
+      error: 'Internal server error',
+      details: err instanceof Error ? err.message : 'Unknown runtime error.',
+      traceId,
+    }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Tabs } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -11,12 +10,9 @@ import { Loader2 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/auth';
 import { toast } from 'sonner';
+import { PiAuthButton } from './registration/PiAuthButton'; // ✅ Added
 
-interface BusinessRegistrationFormProps {
-  onSuccess?: () => void;
-}
-
-const BusinessRegistrationForm = ({ onSuccess }: BusinessRegistrationFormProps) => {
+const BusinessRegistrationForm = ({ onSuccess }: { onSuccess?: () => void }) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -30,26 +26,29 @@ const BusinessRegistrationForm = ({ onSuccess }: BusinessRegistrationFormProps) 
   } = useBusinessRegistration(onSuccess);
   const [selectedTab, setSelectedTab] = React.useState('business-owner');
 
-  // Check if user is able to register more businesses based on subscription
   React.useEffect(() => {
-    // This is a placeholder - the actual businessCount check should come from 
-    // the useBusinessRegistration hook or another source
     const businessCount = user?.businessCount || 0;
-    
     if (businessCount > 0 && user?.subscriptionTier === 'individual') {
-      toast.error(
-        "Upgrade Required", 
-        {
-          description: "Multiple business registrations require a Business subscription. Please upgrade to continue.",
-          action: {
-            label: "Upgrade Now",
-            onClick: () => navigate('/pricing')
-          }
-        }
-      );
+      toast.error("Upgrade Required", {
+        description: "Multiple business registrations require a Business subscription. Please upgrade to continue.",
+        action: { label: "Upgrade Now", onClick: () => navigate('/pricing') }
+      });
       navigate('/registered-business');
     }
   }, [user, navigate]);
+
+  // ✅ Require Pi auth before showing the form
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <h2 className="text-lg font-semibold mb-2">Sign in with Pi Network</h2>
+        <p className="text-muted-foreground mb-6 text-center max-w-md">
+          Please sign in with your Pi Network account before registering a business.
+        </p>
+        <PiAuthButton />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full py-2 min-h-[600px]">
@@ -61,11 +60,7 @@ const BusinessRegistrationForm = ({ onSuccess }: BusinessRegistrationFormProps) 
 
       <FormContainer form={form} onSubmit={onSubmit} isSubmitting={isSubmitting}>
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-          <TabNavigation 
-            isMobile={isMobile} 
-            disabled={isSubmitting}
-          />
-
+          <TabNavigation isMobile={isMobile} disabled={isSubmitting} />
           <TabContent
             selectedImages={selectedImages}
             handleImageUpload={handleImageUpload}
@@ -75,7 +70,7 @@ const BusinessRegistrationForm = ({ onSuccess }: BusinessRegistrationFormProps) 
           />
         </Tabs>
       </FormContainer>
-      
+
       {isSubmitting && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-card p-6 rounded-lg shadow-lg flex flex-col items-center space-y-4">

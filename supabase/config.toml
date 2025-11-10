@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.pinet-meta]
 verify_jwt = false
+
+[functions.list-user-businesses]
+verify_jwt = false

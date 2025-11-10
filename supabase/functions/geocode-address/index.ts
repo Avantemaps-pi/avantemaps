@@ -1,212 +1,123 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
-const corsHeaders = {
+const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  'Content-Type': 'application/json'
+};
 
-// Rate limiting map (in-memory, resets on cold start)
+// Rate limiting
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 10;
+const RATE_LIMIT_WINDOW = 60_000; // 1 min
+const RATE_LIMIT_MAX = 10;
 
-// Input validation
-const validateAddress = (address: string): { valid: boolean; error?: string } => {
-  // Check if address exists
-  if (!address || typeof address !== 'string') {
-    return { valid: false, error: 'Address is required and must be a string' };
-  }
+type AddressValidation = { valid: boolean; error?: string };
+type Suggestion = {
+  display_name: string;
+  lat: number;
+  lon: number;
+  address: {
+    house_number: string;
+    road: string;
+    city: string;
+    state: string;
+    postcode: string;
+    country: string;
+  };
+};
 
-  // Trim and check length
+// --- Utilities ---
+const validateAddress = (address: string): AddressValidation => {
+  if (!address || typeof address !== 'string') return { valid: false, error: 'Address required' };
   const trimmed = address.trim();
-  if (trimmed.length < 3) {
-    return { valid: false, error: 'Address must be at least 3 characters' };
+  if (trimmed.length < 3) return { valid: false, error: 'Address must be at least 3 characters' };
+  if (trimmed.length > 500) return { valid: false, error: 'Address too long' };
+  if (/(<script|javascript:)/i.test(trimmed)) return { valid: false, error: 'Invalid characters in address' };
+  if (/(\bSELECT\b|\bINSERT\b|\bUPDATE\b|\bDELETE\b|\bDROP\b|\bUNION\b|;|--|\/\*|\*\/|xp_|sp_)/i.test(trimmed)) {
+    return { valid: false, error: 'Suspicious characters in address' };
   }
-
-  if (trimmed.length > 500) {
-    return { valid: false, error: 'Address must be less than 500 characters' };
-  }
-
-  // Check for SQL injection patterns
-  const sqlPatterns = [
-    /(\bSELECT\b|\bINSERT\b|\bUPDATE\b|\bDELETE\b|\bDROP\b|\bUNION\b)/i,
-    /(;|\-\-|\/\*|\*\/|xp_|sp_)/i,
-  ];
-
-  for (const pattern of sqlPatterns) {
-    if (pattern.test(trimmed)) {
-      return { valid: false, error: 'Invalid characters in address' };
-    }
-  }
-
-  // Check for script injection
-  if (/<script|javascript:/i.test(trimmed)) {
-    return { valid: false, error: 'Invalid characters in address' };
-  }
-
   return { valid: true };
 };
 
-// Rate limiting function
-const checkRateLimit = (identifier: string): { allowed: boolean; error?: string } => {
+const checkRateLimit = (id: string) => {
   const now = Date.now();
-  const userLimit = rateLimitMap.get(identifier);
-
-  if (!userLimit || now > userLimit.resetAt) {
-    // Create new rate limit window
-    rateLimitMap.set(identifier, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+  const entry = rateLimitMap.get(id);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(id, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
     return { allowed: true };
   }
-
-  if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
-    return { 
-      allowed: false, 
-      error: 'Rate limit exceeded. Please try again in a minute.' 
-    };
-  }
-
-  // Increment count
-  userLimit.count++;
+  if (entry.count >= RATE_LIMIT_MAX) return { allowed: false, error: 'Rate limit exceeded' };
+  entry.count++;
   return { allowed: true };
 };
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const getUserFromToken = async (token: string) => {
   try {
-    // Require authentication
-    const authHeader = req.headers.get('authorization');
-    
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Authentication required',
-          message: 'Please log in to use the geocoding service.'
-        }),
-        { 
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    const token = authHeader.substring(7);
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Authentication required',
-          message: 'Invalid or expired authentication token.'
-        }),
-        { 
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    // Check rate limit using authenticated user ID
-    const rateLimitCheck = checkRateLimit(user.id);
-    if (!rateLimitCheck.allowed) {
-      console.warn(`Rate limit exceeded for user: ${user.id.substring(0, 8)}...`);
-      return new Response(
-        JSON.stringify({ error: rateLimitCheck.error }),
-        { 
-          status: 429, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    // Parse and validate input
-    const { address } = await req.json();
-    
-    const validation = validateAddress(address);
-    if (!validation.valid) {
-      console.warn(`Invalid address input: ${validation.error}`);
-      return new Response(
-        JSON.stringify({ error: validation.error }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    const sanitizedAddress = address.trim();
-    const locationiqToken = Deno.env.get('LOCATIONIQ_TOKEN');
-    
-    if (!locationiqToken) {
-      console.error('LOCATIONIQ_TOKEN not configured');
-      return new Response(
-        JSON.stringify({ error: 'Service temporarily unavailable' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    // Use LocationIQ global autocomplete API endpoint
-    const url = `https://api.locationiq.com/v1/autocomplete?key=${locationiqToken}&q=${encodeURIComponent(sanitizedAddress)}&format=json&limit=5`;
-    
-    console.log(`Geocoding request for user ${user.id.substring(0, 8)}... (length: ${sanitizedAddress.length})`);
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      console.error(`LocationIQ API error: ${response.status}`);
-      return new Response(
-        JSON.stringify({ error: 'Service temporarily unavailable' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-    
-    const data = await response.json();
-    console.log(`LocationIQ returned ${data.length} suggestions`);
-    
-    // Transform the response to match our expected format
-    const suggestions = data.map((item: any) => ({
-      display_name: item.display_name,
-      lat: parseFloat(item.lat),
-      lon: parseFloat(item.lon),
-      address: {
-        house_number: item.address?.house_number || '',
-        road: item.address?.road || '',
-        city: item.address?.city || item.address?.town || item.address?.village || '',
-        state: item.address?.state || item.address?.state_district || '',
-        postcode: item.address?.postcode || '',
-        country: item.address?.country || ''
-      }
-    }));
-
-    return new Response(
-      JSON.stringify({ suggestions }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-
-  } catch (error) {
-    console.error('Geocoding error:', error instanceof Error ? error.message : 'Unknown error');
-    return new Response(
-      JSON.stringify({ error: 'Service temporarily unavailable' }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) return null;
+    return user;
+  } catch {
+    return null;
   }
-})
+};
+
+const fetchLocationIQSuggestions = async (query: string): Promise<Suggestion[]> => {
+  const token = Deno.env.get('LOCATIONIQ_TOKEN');
+  if (!token) throw new Error('LocationIQ token not configured');
+
+  const url = `https://api.locationiq.com/v1/autocomplete?key=${token}&q=${encodeURIComponent(query)}&format=json&limit=5`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('LocationIQ API error');
+  const data = await res.json();
+
+  return data.map((item: any) => ({
+    display_name: item.display_name,
+    lat: parseFloat(item.lat),
+    lon: parseFloat(item.lon),
+    address: {
+      house_number: item.address?.house_number || '',
+      road: item.address?.road || '',
+      city: item.address?.city || item.address?.town || item.address?.village || '',
+      state: item.address?.state || item.address?.state_district || '',
+      postcode: item.address?.postcode || '',
+      country: item.address?.country || ''
+    }
+  }));
+};
+
+// --- Main handler ---
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS });
+
+  try {
+    // Try to get user from token, but allow unauthenticated requests
+    let rateLimitKey = 'anon';
+    const authHeader = req.headers.get('authorization');
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const user = await getUserFromToken(token);
+      if (user) {
+        rateLimitKey = user.id;
+      }
+    }
+
+    const rateCheck = checkRateLimit(rateLimitKey);
+    if (!rateCheck.allowed) return new Response(JSON.stringify({ error: rateCheck.error }), { status: 429, headers: CORS_HEADERS });
+
+    const { address } = await req.json();
+    const validation = validateAddress(address);
+    if (!validation.valid) return new Response(JSON.stringify({ error: validation.error }), { status: 400, headers: CORS_HEADERS });
+
+    const suggestions = await fetchLocationIQSuggestions(address.trim());
+
+    return new Response(JSON.stringify({ suggestions }), { headers: CORS_HEADERS });
+  } catch (err: any) {
+    console.error(err);
+    return new Response(JSON.stringify({ error: 'Service temporarily unavailable' }), { status: 500, headers: CORS_HEADERS });
+  }
+});

@@ -60,29 +60,63 @@ export const useBusinessBookmarks = () => {
     try {
       setIsLoading(true);
       
-      const { error } = await supabase
+      // Check if already bookmarked
+      if (bookmarks.includes(businessId)) {
+        toast.info('Business is already bookmarked');
+        return true;
+      }
+      
+      const businessIdInt = parseInt(businessId);
+      if (isNaN(businessIdInt)) {
+        console.error('Invalid business ID:', businessId);
+        toast.error('Invalid business ID');
+        return false;
+      }
+
+      console.log('📌 Adding bookmark:', { userId: user.uid, businessId: businessIdInt });
+      
+      // First verify the business exists
+      const { data: businessCheck, error: businessError } = await supabase
+        .from('businesses')
+        .select('id')
+        .eq('id', businessIdInt)
+        .single();
+
+      if (businessError || !businessCheck) {
+        console.error('Business not found:', businessError);
+        toast.error('Business not found');
+        return false;
+      }
+      
+      const { data, error } = await supabase
         .from('bookmarks')
         .insert({
           user_id: user.uid,
-          business_id: parseInt(businessId),
-        });
+          business_id: businessIdInt,
+        })
+        .select();
 
       if (error) {
-        throw error;
+        console.error('❌ Bookmark insert error:', error);
+        console.error('Error details:', { code: error.code, message: error.message, hint: error.hint });
+        toast.error(`Failed to add bookmark: ${error.message}`);
+        return false;
       }
 
+      console.log('✅ Bookmark added successfully:', data);
+      
       // Update local state
       setBookmarks(prev => [...prev, businessId]);
       toast.success('Business added to your bookmarks');
       return true;
     } catch (error) {
-      console.error('Error adding bookmark:', error);
+      console.error('❌ Error adding bookmark:', error);
       toast.error('Failed to add bookmark');
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, bookmarks]);
 
   // Remove a bookmark
   const removeBookmark = useCallback(async (businessId: string) => {

@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
           url: `${baseUrl}/recommendations`
         },
         twitter: {
-          ...metadata.twitter,
+          card: metadata.twitter?.card || 'summary_large_image',
           title: 'Business Recommendations - Avante Maps',
           description: 'Discover top-rated local businesses'
         }
@@ -154,9 +154,9 @@ Deno.serve(async (req) => {
         title: 'Business Analytics - Avante Maps',
         description: 'Track your business performance with detailed analytics. Monitor views, engagement, and customer interactions.',
         og: {
-          ...metadata.og,
           type: 'website',
           title: 'Business Analytics Dashboard',
+          description: metadata.og?.description || 'Track your business performance',
           url: `${baseUrl}/analytics`
         }
       };

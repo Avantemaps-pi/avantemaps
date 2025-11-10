@@ -23,7 +23,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ text, sender, timestamp }) =>
         }`}
       >
         <p>{text}</p>
-        <p className="text-xs mt-1 opacity-70">{timestamp}</p>
+        <p className={`text-xs mt-1 ${sender === 'user' ? 'opacity-80' : 'opacity-70'}`}>{timestamp}</p>
       </div>
     </div>
   );

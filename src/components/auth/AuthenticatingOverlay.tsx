@@ -34,7 +34,7 @@ const AuthenticatingOverlay: React.FC = () => {
     >
       <Shield className="h-16 w-16 text-white animate-pulse mb-6" />
       <h2 className="text-2xl font-semibold text-white mb-4">
-        {isLoading ? 'Authenticating' : 'Success!'}
+        Authenticating...
       </h2>
       <div className="flex items-center gap-3">
         <Loader2 className="h-5 w-5 animate-spin text-white" />

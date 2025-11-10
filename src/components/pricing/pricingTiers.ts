@@ -11,7 +11,7 @@ export const TIERS: PricingTier[] = [
       yearly: "0"
     },
     features: [
-      "1 business listing",
+      "Up to 1 business listing",
     ],
     cta: "Get Started Free",
   },
@@ -24,7 +24,7 @@ export const TIERS: PricingTier[] = [
       yearly: "95.90"
     },
     features: [
-      "1 - 3 Business listings", 
+      "Up to 3 business listings", 
       "All Individual features",
       "Highlighted business profile",
       "Business analytics",
@@ -44,7 +44,7 @@ export const TIERS: PricingTier[] = [
       yearly: "199.90"
     },
     features: [
-      "1 - 5 Business listings", 
+      "Up to 5 business listings", 
       "All Small Business features",
       "Multiple business locations",
       "Advanced analytics",
