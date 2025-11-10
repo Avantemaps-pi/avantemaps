@@ -46,8 +46,14 @@ const isProduction = (): boolean => {
  * ONLY works in local development (npm run dev).
  */
 export const shouldBypassAuth = (): boolean => {
-  // Only bypass in true local dev mode
-  if (!import.meta.env.DEV) {
+  // Triple-check: NEVER bypass in production
+  const isLocalDev = import.meta.env.DEV === true;
+  const isDevelopment = import.meta.env.MODE === 'development';
+  const isLocalhost = typeof window !== 'undefined' && 
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  
+  // All conditions must be true for bypass to work
+  if (!isLocalDev || !isDevelopment || !isLocalhost) {
     return false;
   }
 
