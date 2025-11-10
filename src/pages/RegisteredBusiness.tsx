@@ -91,38 +91,20 @@ const RegisteredBusiness = () => {
           return;
         }
 
-        // ✅ Use the secure Supabase Edge Function instead of direct query
-console.log('📡 Calling list-user-businesses for user:', sessionUserId);
+        // Use direct Supabase query with RLS (most secure approach)
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('owner_id', sessionUserId)
+          .order('created_at', { ascending: false });
 
-const { data: sessionResp } = await supabase.auth.getSession();
-const accessToken = sessionResp?.session?.access_token;
+        if (error) {
+          console.error('❌ Error fetching businesses:', error);
+          throw error;
+        }
 
-if (!accessToken) {
-  throw new Error('No access token available — user not authenticated');
-}
-
-const response = await fetch(
-  'https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/list-user-businesses',
-  {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ owner_id: sessionUserId }),
-  }
-);
-
-const result = await response.json();
-console.log('📦 list-user-businesses response:', result);
-
-if (!result.success) {
-  console.error('❌ Failed to fetch businesses:', result.error);
-  throw new Error(result.error || 'Unknown error fetching businesses');
-}
-
-const rows = result.businesses ?? [];
-console.log('✅ Businesses fetched from Edge Function:', rows.length);
+        const rows = data ?? [];
+        console.log('✅ Businesses fetched:', rows.length, 'businesses');
 
         // ✅ SECURITY: Runtime validation - filter out any businesses not owned by user
         const validRows = rows.filter((b: any) => {
@@ -189,7 +171,7 @@ console.log('✅ Businesses fetched from Edge Function:', rows.length);
       console.log('🔒 User not authenticated, skipping business fetch');
       setIsLoading(false);
     }
-  }, [user?.uid, isAuthenticated, refreshUserData, login]);
+  }, [user?.uid, isAuthenticated]);
 
   // Filter businesses by selected business ID - default to showing all
   const filteredBusinesses = selectedBusinessId === 'all'
