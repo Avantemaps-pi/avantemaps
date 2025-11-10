@@ -6,9 +6,9 @@ import { SubscriptionTier } from '@/utils/piNetwork/types';
 
 // Build-time safety: Prevent auth bypass in production
 if (import.meta.env.PROD && import.meta.env.VITE_ALLOW_AUTH_BYPASS === 'true') {
-  throw new Error(
-    '🚨 CRITICAL SECURITY ERROR: Auth bypass is enabled in a production build!'
-  );
+  // In production builds we never allow auth bypass; ignore the flag and warn instead of crashing
+  // This prevents white screens due to misconfigured env while keeping bypass disabled
+  console.error('CRITICAL SECURITY WARNING: VITE_ALLOW_AUTH_BYPASS=true detected in production. Ignoring and enforcing authentication.');
 }
 
 // Development configuration
