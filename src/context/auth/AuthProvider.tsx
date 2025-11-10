@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { initializePiNetwork, isPiBrowser } from '@/utils/piNetwork';
+import { initializePiNetwork } from '@/utils/piNetwork';
 import { PiUser, AuthContextType, STORAGE_KEY } from './types';
 import { checkAccess } from './authUtils';
 import { performLogin, refreshUserData as refreshUserDataService, requestAuthPermissions } from './authService';
@@ -44,10 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const safeSetAppReady = useCallback((ready: boolean) => {
-    if (isMountedRef.current) {
-      console.log('🚀 Setting appReady to:', ready);
-      setAppReady(ready);
-    }
+    if (isMountedRef.current) setAppReady(ready);
   }, []);
 
   // ✅ Lifecycle cleanup
@@ -196,11 +193,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initSdk = async () => {
       try {
         secureLog.info('Starting Pi Network SDK initialization...');
-        if (!isPiBrowser()) {
-          secureLog.info('Skipping Pi SDK initialization (not Pi Browser)');
-          safeSetIsSdkInitialized(false);
-          return;
-        }
         const result = await initializePiNetwork();
         safeSetIsSdkInitialized(result);
         secureLog.info('Pi Network SDK initialization complete:', result);
@@ -253,14 +245,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (pendingAuthRef.current) {
       toast.info('Authentication in progress, please wait...');
-      return;
-    }
-
-    // ✅ Require Pi Browser for real authentication
-    if (!isPiBrowser()) {
-      toast.error('Please open this app in Pi Browser to log in.');
-      safeSetAppReady(true);
-      safeSetIsLoading(false);
       return;
     }
 
@@ -317,12 +301,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (!isSdkInitialized) {
       try {
-        if (!isPiBrowser()) {
-          secureLog.info('Skipping SDK init during refresh (not Pi Browser)');
-        } else {
-          const result = await initializePiNetwork();
-          safeSetIsSdkInitialized(result);
-        }
+        const result = await initializePiNetwork();
+        safeSetIsSdkInitialized(result);
       } catch (error) {
         console.error('Failed to init SDK during refresh:', error);
         return;

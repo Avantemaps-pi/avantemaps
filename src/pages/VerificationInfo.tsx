@@ -57,7 +57,7 @@ const VerificationInfo = () => {
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Shield className="h-6 w-6 text-blue-500" />
-                  <CardTitle className="text-xl">Certification</CardTitle><span className="text-lg">(Free)</span>
+                  <span className="text-lg">(Free)</span>
                 </div>
                 <CardDescription>
                   Proof of Business Legitimacy

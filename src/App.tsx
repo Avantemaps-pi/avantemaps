@@ -31,7 +31,7 @@ import VerificationInfo from "./pages/VerificationInfo";
 import Review from "./pages/Review";
 import Pricing from "./pages/Pricing";
 import Analytics from "./pages/Analytics";
-import { initializePiNetwork, isPiBrowser } from "./utils/piNetwork";
+import { initializePiNetwork } from "./utils/piNetwork";
 // Removed incomplete payments check - handled automatically by Pi Network flow
 
 const queryClient = new QueryClient();
@@ -46,31 +46,13 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Ensure loading screen doesn't get stuck
-    const timer = setTimeout(() => {
-      console.log('✅ Initial loading complete');
-      setIsLoading(false);
-    }, 2000);
-    
-    // Safety fallback in case something blocks the timer
-    const fallbackTimer = setTimeout(() => {
-      console.warn('⚠️ Safety fallback: forcing loading to false');
-      setIsLoading(false);
-    }, 5000);
-    
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(fallbackTimer);
-    };
+    const timer = setTimeout(() => setIsLoading(false), 2000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     const initPiSdk = async () => {
       if (typeof window === "undefined") return;
-      if (!isPiBrowser()) {
-        console.warn("Pi SDK init skipped — not Pi Browser");
-        return;
-      }
       if (window.Pi) {
         console.log("✅ Pi SDK already loaded.");
         return;
@@ -122,8 +104,8 @@ const App = () => {
         zIndex: 9999,
       }}>
         <img
-          src="/lovable-uploads/Avante-Maps-icon.svg"
-          alt="Avante Maps logo loading"
+          src="/lovable-uploads/Avante Maps ICON (2).png"
+          alt="Loading..."
           style={{
             width: '150px',
             height: '150px',
