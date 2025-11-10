@@ -6,9 +6,10 @@ import { shouldBypassAuth } from '@/config/environment';
 const AuthenticatingOverlay: React.FC = () => {
   const { isLoading, appReady } = useAuth();
   const [progress, setProgress] = useState(0);
+  const [forceHide, setForceHide] = useState(false);
 
   // Compute visibility first but do not early-return before hooks are declared
-  const hideOverlay = shouldBypassAuth() || (appReady && !isLoading);
+  const hideOverlay = shouldBypassAuth() || (appReady && !isLoading) || forceHide;
 
   // Simulate progress for better UX
   useEffect(() => {
@@ -20,6 +21,16 @@ const AuthenticatingOverlay: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [isLoading]);
+
+  // Safety timeout: force hide overlay after 10 seconds
+  useEffect(() => {
+    const safetyTimeout = setTimeout(() => {
+      console.warn('⚠️ AuthenticatingOverlay safety timeout - forcing hide');
+      setForceHide(true);
+    }, 10000);
+    
+    return () => clearTimeout(safetyTimeout);
+  }, []);
 
   if (hideOverlay) {
     return null;
