@@ -27,7 +27,7 @@ export const DEV_CONFIG = {
   bypassAuth: import.meta.env.DEV && import.meta.env.VITE_ALLOW_AUTH_BYPASS !== 'false', // Only bypass in development mode
   mockUser: {
     uid: "79f9f9a7-a8b8-4724-9f04-51a58c183899", // Match the actual business owner in database
-    username: "Developer",
+    username: "JordynDaniel", // Fixed: Must match the username for this uid in database
     walletAddress: "dev-wallet-address",
     roles: ["user"],
     accessToken: "dev-access-token",

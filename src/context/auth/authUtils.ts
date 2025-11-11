@@ -15,6 +15,12 @@ export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) =
 
     if (error) {
       console.error("Error updating user in Supabase:", error);
+      // Show user-friendly error notification
+      const { toast } = await import('sonner');
+      toast.error('Failed to sync user profile', {
+        description: 'Your profile data may not be up to date. Please try logging in again.'
+      });
+      return; // Don't update localStorage if Supabase update failed
     }
 
     // Save to localStorage
