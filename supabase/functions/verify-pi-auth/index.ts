@@ -141,7 +141,7 @@ if (testMode) {
       id: uid,
       email,
       email_confirm: true,
-      user_metadata: { username },
+      user_metadata: { username, full_name: username },
     });
     console.log(`✅ [${traceId}] Created test Supabase user ${uid}`);
   }
@@ -210,7 +210,7 @@ if (testMode) {
         id: uid,
         email,
         email_confirm: true,
-        user_metadata: { username },
+        user_metadata: { username, full_name: username },
       });
       console.log(`✅ [${traceId}] Created new Supabase user ${uid}`);
     }
