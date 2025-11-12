@@ -62,25 +62,37 @@ export function PricingCard({
         </div>
         
         <div className="flex flex-col gap-1">
-          <div className="flex items-baseline">
-            {!isCustom && <span className="text-3xl text-gray-900">$</span>}
-            <span className="text-5xl font-bold tracking-tight text-gray-900">
-              {price}
-            </span>
-            {!isCustom && (
-              <span className="ml-1 text-base font-normal text-gray-500">
+          {piPrice ? (
+            <div className="flex items-baseline flex-wrap gap-2">
+              <div className="flex items-baseline">
+                <span className="text-3xl text-gray-900">π</span>
+                <span className="text-5xl font-bold tracking-tight text-gray-900 ml-1">
+                  {piPrice}
+                </span>
+                <span className="ml-1 text-base font-normal text-gray-500">
+                  Pi
+                </span>
+              </div>
+              {!isCustom && (
+                <span className="text-2xl font-medium text-gray-600">
+                  (${price} USD)
+                </span>
+              )}
+              <span className="text-base font-normal text-gray-500">
                 / {paymentFrequency}
               </span>
-            )}
-          </div>
-          {piPrice && (
-            <div className="flex items-baseline text-gray-600">
-              <span className="text-xl">π</span>
-              <span className="text-2xl font-medium ml-1">{piPrice}</span>
-              <span className="ml-1 text-sm font-medium text-gray-600">Pi</span>
-              <span className="ml-1 text-sm">
-                / {paymentFrequency}
+            </div>
+          ) : (
+            <div className="flex items-baseline">
+              {!isCustom && <span className="text-3xl text-gray-900">$</span>}
+              <span className="text-5xl font-bold tracking-tight text-gray-900">
+                {price}
               </span>
+              {!isCustom && (
+                <span className="ml-1 text-base font-normal text-gray-500">
+                  / {paymentFrequency}
+                </span>
+              )}
             </div>
           )}
         </div>
