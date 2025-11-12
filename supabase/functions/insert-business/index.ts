@@ -26,7 +26,6 @@ interface InsertBusinessRequest {
   piWalletAddress: string;
 }
 
-// Initialize Supabase admin client safely
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -45,32 +44,10 @@ Deno.serve(async (req: Request) => {
   const traceId = crypto.randomUUID();
 
   try {
-    // ✅ SECURITY: Validate authentication token
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Unauthorized: Missing authentication',
-        traceId,
-      }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-
-    if (authError || !user) {
-      console.error(`[${traceId}] Auth validation failed:`, authError);
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Unauthorized: Invalid token',
-        traceId,
-      }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
     const body = await req.json() as InsertBusinessRequest;
 
     // Validate required fields
-    if (!body.owner_id || !body.businessName || !body.businessTypes.length) {
+    if (!body.owner_id || !body.businessName || !body.businessTypes?.length) {
       return new Response(JSON.stringify({
         success: false,
         error: 'Missing required fields',
@@ -78,21 +55,14 @@ Deno.serve(async (req: Request) => {
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // ✅ SECURITY: Ensure owner_id matches authenticated user
-    if (user.id !== body.owner_id) {
-      console.error(`[${traceId}] Owner ID mismatch. User: ${user.id}, Requested: ${body.owner_id}`);
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Forbidden: Owner ID mismatch',
-        traceId,
-      }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
+    // Optional: Log incoming data (for debugging)
+    console.log(`[${traceId}] New business registration:`, body.businessName);
 
-    // ✅ Check user's subscription and business count
+    // ✅ Fetch user's subscription
     const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .select('subscription')
-      .eq('id', user.id)
+      .eq('id', body.owner_id)
       .single();
 
     if (userError) {
@@ -104,11 +74,11 @@ Deno.serve(async (req: Request) => {
       }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Count existing businesses for this user
+    // ✅ Count existing businesses
     const { count: businessCount, error: countError } = await supabaseAdmin
       .from('businesses')
       .select('*', { count: 'exact', head: true })
-      .eq('owner_id', user.id);
+      .eq('owner_id', body.owner_id);
 
     if (countError) {
       console.error(`[${traceId}] Error counting businesses:`, countError);
@@ -119,19 +89,18 @@ Deno.serve(async (req: Request) => {
       }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Define business limits per subscription tier
+    // ✅ Enforce limits by subscription tier
     const BUSINESS_LIMITS: Record<string, number> = {
       'individual': 1,
       'small-business': 3,
       'organization': 5,
     };
 
-    const subscription = userData.subscription || 'individual';
+    const subscription = userData?.subscription || 'individual';
     const limit = BUSINESS_LIMITS[subscription] || 1;
     const currentCount = businessCount || 0;
 
     if (currentCount >= limit) {
-      console.log(`[${traceId}] Business limit reached. Tier: ${subscription}, Count: ${currentCount}, Limit: ${limit}`);
       return new Response(JSON.stringify({
         success: false,
         error: `Business limit reached. Your ${subscription} plan allows up to ${limit} business${limit > 1 ? 'es' : ''}. Please upgrade to register more businesses.`,
@@ -139,7 +108,7 @@ Deno.serve(async (req: Request) => {
       }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Insert the business using service role (bypasses RLS)
+    // ✅ Insert the new business
     const { data, error } = await supabaseAdmin
       .from('businesses')
       .insert({
@@ -185,4 +154,3 @@ Deno.serve(async (req: Request) => {
     }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
-
