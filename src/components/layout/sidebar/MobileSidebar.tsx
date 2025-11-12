@@ -52,12 +52,13 @@ const MobileSidebar = ({
   
   const planType = formatPlanType(user?.subscriptionTier);
 
-  const handleAuthAction = () => {
-    if (isAuthenticated) {
-      logout();
-    } else {
-      login();
-    }
+  const handleLogin = () => {
+    login();
+    onClose();
+  };
+  
+  const handleLogout = () => {
+    logout();
     onClose();
   };
 
@@ -126,17 +127,14 @@ const MobileSidebar = ({
           </div>
           
           <div className="flex-1 overflow-y-auto py-4">
-            <div className="px-2 mb-4">
-              <Button onClick={handleAuthAction} disabled={isLoading} className={cn("w-full flex items-center", isAuthenticated ? "bg-white hover:bg-gray-100 border border-red-500 text-red-500" : "bg-blue-500 hover:bg-blue-600 text-white")}>
-                {isAuthenticated ? <>
-                    <LogOut className="h-4 w-4 mr-2 text-red-500" />
-                    Logout
-                  </> : <>
-                    <LogIn className="h-4 w-4 mr-2" />
-                    {isLoading ? "Authenticating..." : "Login with Pi Network"}
-                  </>}
-              </Button>
-            </div>
+            {!isAuthenticated && (
+              <div className="px-2 mb-4">
+                <Button onClick={handleLogin} disabled={isLoading} className="w-full flex items-center bg-blue-500 hover:bg-blue-600 text-white">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  {isLoading ? "Authenticating..." : "Login with Pi Network"}
+                </Button>
+              </div>
+            )}
             
             <nav>
               <ul className="space-y-1 px-2">
@@ -149,6 +147,14 @@ const MobileSidebar = ({
               <ul className="space-y-1">
                 {legalItems.map(item => <NavItem key={item.to} to={item.to} icon={item.icon} label={item.label} isActive={currentPath === item.to} onClick={onLinkClick} />)}
               </ul>
+              {isAuthenticated && (
+                <div className="mt-4">
+                  <Button onClick={handleLogout} disabled={isLoading} className="w-full bg-white hover:bg-gray-100 border border-red-500 text-red-500">
+                    <LogOut className="h-4 w-4 mr-2 text-red-500" />
+                    Logout
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
           

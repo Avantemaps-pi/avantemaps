@@ -36,12 +36,14 @@ const DesktopSidebar = ({
     logout,
     isLoading
   } = useAuth();
-  const handleAuthAction = () => {
-    if (isAuthenticated) {
-      logout();
-    } else {
-      login();
-    }
+  
+  const handleLogin = () => {
+    login();
+    onLinkClick();
+  };
+  
+  const handleLogout = () => {
+    logout();
     onLinkClick();
   };
   return <Sidebar className={cn("hidden md:flex", className)}>
@@ -57,17 +59,14 @@ const DesktopSidebar = ({
 
       <SidebarContent>
         <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-8">
-          <div className="mb-2">
-            <Button onClick={handleAuthAction} disabled={isLoading} className={cn("w-full", isAuthenticated ? "bg-white hover:bg-gray-100 border border-red-500 text-red-500" : "bg-blue-500 hover:bg-blue-600 text-white")}>
-              {isAuthenticated ? <>
-                  <LogOut className="h-4 w-4 mr-2 text-red-500" />
-                  Logout
-                </> : <>
-                  <LogIn className="h-4 w-4 mr-2" />
-                  {isLoading ? "Authenticating..." : "Login with Pi Network"}
-                </>}
-            </Button>
-          </div>
+          {!isAuthenticated && (
+            <div className="mb-2">
+              <Button onClick={handleLogin} disabled={isLoading} className="w-full bg-blue-500 hover:bg-blue-600 text-white">
+                <LogIn className="h-4 w-4 mr-2" />
+                {isLoading ? "Authenticating..." : "Login with Pi Network"}
+              </Button>
+            </div>
+          )}
 
           <nav>
             <ul className="space-y-1">
@@ -80,6 +79,14 @@ const DesktopSidebar = ({
             <ul className="space-y-1">
               {legalItems.map(item => <NavItem key={item.to} to={item.to} icon={item.icon} label={item.label} isActive={currentPath === item.to} onClick={onLinkClick} />)}
             </ul>
+            {isAuthenticated && (
+              <div className="mt-4">
+                <Button onClick={handleLogout} disabled={isLoading} className="w-full bg-white hover:bg-gray-100 border border-red-500 text-red-500">
+                  <LogOut className="h-4 w-4 mr-2 text-red-500" />
+                  Logout
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </SidebarContent>
