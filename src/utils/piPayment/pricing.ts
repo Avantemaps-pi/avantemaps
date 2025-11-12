@@ -5,8 +5,8 @@ import { PricingStructure } from './types';
 // USD pricing structure for different subscription tiers (source of truth)
 const SUBSCRIPTION_USD_PRICES: PricingStructure = {
   [SubscriptionTier.INDIVIDUAL]: { monthly: 0, yearly: 0 },
-  [SubscriptionTier.SMALL_BUSINESS]: { monthly: 9.99, yearly: 95.90 },
-  [SubscriptionTier.ORGANIZATION]: { monthly: 19.99, yearly: 199.90 },
+  [SubscriptionTier.SMALL_BUSINESS]: { monthly: 10, yearly: 96 },
+  [SubscriptionTier.ORGANIZATION]: { monthly: 20, yearly: 192 },
 };
 
 /**

@@ -20,8 +20,8 @@ export const TIERS: PricingTier[] = [
     name: "Small Business",
     description: "For business owners who want to increase visibility.",
     price: {
-      monthly: "9.99",
-      yearly: "95.90"
+      monthly: "10",
+      yearly: "96"
     },
     features: [
       "Up to 3 business listings", 
@@ -40,8 +40,8 @@ export const TIERS: PricingTier[] = [
     name: "Organization",
     description: "For larger organizations with multiple locations.",
     price: {
-      monthly: "19.99",
-      yearly: "199.90"
+      monthly: "20",
+      yearly: "192"
     },
     features: [
       "Up to 5 business listings", 
