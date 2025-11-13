@@ -38,7 +38,7 @@ export const getUserSubscription = async (uid: string): Promise<SubscriptionTier
       .from('users')
       .select('subscription')
       .eq('id', uid)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       console.error("Error fetching subscription:", error);
