@@ -9,12 +9,16 @@ import { useAuth } from '@/context/auth';
 import LoginDialog from '@/components/auth/LoginDialog';
 import { toast } from 'sonner';
 import MetaTags from '@/components/seo/MetaTags';
+import { UnsavedChangesDialog } from '@/components/business/registration/UnsavedChangesDialog';
 
 const Registration = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
   
   // Check if user is authenticated when the component mounts
   useEffect(() => {
@@ -35,6 +39,41 @@ const Registration = () => {
   const handleFormSuccess = () => {
     // Navigation is now handled in useBusinessRegistration hook
     // No need to navigate here as the hook redirects to /registered-business
+    setHasUnsavedChanges(false); // Clear unsaved changes flag on success
+  };
+
+  // Prevent navigation via browser back button when there are unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
+  const handleBackClick = () => {
+    if (hasUnsavedChanges) {
+      setPendingNavigation(() => () => navigate(-1));
+      setShowUnsavedDialog(true);
+    } else {
+      navigate(-1);
+    }
+  };
+
+  const handleConfirmLeave = () => {
+    setShowUnsavedDialog(false);
+    setHasUnsavedChanges(false);
+    if (pendingNavigation) {
+      pendingNavigation();
+      setPendingNavigation(null);
+    }
   };
   
   return (
@@ -43,6 +82,7 @@ const Registration = () => {
       fullHeight={false} 
       fullWidth={true}
       hideSidebar={true}
+      onBackClick={handleBackClick}
     >
       <MetaTags
         title="Register Your Business"
@@ -80,11 +120,21 @@ const Registration = () => {
         transition={{ duration: 0.4 }}
         skipMobileAnimations={isMobile}
       >
-        <BusinessRegistrationForm onSuccess={handleFormSuccess} />
+        <BusinessRegistrationForm 
+          onSuccess={handleFormSuccess}
+          onFormChange={setHasUnsavedChanges}
+        />
       </motion.div>
       
       {/* Login Dialog */}
       <LoginDialog open={showLoginDialog} onOpenChange={handleLoginDialogClose} />
+      
+      {/* Unsaved Changes Dialog */}
+      <UnsavedChangesDialog
+        open={showUnsavedDialog}
+        onOpenChange={setShowUnsavedDialog}
+        onConfirm={handleConfirmLeave}
+      />
     </AppLayout>
   );
 };

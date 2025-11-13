@@ -12,7 +12,12 @@ import { useAuth } from '@/context/auth';
 import { toast } from 'sonner';
 import { PiAuthButton } from './registration/PiAuthButton'; // ✅ Added
 
-const BusinessRegistrationForm = ({ onSuccess }: { onSuccess?: () => void }) => {
+interface BusinessRegistrationFormProps {
+  onSuccess?: () => void;
+  onFormChange?: (hasChanges: boolean) => void;
+}
+
+const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrationFormProps) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -36,6 +41,13 @@ const BusinessRegistrationForm = ({ onSuccess }: { onSuccess?: () => void }) => 
       navigate('/registered-business');
     }
   }, [user, navigate]);
+
+  // Track form changes
+  React.useEffect(() => {
+    if (onFormChange) {
+      onFormChange(form.formState.isDirty);
+    }
+  }, [form.formState.isDirty, onFormChange]);
 
   // ✅ Require Pi auth before showing the form
   if (!user) {
