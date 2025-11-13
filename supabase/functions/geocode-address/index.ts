@@ -67,12 +67,28 @@ const getUserFromToken = async (token: string) => {
 
 const fetchLocationIQSuggestions = async (query: string): Promise<Suggestion[]> => {
   const token = Deno.env.get('LOCATIONIQ_TOKEN');
-  if (!token) throw new Error('LocationIQ token not configured');
+  if (!token) {
+    console.error('❌ LOCATIONIQ_TOKEN environment variable is not set');
+    throw new Error('LocationIQ token not configured');
+  }
 
   const url = `https://api.locationiq.com/v1/autocomplete?key=${token}&q=${encodeURIComponent(query)}&format=json&limit=5`;
+  console.log('📍 Fetching from LocationIQ:', query);
+  
   const res = await fetch(url);
-  if (!res.ok) throw new Error('LocationIQ API error');
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('❌ LocationIQ API error:', {
+      status: res.status,
+      statusText: res.statusText,
+      body: errorText
+    });
+    throw new Error(`LocationIQ API error: ${res.status} - ${errorText}`);
+  }
+  
   const data = await res.json();
+  console.log('✅ LocationIQ returned', data.length, 'suggestions');
 
   return data.map((item: any) => ({
     display_name: item.display_name,
@@ -117,7 +133,10 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ suggestions }), { headers: CORS_HEADERS });
   } catch (err: any) {
-    console.error(err);
-    return new Response(JSON.stringify({ error: 'Service temporarily unavailable' }), { status: 500, headers: CORS_HEADERS });
+    console.error('❌ Geocode error:', err.message || err);
+    const errorMessage = err.message?.includes('LocationIQ') 
+      ? 'Address lookup service error. Please try again.'
+      : 'Service temporarily unavailable';
+    return new Response(JSON.stringify({ error: errorMessage }), { status: 500, headers: CORS_HEADERS });
   }
 });
