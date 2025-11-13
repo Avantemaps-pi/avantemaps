@@ -75,7 +75,9 @@ export const formSchema = z.object({
   countryCode: z.string().default('+1'),
   phone: z.string().min(1, { message: "Phone number is required" }),
   email: z.string().email({ message: "Invalid email address" }),
-  website: z.string().optional(),
+  website: z.string().optional().refine((val) => !val || val.includes('.pinet'), {
+    message: "Website URL must contain a .pinet subdomain"
+  }),
   streetAddress: z.string().min(1, { message: "Street address is required" }).transform((val, ctx) => {
     try {
       return sanitizeInput(val, "Street address");
