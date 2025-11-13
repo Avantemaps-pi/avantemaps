@@ -1,176 +1,144 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { formSchema, FormValues } from "@/components/business/registration/formSchema";
-import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { corsHeaders } from '../_shared/cors.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { BusinessInsertPayload } from '../../../shared/types/business';
 
-/**
- * Hook: useBusinessRegistration
- * Handles all logic for business registration flow.
- */
-export const useBusinessRegistration = () => {
-  const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [subscription, setSubscription] = useState<string | null>(null);
+// Initialize Supabase admin client safely
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-  // Initialize form
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      businessTypes: [],
-      mondayClosed: false,
-      tuesdayClosed: false,
-      wednesdayClosed: false,
-      thursdayClosed: false,
-      fridayClosed: false,
-      saturdayClosed: false,
-      sundayClosed: false,
-    },
-  });
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.error("❌ Missing Supabase environment variables.");
+  throw new Error("Missing Supabase credentials");
+}
 
-  /**
-   * Fetch current user and their subscription.
-   * Ensures only authenticated users can register a business.
-   */
-  const fetchUserData = async () => {
-    try {
-      setIsLoadingUser(true);
-      const { data, error } = await supabase.auth.getUser();
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-      if (error || !data?.user) {
-        toast.error("You must be logged in to register your business.");
-        return;
-      }
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 200, headers: corsHeaders });
+  }
 
-      setUserId(data.user.id);
+  const traceId = crypto.randomUUID();
 
-      // Fetch subscription from 'users' table
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("subscription")
-        .eq("id", data.user.id)
-        .maybeSingle();
+  try {
+    const body: BusinessInsertPayload = await req.json();
 
-      if (userError) throw userError;
-      if (userData?.subscription) setSubscription(userData.subscription);
-    } catch (err) {
-      console.error("❌ Error fetching user data:", err);
-      toast.error("Failed to load user information.");
-    } finally {
-      setIsLoadingUser(false);
-    }
-  };
-
-  // Immediately fetch user when hook mounts
-  useState(() => {
-    fetchUserData();
-  });
-
-  /**
-   * Handle form submission and call Edge Function securely.
-   */
-  const onSubmit = async (values: FormValues) => {
-    if (!userId) {
-      toast.error("User not authenticated.");
-      return;
+    // ✅ SECURITY: Validate authentication token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Unauthorized: Missing authentication',
+        traceId,
+      }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    setIsSubmitting(true);
-    try {
-      // Build payload
-      const payload = {
-        user_id: userId,
-        subscription: subscription ?? "Free",
-        business_name: values.businessName,
-        business_types: values.businessTypes,
-        business_description: values.businessDescription,
-        contact_email: values.email,
-        phone_number: values.phone,
-        website: values.website || null,
-        pi_wallet_address: values.piWalletAddress,
-        address: {
-          street: values.streetAddress,
-          apartment: values.apartment,
-          city: values.city,
-          state: values.state,
-          zip_code: values.zipCode,
-          country: values.country,
-        },
-        hours: {
-          monday: values.mondayClosed
-            ? { closed: true }
-            : { open: values.mondayOpen, close: values.mondayClose },
-          tuesday: values.tuesdayClosed
-            ? { closed: true }
-            : { open: values.tuesdayOpen, close: values.tuesdayClose },
-          wednesday: values.wednesdayClosed
-            ? { closed: true }
-            : { open: values.wednesdayOpen, close: values.wednesdayClose },
-          thursday: values.thursdayClosed
-            ? { closed: true }
-            : { open: values.thursdayOpen, close: values.thursdayClose },
-          friday: values.fridayClosed
-            ? { closed: true }
-            : { open: values.fridayOpen, close: values.fridayClose },
-          saturday: values.saturdayClosed
-            ? { closed: true }
-            : { open: values.saturdayOpen, close: values.saturdayClose },
-          sunday: values.sundayClosed
-            ? { closed: true }
-            : { open: values.sundayOpen, close: values.sundayClose },
-        },
-        owner: {
-          first_name: values.firstName,
-          last_name: values.lastName,
-        },
-      };
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
-      // Retrieve current session JWT for Edge Function auth
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
-
-      if (!accessToken) {
-        toast.error("Authentication token missing. Please re-login.");
-        return;
-      }
-
-      // Call Edge Function
-      const { data, error } = await supabase.functions.invoke("insert-business", {
-        body: payload,
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (error) {
-        console.error("❌ Error inserting business:", error);
-        toast.error("Failed to register business. Please try again.");
-        return;
-      }
-
-      toast.success("✅ Business registered successfully!");
-      form.reset();
-      navigate("/dashboard");
-
-    } catch (err) {
-      console.error("❌ Unexpected error during business registration:", err);
-      toast.error("An unexpected error occurred.");
-    } finally {
-      setIsSubmitting(false);
+    if (authError || !user) {
+      console.error(`[${traceId}] Auth validation failed:`, authError);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Unauthorized: Invalid token',
+        traceId,
+      }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-  };
 
-  return {
-    form,
-    onSubmit,
-    isSubmitting,
-    isLoadingUser,
-    userId,
-    subscription,
-  };
-};
+    // ✅ SECURITY: Ensure owner matches token
+    if (user.id !== body.user_id) {
+      console.error(`[${traceId}] Owner ID mismatch. User: ${user.id}, Requested: ${body.user_id}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Forbidden: Owner ID mismatch',
+        traceId,
+      }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Count existing businesses
+    const { count: businessCount, error: countError } = await supabaseAdmin
+      .from('businesses')
+      .select('*', { count: 'exact', head: true })
+      .eq('owner_id', user.id);
+
+    if (countError) {
+      console.error(`[${traceId}] Error counting businesses:`, countError);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Error checking business limit',
+        traceId,
+      }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Business limits per subscription
+    const BUSINESS_LIMITS: Record<string, number> = {
+      'individual': 1,
+      'small-business': 3,
+      'organization': 5,
+    };
+
+    const limit = BUSINESS_LIMITS[body.subscription] || 1;
+    const currentCount = businessCount || 0;
+
+    if (currentCount >= limit) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: `Business limit reached. Your ${body.subscription} plan allows up to ${limit} business${limit > 1 ? 'es' : ''}.`,
+        traceId,
+      }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Insert business using service role (bypasses RLS)
+    const { data, error } = await supabaseAdmin
+      .from('businesses')
+      .insert({
+        owner_id: body.user_id,
+        name: body.business_name,
+        description: body.business_description || null,
+        category: body.business_types[0] || 'Other',
+        business_types: body.business_types,
+        contact_info: {
+          first_name: body.owner.first_name,
+          last_name: body.owner.last_name,
+          email: body.contact_email,
+          phone: body.phone_number,
+          website: body.website,
+        },
+        street_address: body.address.street,
+        apartment: body.address.apartment,
+        city: body.address.city,
+        state: body.address.state,
+        postal_code: body.address.zip_code,
+        country: body.address.country,
+        coordinates: JSON.stringify({ lat: body.address.lat || null, lng: body.address.lng || null }),
+        hours: body.hours,
+        pi_wallet_address: body.pi_wallet_address,
+      })
+      .select();
+
+    if (error) {
+      console.error(`[${traceId}] Insert error:`, error);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Failed to insert business',
+        details: error.message,
+        traceId,
+      }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      business: data?.[0] ?? null,
+      traceId,
+    }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+  } catch (err: any) {
+    console.error(`[${traceId}] Internal error:`, err);
+    return new Response(JSON.stringify({
+      success: false,
+      error: 'Internal server error',
+      details: err.message,
+      traceId,
+    }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+});
