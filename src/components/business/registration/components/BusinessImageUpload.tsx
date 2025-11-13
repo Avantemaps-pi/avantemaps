@@ -11,6 +11,7 @@ interface BusinessImageUploadProps {
   selectedImages: File[];
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleImageRemove?: (index: number) => void;
+  handleImageReorder?: (newImages: File[]) => void;
   maxImages?: number;
   disabled?: boolean;
 }
@@ -19,6 +20,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
   selectedImages, 
   handleImageUpload,
   handleImageRemove,
+  handleImageReorder,
   maxImages = 3,
   disabled = false
 }) => {
@@ -33,6 +35,18 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
     };
   }, []);
 
+  const handleReorder = (newOrder: string[]) => {
+    if (!handleImageReorder) return;
+    
+    // Map URLs back to File objects in new order
+    const newImages = newOrder.map(url => {
+      const index = imageUrls.indexOf(url);
+      return selectedImages[index];
+    });
+    
+    handleImageReorder(newImages);
+  };
+
   return (
     <FormItem>
       <FormLabel className="text-base mb-1.5">Business Images</FormLabel>
@@ -46,7 +60,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
         />
       </FormControl>
       <FormDescription className="text-sm mt-1.5 flex items-center justify-between">
-        <span>Upload images of your business (max {maxImages})</span>
+        <span>Upload images of your business (max {maxImages}). Drag to reorder.</span>
         <ImageUploadCounter 
           currentCount={selectedImages.length} 
           maxCount={maxImages} 
@@ -60,6 +74,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
               images={imageUrls}
               currentIndex={currentImageIndex}
               onImageChange={setCurrentImageIndex}
+              onReorder={handleReorder}
             />
             
             {handleImageRemove && !disabled && (
@@ -67,7 +82,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
                 type="button"
                 size="icon"
                 variant="destructive"
-                className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                className="absolute -top-2 -right-2 h-6 w-6 rounded-full z-10"
                 onClick={() => handleImageRemove(currentImageIndex)}
               >
                 <X className="h-3 w-3" />

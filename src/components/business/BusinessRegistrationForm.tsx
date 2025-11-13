@@ -26,6 +26,7 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrat
     selectedImages, 
     handleImageUpload, 
     handleImageRemove,
+    handleImageReorder,
     onSubmit, 
     isSubmitting,
   } = useBusinessRegistration(onSuccess);
@@ -77,6 +78,7 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrat
             selectedImages={selectedImages}
             handleImageUpload={handleImageUpload}
             handleImageRemove={handleImageRemove}
+            handleImageReorder={handleImageReorder}
             setSelectedTab={setSelectedTab}
             isSubmitting={isSubmitting}
           />
