@@ -17,7 +17,6 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
   const [piWalletAddress, setPiWalletAddress] = useState(user?.walletAddress || '');
 
   useEffect(() => {
-    // Update wallet address automatically if user logs in via Pi
     if (user?.walletAddress) setPiWalletAddress(user.walletAddress);
   }, [user]);
 
@@ -38,7 +37,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       country: '',
       businessTypes: [],
       businessDescription: '',
-      piWalletAddress, // ✅ Automatically filled from Pi user
+      piWalletAddress,
       mondayOpen: '09:00',
       mondayClose: '17:00',
       mondayClosed: false,
@@ -83,7 +82,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
   const geocodeAddress = async (address: string) => {
     try {
       const { data, error } = await supabase.functions.invoke('geocode-address', {
-        body: { address }
+        body: { address },
       });
       if (error) {
         console.error('Error geocoding address:', error);
@@ -91,7 +90,11 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       }
       if (data?.suggestions?.length > 0) {
         const firstResult = data.suggestions[0];
-        return { lat: firstResult.lat, lng: firstResult.lon, address_components: firstResult.address };
+        return {
+          lat: firstResult.lat,
+          lng: firstResult.lon,
+          address_components: firstResult.address,
+        };
       }
       return null;
     } catch (err) {
@@ -104,41 +107,15 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
   // FORM SUBMISSION
   // ---------------------------
   const onSubmit = async (values: FormValues) => {
+    if (!user?.uid) {
+      toast.error('You must be logged in via Pi Network to register a business.');
+      return;
+    }
+
     try {
-      if (!user?.uid) {
-        toast.error('You must be logged in via Pi to register a business.');
-        return;
-      }
-
-      // ✅ Check business count limit
-      const { count: businessCount } = await supabase
-        .from('businesses')
-        .select('*', { count: 'exact', head: true })
-        .eq('owner_id', user.uid);
-
-      const BUSINESS_LIMITS: Record<string, number> = {
-        'individual': 1,
-        'small-business': 3,
-        'organization': 5,
-      };
-
-      const limit = BUSINESS_LIMITS[user.subscriptionTier] || 1;
-      const currentCount = businessCount || 0;
-
-      if (currentCount >= limit) {
-        toast.error(`Business limit reached`, {
-          description: `Your ${user.subscriptionTier} plan allows up to ${limit} business${limit > 1 ? 'es' : ''}. Please upgrade to register more.`,
-          action: { label: "Upgrade Now", onClick: () => navigate('/pricing') }
-        });
-        return;
-      }
-
       setIsSubmitting(true);
 
-      // ✅ Always use latest wallet address from Pi user
-      values.piWalletAddress = piWalletAddress;
-
-      // ✅ Content filter
+      // 🔍 Validate content
       if (containsInappropriateContent(values.businessName)) {
         toast.error('Business name contains inappropriate content.');
         return;
@@ -148,7 +125,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
 
-      // ✅ Geocode address
+      // 🧭 Geocode address
       const fullAddress = `${values.streetAddress}${values.apartment ? `, ${values.apartment}` : ''}, ${values.city}, ${values.state}, ${values.zipCode}, ${values.country}`;
       const geocodedData = await geocodeAddress(fullAddress);
       if (!geocodedData?.lat || !geocodedData?.lng) {
@@ -156,93 +133,84 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
 
-      // ✅ Use fetch instead of supabase.functions.invoke to bypass Auth claim error
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/insert-business`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
+      // 🧠 Use latest Pi wallet
+      values.piWalletAddress = piWalletAddress;
+
+      // 🪪 Prepare and call Edge Function
+      const { data: insertRes, error: insertError } = await supabase.functions.invoke('insert-business', {
+        body: {
+          owner_id: user.uid,
+          businessName: values.businessName,
+          businessDescription: values.businessDescription,
+          businessTypes: values.businessTypes,
+          contact: {
+            firstName: values.firstName,
+            lastName: values.lastName,
+            phone: values.phone,
+            email: values.email,
+            website: values.website,
           },
-          body: JSON.stringify({
-            owner_id: user.uid,
-            businessName: values.businessName,
-            businessDescription: values.businessDescription,
-            businessTypes: values.businessTypes,
-            contact: {
-              firstName: values.firstName,
-              lastName: values.lastName,
-              phone: values.phone,
-              email: values.email,
-              website: values.website,
-            },
-            address: {
-              streetAddress: values.streetAddress,
-              apartment: values.apartment,
-              city: values.city,
-              state: values.state,
-              zipCode: values.zipCode,
-              country: values.country,
-              lat: parseFloat(String(geocodedData.lat)),
-              lng: parseFloat(String(geocodedData.lng)),
-            },
-            piWalletAddress: values.piWalletAddress,
-          }),
-        }
-      );
+          address: {
+            streetAddress: values.streetAddress,
+            apartment: values.apartment,
+            city: values.city,
+            state: values.state,
+            zipCode: values.zipCode,
+            country: values.country,
+            lat: parseFloat(String(geocodedData.lat)),
+            lng: parseFloat(String(geocodedData.lng)),
+          },
+          piWalletAddress: values.piWalletAddress,
+        },
+        headers: {
+          Authorization: `Bearer ${user.accessToken}`,
+        },
+      });
 
-      const insertRes = await response.json();
+      if (insertError) {
+        console.error('Insert function error:', insertError);
+        toast.error('Business registration failed.', {
+          description: insertError.message,
+        });
+        return;
+      }
 
-      if (!response.ok || !insertRes?.success || !insertRes?.business) {
-        const errMsg = insertRes?.error || 'Unknown error occurred';
-        toast.error(`Business registration failed: ${errMsg}`);
+      if (!insertRes?.success || !insertRes?.business) {
+        toast.error('Business registration failed.');
         return;
       }
 
       const newBusiness = insertRes.business;
 
-      // ✅ Upload business images
+      // 🖼️ Upload business images
       if (selectedImages.length && newBusiness?.id) {
-        try {
-          const uploadPromises = selectedImages.map(async (file, index) => {
-            const fileExt = file.name.split('.').pop();
-            const filePath = `${newBusiness.id}/image-${index}-${Date.now()}.${fileExt}`;
-            
-            const { error: uploadError } = await supabase.storage
-              .from('business-images')
-              .upload(filePath, file, {
-                cacheControl: '3600',
-                upsert: false
-              });
-            
-            if (uploadError) {
-              console.error('Image upload error:', uploadError);
-              return null;
-            }
-            return filePath;
-          });
+        const uploadedPaths: string[] = [];
 
-          const uploadedPaths = await Promise.all(uploadPromises);
-          const successfulUploads = uploadedPaths.filter(path => path !== null);
-          
-          if (successfulUploads.length > 0) {
-            console.log(`✅ Uploaded ${successfulUploads.length} images to storage`);
-            toast.success(`Business registered with ${successfulUploads.length} image(s)!`);
+        for (const [index, file] of selectedImages.entries()) {
+          const fileExt = file.name.split('.').pop();
+          const filePath = `${newBusiness.id}/image-${index}-${Date.now()}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('business-images')
+            .upload(filePath, file, { cacheControl: '3600', upsert: false });
+
+          if (uploadError) {
+            console.error('Image upload error:', uploadError);
+          } else {
+            uploadedPaths.push(filePath);
           }
-        } catch (imgErr) {
-          console.error('Image upload process error:', imgErr);
-          toast.warning('Business registered but some images failed to upload');
+        }
+
+        if (uploadedPaths.length > 0) {
+          console.log(`✅ Uploaded ${uploadedPaths.length} image(s)`);
+          toast.success(`Business registered with ${uploadedPaths.length} image(s)!`);
         }
       }
 
       toast.success('Business registered successfully!');
       if (onSuccess) onSuccess();
 
-      navigate('/registered-business', {
-        state: { newBusinessId: newBusiness.id }
-      });
-
+      navigate('/registered-business', { state: { newBusinessId: newBusiness.id } });
     } catch (err) {
       console.error('Registration error:', err);
       toast.error('Failed to register business.');
