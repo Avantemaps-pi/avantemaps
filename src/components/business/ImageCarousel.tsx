@@ -21,11 +21,11 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
         <CarouselContent>
           {images.map((image, index) => (
             <CarouselItem key={index}>
-              <div className="h-40 w-full">
+              <div className="h-64 w-full bg-muted/30 rounded-md flex items-center justify-center">
                 <img 
                   src={image} 
                   alt={`Business image ${index + 1}`}
-                  className="w-full h-full object-cover rounded-md"
+                  className="max-w-full max-h-full object-contain rounded-md"
                 />
               </div>
             </CarouselItem>
