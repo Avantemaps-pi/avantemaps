@@ -1,4 +1,4 @@
-// File: supabase/functions/insert-business/types.ts
+// shared/types/business.ts
 
 export interface BusinessInsertPayload {
   user_id: string;
