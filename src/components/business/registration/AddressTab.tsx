@@ -1,9 +1,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import AddressInput from './components/AddressInput';
 import AddressFormFields from './components/AddressFormFields';
-import { CheckCircle2 } from 'lucide-react';
 interface AddressTabProps {
   onNext: () => void;
   onPrevious: () => void;
@@ -24,7 +22,6 @@ const AddressTab: React.FC<AddressTabProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <AddressInput disabled={disabled} />
           <AddressFormFields disabled={disabled} />
         </CardContent>
         <CardFooter className="flex justify-between pt-2">

@@ -1,3 +1,9 @@
+/**
+ * @deprecated This component has been merged into AddressFormFields.tsx for better organization and consistency.
+ * All address-related functionality is now handled in a single unified component.
+ * This file is kept for backward compatibility but should not be used in new code.
+ */
+
 import React, { useRef, useState, useEffect } from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
