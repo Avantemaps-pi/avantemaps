@@ -4,6 +4,7 @@ import { Search, MapPin } from 'lucide-react';
 import debounce from 'lodash/debounce';
 import { useLocationIQAutocomplete } from '@/hooks/useLocationIQAutocomplete';
 import { cn } from '@/lib/utils';
+
 interface SearchBarProps {
   onSearch?: (searchTerm: string) => void;
   onPlaceSelect?: (place: { name: string; lat: number; lng: number }) => void;
@@ -11,10 +12,16 @@ interface SearchBarProps {
   cycleInterval?: number;
   enableAutocomplete?: boolean;
 }
+
 const SearchBar: React.FC<SearchBarProps> = ({
   onSearch,
   onPlaceSelect,
-  placeholders = ["Search for business name", "Search by location", "Search by keywords (e.g., coffee, haircut)", "Search by description"],
+  placeholders = [
+    "Search for business name",
+    "Search by location",
+    "Search by keywords (e.g., coffee, haircut)",
+    "Search by description"
+  ],
   cycleInterval = 3000,
   enableAutocomplete = true
 }) => {
@@ -70,6 +77,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (onSearch && searchTerm.trim()) {
@@ -82,7 +90,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     const value = e.target.value;
     setSearchTerm(value);
     setSelectedIndex(-1);
-    
+
     if (value.trim()) {
       if (enableAutocomplete) {
         debouncedAutocomplete(value);
@@ -107,7 +115,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         lng: placeDetails.lng,
       });
     }
-    
+
     if (onSearch) {
       onSearch(description);
     }
@@ -119,7 +127,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(prev => 
+        setSelectedIndex(prev =>
           prev < predictions.length - 1 ? prev + 1 : prev
         );
         break;
@@ -142,11 +150,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
         break;
     }
   };
+
   return (
     <div ref={dropdownRef} className="relative w-full">
       <form onSubmit={handleSearch}>
         <Input
           ref={inputRef}
+          id="searchBarInput"
+          name="searchBarInput"
           type="text"
           placeholder={placeholders[currentPlaceholderIndex]}
           value={searchTerm}
