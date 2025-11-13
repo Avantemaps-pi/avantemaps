@@ -75,8 +75,21 @@ export const formSchema = z.object({
   countryCode: z.string().default('+1'),
   phone: z.string().min(1, { message: "Phone number is required" }),
   email: z.string().email({ message: "Invalid email address" }),
-  website: z.string().optional().refine((val) => !val || val.includes('.pinet'), {
-    message: "Website URL must contain a .pinet subdomain"
+  website: z.string().optional().refine((val) => {
+    if (!val) return true;
+    // Must start with https://
+    if (!val.startsWith('https://')) return false;
+    // Must contain .pinet
+    if (!val.includes('.pinet')) return false;
+    // Must be a valid URL structure
+    try {
+      new URL(val);
+      return true;
+    } catch {
+      return false;
+    }
+  }, {
+    message: "Website URL must start with https:// and contain a .pinet subdomain (e.g., https://example.pinet.com/)"
   }),
   streetAddress: z.string().min(1, { message: "Street address is required" }).transform((val, ctx) => {
     try {
