@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/auth';
 import { containsInappropriateContent } from '@/utils/contentFilter';
+import type { BusinessInsertPayload } from '../../../shared/types/business';
 
 export const useBusinessRegistration = (onSuccess?: () => void) => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
@@ -82,7 +83,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
   const geocodeAddress = async (address: string) => {
     try {
       const { data, error } = await supabase.functions.invoke('geocode-address', {
-        body: { address },
+        body: { address }
       });
       if (error) {
         console.error('Error geocoding address:', error);
@@ -90,11 +91,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       }
       if (data?.suggestions?.length > 0) {
         const firstResult = data.suggestions[0];
-        return {
-          lat: firstResult.lat,
-          lng: firstResult.lon,
-          address_components: firstResult.address,
-        };
+        return { lat: firstResult.lat, lng: firstResult.lon, address_components: firstResult.address };
       }
       return null;
     } catch (err) {
@@ -107,15 +104,41 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
   // FORM SUBMISSION
   // ---------------------------
   const onSubmit = async (values: FormValues) => {
-    if (!user?.uid) {
-      toast.error('You must be logged in via Pi Network to register a business.');
-      return;
-    }
-
     try {
+      if (!user?.uid) {
+        toast.error('You must be logged in via Pi to register a business.');
+        return;
+      }
+
+      // Check business count limit
+      const { count: businessCount } = await supabase
+        .from('businesses')
+        .select('*', { count: 'exact', head: true })
+        .eq('owner_id', user.uid);
+
+      const BUSINESS_LIMITS: Record<string, number> = {
+        'individual': 1,
+        'small-business': 3,
+        'organization': 5,
+      };
+
+      const limit = BUSINESS_LIMITS[user.subscriptionTier] || 1;
+      const currentCount = businessCount || 0;
+
+      if (currentCount >= limit) {
+        toast.error(`Business limit reached`, {
+          description: `Your ${user.subscriptionTier} plan allows up to ${limit} business${limit > 1 ? 'es' : ''}. Please upgrade to register more.`,
+          action: { label: "Upgrade Now", onClick: () => navigate('/pricing') }
+        });
+        return;
+      }
+
       setIsSubmitting(true);
 
-      // 🔍 Validate content
+      // Always use latest wallet address from Pi user
+      values.piWalletAddress = piWalletAddress;
+
+      // ✅ Validation of inappropriate content
       if (containsInappropriateContent(values.businessName)) {
         toast.error('Business name contains inappropriate content.');
         return;
@@ -125,7 +148,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
 
-      // 🧭 Geocode address
+      // ✅ Geocode address
       const fullAddress = `${values.streetAddress}${values.apartment ? `, ${values.apartment}` : ''}, ${values.city}, ${values.state}, ${values.zipCode}, ${values.country}`;
       const geocodedData = await geocodeAddress(fullAddress);
       if (!geocodedData?.lat || !geocodedData?.lng) {
@@ -133,84 +156,93 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
 
-      // 🧠 Use latest Pi wallet
-      values.piWalletAddress = piWalletAddress;
-
-      // 🪪 Prepare and call Edge Function
-      const { data: insertRes, error: insertError } = await supabase.functions.invoke('insert-business', {
-        body: {
-          owner_id: user.uid,
-          businessName: values.businessName,
-          businessDescription: values.businessDescription,
-          businessTypes: values.businessTypes,
-          contact: {
-            firstName: values.firstName,
-            lastName: values.lastName,
-            phone: values.phone,
-            email: values.email,
-            website: values.website,
-          },
-          address: {
-            streetAddress: values.streetAddress,
-            apartment: values.apartment,
-            city: values.city,
-            state: values.state,
-            zipCode: values.zipCode,
-            country: values.country,
-            lat: parseFloat(String(geocodedData.lat)),
-            lng: parseFloat(String(geocodedData.lng)),
-          },
-          piWalletAddress: values.piWalletAddress,
+      // ---------------------------
+      // BUILD TYPED PAYLOAD
+      // ---------------------------
+      const payload: BusinessInsertPayload = {
+        user_id: user.uid,
+        subscription: user.subscriptionTier,
+        business_name: values.businessName,
+        business_description: values.businessDescription,
+        business_types: values.businessTypes,
+        contact_email: values.email,
+        phone_number: `${values.countryCode}${values.phone}`,
+        website: values.website || null,
+        pi_wallet_address: values.piWalletAddress,
+        address: {
+          street: values.streetAddress,
+          apartment: values.apartment || null,
+          city: values.city,
+          state: values.state,
+          zip_code: values.zipCode,
+          country: values.country,
         },
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
+        hours: {
+          monday: { open: values.mondayOpen, close: values.mondayClose, closed: values.mondayClosed },
+          tuesday: { open: values.tuesdayOpen, close: values.tuesdayClose, closed: values.tuesdayClosed },
+          wednesday: { open: values.wednesdayOpen, close: values.wednesdayClose, closed: values.wednesdayClosed },
+          thursday: { open: values.thursdayOpen, close: values.thursdayClose, closed: values.thursdayClosed },
+          friday: { open: values.fridayOpen, close: values.fridayClose, closed: values.fridayClosed },
+          saturday: { open: values.saturdayOpen, close: values.saturdayClose, closed: values.saturdayClosed },
+          sunday: { open: values.sundayOpen, close: values.sundayClose, closed: values.sundayClosed },
         },
-      });
+        owner: {
+          first_name: values.firstName,
+          last_name: values.lastName,
+        },
+      };
 
-      if (insertError) {
-        console.error('Insert function error:', insertError);
-        toast.error('Business registration failed.', {
-          description: insertError.message,
-        });
-        return;
-      }
+      // ✅ Insert business via Edge Function
+      const { data: insertRes, error: insertError } = await supabase.functions.invoke('insert-business', { body: payload });
 
-      if (!insertRes?.success || !insertRes?.business) {
-        toast.error('Business registration failed.');
+      if (insertError || !insertRes?.success || !insertRes?.business) {
+        const errMsg = (insertError as any)?.message || (insertRes as any)?.error || 'Unknown error';
+        toast.error(`Business registration failed: ${errMsg}`);
         return;
       }
 
       const newBusiness = insertRes.business;
 
-      // 🖼️ Upload business images
+      // ---------------------------
+      // UPLOAD BUSINESS IMAGES
+      // ---------------------------
       if (selectedImages.length && newBusiness?.id) {
-        const uploadedPaths: string[] = [];
+        try {
+          const uploadPromises = selectedImages.map(async (file, index) => {
+            const fileExt = file.name.split('.').pop();
+            const filePath = `${newBusiness.id}/image-${index}-${Date.now()}.${fileExt}`;
 
-        for (const [index, file] of selectedImages.entries()) {
-          const fileExt = file.name.split('.').pop();
-          const filePath = `${newBusiness.id}/image-${index}-${Date.now()}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+              .from('business-images')
+              .upload(filePath, file, { cacheControl: '3600', upsert: false });
 
-          const { error: uploadError } = await supabase.storage
-            .from('business-images')
-            .upload(filePath, file, { cacheControl: '3600', upsert: false });
+            if (uploadError) {
+              console.error('Image upload error:', uploadError);
+              return null;
+            }
+            return filePath;
+          });
 
-          if (uploadError) {
-            console.error('Image upload error:', uploadError);
-          } else {
-            uploadedPaths.push(filePath);
+          const uploadedPaths = await Promise.all(uploadPromises);
+          const successfulUploads = uploadedPaths.filter(path => path !== null);
+
+          if (successfulUploads.length > 0) {
+            console.log(`✅ Uploaded ${successfulUploads.length} images to storage`);
+            toast.success(`Business registered with ${successfulUploads.length} image(s)!`);
           }
-        }
-
-        if (uploadedPaths.length > 0) {
-          console.log(`✅ Uploaded ${uploadedPaths.length} image(s)`);
-          toast.success(`Business registered with ${uploadedPaths.length} image(s)!`);
+        } catch (imgErr) {
+          console.error('Image upload process error:', imgErr);
+          toast.warning('Business registered but some images failed to upload');
         }
       }
 
       toast.success('Business registered successfully!');
       if (onSuccess) onSuccess();
 
-      navigate('/registered-business', { state: { newBusinessId: newBusiness.id } });
+      navigate('/registered-business', {
+        state: { newBusinessId: newBusiness.id }
+      });
+
     } catch (err) {
       console.error('Registration error:', err);
       toast.error('Failed to register business.');
