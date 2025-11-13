@@ -1,6 +1,42 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import type { BusinessInsertPayload } from '../../../shared/types/business';
+interface BusinessInsertPayload {
+  user_id: string;
+  subscription: string;
+  business_name: string;
+  business_types: string[];
+  business_description: string;
+  contact_email: string;
+  phone_number: string;
+  website?: string | null;
+  pi_wallet_address: string;
+
+  address: {
+    street: string;
+    apartment?: string | null;
+    city: string;
+    state: string;
+    zip_code: string;
+    country: string;
+    lat?: number | null;
+    lng?: number | null;
+  };
+
+  hours: {
+    monday: { open?: string; close?: string; closed?: boolean };
+    tuesday: { open?: string; close?: string; closed?: boolean };
+    wednesday: { open?: string; close?: string; closed?: boolean };
+    thursday: { open?: string; close?: string; closed?: boolean };
+    friday: { open?: string; close?: string; closed?: boolean };
+    saturday: { open?: string; close?: string; closed?: boolean };
+    sunday: { open?: string; close?: string; closed?: boolean };
+  };
+
+  owner: {
+    first_name: string;
+    last_name: string;
+  };
+}
 
 // Initialize Supabase admin client safely
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -21,9 +57,7 @@ Deno.serve(async (req: Request) => {
   const traceId = crypto.randomUUID();
 
   try {
-    const body: BusinessInsertPayload = await req.json();
-
-    // ✅ SECURITY: Validate authentication token
+    // ✅ SECURITY: Get authenticated user from request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({
@@ -34,7 +68,15 @@ Deno.serve(async (req: Request) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    
+    // Use the anon client to verify the user's session
+    const supabaseClient = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY') || '', {
+      global: {
+        headers: { Authorization: authHeader }
+      }
+    });
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
 
     if (authError || !user) {
       console.error(`[${traceId}] Auth validation failed:`, authError);
@@ -44,6 +86,8 @@ Deno.serve(async (req: Request) => {
         traceId,
       }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+
+    const body: BusinessInsertPayload = await req.json();
 
     // ✅ SECURITY: Ensure owner matches token
     if (user.id !== body.user_id) {
@@ -110,6 +154,8 @@ Deno.serve(async (req: Request) => {
         state: body.address.state,
         postal_code: body.address.zip_code,
         country: body.address.country,
+        lat: body.address.lat,
+        lng: body.address.lng,
         coordinates: JSON.stringify({ lat: body.address.lat || null, lng: body.address.lng || null }),
         hours: body.hours,
         pi_wallet_address: body.pi_wallet_address,

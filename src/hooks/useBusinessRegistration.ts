@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/auth';
 import { containsInappropriateContent } from '@/utils/contentFilter';
-import type { BusinessInsertPayload } from '../../../shared/types/business';
+import type { BusinessInsertPayload } from '@/types/businessPayload';
 
 export const useBusinessRegistration = (onSuccess?: () => void) => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
@@ -176,6 +176,8 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
           state: values.state,
           zip_code: values.zipCode,
           country: values.country,
+          lat: geocodedData.lat,
+          lng: geocodedData.lng,
         },
         hours: {
           monday: { open: values.mondayOpen, close: values.mondayClose, closed: values.mondayClosed },
