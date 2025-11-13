@@ -26,6 +26,7 @@ interface InsertBusinessRequest {
   piWalletAddress: string;
 }
 
+// Initialize Supabase admin client safely
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -36,29 +37,29 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+// ✅ Function entry point
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   const traceId = crypto.randomUUID();
+  console.log(`[${traceId}] Insert business request received`);
 
   try {
     const body = await req.json() as InsertBusinessRequest;
 
-    // Validate required fields
+    // ✅ Validate required fields
     if (!body.owner_id || !body.businessName || !body.businessTypes?.length) {
+      console.error(`[${traceId}] Missing required fields`);
       return new Response(JSON.stringify({
         success: false,
-        error: 'Missing required fields',
+        error: 'Missing required fields: owner_id, businessName, or businessTypes',
         traceId,
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Optional: Log incoming data (for debugging)
-    console.log(`[${traceId}] New business registration:`, body.businessName);
-
-    // ✅ Fetch user's subscription
+    // ✅ Fetch user subscription tier
     const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .select('subscription')
@@ -74,7 +75,7 @@ Deno.serve(async (req: Request) => {
       }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // ✅ Count existing businesses
+    // ✅ Count user’s existing businesses
     const { count: businessCount, error: countError } = await supabaseAdmin
       .from('businesses')
       .select('*', { count: 'exact', head: true })
@@ -89,7 +90,7 @@ Deno.serve(async (req: Request) => {
       }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // ✅ Enforce limits by subscription tier
+    // ✅ Define business limits
     const BUSINESS_LIMITS: Record<string, number> = {
       'individual': 1,
       'small-business': 3,
@@ -101,9 +102,10 @@ Deno.serve(async (req: Request) => {
     const currentCount = businessCount || 0;
 
     if (currentCount >= limit) {
+      console.warn(`[${traceId}] Limit reached: ${subscription} (${currentCount}/${limit})`);
       return new Response(JSON.stringify({
         success: false,
-        error: `Business limit reached. Your ${subscription} plan allows up to ${limit} business${limit > 1 ? 'es' : ''}. Please upgrade to register more businesses.`,
+        error: `Business limit reached. Your ${subscription} plan allows up to ${limit} business${limit > 1 ? 'es' : ''}.`,
         traceId,
       }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -123,10 +125,15 @@ Deno.serve(async (req: Request) => {
         state: body.address.state,
         postal_code: body.address.zipCode,
         country: body.address.country,
-        coordinates: JSON.stringify({ lat: body.address.lat, lng: body.address.lng }),
+        coordinates: JSON.stringify({
+          lat: body.address.lat,
+          lng: body.address.lng,
+        }),
         pi_wallet_address: body.piWalletAddress,
+        is_verified: false,
       })
-      .select();
+      .select()
+      .single();
 
     if (error) {
       console.error(`[${traceId}] Insert error:`, error);
@@ -138,9 +145,11 @@ Deno.serve(async (req: Request) => {
       }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    console.log(`[${traceId}] ✅ Business inserted successfully`, data);
+
     return new Response(JSON.stringify({
       success: true,
-      business: data?.[0] ?? null,
+      business: data,
       traceId,
     }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
