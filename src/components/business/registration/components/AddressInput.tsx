@@ -112,6 +112,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
                   {isLoading ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <MapPin className="w-5 h-5" />}
                 </div>
                 <Input
+                  id="streetAddress"
                   placeholder="Start typing your business address..."
                   {...field}
                   ref={inputRef}

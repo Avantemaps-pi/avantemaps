@@ -21,6 +21,7 @@ const WalletAddressField: React.FC<WalletAddressFieldProps> = ({ disabled }) => 
           <FormLabel className="text-base mb-1.5">Pi Wallet Address (Business)</FormLabel>
           <FormControl>
             <Input 
+              id="piWalletAddress"
               placeholder="Your Pi wallet address" 
               {...field} 
               disabled={disabled}

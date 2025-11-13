@@ -33,7 +33,13 @@ const BusinessOwnerTab: React.FC<BusinessOwnerTabProps> = ({ onNext, disabled })
               <FormItem>
                 <FormLabel className="text-base mb-1.5">First Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Your first name" {...field} disabled={disabled} />
+                  <Input 
+                    id="firstName"
+                    placeholder="Your first name" 
+                    autoComplete="given-name"
+                    {...field} 
+                    disabled={disabled} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -46,7 +52,13 @@ const BusinessOwnerTab: React.FC<BusinessOwnerTabProps> = ({ onNext, disabled })
               <FormItem>
                 <FormLabel className="text-base mb-1.5">Last Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Your last name" {...field} disabled={disabled} />
+                  <Input 
+                    id="lastName"
+                    placeholder="Your last name" 
+                    autoComplete="family-name"
+                    {...field} 
+                    disabled={disabled} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -60,7 +72,13 @@ const BusinessOwnerTab: React.FC<BusinessOwnerTabProps> = ({ onNext, disabled })
             <FormItem>
               <FormLabel className="text-base mb-1.5">Business Name</FormLabel>
               <FormControl>
-                <Input placeholder="Your business name" {...field} disabled={disabled} />
+                <Input 
+                  id="businessName"
+                  placeholder="Your business name" 
+                  autoComplete="organization"
+                  {...field} 
+                  disabled={disabled} 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

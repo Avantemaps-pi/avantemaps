@@ -45,6 +45,7 @@ const BusinessDescriptionField: React.FC<BusinessDescriptionFieldProps> = ({ dis
           <FormLabel className="text-base mb-1.5">Business Description</FormLabel>
           <FormControl>
             <Textarea 
+              id="businessDescription"
               placeholder="Tell us about your business..." 
               className="min-h-[120px] resize-none text-base md:text-sm"
               {...field}

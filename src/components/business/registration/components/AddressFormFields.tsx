@@ -27,6 +27,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
             </FormLabel>
             <FormControl>
               <Input
+                id="apartment"
                 placeholder="e.g., Suite 100, Unit 5B, Apt 2A"
                 {...field}
                 disabled={disabled}
@@ -52,6 +53,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
               </FormLabel>
               <FormControl>
                 <Input
+                  id="city"
                   placeholder="e.g., Toronto"
                   {...field}
                   disabled={disabled}
@@ -75,6 +77,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
               </FormLabel>
               <FormControl>
                 <Input
+                  id="state"
                   placeholder="e.g., ON"
                   {...field}
                   disabled={disabled}
@@ -98,6 +101,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
               </FormLabel>
               <FormControl>
                 <Input
+                  id="zipCode"
                   placeholder="e.g., M5H 2N2"
                   {...field}
                   disabled={disabled}
@@ -123,6 +127,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
             </FormLabel>
             <FormControl>
               <Input
+                id="country"
                 placeholder="e.g., Canada"
                 {...field}
                 disabled={disabled}

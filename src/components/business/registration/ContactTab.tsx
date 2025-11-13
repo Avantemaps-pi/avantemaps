@@ -124,11 +124,13 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
                 </Select>
                 <FormControl>
                   <Input 
+                    id="phone"
                     placeholder="555-123-4567"
                     {...field}
                     type="tel"
                     inputMode="numeric"
                     pattern="[0-9]*"
+                    autoComplete="tel"
                     onChange={(e) => {
                       handlePhoneInput(e);
                     }}
@@ -148,7 +150,10 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
               <FormLabel className="text-base mb-1.5">Email Address</FormLabel>
               <FormControl>
                 <Input 
+                  id="email"
                   placeholder="contact@business.com" 
+                  type="email"
+                  autoComplete="email"
                   {...field} 
                   disabled={disabled}
                 />
@@ -165,7 +170,10 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
               <FormLabel className="text-base mb-1.5">Pi Network Website URL (Optional)</FormLabel>
               <FormControl>
                 <Input 
+                  id="website"
                   placeholder="https://example.pinet.com" 
+                  type="url"
+                  autoComplete="url"
                   {...field} 
                   disabled={disabled}
                 />

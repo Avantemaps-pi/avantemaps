@@ -149,6 +149,7 @@ const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ disabled })
               {showCustomInput && (
                 <div className="flex gap-2">
                   <Input
+                    id="customBusinessType"
                     type="text"
                     placeholder="Enter your business type"
                     value={customBusinessType}
