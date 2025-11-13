@@ -1,6 +1,6 @@
 -- ============================================================================
 -- MIGRATION: Align `public.businesses` schema with frontend + edge functions
--- Author: Thapelo / Vibious Project
+-- Author: Thapelo / Avante Maps
 -- Date: 2025-11-12
 -- ============================================================================
 
