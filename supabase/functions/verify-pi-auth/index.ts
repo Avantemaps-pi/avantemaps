@@ -146,23 +146,25 @@ if (testMode) {
     console.log(`✅ [${traceId}] Created test Supabase user ${uid}`);
   }
 
-  // Generate valid JWT token using generateLink
-  const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
-    type: 'magiclink',
-    email,
+  // Create a proper session for the user
+  const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+    user_id: uid,
   });
   
-  if (tokenError || !tokenData) {
-    console.error(`❌ [${traceId}] Failed to generate JWT:`, tokenError);
-    throw new Error('Failed to generate test JWT');
+  if (sessionError || !sessionData) {
+    console.error(`❌ [${traceId}] Failed to create session:`, sessionError);
+    throw new Error('Failed to create test session');
   }
+
+  console.log(`✅ [${traceId}] Test mode session created successfully`);
 
   return new Response(JSON.stringify({
     verified: true,
     testMode: true,
     message: 'Verification bypassed (development mode with session).',
     user: { uid, username, wallet_address: 'TEST_WALLET_123' },
-    supabase_token: tokenData.properties.access_token, // ✅ Include token for session
+    supabase_token: sessionData.session.access_token,
+    refresh_token: sessionData.session.refresh_token,
     traceId,
   }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
@@ -215,16 +217,17 @@ if (testMode) {
       console.log(`✅ [${traceId}] Created new Supabase user ${uid}`);
     }
 
-    // --- Generate proper JWT with `sub` claim ---
-    const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
+    // --- Create proper session with `sub` claim ---
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+      user_id: uid,
     });
     
-    if (tokenError || !tokenData) {
-      console.error(`❌ [${traceId}] Failed to generate JWT:`, tokenError);
-      throw new Error('Failed to generate JWT token');
+    if (sessionError || !sessionData) {
+      console.error(`❌ [${traceId}] Failed to create session:`, sessionError);
+      throw new Error('Failed to create user session');
     }
+
+    console.log(`✅ [${traceId}] Production session created successfully`);
 
     return new Response(JSON.stringify({
       verified: true,
@@ -233,7 +236,8 @@ if (testMode) {
         username: user.username,
         wallet_address: user.wallet_address || null,
       },
-      supabase_token: tokenData.properties.access_token, // valid token with `sub`
+      supabase_token: sessionData.session.access_token,
+      refresh_token: sessionData.session.refresh_token,
       traceId,
     }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
