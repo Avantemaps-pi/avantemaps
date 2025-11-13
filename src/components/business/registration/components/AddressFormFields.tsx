@@ -21,14 +21,15 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    if (value.length < 3) {
+    const trimmedValue = value.trim();
+    if (trimmedValue.length < 3) {
       clearSuggestions();
       setShowSuggestions(false);
       return;
     }
 
     timeoutRef.current = setTimeout(() => {
-      getSuggestions(value);
+      getSuggestions(trimmedValue);
       setShowSuggestions(true);
     }, 200);
   };
