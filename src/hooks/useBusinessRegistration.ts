@@ -110,7 +110,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
 
-      // Check business count limit
+      // ✅ Check business count limit
       const { count: businessCount } = await supabase
         .from('businesses')
         .select('*', { count: 'exact', head: true })
@@ -135,10 +135,10 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
 
       setIsSubmitting(true);
 
-      // Always use latest wallet address from Pi user
+      // ✅ Always use latest wallet address from Pi user
       values.piWalletAddress = piWalletAddress;
 
-      // ✅ Validation of inappropriate content
+      // ✅ Content filter
       if (containsInappropriateContent(values.businessName)) {
         toast.error('Business name contains inappropriate content.');
         return;
@@ -156,43 +156,53 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
 
-      // ✅ Insert business via Edge Function (bypasses RLS with service role)
-      const { data: insertRes, error: insertError } = await supabase.functions.invoke('insert-business', {
-        body: {
-          owner_id: user.uid,
-          businessName: values.businessName,
-          businessDescription: values.businessDescription,
-          businessTypes: values.businessTypes,
-          contact: {
-            firstName: values.firstName,
-            lastName: values.lastName,
-            phone: values.phone,
-            email: values.email,
-            website: values.website,
+      // ✅ Use fetch instead of supabase.functions.invoke to bypass Auth claim error
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/insert-business`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
           },
-          address: {
-            streetAddress: values.streetAddress,
-            apartment: values.apartment,
-            city: values.city,
-            state: values.state,
-            zipCode: values.zipCode,
-            country: values.country,
-            lat: parseFloat(String(geocodedData.lat)),
-            lng: parseFloat(String(geocodedData.lng)),
-          },
-          piWalletAddress: values.piWalletAddress,
-        },
-      });
+          body: JSON.stringify({
+            owner_id: user.uid,
+            businessName: values.businessName,
+            businessDescription: values.businessDescription,
+            businessTypes: values.businessTypes,
+            contact: {
+              firstName: values.firstName,
+              lastName: values.lastName,
+              phone: values.phone,
+              email: values.email,
+              website: values.website,
+            },
+            address: {
+              streetAddress: values.streetAddress,
+              apartment: values.apartment,
+              city: values.city,
+              state: values.state,
+              zipCode: values.zipCode,
+              country: values.country,
+              lat: parseFloat(String(geocodedData.lat)),
+              lng: parseFloat(String(geocodedData.lng)),
+            },
+            piWalletAddress: values.piWalletAddress,
+          }),
+        }
+      );
 
-      if (insertError || !insertRes?.success || !insertRes?.business) {
-        const errMsg = (insertError as any)?.message || (insertRes as any)?.error || 'Unknown error';
+      const insertRes = await response.json();
+
+      if (!response.ok || !insertRes?.success || !insertRes?.business) {
+        const errMsg = insertRes?.error || 'Unknown error occurred';
         toast.error(`Business registration failed: ${errMsg}`);
         return;
       }
 
       const newBusiness = insertRes.business;
 
-      // ✅ Upload business images to storage
+      // ✅ Upload business images
       if (selectedImages.length && newBusiness?.id) {
         try {
           const uploadPromises = selectedImages.map(async (file, index) => {
@@ -229,7 +239,6 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       toast.success('Business registered successfully!');
       if (onSuccess) onSuccess();
 
-      // Navigate to registered-business page with the new business ID
       navigate('/registered-business', {
         state: { newBusinessId: newBusiness.id }
       });
