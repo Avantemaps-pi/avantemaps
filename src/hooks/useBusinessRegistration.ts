@@ -77,6 +77,10 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleImageReorder = (newImages: File[]) => {
+    setSelectedImages(newImages);
+  };
+
   // ---------------------------
   // GEOCODE FUNCTION
   // ---------------------------
@@ -258,6 +262,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
     selectedImages,
     handleImageUpload,
     handleImageRemove,
+    handleImageReorder,
     onSubmit,
     isSubmitting,
   };

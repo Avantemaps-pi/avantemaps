@@ -88,6 +88,10 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleImageReorder = (newImages: File[]) => {
+    setSelectedImages(newImages);
+  };
+
   const onSubmit = (values: FormValues) => {
     console.log('Updated form values:', values);
     console.log('Selected images:', selectedImages);
@@ -138,6 +142,7 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
                 selectedImages={selectedImages}
                 handleImageUpload={handleImageUpload}
                 handleImageRemove={handleImageRemove}
+                handleImageReorder={handleImageReorder}
                 setSelectedTab={setSelectedTab}
               />
             </Tabs>

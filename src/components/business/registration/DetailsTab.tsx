@@ -15,6 +15,7 @@ interface DetailsTabProps {
   selectedImages: File[];
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleImageRemove?: (index: number) => void;
+  handleImageReorder?: (newImages: File[]) => void;
   disabled?: boolean;
 }
 
@@ -23,6 +24,7 @@ const DetailsTab: React.FC<DetailsTabProps> = ({
   selectedImages, 
   handleImageUpload,
   handleImageRemove,
+  handleImageReorder,
   disabled
 }) => {
   const form = useFormContext<FormValues>();
@@ -42,6 +44,7 @@ const DetailsTab: React.FC<DetailsTabProps> = ({
           selectedImages={selectedImages}
           handleImageUpload={handleImageUpload}
           handleImageRemove={handleImageRemove}
+          handleImageReorder={handleImageReorder}
           maxImages={3}
           disabled={disabled}
         />

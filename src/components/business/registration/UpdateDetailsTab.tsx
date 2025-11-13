@@ -13,6 +13,7 @@ interface UpdateDetailsTabProps {
   selectedImages: File[];
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleImageRemove?: (index: number) => void;
+  handleImageReorder?: (newImages: File[]) => void;
   disabled?: boolean;
 }
 
@@ -21,6 +22,7 @@ const UpdateDetailsTab: React.FC<UpdateDetailsTabProps> = ({
   selectedImages, 
   handleImageUpload, 
   handleImageRemove,
+  handleImageReorder,
   disabled 
 }) => {
   const form = useFormContext<FormValues>();
@@ -38,6 +40,7 @@ const UpdateDetailsTab: React.FC<UpdateDetailsTabProps> = ({
           selectedImages={selectedImages}
           handleImageUpload={handleImageUpload}
           handleImageRemove={handleImageRemove}
+          handleImageReorder={handleImageReorder}
           disabled={disabled}
         />
         <BusinessDescriptionField disabled={disabled} />

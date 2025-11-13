@@ -11,6 +11,7 @@ interface TabContentProps {
   selectedImages: File[];
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleImageRemove?: (index: number) => void;
+  handleImageReorder?: (newImages: File[]) => void;
   setSelectedTab: (tab: string) => void;
   isSubmitting?: boolean;
 }
@@ -19,6 +20,7 @@ const TabContent: React.FC<TabContentProps> = ({
   selectedImages, 
   handleImageUpload,
   handleImageRemove,
+  handleImageReorder,
   setSelectedTab,
   isSubmitting
 }) => {
@@ -61,6 +63,7 @@ const TabContent: React.FC<TabContentProps> = ({
           selectedImages={selectedImages}
           handleImageUpload={handleImageUpload}
           handleImageRemove={handleImageRemove}
+          handleImageReorder={handleImageReorder}
           disabled={isSubmitting}
         />
       </TabsContent>
