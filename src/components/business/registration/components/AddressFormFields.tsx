@@ -13,7 +13,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
   const form = useFormContext<FormValues>();
   const { predictions, isLoading, getSuggestions, getPlaceDetails, clearSuggestions } = useLocationIQAutocomplete();
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   const handleAddressChange = (value: string) => {
@@ -99,7 +99,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
   // Hide suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
       }
     };
@@ -115,7 +115,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
         control={form.control}
         name="streetAddress"
         render={({ field }) => (
-          <FormItem className="relative">
+          <FormItem ref={containerRef} className="relative">
             <FormLabel className="text-sm font-medium flex items-center gap-2">
               <MapPin className="w-4 h-4 text-muted-foreground" />
               Street Address
@@ -126,7 +126,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                   id="streetAddress"
                   placeholder="Start typing to search for an address..."
                   {...field}
-                  ref={inputRef}
+                  
                   onChange={(e) => handleAddressChange(e.target.value)}
                   onFocus={() => predictions.length > 0 && setShowSuggestions(true)}
                   disabled={disabled}
