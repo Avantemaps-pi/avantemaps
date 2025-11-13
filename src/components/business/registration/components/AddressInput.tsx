@@ -36,6 +36,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
 
   const handleSuggestionClick = (prediction: typeof predictions[0]) => {
     console.log('📍 Address selected:', prediction);
+    console.log('📦 Address object:', prediction.address);
     
     const streetAddress = [
       prediction.address.house_number,
@@ -45,35 +46,48 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
     // Set street address
     form.setValue('streetAddress', streetAddress, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
 
-    // Auto-fill city
-    const city = prediction.address.city;
+    // Auto-fill city (LocationIQ may use city, town, village, or municipality)
+    const city = prediction.address.city || 
+                 prediction.address.town || 
+                 prediction.address.village || 
+                 prediction.address.municipality;
     if (city) {
-      console.log('Setting city:', city);
+      console.log('✓ Setting city:', city);
       form.setValue('city', city, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+    } else {
+      console.warn('⚠️ No city found in address');
     }
 
-    // Auto-fill state/province
-    const state = prediction.address.state;
+    // Auto-fill state/province (LocationIQ may use state, province, or region)
+    const state = prediction.address.state || 
+                  prediction.address.province || 
+                  prediction.address.region;
     if (state) {
-      console.log('Setting state:', state);
+      console.log('✓ Setting state:', state);
       form.setValue('state', state, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+    } else {
+      console.warn('⚠️ No state found in address');
     }
 
     // Auto-fill postal code
     const postcode = prediction.address.postcode;
     if (postcode) {
-      console.log('Setting zipCode:', postcode);
+      console.log('✓ Setting zipCode:', postcode);
       form.setValue('zipCode', postcode, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+    } else {
+      console.warn('⚠️ No postcode found in address');
     }
 
     // Auto-fill country
     const country = prediction.address.country;
     if (country) {
-      console.log('Setting country:', country);
+      console.log('✓ Setting country:', country);
       form.setValue('country', country, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+    } else {
+      console.warn('⚠️ No country found in address');
     }
 
-    console.log('✅ All address fields updated');
+    console.log('✅ Address autocomplete completed');
     clearSuggestions();
     setShowSuggestions(false);
   };

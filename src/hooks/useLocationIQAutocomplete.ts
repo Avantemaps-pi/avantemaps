@@ -12,7 +12,12 @@ export interface PlacePrediction {
     house_number?: string;
     road?: string;
     city?: string;
+    town?: string;
+    village?: string;
+    municipality?: string;
     state?: string;
+    province?: string;
+    region?: string;
     postcode?: string;
     country?: string;
   };
@@ -64,7 +69,12 @@ export const useLocationIQAutocomplete = () => {
               house_number: suggestion.address?.house_number || '',
               road: suggestion.address?.road || '',
               city: suggestion.address?.city || '',
+              town: suggestion.address?.town || '',
+              village: suggestion.address?.village || '',
+              municipality: suggestion.address?.municipality || '',
               state: suggestion.address?.state || '',
+              province: suggestion.address?.province || '',
+              region: suggestion.address?.region || '',
               postcode: suggestion.address?.postcode || '',
               country: suggestion.address?.country || '',
             }
