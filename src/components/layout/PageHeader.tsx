@@ -113,7 +113,7 @@ const PageHeader = ({
               <ArrowLeft className="h-5 w-5" />
             </Button>}
           
-          {isRegistrationPage && <Button variant="ghost" size="icon" onClick={() => navigate('/registered-business')} className="mr-2">
+          {isRegistrationPage && <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mr-2">
               <ArrowLeft className="h-5 w-5" />
             </Button>}
           
