@@ -105,6 +105,64 @@ const fetchLocationIQSuggestions = async (query: string): Promise<Suggestion[]> 
   }));
 };
 
+const fetchNominatimSuggestions = async (query: string): Promise<Suggestion[]> => {
+  // Nominatim is free and doesn't require an API key
+  // Rate limit: 1 request per second (we respect this in our usage)
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`;
+  
+  console.log('🌍 Fetching from Nominatim (fallback):', query);
+  
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'AvanteMaps/1.0' // Nominatim requires a User-Agent
+    }
+  });
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('❌ Nominatim API error:', {
+      status: res.status,
+      statusText: res.statusText,
+      body: errorText
+    });
+    throw new Error(`Nominatim API error: ${res.status}`);
+  }
+  
+  const data = await res.json();
+  console.log('✅ Nominatim returned', data.length, 'suggestions');
+
+  return data.map((item: any) => ({
+    display_name: item.display_name,
+    lat: parseFloat(item.lat),
+    lon: parseFloat(item.lon),
+    address: {
+      house_number: item.address?.house_number || '',
+      road: item.address?.road || '',
+      city: item.address?.city || item.address?.town || item.address?.village || item.address?.municipality || '',
+      state: item.address?.state || item.address?.province || item.address?.region || item.address?.state_district || '',
+      postcode: item.address?.postcode || '',
+      country: item.address?.country || ''
+    }
+  }));
+};
+
+const fetchGeocodingSuggestions = async (query: string): Promise<Suggestion[]> => {
+  try {
+    // Try LocationIQ first (primary provider)
+    return await fetchLocationIQSuggestions(query);
+  } catch (locationIQError: any) {
+    console.warn('⚠️ LocationIQ failed, falling back to Nominatim:', locationIQError.message);
+    
+    try {
+      // Fallback to Nominatim (free, no API key required)
+      return await fetchNominatimSuggestions(query);
+    } catch (nominatimError: any) {
+      console.error('❌ Both geocoding providers failed');
+      throw new Error('All geocoding providers unavailable');
+    }
+  }
+};
+
 // --- Main handler ---
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS });
@@ -129,7 +187,7 @@ serve(async (req) => {
     const validation = validateAddress(address);
     if (!validation.valid) return new Response(JSON.stringify({ error: validation.error }), { status: 400, headers: CORS_HEADERS });
 
-    const suggestions = await fetchLocationIQSuggestions(address.trim());
+    const suggestions = await fetchGeocodingSuggestions(address.trim());
 
     return new Response(JSON.stringify({ suggestions }), { headers: CORS_HEADERS });
   } catch (err: any) {
