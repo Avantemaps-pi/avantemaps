@@ -6,6 +6,7 @@ import { useFormContext } from 'react-hook-form';
 import { FormValues } from '../formSchema';
 
 const MAX_WORD_COUNT = 150;
+const MIN_WORD_COUNT = 10;
 
 interface BusinessDescriptionFieldProps {
   disabled?: boolean;
@@ -53,9 +54,11 @@ const BusinessDescriptionField: React.FC<BusinessDescriptionFieldProps> = ({ dis
               disabled={disabled}
             />
           </FormControl>
-          <FormDescription className="flex justify-end text-xs mt-1">
-            {wordCount}/{MAX_WORD_COUNT} words
-          </FormDescription>
+          {wordCount < MIN_WORD_COUNT && (
+            <FormDescription className="flex justify-end text-xs mt-1">
+              {wordCount}/{MAX_WORD_COUNT} words
+            </FormDescription>
+          )}
           <FormMessage />
         </FormItem>
       )}
