@@ -32,6 +32,9 @@ const Settings = () => {
     if (savedScheme === 'light') return false;
     return false;
   });
+  const [isAccountDeleted, setIsAccountDeleted] = useState(() => {
+    return localStorage.getItem('accountDeleted') === 'true';
+  });
 
   // Track initial values to compare for changes
   const [initialValues, setInitialValues] = useState({
@@ -112,11 +115,15 @@ const Settings = () => {
     }
   };
   const handleDeleteAccount = () => {
-    toast.error('Account deletion is not available in the demo', {
-      description: 'In a real application, this would initiate the account deletion process.'
+    setIsAccountDeleted(true);
+    localStorage.setItem('accountDeleted', 'true');
+    toast.error('Account scheduled for deletion', {
+      description: 'Your account will be permanently deleted after 15 days. You can reinstate it before then.'
     });
   };
   const handleReinstateAccount = () => {
+    setIsAccountDeleted(false);
+    localStorage.removeItem('accountDeleted');
     toast.success('Account has been reinstated', {
       description: 'Your account has been successfully reactivated.'
     });
@@ -133,7 +140,7 @@ const Settings = () => {
 
           <AppPreferences notifications={notifications} setNotifications={setNotifications} isDarkMode={isDarkMode} colorScheme={colorScheme} onColorSchemeChange={handleColorSchemeChange} onSaveSettings={handleSaveSettings} />
 
-          <DangerZone onDeleteAccount={handleDeleteAccount} onReinstateAccount={handleReinstateAccount} />
+          <DangerZone onDeleteAccount={handleDeleteAccount} onReinstateAccount={handleReinstateAccount} isAccountDeleted={isAccountDeleted} />
         </div>
       </div>
     </AppLayout>
