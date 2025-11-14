@@ -100,7 +100,7 @@ const AppPreferences = ({
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-blue-800 dark:text-blue-300 text-left">Verification Process</h4>
               </div>
-              <ul className="mt-2 space-y-3 text-sm text-left -ml-10">
+              <ul className="mt-2 space-y-3 text-sm text-left">
                 <li className="flex flex-col items-start text-left">
                   <div className="flex items-start">
                     <TooltipProvider>
