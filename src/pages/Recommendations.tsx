@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 import PlaceCard from '@/components/business/PlaceCard';
@@ -7,14 +7,62 @@ import RecommendationsSEO from '@/components/seo/RecommendationsSEO';
 import { useRecommendations } from '@/hooks/useRecommendations';
 import RecommendationSkeleton from '@/components/recommendations/RecommendationSkeleton';
 import EmptyRecommendationSection from '@/components/recommendations/EmptyRecommendationSection';
-import { Award, Star } from 'lucide-react';
+import { Award, Star, Search, X } from 'lucide-react';
 import MetaTags from '@/components/seo/MetaTags';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
 const Recommendations = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const { avanteTopChoice, recommendedForYou, isLoading } = useRecommendations();
+
+  // Common business categories
+  const categories = [
+    'Restaurant', 'Cafe', 'Retail', 'Technology', 'Health', 
+    'Beauty', 'Entertainment', 'Services', 'Education', 'Finance'
+  ];
+
+  // Filter function for businesses
+  const filterBusinesses = (businesses: any[]) => {
+    return businesses.filter(business => {
+      const matchesSearch = searchTerm === '' || 
+        business.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        business.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCategory = selectedCategories.length === 0 ||
+        selectedCategories.some(cat => 
+          business.category?.toLowerCase().includes(cat.toLowerCase()) ||
+          business.business_types?.some((type: string) => 
+            type.toLowerCase().includes(cat.toLowerCase())
+          )
+        );
+      
+      return matchesSearch && matchesCategory;
+    });
+  };
+
+  // Filtered data
+  const filteredData = useMemo(() => ({
+    avanteTopChoice: filterBusinesses(avanteTopChoice || []),
+    recommendedForYou: filterBusinesses(recommendedForYou || [])
+  }), [avanteTopChoice, recommendedForYou, searchTerm, selectedCategories]);
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedCategories([]);
+  };
 
   const handlePlaceClick = (placeId: string, zoomToLocation?: boolean) => {
     navigate('/', {
@@ -57,21 +105,86 @@ const Recommendations = () => {
       />
       
       <div className="w-full mx-auto mt-4 pb-6 overflow-y-auto overflow-x-hidden px-0">
+        {/* Search and Filter Section */}
+        <div className="px-4 md:px-[15px] mb-6 space-y-4 lg:ml-[15px]">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search businesses by name or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Category Filters */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Filter by category:</span>
+              {(searchTerm || selectedCategories.length > 0) && (
+                <button
+                  onClick={clearFilters}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Clear all filters
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {categories.map(category => (
+                <Badge
+                  key={category}
+                  variant={selectedCategories.includes(category) ? 'default' : 'outline'}
+                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                  onClick={() => toggleCategory(category)}
+                >
+                  {category}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Active Filters Summary */}
+          {(searchTerm || selectedCategories.length > 0) && (
+            <div className="text-sm text-muted-foreground">
+              {searchTerm && <span>Searching for: "{searchTerm}"</span>}
+              {searchTerm && selectedCategories.length > 0 && <span> • </span>}
+              {selectedCategories.length > 0 && (
+                <span>Filtering by: {selectedCategories.join(', ')}</span>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="space-y-6 pb-1 px-0 overflow-x-hidden lg:ml-[15px]">
           {[
             {
               title: 'Avante Top Choice',
-              data: avanteTopChoice,
+              data: filteredData.avanteTopChoice,
               key: 'avanteTopChoice',
               icon: Award,
-              emptyMessage: 'No verified and certified businesses yet. Check back soon!'
+              emptyMessage: (searchTerm || selectedCategories.length > 0) 
+                ? 'No businesses match your search criteria.'
+                : 'No verified and certified businesses yet. Check back soon!'
             },
             {
               title: 'Recommended for you',
-              data: recommendedForYou,
+              data: filteredData.recommendedForYou,
               key: 'recommendedForYou',
               icon: Star,
-              emptyMessage: 'No recommendations available yet.'
+              emptyMessage: (searchTerm || selectedCategories.length > 0)
+                ? 'No businesses match your search criteria.'
+                : 'No recommendations available yet.'
             }
           ].map(({ title, data, key, icon, emptyMessage }) => (
             <section
