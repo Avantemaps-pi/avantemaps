@@ -7,14 +7,14 @@ import RecommendationsSEO from '@/components/seo/RecommendationsSEO';
 import { useRecommendations } from '@/hooks/useRecommendations';
 import RecommendationSkeleton from '@/components/recommendations/RecommendationSkeleton';
 import EmptyRecommendationSection from '@/components/recommendations/EmptyRecommendationSection';
-import { Award, TrendingUp, Star } from 'lucide-react';
+import { Award, Star } from 'lucide-react';
 import MetaTags from '@/components/seo/MetaTags';
 
 const Recommendations = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const { avanteTopChoice, suggestedForYou, recommendedForYou, isLoading } = useRecommendations();
+  const { avanteTopChoice, recommendedForYou, isLoading } = useRecommendations();
 
   const handlePlaceClick = (placeId: string, zoomToLocation?: boolean) => {
     navigate('/', {
@@ -65,13 +65,6 @@ const Recommendations = () => {
               key: 'avanteTopChoice',
               icon: Award,
               emptyMessage: 'No verified and certified businesses yet. Check back soon!'
-            },
-            {
-              title: 'Suggested for you',
-              data: suggestedForYou,
-              key: 'suggestedForYou',
-              icon: TrendingUp,
-              emptyMessage: 'No suggestions available at the moment.'
             },
             {
               title: 'Recommended for you',
