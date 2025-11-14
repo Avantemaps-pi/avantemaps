@@ -1,5 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
 /**
  * Pi Network Authentication Verification
@@ -176,25 +176,45 @@ if (testMode) {
     console.log(`ℹ️ [${traceId}] Test user already exists:`, { uid, email });
   }
 
-  // Create a proper session for the user
-  const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-    user_id: uid,
-  });
-  
-  if (sessionError || !sessionData) {
-    console.error(`❌ [${traceId}] Failed to create session:`, sessionError);
-    throw new Error('Failed to create test session');
-  }
+  // Create a proper session or fallback token for the user
+  let access_token: string | undefined;
+  let refresh_token: string | undefined;
+  const adminApi: any = (supabaseAdmin as any).auth?.admin;
 
-  console.log(`✅ [${traceId}] Test mode session created successfully`);
+  if (adminApi && typeof adminApi.createSession === 'function') {
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+      user_id: uid,
+    });
+
+    if (sessionError || !sessionData) {
+      console.error(`❌ [${traceId}] Failed to create session:`, sessionError);
+      throw new Error('Failed to create test session');
+    }
+    access_token = sessionData.session.access_token;
+    refresh_token = sessionData.session.refresh_token;
+    console.log(`✅ [${traceId}] Test mode session created successfully via createSession`);
+  } else {
+    console.warn(`ℹ️ [${traceId}] createSession not available, falling back to generateLink`);
+    const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+    });
+    if (tokenError || !tokenData?.properties?.access_token) {
+      console.error(`❌ [${traceId}] Failed to generate magic link token:`, tokenError);
+      throw new Error('Failed to generate fallback session token');
+    }
+    access_token = tokenData.properties.access_token;
+    refresh_token = access_token; // fallback
+    console.log(`✅ [${traceId}] Test mode token generated via generateLink`);
+  }
 
   return new Response(JSON.stringify({
     verified: true,
     testMode: true,
     message: 'Verification bypassed (development mode with session).',
     user: { uid, username, wallet_address: 'TEST_WALLET_123' },
-    supabase_token: sessionData.session.access_token,
-    refresh_token: sessionData.session.refresh_token,
+    supabase_token: access_token,
+    refresh_token,
     traceId,
   }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
@@ -283,17 +303,37 @@ if (testMode) {
       console.log(`ℹ️ [${traceId}] User already exists:`, { uid, email });
     }
 
-    // --- Create proper session with `sub` claim ---
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-      user_id: uid,
-    });
-    
-    if (sessionError || !sessionData) {
-      console.error(`❌ [${traceId}] Failed to create session:`, sessionError);
-      throw new Error('Failed to create user session');
-    }
+    // --- Create proper session with `sub` claim` or fallback ---
+    let access_token: string | undefined;
+    let refresh_token: string | undefined;
+    const adminApi: any = (supabaseAdmin as any).auth?.admin;
 
-    console.log(`✅ [${traceId}] Production session created successfully`);
+    if (adminApi && typeof adminApi.createSession === 'function') {
+      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+        user_id: uid,
+      });
+      
+      if (sessionError || !sessionData) {
+        console.error(`❌ [${traceId}] Failed to create session:`, sessionError);
+        throw new Error('Failed to create user session');
+      }
+      access_token = sessionData.session.access_token;
+      refresh_token = sessionData.session.refresh_token;
+      console.log(`✅ [${traceId}] Production session created successfully via createSession`);
+    } else {
+      console.warn(`ℹ️ [${traceId}] createSession not available, falling back to generateLink`);
+      const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email,
+      });
+      if (tokenError || !tokenData?.properties?.access_token) {
+        console.error(`❌ [${traceId}] Failed to generate magic link token:`, tokenError);
+        throw new Error('Failed to generate fallback session token');
+      }
+      access_token = tokenData.properties.access_token;
+      refresh_token = access_token; // fallback
+      console.log(`✅ [${traceId}] Production token generated via generateLink`);
+    }
 
     return new Response(JSON.stringify({
       verified: true,
@@ -302,8 +342,8 @@ if (testMode) {
         username: user.username,
         wallet_address: user.wallet_address || null,
       },
-      supabase_token: sessionData.session.access_token,
-      refresh_token: sessionData.session.refresh_token,
+      supabase_token: access_token,
+      refresh_token,
       traceId,
     }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
