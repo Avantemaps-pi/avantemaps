@@ -166,36 +166,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div className="p-3 border-t">
           <div className="relative flex items-center">
             <div className="flex w-full bg-slate-50 rounded-full px-4 py-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-full px-4 py-1 mr-3 transition-colors">
-                    <Menu size={18} className="mr-1.5" />
-                    <span className="text-sm font-medium">Menu</span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 p-0 bg-[#1e2732] text-white" sideOffset={5}>
-                  <div className="flex flex-col divide-y divide-gray-700">
-                    {chatMode === 'live' && (
-                      <>
-                        <button onClick={() => handleMenuOptionClick('/attach')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
-                          <span className="text-lg">Attach</span>
-                          <span className="text-gray-400">/attach</span>
-                        </button>
-                        <button onClick={() => handleMenuOptionClick('/certification')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
-                          <span className="text-lg">Certify</span>
-                          <span className="text-gray-400">/certification</span>
-                        </button>
-                      </>
-                    )}
-                    <button onClick={() => handleMenuOptionClick('/verification')} className="flex justify-between items-center p-3 hover:bg-gray-700 transition-colors">
-                      <span className="text-lg">Verify</span>
-                      <span className="text-gray-400">/verification</span>
-                    </button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              <Input 
+              <Input
                 value={message} 
                 onChange={e => setMessage(e.target.value)} 
                 className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-gray-600 placeholder:text-gray-500" 
