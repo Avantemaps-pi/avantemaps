@@ -42,6 +42,7 @@ const Settings = () => {
   const [isAccountDeleted, setIsAccountDeleted] = useState(() => {
     return localStorage.getItem('accountDeleted') === 'true';
   });
+  const [activeSection, setActiveSection] = useState<string>("profile");
 
   // Track initial values to compare for changes
   const [initialValues, setInitialValues] = useState({
@@ -90,6 +91,35 @@ const Settings = () => {
       };
     }
   }, [colorScheme]);
+
+  // Keyboard shortcuts for navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+        switch(e.key) {
+          case '1':
+            e.preventDefault();
+            setActiveSection("profile");
+            toast.info('Profile Settings', { description: 'Use Ctrl+1 to navigate here' });
+            break;
+          case '2':
+            e.preventDefault();
+            setActiveSection("preferences");
+            toast.info('App Preferences', { description: 'Use Ctrl+2 to navigate here' });
+            break;
+          case '3':
+            e.preventDefault();
+            setActiveSection("danger");
+            toast.info('Danger Zone', { description: 'Use Ctrl+3 to navigate here' });
+            break;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleColorSchemeChange = (scheme: 'system' | 'light' | 'dark') => {
     setColorScheme(scheme);
     localStorage.setItem('colorScheme', scheme);
@@ -140,9 +170,23 @@ const Settings = () => {
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6 overflow-hidden">
         <div>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Manage your account preferences.</p>
+          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+            <span className="inline-flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Ctrl+1</kbd>
+              <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Ctrl+2</kbd>
+              <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Ctrl+3</kbd>
+            </span>
+            <span>for quick navigation</span>
+          </p>
         </div>
 
-        <Accordion type="multiple" defaultValue={["profile"]} className="mt-4 sm:mt-6 space-y-4 overflow-hidden">
+        <Accordion 
+          type="single" 
+          value={activeSection} 
+          onValueChange={setActiveSection}
+          collapsible 
+          className="mt-4 sm:mt-6 space-y-4 overflow-hidden"
+        >
           <AccordionItem value="profile" className="border rounded-lg overflow-hidden">
             <AccordionTrigger className="px-4 sm:px-6 py-3 hover:no-underline hover:bg-muted/50">
               <div className="flex items-start gap-3 text-left">
