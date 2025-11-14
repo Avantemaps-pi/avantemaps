@@ -8,6 +8,12 @@ import DangerZone from '@/components/settings/DangerZone';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/auth';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const Settings = () => {
   const isMobile = useIsMobile();
@@ -135,13 +141,60 @@ const Settings = () => {
           <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Manage your account preferences.</p>
         </div>
 
-        <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6 overflow-hidden">
-          <ProfileSettings language={language} setLanguage={setLanguage} isMobile={isMobile} user={user} isLoading={isLoading} />
+        <Accordion type="multiple" defaultValue={["profile"]} className="mt-4 sm:mt-6 space-y-4 overflow-hidden">
+          <AccordionItem value="profile" className="border rounded-lg overflow-hidden">
+            <AccordionTrigger className="px-4 sm:px-6 py-3 hover:no-underline hover:bg-muted/50">
+              <div className="flex flex-col items-start text-left">
+                <span className="font-semibold text-base sm:text-lg">Profile Settings</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">Manage your personal information</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 sm:px-6 pt-2 pb-4">
+              <ProfileSettings 
+                language={language} 
+                setLanguage={setLanguage} 
+                isMobile={isMobile} 
+                user={user} 
+                isLoading={isLoading} 
+              />
+            </AccordionContent>
+          </AccordionItem>
 
-          <AppPreferences notifications={notifications} setNotifications={setNotifications} isDarkMode={isDarkMode} colorScheme={colorScheme} onColorSchemeChange={handleColorSchemeChange} onSaveSettings={handleSaveSettings} />
+          <AccordionItem value="preferences" className="border rounded-lg overflow-hidden">
+            <AccordionTrigger className="px-4 sm:px-6 py-3 hover:no-underline hover:bg-muted/50">
+              <div className="flex flex-col items-start text-left">
+                <span className="font-semibold text-base sm:text-lg">App Preferences</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">Customize your experience</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 sm:px-6 pt-2 pb-4">
+              <AppPreferences 
+                notifications={notifications} 
+                setNotifications={setNotifications} 
+                isDarkMode={isDarkMode} 
+                colorScheme={colorScheme} 
+                onColorSchemeChange={handleColorSchemeChange} 
+                onSaveSettings={handleSaveSettings} 
+              />
+            </AccordionContent>
+          </AccordionItem>
 
-          <DangerZone onDeleteAccount={handleDeleteAccount} onReinstateAccount={handleReinstateAccount} isAccountDeleted={isAccountDeleted} />
-        </div>
+          <AccordionItem value="danger" className="border rounded-lg overflow-hidden border-destructive/20">
+            <AccordionTrigger className="px-4 sm:px-6 py-3 hover:no-underline hover:bg-muted/50">
+              <div className="flex flex-col items-start text-left">
+                <span className="font-semibold text-base sm:text-lg text-destructive">Danger Zone</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">Account deletion and recovery</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 sm:px-6 pt-2 pb-4">
+              <DangerZone 
+                onDeleteAccount={handleDeleteAccount} 
+                onReinstateAccount={handleReinstateAccount} 
+                isAccountDeleted={isAccountDeleted} 
+              />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
     </AppLayout>
   );
