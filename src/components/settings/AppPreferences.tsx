@@ -115,7 +115,7 @@ const AppPreferences = ({
                     </TooltipProvider>
                     <p className="font-medium text-left">Submit all required business information</p>
                   </div>
-                  <p className="text-muted-foreground text-left mt-1 ml-8">Complete all required business details</p>
+                  <p className="text-muted-foreground text-left mt-1">Complete all required business details</p>
                 </li>
                 <Separator className="my-3" />
                 <li className="flex flex-col items-start text-left">
