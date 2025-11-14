@@ -42,8 +42,8 @@ export function usePiAuth(): UsePiAuthReturn {
 
       // 3️⃣ Always set Supabase session
       const { error: sessionError } = await supabase.auth.setSession({
-        access_token: verification.supabaseToken,
-        refresh_token: verification.supabaseToken,
+        access_token: verification.supabaseToken!,
+        refresh_token: verification.refreshToken || verification.supabaseToken!,
       });
 
       if (sessionError) throw new Error('Failed to create Supabase session');
