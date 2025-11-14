@@ -149,74 +149,67 @@ Deno.serve(async (req: Request) => {
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-  // ✅ Test mode (development, create Supabase session)
-if (testMode) {
-  console.log(`🧪 [${traceId}] Test mode: Creating Supabase user and JWT`);
+    // ✅ Test mode (development / preview): do NOT rely on email-password
+    if (testMode) {
+      console.log(`🧪 [${traceId}] Test mode: ensure user exists and try admin.createSession`);
 
-  const email = `${username}@pi.local`;
+      const email = `${username}@pi.local`;
 
-  // Check if user exists
-  const { data: usersList, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-  if (listError) {
-    console.error(`❌ [${traceId}] Failed to list users:`, listError);
-    throw new Error(`Failed to list users: ${listError.message}`);
-  }
-  
-  const existingUser = usersList?.users.find((u) => u.id === uid);
+      // Ensure user exists (idempotent)
+      const { data: usersList, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      if (listError) {
+        console.error(`❌ [${traceId}] Failed to list users:`, listError);
+        throw new Error(`Failed to list users: ${listError.message}`);
+      }
+      const existingUser = usersList?.users.find((u) => u.id === uid);
 
-  if (!existingUser) {
-    console.log(`🔨 [${traceId}] Creating new test user:`, { uid, email, username });
-    const { error: createError } = await supabaseAdmin.auth.admin.createUser({
-      id: uid,
-      email,
-      email_confirm: true,
-      user_metadata: { username, full_name: username },
-    });
-    
-    if (createError) {
-      console.error(`❌ [${traceId}] Failed to create user:`, createError);
-      throw new Error(`Failed to create user: ${createError.message}`);
+      if (!existingUser) {
+        console.log(`🔨 [${traceId}] Creating new test user:`, { uid, email, username });
+        const { error: createError } = await supabaseAdmin.auth.admin.createUser({
+          id: uid,
+          email,
+          email_confirm: true,
+          user_metadata: { username, full_name: username },
+        });
+        if (createError) {
+          console.error(`❌ [${traceId}] Failed to create user:`, createError);
+          throw new Error(`Failed to create user: ${createError.message}`);
+        }
+        console.log(`✅ [${traceId}] Created test Supabase user ${uid}`);
+      } else {
+        console.log(`ℹ️ [${traceId}] Test user already exists:`, { uid, email });
+      }
+
+      // Try to create a real session using the admin API (no email provider needed)
+      let access_token: string | null = null;
+      let refresh_token: string | null = null;
+      const adminApi: any = (supabaseAdmin as any).auth?.admin;
+
+      if (adminApi && typeof adminApi.createSession === 'function') {
+        const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+          user_id: uid,
+        });
+        if (sessionError || !sessionData?.session) {
+          console.warn(`⚠️ [${traceId}] Admin createSession failed in test mode:`, sessionError);
+        } else {
+          access_token = sessionData.session.access_token;
+          refresh_token = sessionData.session.refresh_token;
+          console.log(`✅ [${traceId}] Test mode session created via admin.createSession`);
+        }
+      } else {
+        console.warn(`ℹ️ [${traceId}] admin.createSession not available in this runtime.`);
+      }
+
+      // Always succeed in test mode to unblock local development
+      return new Response(JSON.stringify({
+        verified: true,
+        testMode: true,
+        user: { uid, username, wallet_address: 'TEST_WALLET_123' },
+        supabase_token: access_token,
+        refresh_token: refresh_token,
+        traceId,
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-    console.log(`✅ [${traceId}] Created test Supabase user ${uid}`);
-  } else {
-    console.log(`ℹ️ [${traceId}] Test user already exists:`, { uid, email });
-  }
-
-  // Create a proper session for the user in test mode by setting a password and signing in
-  let access_token: string | undefined;
-  let refresh_token: string | undefined;
-
-  // Derive a strong deterministic password for dev only (never log this)
-  const testPassword = `DevOnly-${uid}-!A9#${username.length}`;
-
-  // Ensure the user has this password set (idempotent)
-  const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(uid, {
-    password: testPassword,
-  });
-  if (updateError) {
-    console.error(`❌ [${traceId}] Failed to set test password:` , updateError);
-    throw new Error('Failed to prepare test user credentials');
-  }
-
-  // Sign in using anon client to obtain a real session
-  const { data: signInData, error: signInError } = await supabaseAnon.auth.signInWithPassword({
-    email,
-    password: testPassword,
-  });
-  if (signInError || !signInData?.session) {
-    console.error(`❌ [${traceId}] Test sign-in failed:`, signInError);
-    throw new Error('Failed to create test session');
-  }
-
-  access_token = signInData.session.access_token;
-  refresh_token = signInData.session.refresh_token;
-  console.log(`✅ [${traceId}] Test mode session created via password sign-in`);
-
-  return new Response(JSON.stringify({
-    verified: true,
-    testMode: true,
-    message: 'Verification bypassed (development mode with session).',
-    user: { uid, username, wallet_address: 'TEST_WALLET_123' },
     supabase_token: access_token,
     refresh_token,
     traceId,
