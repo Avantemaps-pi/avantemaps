@@ -93,14 +93,14 @@ const AppPreferences = ({
           <p className="text-sm text-muted-foreground mt-1 text-left">As a Business Owner, you need to complete these steps to get verified:</p>
         </div>
 
-        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-100 dark:border-blue-900 rounded-md w-full">
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-100 dark:border-blue-900 rounded-md w-full overflow-x-hidden">
           <div className="flex items-start text-left">
             <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
             <div className="w-full text-left">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-blue-800 dark:text-blue-300 text-left">Verification Process</h4>
               </div>
-              <ul className="mt-2 space-y-3 text-sm text-left -ml-10">
+              <ul className="mt-2 space-y-3 text-sm text-left">
                 <li className="flex flex-col items-start text-left">
                   <div className="flex items-start">
                     <TooltipProvider>
@@ -115,7 +115,7 @@ const AppPreferences = ({
                     </TooltipProvider>
                     <p className="font-medium text-left">Submit all required business information</p>
                   </div>
-                  <p className="text-muted-foreground text-left mt-1">Complete all required business details</p>
+                  <p className="text-muted-foreground text-left mt-1 break-words">Complete all required business details</p>
                 </li>
                 <Separator className="my-3" />
                 <li className="flex flex-col items-start text-left">
@@ -132,7 +132,7 @@ const AppPreferences = ({
                     </TooltipProvider>
                     <p className="font-medium text-left">Request Verification</p>
                   </div>
-                  <p className="text-muted-foreground text-left mt-1">Navigate to the "My Business" page, and click the "Request" button to begin the verification process, but only if you meet the requirements</p>
+                  <p className="text-muted-foreground text-left mt-1 break-words">Navigate to the "My Business" page, and click the "Request" button to begin the verification process, but only if you meet the requirements</p>
                 </li>
                 <Separator className="my-3" />
                 <li className="flex flex-col items-start text-left">
@@ -150,7 +150,7 @@ const AppPreferences = ({
                     <p className="font-medium text-left">Get Verified Badge</p>
                   </div>
                   <div className="mt-1">
-                    <p className="text-muted-foreground text-left">Once approved, your business will show as verified</p>
+                    <p className="text-muted-foreground text-left break-words">Once approved, your business will show as verified</p>
                     <div className="mt-2 text-left">
                       <Button variant="link" size="sm" asChild className="text-blue-700 dark:text-blue-400 p-0">
                         <Link to="/verification-info">
