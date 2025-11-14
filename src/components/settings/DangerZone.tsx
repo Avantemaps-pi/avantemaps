@@ -5,10 +5,12 @@ import { Separator } from '@/components/ui/separator';
 interface DangerZoneProps {
   onDeleteAccount: () => void;
   onReinstateAccount: () => void;
+  isAccountDeleted: boolean;
 }
 const DangerZone = ({
   onDeleteAccount,
-  onReinstateAccount
+  onReinstateAccount,
+  isAccountDeleted
 }: DangerZoneProps) => {
   return <Card>
       <CardHeader>
@@ -27,13 +29,17 @@ const DangerZone = ({
             be permanently deleted after 15 days.
           </p>
         </div>
-        <Separator />
-        <div>
-          <Button variant="outline" onClick={onReinstateAccount} className="w-full">
-            Reinstate Account
-          </Button>
-          <p className="text-xs text-muted-foreground mt-2">If your account is scheduled for deletion, you can reinstate it within 15 Days.</p>
-        </div>
+        {isAccountDeleted && (
+          <>
+            <Separator />
+            <div>
+              <Button variant="outline" onClick={onReinstateAccount} className="w-full">
+                Reinstate Account
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2">If your account is scheduled for deletion, you can reinstate it within 15 Days.</p>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>;
 };
