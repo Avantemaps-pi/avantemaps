@@ -36,17 +36,18 @@ export function usePiAuth(): UsePiAuthReturn {
       // 2️⃣ Verify with serverless function
       const verification = await verifyPiAuthentication(accessToken, uid, username);
 
-      if (!verification.verified || !verification.supabaseToken || !verification.user) {
+      if (!verification.verified || !verification.user) {
         throw new Error(verification.error || 'Pi verification failed');
       }
 
-      // 3️⃣ Always set Supabase session
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: verification.supabaseToken!,
-        refresh_token: verification.refreshToken || verification.supabaseToken!,
-      });
-
-      if (sessionError) throw new Error('Failed to create Supabase session');
+      // 3️⃣ If we received Supabase tokens, create a session. Otherwise skip (test mode).
+      if (verification.supabaseToken) {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: verification.supabaseToken!,
+          refresh_token: verification.refreshToken || verification.supabaseToken!,
+        });
+        if (sessionError) throw new Error('Failed to create Supabase session');
+      }
 
       // 4️⃣ Update local auth context
       setUser({

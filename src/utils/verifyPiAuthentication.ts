@@ -11,6 +11,7 @@ export interface VerificationResult {
   user?: PiUser;
   supabaseToken?: string | null;
   refreshToken?: string | null;
+  testMode?: boolean;
   error?: string;
   details?: string;
   traceId?: string;
@@ -54,8 +55,9 @@ export const verifyPiAuthentication = async (
     return {
       verified: true,
       user: data.user,
-      supabaseToken: data.supabase_token ?? null, // JWT (access)
+      supabaseToken: data.supabase_token ?? null,
       refreshToken: data.refresh_token ?? null,
+      testMode: data.testMode ?? false,
       traceId: data.traceId,
     };
   } catch (err: any) {
