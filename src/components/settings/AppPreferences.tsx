@@ -111,7 +111,7 @@ const AppPreferences = ({
                     <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2">2</Badge>
                     <p className="font-medium text-left">Request Verification</p>
                   </div>
-                  <p className="text-muted-foreground text-left mt-1 ml-8">Navigate to the "My Business" page, and click the "Request" button to begin the verification process, but only if you meet the requirements</p>
+                  <p className="text-muted-foreground text-left mt-1">Navigate to the "My Business" page, and click the "Request" button to begin the verification process, but only if you meet the requirements</p>
                 </li>
                 <li className="flex flex-col items-start text-left">
                   <div className="flex items-start">
