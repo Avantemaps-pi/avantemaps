@@ -162,7 +162,7 @@ const Recommendations = () => {
 
           {/* Filter and Sort Controls */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-            <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex gap-2 items-center">
               {/* Category Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
