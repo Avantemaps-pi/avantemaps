@@ -8,6 +8,7 @@ import { Shield, ExternalLink, Monitor, Sun, Moon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -102,7 +103,16 @@ const AppPreferences = ({
               <ul className="mt-2 space-y-3 text-sm text-left -ml-10">
                 <li className="flex flex-col items-start text-left">
                   <div className="flex items-start">
-                    <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2">1</Badge>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2 cursor-help">1</Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>First step: Ensure all your business information is complete and accurate</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <p className="font-medium text-left">Submit all required business information</p>
                   </div>
                   <p className="text-muted-foreground text-left mt-1 ml-8">Complete all required business details</p>
@@ -110,7 +120,16 @@ const AppPreferences = ({
                 <Separator className="my-3" />
                 <li className="flex flex-col items-start text-left">
                   <div className="flex items-start">
-                    <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2">2</Badge>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2 cursor-help">2</Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Second step: Submit your verification request after meeting all requirements</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <p className="font-medium text-left">Request Verification</p>
                   </div>
                   <p className="text-muted-foreground text-left mt-1">Navigate to the "My Business" page, and click the "Request" button to begin the verification process, but only if you meet the requirements</p>
@@ -118,7 +137,16 @@ const AppPreferences = ({
                 <Separator className="my-3" />
                 <li className="flex flex-col items-start text-left">
                   <div className="flex items-start">
-                    <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2">3</Badge>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2 cursor-help">3</Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Final step: Receive your verified badge once your business is approved</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <p className="font-medium text-left">Get Verified Badge</p>
                   </div>
                   <div className="mt-1">
