@@ -51,6 +51,13 @@ Deno.serve(async (req: Request) => {
                    'unknown';
 
   try {
+    console.log(`🔍 [${traceId}] Request details:`, {
+      method: req.method,
+      clientIP,
+      origin: req.headers.get('origin'),
+      userAgent: req.headers.get('user-agent')?.substring(0, 100)
+    });
+
     // 🛡️ Rate limiting check
     const rateLimitCheck = checkRateLimit(clientIP);
     if (!rateLimitCheck.allowed) {
@@ -99,7 +106,17 @@ Deno.serve(async (req: Request) => {
 
     try {
       parsedBody = JSON.parse(rawBody);
-    } catch {
+      console.log(`📦 [${traceId}] Parsed request body:`, {
+        hasAccessToken: !!parsedBody.accessToken,
+        uid: parsedBody.uid,
+        username: parsedBody.username
+      });
+    } catch (parseError) {
+      console.error(`❌ [${traceId}] JSON parse error:`, {
+        error: parseError instanceof Error ? parseError.message : 'Unknown error',
+        rawBodyLength: rawBody.length,
+        rawBodyPreview: rawBody.substring(0, 100)
+      });
       return new Response(JSON.stringify({
         verified: false,
         error: 'Invalid request format',
@@ -133,17 +150,30 @@ if (testMode) {
   const email = `${username}@pi.local`;
 
   // Check if user exists
-  const { data: usersList } = await supabaseAdmin.auth.admin.listUsers();
+  const { data: usersList, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+  if (listError) {
+    console.error(`❌ [${traceId}] Failed to list users:`, listError);
+    throw new Error(`Failed to list users: ${listError.message}`);
+  }
+  
   const existingUser = usersList?.users.find((u) => u.id === uid);
 
   if (!existingUser) {
-    await supabaseAdmin.auth.admin.createUser({
+    console.log(`🔨 [${traceId}] Creating new test user:`, { uid, email, username });
+    const { error: createError } = await supabaseAdmin.auth.admin.createUser({
       id: uid,
       email,
       email_confirm: true,
       user_metadata: { username, full_name: username },
     });
+    
+    if (createError) {
+      console.error(`❌ [${traceId}] Failed to create user:`, createError);
+      throw new Error(`Failed to create user: ${createError.message}`);
+    }
     console.log(`✅ [${traceId}] Created test Supabase user ${uid}`);
+  } else {
+    console.log(`ℹ️ [${traceId}] Test user already exists:`, { uid, email });
   }
 
   // Create a proper session for the user
@@ -170,6 +200,7 @@ if (testMode) {
 }
 
     // --- Verify token with Pi API ---
+    console.log(`🔐 [${traceId}] Verifying token with Pi API`);
     const verifyResponse = await fetch('https://api.minepi.com/v2/me', {
       method: 'GET',
       headers: {
@@ -179,8 +210,17 @@ if (testMode) {
     });
 
     const rawResponse = await verifyResponse.text();
+    console.log(`📡 [${traceId}] Pi API response:`, {
+      status: verifyResponse.ok,
+      statusCode: verifyResponse.status,
+      responseLength: rawResponse.length
+    });
 
     if (!verifyResponse.ok) {
+      console.error(`❌ [${traceId}] Pi API verification failed:`, {
+        status: verifyResponse.status,
+        response: rawResponse.substring(0, 200)
+      });
       return new Response(JSON.stringify({
         verified: false,
         error: 'Pi API verification failed',
@@ -191,8 +231,20 @@ if (testMode) {
 
     const piUserData = JSON.parse(rawResponse);
     const user = piUserData.user ?? piUserData;
+    
+    console.log(`👤 [${traceId}] Pi user data:`, {
+      uid: user.uid,
+      username: user.username,
+      hasWallet: !!user.wallet_address
+    });
 
     if (user.uid !== uid || user.username !== username) {
+      console.error(`❌ [${traceId}] User mismatch:`, {
+        expectedUid: uid,
+        actualUid: user.uid,
+        expectedUsername: username,
+        actualUsername: user.username
+      });
       return new Response(JSON.stringify({
         verified: false,
         error: 'User mismatch',
@@ -202,19 +254,33 @@ if (testMode) {
     }
 
     // --- Supabase Auth Integration ---
+    console.log(`🔧 [${traceId}] Setting up Supabase auth integration`);
     const email = `${username}@pi.local`;
 
-    const { data: usersList } = await supabaseAdmin.auth.admin.listUsers();
+    const { data: usersList, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    if (listError) {
+      console.error(`❌ [${traceId}] Failed to list users:`, listError);
+      throw new Error(`Failed to list users: ${listError.message}`);
+    }
+    
     const existingUser = usersList?.users.find((u) => u.id === uid);
 
     if (!existingUser) {
-      await supabaseAdmin.auth.admin.createUser({
+      console.log(`🔨 [${traceId}] Creating new Supabase user:`, { uid, email, username });
+      const { error: createError } = await supabaseAdmin.auth.admin.createUser({
         id: uid,
         email,
         email_confirm: true,
         user_metadata: { username, full_name: username },
       });
+      
+      if (createError) {
+        console.error(`❌ [${traceId}] Failed to create user:`, createError);
+        throw new Error(`Failed to create user: ${createError.message}`);
+      }
       console.log(`✅ [${traceId}] Created new Supabase user ${uid}`);
+    } else {
+      console.log(`ℹ️ [${traceId}] User already exists:`, { uid, email });
     }
 
     // --- Create proper session with `sub` claim ---
@@ -242,7 +308,11 @@ if (testMode) {
     }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (err) {
-    console.error(`💥 [${traceId}] Internal error:`, err);
+    console.error(`💥 [${traceId}] Internal error:`, {
+      error: err instanceof Error ? err.message : 'Unknown error',
+      stack: err instanceof Error ? err.stack : undefined,
+      type: err?.constructor?.name
+    });
     return new Response(JSON.stringify({
       verified: false,
       error: 'Internal server error',
