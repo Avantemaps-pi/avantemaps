@@ -8,6 +8,7 @@ import DangerZone from '@/components/settings/DangerZone';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/auth';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
+import { User, Settings as SettingsIcon, AlertTriangle } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -144,9 +145,12 @@ const Settings = () => {
         <Accordion type="multiple" defaultValue={["profile"]} className="mt-4 sm:mt-6 space-y-4 overflow-hidden">
           <AccordionItem value="profile" className="border rounded-lg overflow-hidden">
             <AccordionTrigger className="px-4 sm:px-6 py-3 hover:no-underline hover:bg-muted/50">
-              <div className="flex flex-col items-start text-left">
-                <span className="font-semibold text-base sm:text-lg">Profile Settings</span>
-                <span className="text-xs sm:text-sm text-muted-foreground">Manage your personal information</span>
+              <div className="flex items-start gap-3 text-left">
+                <User className="h-5 w-5 mt-0.5 flex-shrink-0 text-primary" />
+                <div className="flex flex-col items-start">
+                  <span className="font-semibold text-base sm:text-lg">Profile Settings</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">Manage your personal information</span>
+                </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-4 sm:px-6 pt-2 pb-4">
@@ -162,9 +166,12 @@ const Settings = () => {
 
           <AccordionItem value="preferences" className="border rounded-lg overflow-hidden">
             <AccordionTrigger className="px-4 sm:px-6 py-3 hover:no-underline hover:bg-muted/50">
-              <div className="flex flex-col items-start text-left">
-                <span className="font-semibold text-base sm:text-lg">App Preferences</span>
-                <span className="text-xs sm:text-sm text-muted-foreground">Customize your experience</span>
+              <div className="flex items-start gap-3 text-left">
+                <SettingsIcon className="h-5 w-5 mt-0.5 flex-shrink-0 text-primary" />
+                <div className="flex flex-col items-start">
+                  <span className="font-semibold text-base sm:text-lg">App Preferences</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">Customize your experience</span>
+                </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-4 sm:px-6 pt-2 pb-4">
@@ -181,9 +188,12 @@ const Settings = () => {
 
           <AccordionItem value="danger" className="border rounded-lg overflow-hidden border-destructive/20">
             <AccordionTrigger className="px-4 sm:px-6 py-3 hover:no-underline hover:bg-muted/50">
-              <div className="flex flex-col items-start text-left">
-                <span className="font-semibold text-base sm:text-lg text-destructive">Danger Zone</span>
-                <span className="text-xs sm:text-sm text-muted-foreground">Account deletion and recovery</span>
+              <div className="flex items-start gap-3 text-left">
+                <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0 text-destructive" />
+                <div className="flex flex-col items-start">
+                  <span className="font-semibold text-base sm:text-lg text-destructive">Danger Zone</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">Account deletion and recovery</span>
+                </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-4 sm:px-6 pt-2 pb-4">
