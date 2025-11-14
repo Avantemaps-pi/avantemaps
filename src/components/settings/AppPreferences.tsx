@@ -118,7 +118,7 @@ const AppPreferences = ({
                     <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 mt-0.5 mr-2">3</Badge>
                     <p className="font-medium text-left">Get Verified Badge</p>
                   </div>
-                  <div className="ml-8 mt-1">
+                  <div className="mt-1">
                     <p className="text-muted-foreground text-left">Once approved, your business will show as verified</p>
                     <div className="mt-2 text-left">
                       <Button variant="link" size="sm" asChild className="text-blue-700 dark:text-blue-400 p-0">
