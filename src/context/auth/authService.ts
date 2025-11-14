@@ -144,6 +144,11 @@ export const performLogin = async (
           })
           .catch((err: any) => {
             clearTimeout(authTimeout);
+            console.error('❌ Pi SDK authentication error:', {
+              error: err,
+              errorType: err?.constructor?.name,
+              message: err instanceof Error ? err.message : 'Unknown error'
+            });
             reject(err);
           });
         } catch (err) {
@@ -153,9 +158,10 @@ export const performLogin = async (
       });
 
       const authResult = await authPromise;
-      secureLog.info("Authentication result received", { 
-        hasUser: !!authResult?.user, 
-        hasToken: !!authResult?.accessToken
+      secureLog.info("✅ Pi SDK authentication successful", { 
+        uid: authResult?.user?.uid,
+        username: authResult?.user?.username,
+        hasAccessToken: !!authResult?.accessToken
       });
 
       if (!authResult || !authResult.user || !authResult.accessToken) {
@@ -185,6 +191,12 @@ export const performLogin = async (
             true  // testMode flag
           );
           
+          secureLog.info("✅ Backend verification result:", {
+            verified: verificationResult.verified,
+            hasToken: !!(verificationResult as any).supabase_token,
+            testMode: (verificationResult as any).testMode
+          });
+          
           const token = (verificationResult as any).supabase_token || (verificationResult as any).supabaseToken;
           const refreshToken = (verificationResult as any).refresh_token || token;
           if (verificationResult.verified && token) {
@@ -194,6 +206,11 @@ export const performLogin = async (
             });
             
             if (sessionError) {
+              console.error("❌ Failed to set Supabase session:", {
+                error: sessionError,
+                message: sessionError.message,
+                status: sessionError.status
+              });
               throw new Error("Development session setup failed");
             }
             
@@ -201,7 +218,11 @@ export const performLogin = async (
             verificationSucceeded = true;
           }
         } catch (err) {
-          secureLog.error("Development verification failed:", err);
+          secureLog.error("💥 Development verification failed:", {
+            error: err,
+            message: err instanceof Error ? err.message : 'Unknown error',
+            stack: err instanceof Error ? err.stack : undefined
+          });
           toast.error("Development session setup failed");
           throw err;
         }
@@ -215,11 +236,18 @@ export const performLogin = async (
 
         // Attempt backend verification but don't fail authentication if it's just a network issue
         try {
+          secureLog.info("🔐 Verifying authentication with backend...");
           const verificationResult = await verifyPiAuthentication(
             authResult.accessToken,
             authResult.user.uid,
             authResult.user.username
           );
+
+        secureLog.info("✅ Backend verification result:", {
+          verified: verificationResult.verified,
+          hasToken: !!(verificationResult as any).supabase_token,
+          hasTraceId: !!(verificationResult as any).traceId
+        });
 
         // Capture traceId from Supabase Edge Function if available
         if ((verificationResult as any).traceId) {
@@ -241,7 +269,12 @@ export const performLogin = async (
 
         if (!verificationResult.verified) {
           const reason = (verificationResult.details || verificationResult.error || '').toLowerCase();
-          secureLog.error("Verification failed:", verificationResult);
+          secureLog.error("❌ Verification failed:", {
+            verified: verificationResult.verified,
+            error: (verificationResult as any).error,
+            details: (verificationResult as any).details,
+            reason
+          });
 
           // Only retry for expired/invalid tokens, not network errors
           if ((reason.includes('expired') || reason.includes('invalid')) && authAttempt < maxAuthAttempts) {
@@ -274,6 +307,11 @@ export const performLogin = async (
               });
               
               if (sessionError) {
+                console.error("❌ Failed to set Supabase session:", {
+                  error: sessionError,
+                  message: sessionError.message,
+                  status: sessionError.status
+                });
                 secureLog.error("Failed to set Supabase session:", sessionError);
                 toast.error("Failed to establish secure session. Please try again.");
                 throw new Error("Session setup failed");
@@ -286,7 +324,12 @@ export const performLogin = async (
           }
         } catch (verificationError) {
         const errorMsg = verificationError instanceof Error ? verificationError.message : String(verificationError);
-        secureLog.warn("Backend verification threw error:", errorMsg);
+        secureLog.warn("💥 Backend verification threw error:", {
+          error: verificationError,
+          message: errorMsg,
+          type: verificationError?.constructor?.name,
+          stack: verificationError instanceof Error ? verificationError.stack : undefined
+        });
         
         // Check if it's a network-related error
         if (errorMsg.toLowerCase().includes('network') || 
@@ -340,12 +383,20 @@ export const performLogin = async (
       return;
     } catch (err) {
       const { message, userMessage } = getDetailedAuthError(err);
-      secureLog.error("Authentication attempt failed", { attempt: authAttempt + 1, message });
+      secureLog.error("💥 Authentication attempt failed", { 
+        attempt: authAttempt + 1,
+        maxAttempts: maxAuthAttempts,
+        error: err,
+        errorType: err?.constructor?.name,
+        message,
+        userMessage,
+        stack: err instanceof Error ? err.stack : undefined
+      });
 
       // If attempts remain, increment and retry
       if (authAttempt < maxAuthAttempts) {
         authAttempt++;
-        secureLog.info(`Retrying authentication (${authAttempt}/${maxAuthAttempts})`);
+        secureLog.info(`🔄 Retrying authentication (${authAttempt}/${maxAuthAttempts})`);
         await new Promise(r => setTimeout(r, 300));
         continue;
       }
@@ -353,7 +404,10 @@ export const performLogin = async (
       // Final failure: surface friendly message to user
       setAuthError(userMessage);
       toast.error(userMessage, { duration: 6000 });
-      secureLog.error("Final authentication error surfaced to user:", userMessage);
+      secureLog.error("❌ Final authentication error surfaced to user:", {
+        userMessage,
+        attempts: authAttempt + 1
+      });
       return;
     } finally {
       // Ensure flags are reset after each attempt
