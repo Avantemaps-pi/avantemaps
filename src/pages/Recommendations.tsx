@@ -7,10 +7,17 @@ import RecommendationsSEO from '@/components/seo/RecommendationsSEO';
 import { useRecommendations } from '@/hooks/useRecommendations';
 import RecommendationSkeleton from '@/components/recommendations/RecommendationSkeleton';
 import EmptyRecommendationSection from '@/components/recommendations/EmptyRecommendationSection';
-import { Award, Star, Search, X } from 'lucide-react';
+import { Award, Star, Search, X, ChevronDown, Check, ArrowUpDown } from 'lucide-react';
 import MetaTags from '@/components/seo/MetaTags';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
 const Recommendations = () => {
   const navigate = useNavigate();
@@ -18,6 +25,7 @@ const Recommendations = () => {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<'name' | 'rating' | 'distance'>('name');
   const { avanteTopChoice, recommendedForYou, isLoading } = useRecommendations();
 
   // Common business categories
@@ -26,9 +34,31 @@ const Recommendations = () => {
     'Beauty', 'Entertainment', 'Services', 'Education', 'Finance'
   ];
 
+  // Sort function
+  const sortBusinesses = (businesses: any[]) => {
+    return [...businesses].sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return (a.name || '').localeCompare(b.name || '');
+        case 'rating':
+          // Assuming businesses might have a rating field
+          const ratingA = a.rating || 0;
+          const ratingB = b.rating || 0;
+          return ratingB - ratingA;
+        case 'distance':
+          // Assuming businesses might have a distance field
+          const distA = a.distance || 0;
+          const distB = b.distance || 0;
+          return distA - distB;
+        default:
+          return 0;
+      }
+    });
+  };
+
   // Filter function for businesses
   const filterBusinesses = (businesses: any[]) => {
-    return businesses.filter(business => {
+    const filtered = businesses.filter(business => {
       const matchesSearch = searchTerm === '' || 
         business.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         business.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -43,13 +73,15 @@ const Recommendations = () => {
       
       return matchesSearch && matchesCategory;
     });
+    
+    return sortBusinesses(filtered);
   };
 
-  // Filtered data
+  // Filtered and sorted data
   const filteredData = useMemo(() => ({
     avanteTopChoice: filterBusinesses(avanteTopChoice || []),
     recommendedForYou: filterBusinesses(recommendedForYou || [])
-  }), [avanteTopChoice, recommendedForYou, searchTerm, selectedCategories]);
+  }), [avanteTopChoice, recommendedForYou, searchTerm, selectedCategories, sortBy]);
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev =>
@@ -62,6 +94,7 @@ const Recommendations = () => {
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedCategories([]);
+    setSortBy('name');
   };
 
   const handlePlaceClick = (placeId: string, zoomToLocation?: boolean) => {
@@ -127,40 +160,108 @@ const Recommendations = () => {
             )}
           </div>
 
-          {/* Category Filters */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Filter by category:</span>
-              {(searchTerm || selectedCategories.length > 0) && (
-                <button
-                  onClick={clearFilters}
-                  className="text-xs text-primary hover:underline"
-                >
-                  Clear all filters
-                </button>
-              )}
+          {/* Filter and Sort Controls */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <div className="flex flex-wrap gap-2 items-center">
+              {/* Category Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="bg-background">
+                    Categories
+                    {selectedCategories.length > 0 && (
+                      <Badge variant="secondary" className="ml-2 px-1.5 py-0 text-xs">
+                        {selectedCategories.length}
+                      </Badge>
+                    )}
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-background z-50" align="start">
+                  {categories.map(category => (
+                    <DropdownMenuItem
+                      key={category}
+                      onClick={() => toggleCategory(category)}
+                      className="cursor-pointer"
+                    >
+                      <div className="flex items-center w-full justify-between">
+                        <span>{category}</span>
+                        {selectedCategories.includes(category) && (
+                          <Check className="h-4 w-4 text-primary" />
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Sort Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="bg-background">
+                    <ArrowUpDown className="mr-2 h-4 w-4" />
+                    Sort: {sortBy === 'name' ? 'Alphabetical' : sortBy === 'rating' ? 'Rating' : 'Distance'}
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48 bg-background z-50" align="start">
+                  <DropdownMenuItem
+                    onClick={() => setSortBy('name')}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center w-full justify-between">
+                      <span>Alphabetical</span>
+                      {sortBy === 'name' && <Check className="h-4 w-4 text-primary" />}
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setSortBy('rating')}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center w-full justify-between">
+                      <span>Rating</span>
+                      {sortBy === 'rating' && <Check className="h-4 w-4 text-primary" />}
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setSortBy('distance')}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center w-full justify-between">
+                      <span>Distance</span>
+                      {sortBy === 'distance' && <Check className="h-4 w-4 text-primary" />}
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {categories.map(category => (
-                <Badge
-                  key={category}
-                  variant={selectedCategories.includes(category) ? 'default' : 'outline'}
-                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                  onClick={() => toggleCategory(category)}
-                >
-                  {category}
-                </Badge>
-              ))}
-            </div>
+
+            {/* Clear Filters Button */}
+            {(searchTerm || selectedCategories.length > 0 || sortBy !== 'name') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="text-xs"
+              >
+                Clear all filters
+              </Button>
+            )}
           </div>
 
           {/* Active Filters Summary */}
           {(searchTerm || selectedCategories.length > 0) && (
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground flex flex-wrap gap-2 items-center">
               {searchTerm && <span>Searching for: "{searchTerm}"</span>}
-              {searchTerm && selectedCategories.length > 0 && <span> • </span>}
+              {searchTerm && selectedCategories.length > 0 && <span>•</span>}
               {selectedCategories.length > 0 && (
-                <span>Filtering by: {selectedCategories.join(', ')}</span>
+                <div className="flex flex-wrap gap-1 items-center">
+                  <span>Categories:</span>
+                  {selectedCategories.map(cat => (
+                    <Badge key={cat} variant="secondary" className="text-xs">
+                      {cat}
+                    </Badge>
+                  ))}
+                </div>
               )}
             </div>
           )}
