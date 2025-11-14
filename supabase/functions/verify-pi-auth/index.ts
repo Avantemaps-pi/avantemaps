@@ -210,11 +210,6 @@ Deno.serve(async (req: Request) => {
         traceId,
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-    supabase_token: access_token,
-    refresh_token,
-    traceId,
-  }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-}
 
     // --- Verify token with Pi API ---
     console.log(`🔐 [${traceId}] Verifying token with Pi API`);
