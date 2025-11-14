@@ -170,7 +170,7 @@ const Settings = () => {
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6 overflow-hidden">
         <div>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Manage your account preferences.</p>
-          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+          <p className="hidden lg:flex text-xs text-muted-foreground mt-1 items-center gap-1">
             <span className="inline-flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Ctrl+1</kbd>
               <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Ctrl+2</kbd>
