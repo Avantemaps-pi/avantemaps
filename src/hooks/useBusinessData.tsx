@@ -59,22 +59,20 @@ export const useBusinessData = () => {
             }
           }
           
-          // Build address from detailed fields
+          // Build simplified address with city and country only
           const addressParts = [
-            business.street_address,
             business.city,
-            business.state,
-            business.postal_code
+            business.country
           ].filter(Boolean);
-          const fullAddress = addressParts.length > 0 
+          const simpleAddress = addressParts.length > 0 
             ? addressParts.join(', ')
-            : (business.location || "No address provided");
+            : "No address provided";
           
           return {
             id: business.id.toString(),
             name: business.name,
             position,
-            address: fullAddress,
+            address: simpleAddress,
             rating: 4.5,
             totalReviews: 0,
             description: business.description || "No description provided",
