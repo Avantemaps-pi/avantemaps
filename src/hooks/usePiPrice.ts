@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export const usePiPrice = () => {
   const [piPrice, setPiPrice] = useState<number | null>(null);
@@ -9,31 +10,38 @@ export const usePiPrice = () => {
   useEffect(() => {
     const fetchPiPrice = async () => {
       try {
-        // Fetch real-time Pi price from OKX API
-        const response = await fetch('https://www.okx.com/api/v5/market/ticker?instId=PI-USDT');
-        const data = await response.json();
+        // Fetch cached Pi price from database (updated every 24 hours)
+        const { data, error: fetchError } = await supabase
+          .from('pi_price')
+          .select('price_usd, updated_at')
+          .eq('id', 1)
+          .single();
         
-        if (data.code === '0' && data.data && data.data[0]) {
-          const lastPrice = parseFloat(data.data[0].last);
-          setPiPrice(lastPrice);
+        if (fetchError) throw fetchError;
+        
+        if (data) {
+          const priceValue = typeof data.price_usd === 'string' 
+            ? parseFloat(data.price_usd) 
+            : data.price_usd;
+          setPiPrice(priceValue);
           setError(null);
         } else {
-          throw new Error('Invalid OKX API response');
+          throw new Error('No price data available');
         }
       } catch (err) {
-        console.error('Error fetching Pi price from OKX:', err);
-        // Fallback to cached price or default
+        console.error('Error fetching Pi price from database:', err);
+        // Fallback to default price
         if (!piPrice) {
-          setPiPrice(0.65); // Reasonable fallback based on current Pi market price
+          setPiPrice(0.65);
         }
-        setError('Using cached Pi price');
+        setError('Using fallback Pi price');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchPiPrice();
-    // Refresh price every 5 minutes
+    // Refresh from database every 5 minutes to get the latest cached price
     const interval = setInterval(fetchPiPrice, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
