@@ -12,6 +12,11 @@ import type { BusinessInsertPayload } from '@/types/businessPayload';
 export const useBusinessRegistration = (onSuccess?: () => void) => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAddressVerification, setShowAddressVerification] = useState(false);
+  const [verifiedAddress, setVerifiedAddress] = useState<any>(null);
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  const [similarBusinesses, setSimilarBusinesses] = useState<any[]>([]);
+  const [pendingSubmission, setPendingSubmission] = useState<any>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -152,13 +157,99 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         return;
       }
 
-      // ✅ Geocode address
+      // ✅ Geocode address and verify
       const fullAddress = `${values.streetAddress}${values.apartment ? `, ${values.apartment}` : ''}, ${values.city}, ${values.state}, ${values.zipCode}, ${values.country}`;
       const geocodedData = await geocodeAddress(fullAddress);
       if (!geocodedData?.lat || !geocodedData?.lng) {
         toast.error('Address could not be located.');
+        setIsSubmitting(false);
         return;
       }
+
+      // Show address verification dialog
+      const addressForVerification = {
+        street: values.streetAddress,
+        apartment: values.apartment,
+        city: values.city,
+        state: values.state,
+        zipCode: values.zipCode,
+        country: values.country,
+        lat: geocodedData.lat,
+        lng: geocodedData.lng,
+      };
+      
+      setVerifiedAddress(addressForVerification);
+      setPendingSubmission({ values, geocodedData });
+      setShowAddressVerification(true);
+      setIsSubmitting(false);
+      return; // Wait for user confirmation
+    } catch (error: any) {
+      console.error('Error submitting business:', error);
+      toast.error(error?.message || 'An error occurred while registering your business.');
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAddressConfirmed = async () => {
+    setShowAddressVerification(false);
+    if (!pendingSubmission) return;
+
+    try {
+      setIsSubmitting(true);
+      const { values, geocodedData } = pendingSubmission;
+
+      // ✅ Check for duplicate businesses
+      const { data: existingBusinesses, error: duplicateError } = await supabase
+        .from('businesses')
+        .select('id, business_name, street_address, city, state')
+        .ilike('business_name', values.businessName)
+        .ilike('street_address', `%${values.streetAddress}%`)
+        .limit(5);
+
+      if (duplicateError) {
+        console.error('Error checking duplicates:', duplicateError);
+      }
+
+      // If similar businesses found, show warning
+      if (existingBusinesses && existingBusinesses.length > 0) {
+        setSimilarBusinesses(existingBusinesses.map(b => ({
+          id: b.id,
+          name: b.business_name,
+          address: b.street_address,
+          city: b.city,
+          state: b.state,
+        })));
+        setShowDuplicateWarning(true);
+        setIsSubmitting(false);
+        return; // Wait for user decision
+      }
+
+      // No duplicates, proceed with submission
+      await finalizeSubmission(values, geocodedData);
+    } catch (error: any) {
+      console.error('Error during address confirmation:', error);
+      toast.error(error?.message || 'An error occurred.');
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDuplicateConfirmed = async () => {
+    setShowDuplicateWarning(false);
+    if (!pendingSubmission) return;
+
+    try {
+      setIsSubmitting(true);
+      const { values, geocodedData } = pendingSubmission;
+      await finalizeSubmission(values, geocodedData);
+    } catch (error: any) {
+      console.error('Error during duplicate confirmation:', error);
+      toast.error(error?.message || 'An error occurred.');
+      setIsSubmitting(false);
+    }
+  };
+
+  const finalizeSubmission = async (values: FormValues, geocodedData: any) => {
+    try {
 
       // ---------------------------
       // BUILD TYPED PAYLOAD
@@ -265,5 +356,13 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
     handleImageReorder,
     onSubmit,
     isSubmitting,
+    showAddressVerification,
+    verifiedAddress,
+    handleAddressConfirmed,
+    setShowAddressVerification,
+    showDuplicateWarning,
+    similarBusinesses,
+    handleDuplicateConfirmed,
+    setShowDuplicateWarning,
   };
 };

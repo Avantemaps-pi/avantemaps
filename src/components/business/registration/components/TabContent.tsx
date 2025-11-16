@@ -6,6 +6,7 @@ import ContactTab from '../ContactTab';
 import AddressTab from '../AddressTab';
 import HoursTab from '../HoursTab';
 import DetailsTab from '../DetailsTab';
+import PreviewTab from '../PreviewTab';
 
 interface TabContentProps {
   selectedImages: File[];
@@ -59,11 +60,21 @@ const TabContent: React.FC<TabContentProps> = ({
 
       <TabsContent value="details" className="space-y-4 w-full">
         <DetailsTab 
+          onNext={() => setSelectedTab('preview')}
           onPrevious={() => setSelectedTab('hours')}
           selectedImages={selectedImages}
           handleImageUpload={handleImageUpload}
           handleImageRemove={handleImageRemove}
           handleImageReorder={handleImageReorder}
+          disabled={isSubmitting}
+        />
+      </TabsContent>
+
+      <TabsContent value="preview" className="space-y-4 w-full">
+        <PreviewTab 
+          onNext={() => {}}
+          onPrevious={() => setSelectedTab('details')}
+          selectedImages={selectedImages}
           disabled={isSubmitting}
         />
       </TabsContent>

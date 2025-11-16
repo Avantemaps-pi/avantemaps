@@ -10,7 +10,9 @@ import { Loader2 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/auth';
 import { toast } from 'sonner';
-import { PiAuthButton } from './registration/PiAuthButton'; // ✅ Added
+import { PiAuthButton } from './registration/PiAuthButton';
+import { AddressVerificationDialog } from './registration/components/AddressVerificationDialog';
+import { DuplicateWarningDialog } from './registration/components/DuplicateWarningDialog';
 
 interface BusinessRegistrationFormProps {
   onSuccess?: () => void;
@@ -29,6 +31,14 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrat
     handleImageReorder,
     onSubmit, 
     isSubmitting,
+    showAddressVerification,
+    verifiedAddress,
+    handleAddressConfirmed,
+    setShowAddressVerification,
+    showDuplicateWarning,
+    similarBusinesses,
+    handleDuplicateConfirmed,
+    setShowDuplicateWarning,
   } = useBusinessRegistration(onSuccess);
   const [selectedTab, setSelectedTab] = React.useState('business-owner');
 
@@ -93,6 +103,20 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrat
           </div>
         </div>
       )}
+
+      <AddressVerificationDialog
+        open={showAddressVerification}
+        address={verifiedAddress}
+        onConfirm={handleAddressConfirmed}
+        onCancel={() => setShowAddressVerification(false)}
+      />
+
+      <DuplicateWarningDialog
+        open={showDuplicateWarning}
+        similarBusinesses={similarBusinesses}
+        onConfirm={handleDuplicateConfirmed}
+        onCancel={() => setShowDuplicateWarning(false)}
+      />
     </div>
   );
 };
