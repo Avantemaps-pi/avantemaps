@@ -15,6 +15,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ isMobile, disabled }) => 
     { value: "contact", label: "Contact" },
     { value: "hours", label: "Hours" },
     { value: "details", label: "Details" },
+    { value: "preview", label: "Preview" },
   ];
 
   if (isMobile) {
@@ -54,7 +55,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ isMobile, disabled }) => 
               >
                 {tab.label}
               </TabsTrigger>
-              {index < 1 && (
+              {index < 2 && (
                 <div className="h-0.5 flex-1 bg-border mx-1" />
               )}
             </React.Fragment>

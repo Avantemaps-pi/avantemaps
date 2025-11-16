@@ -11,6 +11,7 @@ import BusinessTypeSelector from './components/BusinessTypeSelector';
 import { Loader2 } from 'lucide-react';
 
 interface DetailsTabProps {
+  onNext: () => void;
   onPrevious: () => void;
   selectedImages: File[];
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -19,9 +20,10 @@ interface DetailsTabProps {
   disabled?: boolean;
 }
 
-const DetailsTab: React.FC<DetailsTabProps> = ({ 
-  onPrevious, 
-  selectedImages, 
+const DetailsTab: React.FC<DetailsTabProps> = ({
+  onNext,
+  onPrevious,
+  selectedImages,
   handleImageUpload,
   handleImageRemove,
   handleImageReorder,
@@ -62,18 +64,12 @@ const DetailsTab: React.FC<DetailsTabProps> = ({
           Back
         </Button>
         <Button 
-          type="submit" 
+          type="button" 
           className="bg-avante-blue hover:bg-avante-blue/90 min-w-40"
+          onClick={onNext}
           disabled={disabled}
         >
-          {disabled ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Submitting...
-            </>
-          ) : (
-            'Submit'
-          )}
+          Preview
         </Button>
       </CardFooter>
       </Card>
