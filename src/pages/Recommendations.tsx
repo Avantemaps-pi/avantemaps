@@ -91,12 +91,6 @@ const Recommendations = () => {
     );
   };
 
-  const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedCategories([]);
-    setSortBy('name');
-  };
-
   const handlePlaceClick = (placeId: string, zoomToLocation?: boolean) => {
     navigate('/', {
       state: {
@@ -234,18 +228,6 @@ const Recommendations = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-
-            {/* Clear Filters Button */}
-            {(searchTerm || selectedCategories.length > 0 || sortBy !== 'name') && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="text-xs"
-              >
-                Clear all filters
-              </Button>
-            )}
           </div>
 
           {/* Active Filters Summary */}
