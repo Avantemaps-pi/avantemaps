@@ -20,7 +20,7 @@ const PlaceCardWebsiteButton: React.FC<PlaceCardWebsiteButtonProps> = ({ url }) 
       className="bg-green-500 hover:bg-green-600 text-xs font-medium flex items-center gap-1 whitespace-nowrap h-9 px-3"
       onClick={handleWebsiteClick}
     >
-      Website
+      Link
       <ExternalLink className="h-3 w-3" />
     </Button>
   );

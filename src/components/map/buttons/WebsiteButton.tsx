@@ -23,7 +23,7 @@ const WebsiteButton: React.FC<WebsiteButtonProps> = ({ url = "#" }) => {
       onClick={handleWebsiteClick}
       disabled={!url || url === "#"}
     >
-      Website
+      Link
       <ExternalLink className="h-3 w-3" />
     </Button>
   );
