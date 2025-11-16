@@ -162,11 +162,11 @@ const Recommendations = () => {
 
           {/* Filter and Sort Controls */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center w-full sm:w-auto">
+            <div className="flex flex-row gap-2 items-center w-full sm:w-auto">
               {/* Category Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="bg-background w-full sm:w-auto">
+                  <Button variant="outline" className="bg-background flex-1 sm:flex-initial text-sm">
                     Categories
                     {selectedCategories.length > 0 && (
                       <Badge variant="secondary" className="ml-2 px-1.5 py-0 text-xs">
@@ -197,7 +197,7 @@ const Recommendations = () => {
               {/* Sort Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="bg-background w-full sm:w-auto">
+                  <Button variant="outline" className="bg-background flex-1 sm:flex-initial text-sm">
                     <ArrowUpDown className="mr-2 h-4 w-4" />
                     Sort: {sortBy === 'name' ? 'Alphabetical' : sortBy === 'rating' ? 'Rating' : 'Distance'}
                     <ChevronDown className="ml-2 h-4 w-4" />
