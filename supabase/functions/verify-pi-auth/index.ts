@@ -320,20 +320,55 @@ Deno.serve(async (req: Request) => {
       console.log(`✅ [${traceId}] Session created successfully`);
       
     } catch (sessionErr) {
-      console.warn(`ℹ️ [${traceId}] createSession unavailable or failed; proceeding without Supabase session`, sessionErr);
-      // As a compatibility fallback (email/password disabled), return verified=true without DB session tokens
-      return new Response(JSON.stringify({
-        verified: true,
-        user: {
-          uid: user.uid,
-          username: user.username,
-          wallet_address: user.wallet_address || null,
-        },
-        supabase_token: null,
-        refresh_token: null,
-        session: 'unavailable',
-        traceId,
-      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      console.error(`❌ [${traceId}] createSession failed, trying email/password fallback:`, sessionErr);
+      
+      // IMPORTANT: This fallback requires Email provider to be enabled in Supabase
+      // Dashboard → Authentication → Providers → Email → Enable
+      const tempPassword = crypto.randomUUID();
+      
+      try {
+        // Update user with temporary password
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(uid, {
+          password: tempPassword,
+        });
+        
+        if (updateError) {
+          console.error(`❌ [${traceId}] Failed to set password (Email provider may not be enabled):`, updateError);
+          throw updateError;
+        }
+        
+        // Sign in with password to get valid session tokens
+        const { data: signInData, error: signInError } = await supabaseAnon.auth.signInWithPassword({
+          email,
+          password: tempPassword,
+        });
+        
+        if (signInError || !signInData?.session) {
+          console.error(`❌ [${traceId}] Failed to sign in with password:`, signInError);
+          throw signInError || new Error('No session from password sign in');
+        }
+        
+        access_token = signInData.session.access_token;
+        refresh_token = signInData.session.refresh_token;
+        console.log(`✅ [${traceId}] Session created via email/password fallback`);
+        
+      } catch (fallbackErr) {
+        console.error(`❌ [${traceId}] Email/password fallback failed - Email provider may not be enabled:`, fallbackErr);
+        // Return verified but without session if all methods fail
+        return new Response(JSON.stringify({
+          verified: true,
+          user: {
+            uid: user.uid,
+            username: user.username,
+            wallet_address: user.wallet_address || null,
+          },
+          supabase_token: null,
+          refresh_token: null,
+          session: 'unavailable',
+          error: 'Email provider may not be enabled in Supabase',
+          traceId,
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
     }
 
     return new Response(JSON.stringify({
