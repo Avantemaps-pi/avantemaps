@@ -86,7 +86,7 @@ const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ disabled })
         
         return (
           <FormItem className="flex flex-col">
-            <FormLabel className="text-base mb-1.5 whitespace-nowrap">Business type (Select all that apply)</FormLabel>
+            <FormLabel className="text-base mb-1.5 whitespace-nowrap">Business type (Select all that apply) *</FormLabel>
             <div className="space-y-4">
               {/* Selected types badges */}
               {selectedTypes.length > 0 && (
