@@ -12,6 +12,7 @@ export const TIERS: PricingTier[] = [
     },
     features: [
       "Up to 1 business listing",
+      "Ads",
     ],
     cta: "Get Started Free",
   },
@@ -26,7 +27,7 @@ export const TIERS: PricingTier[] = [
     features: [
       "Up to 3 business listings", 
       "All Individual features",
-      "Highlighted business profile",
+      "No Ads",
       "Business analytics",
       "Priority business support",
       "Verified business status",
@@ -46,10 +47,8 @@ export const TIERS: PricingTier[] = [
     features: [
       "Up to 5 business listings", 
       "All Small Business features",
-      "Multiple business locations",
       "Advanced analytics",
       "Dedicated support team",
-      "Custom business integration",
     ],
     cta: "Upgrade to Organization",
     highlighted: true
