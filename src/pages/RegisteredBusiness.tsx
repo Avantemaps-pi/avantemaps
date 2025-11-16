@@ -21,6 +21,7 @@ const RegisteredBusiness = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBusinessId, setSelectedBusinessId] = useState<string>('all');
   const toastShownRef = useRef(false);
+  const hasFetchedRef = useRef(false);
   
   // Get newly registered business ID from navigation state
   const newBusinessId = (location.state as { newBusinessId?: number })?.newBusinessId;
@@ -34,6 +35,13 @@ const RegisteredBusiness = () => {
         return;
       }
 
+      // Prevent duplicate fetches
+      if (hasFetchedRef.current) {
+        console.log('🏢 Skipping duplicate fetch');
+        return;
+      }
+      hasFetchedRef.current = true;
+
       try {
         console.log('🏢 Fetching businesses for user:', user.uid);
 
@@ -45,18 +53,6 @@ const RegisteredBusiness = () => {
 
         let sessionUserId = await getSessionUserId();
         console.log('🔐 Supabase session user (initial):', sessionUserId || 'none');
-
-        // Attempt a silent refresh if no session is available yet
-        if (!sessionUserId) {
-          try {
-            console.log('🌀 Attempting silent refresh of user data...');
-            await refreshUserData();
-            sessionUserId = await getSessionUserId();
-            console.log('🔐 Supabase session user (after refresh):', sessionUserId || 'none');
-          } catch (e) {
-            console.warn('⚠️ Silent refresh failed:', e);
-          }
-        }
 
         // As a last resort, try a full login once if still missing and online
         if (!sessionUserId && navigator.onLine) {
@@ -71,11 +67,12 @@ const RegisteredBusiness = () => {
         }
 
         if (!sessionUserId) {
-          console.error('❌ No valid Supabase session found after refresh/login attempts');
+          console.error('❌ No valid Supabase session found');
           if (!toastShownRef.current) {
-            toast.error('Please log in again to view your businesses');
+            toast.error('Please log in to view your businesses');
             toastShownRef.current = true;
           }
+          hasFetchedRef.current = false;
           setIsLoading(false);
           return;
         }
@@ -160,6 +157,7 @@ const RegisteredBusiness = () => {
       } catch (error) {
         console.error('❌ Error in fetchUserBusinesses:', error);
         toast.error('Failed to load your businesses');
+        hasFetchedRef.current = false;
       } finally {
         setIsLoading(false);
       }
@@ -169,6 +167,7 @@ const RegisteredBusiness = () => {
       fetchUserBusinesses();
     } else {
       console.log('🔒 User not authenticated, skipping business fetch');
+      hasFetchedRef.current = false;
       setIsLoading(false);
     }
   }, [user?.uid, isAuthenticated]);
