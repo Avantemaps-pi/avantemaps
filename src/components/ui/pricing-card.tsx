@@ -98,12 +98,28 @@ export function PricingCard({
         </div>
 
         <ul className="space-y-4">
-          {tier.features.map(feature => (
-            <li key={feature} className="flex items-center gap-3">
-              <Check className="h-5 w-5 flex-shrink-0 text-blue-500" />
-              <span className="text-gray-600">{feature}</span>
-            </li>
-          ))}
+          {tier.features.map(feature => {
+            // Check if feature contains "Small Business" and highlight it
+            if (feature.includes("Small Business")) {
+              const parts = feature.split("Small Business");
+              return (
+                <li key={feature} className="flex items-center gap-3">
+                  <Check className="h-5 w-5 flex-shrink-0 text-blue-500" />
+                  <span className="text-gray-600">
+                    {parts[0]}
+                    <span className="font-semibold text-blue-600">Small Business</span>
+                    {parts[1]}
+                  </span>
+                </li>
+              );
+            }
+            return (
+              <li key={feature} className="flex items-center gap-3">
+                <Check className="h-5 w-5 flex-shrink-0 text-blue-500" />
+                <span className="text-gray-600">{feature}</span>
+              </li>
+            );
+          })}
         </ul>
       </div>
 
