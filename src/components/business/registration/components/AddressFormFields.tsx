@@ -134,7 +134,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
           <FormItem ref={containerRef} className="relative">
             <FormLabel className="text-sm font-medium flex items-center gap-2">
               <MapPin className="w-4 h-4 text-muted-foreground" />
-              Street Address
+              Street Address *
             </FormLabel>
             <FormControl>
               <div className="relative">
@@ -223,7 +223,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
             <FormItem>
               <FormLabel className="text-sm font-medium flex items-center gap-2">
                 <MapPinned className="w-4 h-4 text-muted-foreground" />
-                City
+                City *
               </FormLabel>
               <FormControl>
                 <Input
@@ -247,7 +247,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
             <FormItem>
               <FormLabel className="text-sm font-medium flex items-center gap-2">
                 <Mail className="w-4 h-4 text-muted-foreground" />
-                Province / State
+                Province / State *
               </FormLabel>
               <FormControl>
                 <Input
@@ -271,7 +271,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
             <FormItem>
               <FormLabel className="text-sm font-medium flex items-center gap-2">
                 <Mail className="w-4 h-4 text-muted-foreground" />
-                Postal Code
+                Postal Code *
               </FormLabel>
               <FormControl>
                 <Input
@@ -295,10 +295,10 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
         name="country"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-medium flex items-center gap-2">
-              <Globe className="w-4 h-4 text-muted-foreground" />
-              Country
-            </FormLabel>
+          <FormLabel className="text-sm font-medium flex items-center gap-2">
+            <Globe className="w-4 h-4 text-muted-foreground" />
+            Country *
+          </FormLabel>
             <FormControl>
               <Input
                 id="country"

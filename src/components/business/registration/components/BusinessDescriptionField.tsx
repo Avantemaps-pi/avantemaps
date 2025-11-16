@@ -43,7 +43,7 @@ const BusinessDescriptionField: React.FC<BusinessDescriptionFieldProps> = ({ dis
       name="businessDescription"
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-base mb-1.5">Business Description</FormLabel>
+          <FormLabel className="text-base mb-1.5">Business Description *</FormLabel>
           <FormControl>
             <Textarea 
               id="businessDescription"

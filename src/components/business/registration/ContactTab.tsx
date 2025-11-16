@@ -244,7 +244,7 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-base mb-1.5">Contact Number</FormLabel>
+              <FormLabel className="text-base mb-1.5">Contact Number *</FormLabel>
               <div className="flex space-x-2">
                 <Select
                   value={countryCode}
@@ -287,7 +287,7 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-base mb-1.5">Email Address</FormLabel>
+              <FormLabel className="text-base mb-1.5">Email Address *</FormLabel>
               <FormControl>
                 <Input 
                   id="email"

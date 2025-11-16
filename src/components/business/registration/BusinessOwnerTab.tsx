@@ -31,7 +31,7 @@ const BusinessOwnerTab: React.FC<BusinessOwnerTabProps> = ({ onNext, disabled })
             name="firstName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-base mb-1.5">First Name</FormLabel>
+                <FormLabel className="text-base mb-1.5">First Name *</FormLabel>
                 <FormControl>
                   <Input 
                     id="firstName"
@@ -50,7 +50,7 @@ const BusinessOwnerTab: React.FC<BusinessOwnerTabProps> = ({ onNext, disabled })
             name="lastName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-base mb-1.5">Last Name</FormLabel>
+                <FormLabel className="text-base mb-1.5">Last Name *</FormLabel>
                 <FormControl>
                   <Input 
                     id="lastName"
@@ -70,7 +70,7 @@ const BusinessOwnerTab: React.FC<BusinessOwnerTabProps> = ({ onNext, disabled })
           name="businessName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-base mb-1.5">Business Name</FormLabel>
+              <FormLabel className="text-base mb-1.5">Business Name *</FormLabel>
               <FormControl>
                 <Input 
                   id="businessName"
