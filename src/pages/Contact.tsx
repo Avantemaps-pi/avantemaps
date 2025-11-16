@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 const Contact = () => {
   return <AppLayout title="Contact Us">
@@ -79,9 +80,19 @@ const Contact = () => {
               </div>
               <div className="space-y-2">
                 <label htmlFor="subject" className="text-sm font-medium">
-                  Subject
+                  Department
                 </label>
-                <Input id="subject" placeholder="What is this regarding?" />
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="inquiries@avantemaps.com">Inquiries - inquiries@avantemaps.com</SelectItem>
+                    <SelectItem value="partnerships@avantemaps.com">Partnerships - partnerships@avantemaps.com</SelectItem>
+                    <SelectItem value="support@avantemaps.com">Support - support@avantemaps.com</SelectItem>
+                    <SelectItem value="businesses@avantemaps.com">Businesses - businesses@avantemaps.com</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <label htmlFor="message" className="text-sm font-medium">
