@@ -38,19 +38,31 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
     console.log('📍 Address selected:', prediction);
     console.log('📦 Address object:', prediction.address);
     
-    const streetAddress = [
-      prediction.address.house_number,
-      prediction.address.road
-    ].filter(Boolean).join(' ') || prediction.mainText;
+    // Build street address with better parsing
+    let streetAddress = '';
+    
+    // If we have both house_number and road, use them
+    if (prediction.address.house_number && prediction.address.road) {
+      streetAddress = `${prediction.address.house_number} ${prediction.address.road}`.trim();
+    } 
+    // If only road is available, use it
+    else if (prediction.address.road) {
+      streetAddress = prediction.address.road;
+    }
+    // Otherwise, use the mainText which is usually the first part of display_name
+    else {
+      streetAddress = prediction.mainText;
+    }
 
-    // Set street address
+    console.log('✓ Setting street address:', streetAddress);
     form.setValue('streetAddress', streetAddress, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
 
     // Auto-fill city (LocationIQ may use city, town, village, or municipality)
     const city = prediction.address.city || 
                  prediction.address.town || 
                  prediction.address.village || 
-                 prediction.address.municipality;
+                 prediction.address.municipality || '';
+    
     if (city) {
       console.log('✓ Setting city:', city);
       form.setValue('city', city, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
@@ -61,7 +73,8 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
     // Auto-fill state/province (LocationIQ may use state, province, or region)
     const state = prediction.address.state || 
                   prediction.address.province || 
-                  prediction.address.region;
+                  prediction.address.region || '';
+    
     if (state) {
       console.log('✓ Setting state:', state);
       form.setValue('state', state, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
@@ -70,16 +83,18 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
     }
 
     // Auto-fill postal code
-    const postcode = prediction.address.postcode;
+    const postcode = prediction.address.postcode || '';
+    
     if (postcode) {
-      console.log('✓ Setting zipCode:', postcode);
+      console.log('✓ Setting postal code:', postcode);
       form.setValue('zipCode', postcode, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
     } else {
-      console.warn('⚠️ No postcode found in address');
+      console.warn('⚠️ No postal code found in address');
     }
 
     // Auto-fill country
-    const country = prediction.address.country;
+    const country = prediction.address.country || '';
+    
     if (country) {
       console.log('✓ Setting country:', country);
       form.setValue('country', country, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
@@ -87,7 +102,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
       console.warn('⚠️ No country found in address');
     }
 
-    console.log('✅ Address autocomplete completed');
+    console.log('✅ Address autocomplete completed with all available fields');
     clearSuggestions();
     setShowSuggestions(false);
   };
