@@ -35,7 +35,7 @@ export function useChatState() {
     try {
       const { data, error } = await supabase
         .from('businesses')
-        .select('id, name, verification_status, is_verified, created_at')
+        .select('id, business_name, verification_status, is_verified, created_at')
         .eq('owner_id', user.uid)
         .order('created_at', { ascending: true });
 
@@ -315,7 +315,7 @@ export function useChatState() {
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         
-        const businessList = businesses.map(b => `• ${b.name}`).join('\n');
+        const businessList = businesses.map(b => `• ${b.business_name}`).join('\n');
         const businessOptionsMessage = {
           id: messages.length + 2,
           text: `Available businesses:\n${businessList}\n\nPlease type the name of the business you want to certify:`,
@@ -497,7 +497,7 @@ export function useChatState() {
       
       const selectionMessage = {
         id: Date.now(),
-        text: `Selected business: ${business.name}`,
+        text: `Selected business: ${business.business_name}`,
         sender: "user",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
@@ -507,12 +507,12 @@ export function useChatState() {
       // Check verification status
       let statusMessage = "";
       if (business.is_verified || business.verification_status === 'verified') {
-        statusMessage = `"${business.name}" is already verified! ✓`;
+        statusMessage = `"${business.business_name}" is already verified! ✓`;
       } else if (business.verification_status === 'pending') {
-        statusMessage = `Your verification request for "${business.name}" is already being processed. Our team will review it and get back to you shortly.`;
+        statusMessage = `Your verification request for "${business.business_name}" is already being processed. Our team will review it and get back to you shortly.`;
       } else {
         // New verification request
-        statusMessage = `Verification process for "${business.name}" has just begun! Our team will review your business and contact you within 2-3 business days.`;
+        statusMessage = `Verification process for "${business.business_name}" has just begun! Our team will review your business and contact you within 2-3 business days.`;
         
         // Update status to pending
         await updateVerificationStatus(business.id, 'pending');

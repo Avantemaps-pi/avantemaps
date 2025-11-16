@@ -74,6 +74,8 @@ export type Database = {
       businesses: {
         Row: {
           address_components: Json | null
+          business_description: string | null
+          business_name: string
           business_types: string[] | null
           category: string | null
           city: string | null
@@ -81,26 +83,27 @@ export type Database = {
           coordinates: string | null
           country: string | null
           created_at: string | null
-          description: string | null
-          geo_location: unknown
           hours: Json | null
           id: number
           images: string[] | null
           is_certified: boolean
           is_verified: boolean
           keywords: string[] | null
+          lat: number | null
+          lng: number | null
           location: string | null
-          name: string
           owner_id: string
           pi_wallet_address: string | null
-          postal_code: string | null
           search_vector: unknown
           state: string | null
           street_address: string | null
           verification_status: string | null
+          zip_code: string | null
         }
         Insert: {
           address_components?: Json | null
+          business_description?: string | null
+          business_name: string
           business_types?: string[] | null
           category?: string | null
           city?: string | null
@@ -108,26 +111,27 @@ export type Database = {
           coordinates?: string | null
           country?: string | null
           created_at?: string | null
-          description?: string | null
-          geo_location?: unknown
           hours?: Json | null
           id?: number
           images?: string[] | null
           is_certified?: boolean
           is_verified?: boolean
           keywords?: string[] | null
+          lat?: number | null
+          lng?: number | null
           location?: string | null
-          name: string
           owner_id: string
           pi_wallet_address?: string | null
-          postal_code?: string | null
           search_vector?: unknown
           state?: string | null
           street_address?: string | null
           verification_status?: string | null
+          zip_code?: string | null
         }
         Update: {
           address_components?: Json | null
+          business_description?: string | null
+          business_name?: string
           business_types?: string[] | null
           category?: string | null
           city?: string | null
@@ -135,23 +139,22 @@ export type Database = {
           coordinates?: string | null
           country?: string | null
           created_at?: string | null
-          description?: string | null
-          geo_location?: unknown
           hours?: Json | null
           id?: number
           images?: string[] | null
           is_certified?: boolean
           is_verified?: boolean
           keywords?: string[] | null
+          lat?: number | null
+          lng?: number | null
           location?: string | null
-          name?: string
           owner_id?: string
           pi_wallet_address?: string | null
-          postal_code?: string | null
           search_vector?: unknown
           state?: string | null
           street_address?: string | null
           verification_status?: string | null
+          zip_code?: string | null
         }
         Relationships: [
           {

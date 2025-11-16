@@ -63,7 +63,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         });
       }
     } else {
-      setMapCenter([defaultCenter.lat, defaultCenter.lng]);
+      // Don't reset map center when closing overlay - keep user's current view
       setActiveMarker(null);
       setShowPopover(false);
     }
