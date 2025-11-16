@@ -1,5 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 /**
  * Pi Network Authentication Verification
@@ -295,36 +295,66 @@ Deno.serve(async (req: Request) => {
       console.log(`ℹ️ [${traceId}] User already exists:`, { uid, email });
     }
 
-    // --- Create proper session with `sub` claim` or fallback ---
+    // --- Create proper session ---
     let access_token: string | undefined;
     let refresh_token: string | undefined;
-    const adminApi: any = (supabaseAdmin as any).auth?.admin;
 
-    if (adminApi && typeof adminApi.createSession === 'function') {
+    try {
+      // Try to create session using admin API
       const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
         user_id: uid,
       });
       
-      if (sessionError || !sessionData) {
-        console.error(`❌ [${traceId}] Failed to create session:`, sessionError);
-        throw new Error('Failed to create user session');
+      if (sessionError) {
+        console.error(`❌ [${traceId}] Session creation error:`, sessionError);
+        throw sessionError;
       }
+      
+      if (!sessionData?.session?.access_token) {
+        console.error(`❌ [${traceId}] No session data returned`);
+        throw new Error('No session data returned from createSession');
+      }
+      
       access_token = sessionData.session.access_token;
       refresh_token = sessionData.session.refresh_token;
-      console.log(`✅ [${traceId}] Production session created successfully via createSession`);
-    } else {
-      console.warn(`ℹ️ [${traceId}] createSession not available, falling back to generateLink`);
-      const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'magiclink',
-        email,
-      });
-      if (tokenError || !tokenData?.properties?.access_token) {
-        console.error(`❌ [${traceId}] Failed to generate magic link token:`, tokenError);
-        throw new Error('Failed to generate fallback session token');
+      console.log(`✅ [${traceId}] Session created successfully`);
+      
+    } catch (sessionErr) {
+      console.error(`❌ [${traceId}] Failed to create session, trying alternative approach:`, sessionErr);
+      
+      // Alternative: Update user with password and sign in
+      const tempPassword = crypto.randomUUID();
+      
+      try {
+        // Update user with password
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(uid, {
+          password: tempPassword,
+        });
+        
+        if (updateError) {
+          console.error(`❌ [${traceId}] Failed to update user password:`, updateError);
+          throw updateError;
+        }
+        
+        // Sign in with password to get tokens
+        const { data: signInData, error: signInError } = await supabaseAnon.auth.signInWithPassword({
+          email,
+          password: tempPassword,
+        });
+        
+        if (signInError || !signInData?.session) {
+          console.error(`❌ [${traceId}] Failed to sign in:`, signInError);
+          throw signInError || new Error('No session from sign in');
+        }
+        
+        access_token = signInData.session.access_token;
+        refresh_token = signInData.session.refresh_token;
+        console.log(`✅ [${traceId}] Session created via password sign-in fallback`);
+        
+      } catch (fallbackErr) {
+        console.error(`❌ [${traceId}] All authentication methods failed:`, fallbackErr);
+        throw new Error('Failed to create user session - all methods exhausted');
       }
-      access_token = tokenData.properties.access_token;
-      refresh_token = access_token; // fallback
-      console.log(`✅ [${traceId}] Production token generated via generateLink`);
     }
 
     return new Response(JSON.stringify({
