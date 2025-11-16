@@ -320,41 +320,20 @@ Deno.serve(async (req: Request) => {
       console.log(`✅ [${traceId}] Session created successfully`);
       
     } catch (sessionErr) {
-      console.error(`❌ [${traceId}] Failed to create session, trying alternative approach:`, sessionErr);
-      
-      // Alternative: Update user with password and sign in
-      const tempPassword = crypto.randomUUID();
-      
-      try {
-        // Update user with password
-        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(uid, {
-          password: tempPassword,
-        });
-        
-        if (updateError) {
-          console.error(`❌ [${traceId}] Failed to update user password:`, updateError);
-          throw updateError;
-        }
-        
-        // Sign in with password to get tokens
-        const { data: signInData, error: signInError } = await supabaseAnon.auth.signInWithPassword({
-          email,
-          password: tempPassword,
-        });
-        
-        if (signInError || !signInData?.session) {
-          console.error(`❌ [${traceId}] Failed to sign in:`, signInError);
-          throw signInError || new Error('No session from sign in');
-        }
-        
-        access_token = signInData.session.access_token;
-        refresh_token = signInData.session.refresh_token;
-        console.log(`✅ [${traceId}] Session created via password sign-in fallback`);
-        
-      } catch (fallbackErr) {
-        console.error(`❌ [${traceId}] All authentication methods failed:`, fallbackErr);
-        throw new Error('Failed to create user session - all methods exhausted');
-      }
+      console.warn(`ℹ️ [${traceId}] createSession unavailable or failed; proceeding without Supabase session`, sessionErr);
+      // As a compatibility fallback (email/password disabled), return verified=true without DB session tokens
+      return new Response(JSON.stringify({
+        verified: true,
+        user: {
+          uid: user.uid,
+          username: user.username,
+          wallet_address: user.wallet_address || null,
+        },
+        supabase_token: null,
+        refresh_token: null,
+        session: 'unavailable',
+        traceId,
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     return new Response(JSON.stringify({
