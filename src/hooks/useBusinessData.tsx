@@ -73,7 +73,7 @@ export const useBusinessData = () => {
             name: business.name,
             position,
             address: simpleAddress,
-            rating: 4.5,
+            rating: 0, // Start from zero, updated from actual reviews
             totalReviews: 0,
             description: business.description || "No description provided",
             category: business.category || "Other",
