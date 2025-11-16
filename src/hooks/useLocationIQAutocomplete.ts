@@ -61,8 +61,25 @@ export const useLocationIQAutocomplete = () => {
           data.suggestions.map((suggestion: any) => ({
             placeId: suggestion.place_id || suggestion.osm_id || `${suggestion.lat}-${suggestion.lon}`,
             description: suggestion.display_name || suggestion.name || '',
-            mainText: suggestion.display_name?.split(',')[0] || '',
-            secondaryText: suggestion.display_name?.split(',').slice(1).join(',').trim() || '',
+            mainText: (() => {
+              const addr = suggestion.address;
+              if (addr?.house_number && addr?.road) {
+                return `${addr.house_number} ${addr.road}`;
+              }
+              if (addr?.road) {
+                return addr.road;
+              }
+              return suggestion.display_name?.split(',')[0] || '';
+            })(),
+            secondaryText: (() => {
+              const addr = suggestion.address;
+              const parts = [
+                addr?.city || addr?.town || addr?.village,
+                addr?.state || addr?.province,
+                addr?.country
+              ].filter(Boolean);
+              return parts.join(', ');
+            })(),
             lat: suggestion.lat,
             lon: suggestion.lon,
             address: {
