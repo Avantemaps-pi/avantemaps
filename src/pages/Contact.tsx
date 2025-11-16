@@ -87,10 +87,10 @@ const Contact = () => {
                     <SelectValue placeholder="Select a department" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="inquiries@avantemaps.com">Inquiries - inquiries@avantemaps.com</SelectItem>
-                    <SelectItem value="partnerships@avantemaps.com">Partnerships - partnerships@avantemaps.com</SelectItem>
-                    <SelectItem value="support@avantemaps.com">Support - support@avantemaps.com</SelectItem>
-                    <SelectItem value="businesses@avantemaps.com">Businesses - businesses@avantemaps.com</SelectItem>
+                    <SelectItem value="inquiries@avantemaps.com">Inquiries</SelectItem>
+                    <SelectItem value="partnerships@avantemaps.com">Partnerships</SelectItem>
+                    <SelectItem value="support@avantemaps.com">Support</SelectItem>
+                    <SelectItem value="businesses@avantemaps.com">Businesses</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
