@@ -340,6 +340,24 @@ export type Database = {
         }
         Relationships: []
       }
+      pi_price: {
+        Row: {
+          id: number
+          price_usd: number
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          price_usd: number
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          price_usd?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
