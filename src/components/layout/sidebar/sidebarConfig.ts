@@ -37,7 +37,7 @@ export const navItems = [
     to: '/notifications',
     icon: Bell,
     label: 'Notifications',
-    badge: getUnreadNotificationsCount(),
+    // Badge will be set dynamically in AppSidebar
   },
   {
     to: '/registered-business',

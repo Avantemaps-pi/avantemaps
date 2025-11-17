@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useSidebar } from '@/components/ui/sidebar';
@@ -16,17 +15,20 @@ const AppSidebar = ({ className }: AppSidebarProps = {}) => {
   const location = useLocation();
   const { openMobile, setOpenMobile } = useSidebar();
   const isMobile = useIsMobile();
-  const [notificationCount, setNotificationCount] = useState(getUnreadNotificationsCount());
+  const [notificationCount, setNotificationCount] = useState(0);
   
   useEffect(() => {
-    const handleNotificationUpdate = () => {
-      setNotificationCount(getUnreadNotificationsCount());
+    const updateNotifications = async () => {
+      const count = await getUnreadNotificationsCount();
+      setNotificationCount(count);
     };
     
-    window.addEventListener('notificationUpdate', handleNotificationUpdate);
+    updateNotifications();
+    
+    window.addEventListener('notificationUpdate', updateNotifications);
     
     return () => {
-      window.removeEventListener('notificationUpdate', handleNotificationUpdate);
+      window.removeEventListener('notificationUpdate', updateNotifications);
     };
   }, []);
   
