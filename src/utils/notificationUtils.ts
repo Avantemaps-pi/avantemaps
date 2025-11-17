@@ -21,6 +21,18 @@ export const markAllNotificationsAsRead = (): void => {
   globalNotifications = globalNotifications.map(notification => ({ ...notification, read: true }));
 };
 
+// Helper function to mark multiple notifications as read
+export const markMultipleNotificationsAsRead = (ids: string[]): void => {
+  globalNotifications = globalNotifications.map(notification =>
+    ids.includes(notification.id) ? { ...notification, read: true } : notification
+  );
+};
+
+// Helper function to delete notifications
+export const deleteNotifications = (ids: string[]): void => {
+  globalNotifications = globalNotifications.filter(notification => !ids.includes(notification.id));
+};
+
 // Helper function to get all notifications
 export const getAllNotifications = (): NotificationProps[] => {
   return [...globalNotifications];

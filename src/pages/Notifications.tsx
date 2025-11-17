@@ -3,15 +3,26 @@ import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { getAllNotifications, markNotificationAsRead, markAllNotificationsAsRead, notificationUpdateEvent } from '@/utils/notificationUtils';
+import { 
+  getAllNotifications, 
+  markNotificationAsRead, 
+  markAllNotificationsAsRead, 
+  markMultipleNotificationsAsRead,
+  deleteNotifications,
+  notificationUpdateEvent 
+} from '@/utils/notificationUtils';
 import NotificationItem from '@/components/notifications/NotificationItem';
 import EmptyNotifications from '@/components/notifications/EmptyNotifications';
 import NotificationCategoryTabs from '@/components/notifications/NotificationCategoryTabs';
+import BulkActionsBar from '@/components/notifications/BulkActionsBar';
 import { NotificationCategory, getNotificationsByCategory, getAllCategoryCounts } from '@/utils/notificationCategories';
+import { CheckSquare } from 'lucide-react';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState(getAllNotifications());
   const [activeCategory, setActiveCategory] = useState<NotificationCategory>('all');
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   
   useEffect(() => {
     const updateNotifications = () => {
@@ -41,6 +52,46 @@ const Notifications = () => {
     window.dispatchEvent(notificationUpdateEvent);
   };
 
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode);
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleBulkMarkAsRead = () => {
+    const idsArray = Array.from(selectedIds);
+    markMultipleNotificationsAsRead(idsArray);
+    setNotifications(getAllNotifications());
+    toast.success(`${idsArray.length} notifications marked as read`);
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+    window.dispatchEvent(notificationUpdateEvent);
+  };
+
+  const handleBulkDelete = () => {
+    const idsArray = Array.from(selectedIds);
+    deleteNotifications(idsArray);
+    setNotifications(getAllNotifications());
+    toast.success(`${idsArray.length} notifications deleted`);
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+    window.dispatchEvent(notificationUpdateEvent);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+  };
+
   const filteredNotifications = getNotificationsByCategory(notifications, activeCategory);
   const categoryCounts = getAllCategoryCounts(notifications);
   const unreadCount = filteredNotifications.filter(notification => !notification.read).length;
@@ -56,9 +107,9 @@ const Notifications = () => {
           />
         </div>
 
-        {/* Mark all as read button */}
+        {/* Action buttons */}
         {notifications.length > 0 && (
-          <div className="px-4">
+          <div className="px-4 flex gap-2">
             <Button 
               variant="outline" 
               size="sm" 
@@ -66,6 +117,16 @@ const Notifications = () => {
               disabled={unreadCount === 0}
             >
               Mark all as read
+            </Button>
+            
+            <Button
+              variant={selectionMode ? "default" : "outline"}
+              size="sm"
+              onClick={toggleSelectionMode}
+              className="gap-2"
+            >
+              <CheckSquare className="h-4 w-4" />
+              {selectionMode ? 'Cancel selection' : 'Select'}
             </Button>
           </div>
         )}
@@ -79,7 +140,10 @@ const Notifications = () => {
                   <NotificationItem 
                     key={notification.id} 
                     notification={notification} 
-                    onReadNotification={markAsRead} 
+                    onReadNotification={markAsRead}
+                    isSelected={selectedIds.has(notification.id)}
+                    onToggleSelection={toggleSelection}
+                    selectionMode={selectionMode}
                   />
                 ))
               ) : (
@@ -88,6 +152,16 @@ const Notifications = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Bulk actions bar */}
+        {selectionMode && selectedIds.size > 0 && (
+          <BulkActionsBar
+            selectedCount={selectedIds.size}
+            onMarkAsRead={handleBulkMarkAsRead}
+            onDelete={handleBulkDelete}
+            onClearSelection={handleClearSelection}
+          />
+        )}
       </div>
     </AppLayout>
   );

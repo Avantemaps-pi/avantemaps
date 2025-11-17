@@ -1,14 +1,23 @@
-
 import React from 'react';
 import { Bell, MessageSquare, Star, Store, Users, ThumbsUp, ShieldCheck, Shield, Coins, Bookmark, AlertCircle } from 'lucide-react';
 import { NotificationProps } from '@/types/notification';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface NotificationItemProps {
   notification: NotificationProps;
   onReadNotification: (id: string) => void;
+  isSelected?: boolean;
+  onToggleSelection?: (id: string) => void;
+  selectionMode?: boolean;
 }
 
-const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onReadNotification }) => {
+const NotificationItem: React.FC<NotificationItemProps> = ({ 
+  notification, 
+  onReadNotification,
+  isSelected = false,
+  onToggleSelection,
+  selectionMode = false
+}) => {
   const { type, content, time, read, id } = notification;
   
   const getIcon = () => {
@@ -66,24 +75,41 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onRea
   };
 
   const handleClick = () => {
-    if (!notification.read) {
+    if (selectionMode && onToggleSelection) {
+      onToggleSelection(notification.id);
+    } else if (!notification.read) {
       onReadNotification(notification.id);
+    }
+  };
+
+  const handleCheckboxChange = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onToggleSelection) {
+      onToggleSelection(notification.id);
     }
   };
 
   return (
     <div 
-      className={`p-4 border-b border-border flex items-start ${read ? 'bg-background' : 'bg-accent/30'} cursor-pointer hover:bg-accent/50 transition-colors`}
+      className={`p-4 border-b border-border flex items-start ${read ? 'bg-background' : 'bg-accent/30'} cursor-pointer hover:bg-accent/50 transition-colors ${isSelected ? 'bg-accent/60' : ''}`}
       onClick={handleClick}
     >
+      {selectionMode && (
+        <div className="mr-3 mt-1" onClick={handleCheckboxChange}>
+          <Checkbox checked={isSelected} />
+        </div>
+      )}
+      
       <div className={`p-2 rounded-full mr-4 ${getIconColor()}`}>
         {getIcon()}
       </div>
+      
       <div className="flex-1">
         <p className={`${read ? 'text-muted-foreground' : 'font-medium text-foreground'}`}>{content}</p>
         <p className="text-xs text-muted-foreground mt-1">{time}</p>
       </div>
-      {!read && (
+      
+      {!read && !selectionMode && (
         <div className="ml-2 h-2 w-2 rounded-full bg-primary"></div>
       )}
     </div>
