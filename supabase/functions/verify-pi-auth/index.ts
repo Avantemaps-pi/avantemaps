@@ -235,10 +235,10 @@ Deno.serve(async (req: Request) => {
       });
       return new Response(JSON.stringify({
         verified: false,
-        error: 'Pi API verification failed',
-        details: rawResponse,
+        error: 'Authentication failed',
+        details: 'Could not verify credentials with Pi Network',
         traceId,
-      }), { status: verifyResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const piUserData = JSON.parse(rawResponse);
@@ -259,10 +259,10 @@ Deno.serve(async (req: Request) => {
       });
       return new Response(JSON.stringify({
         verified: false,
-        error: 'User mismatch',
-        details: 'UID or username does not match token data.',
+        error: 'Authentication failed',
+        details: 'Credential verification failed',
         traceId,
-      }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // --- Supabase Auth Integration ---
@@ -306,13 +306,13 @@ Deno.serve(async (req: Request) => {
       });
       
       if (sessionError) {
-        console.error(`❌ [${traceId}] Session creation error:`, sessionError);
+        console.error(`❌ [${traceId}] Session creation error: ${sessionError.message}`);
         throw sessionError;
       }
       
       if (!sessionData?.session?.access_token) {
         console.error(`❌ [${traceId}] No session data returned`);
-        throw new Error('No session data returned from createSession');
+        throw new Error('Session creation failed');
       }
       
       access_token = sessionData.session.access_token;
@@ -333,7 +333,7 @@ Deno.serve(async (req: Request) => {
         });
         
         if (updateError) {
-          console.error(`❌ [${traceId}] Failed to set password (Email provider may not be enabled):`, updateError);
+          console.error(`❌ [${traceId}] Failed to set password (Email provider may not be enabled): ${updateError.message}`);
           throw updateError;
         }
         
@@ -344,8 +344,8 @@ Deno.serve(async (req: Request) => {
         });
         
         if (signInError || !signInData?.session) {
-          console.error(`❌ [${traceId}] Failed to sign in with password:`, signInError);
-          throw signInError || new Error('No session from password sign in');
+          console.error(`❌ [${traceId}] Failed to sign in with password: ${signInError?.message || 'No session'}`);
+          throw signInError || new Error('Session creation failed');
         }
         
         access_token = signInData.session.access_token;
@@ -353,7 +353,7 @@ Deno.serve(async (req: Request) => {
         console.log(`✅ [${traceId}] Session created via email/password fallback`);
         
       } catch (fallbackErr) {
-        console.error(`❌ [${traceId}] Email/password fallback failed - Email provider may not be enabled:`, fallbackErr);
+        console.error(`❌ [${traceId}] Email/password fallback failed: ${fallbackErr instanceof Error ? fallbackErr.message : 'Unknown error'}`);
         // Return verified but without session if all methods fail
         return new Response(JSON.stringify({
           verified: true,
@@ -365,7 +365,7 @@ Deno.serve(async (req: Request) => {
           supabase_token: null,
           refresh_token: null,
           session: 'unavailable',
-          error: 'Email provider may not be enabled in Supabase',
+          error: 'Session creation unavailable',
           traceId,
         }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
@@ -391,8 +391,8 @@ Deno.serve(async (req: Request) => {
     });
     return new Response(JSON.stringify({
       verified: false,
-      error: 'Internal server error',
-      details: err instanceof Error ? err.message : 'Unknown runtime error.',
+      error: 'Authentication service error',
+      details: 'An unexpected error occurred during authentication',
       traceId,
     }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
