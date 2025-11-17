@@ -1,6 +1,6 @@
 import { NotificationProps, NotificationType } from '@/types/notification';
 
-export type NotificationCategory = 'all' | 'comments' | 'bookmarks' | 'system';
+export type NotificationCategory = 'all' | 'comments' | 'system';
 
 export const categoryConfig: Record<NotificationCategory, {
   label: string;
@@ -14,13 +14,9 @@ export const categoryConfig: Record<NotificationCategory, {
     label: 'Comments',
     types: ['message', 'review']
   },
-  bookmarks: {
-    label: 'Bookmarks',
-    types: ['bookmark']
-  },
   system: {
     label: 'System',
-    types: ['business', 'follower', 'like', 'verification', 'certification', 'payment', 'system']
+    types: ['business', 'follower', 'like', 'verification', 'certification', 'payment', 'bookmark', 'system']
   }
 };
 
@@ -48,7 +44,6 @@ export const getAllCategoryCounts = (notifications: NotificationProps[]) => {
   return {
     all: notifications.filter(n => !n.read).length,
     comments: getCategoryUnreadCount(notifications, 'comments'),
-    bookmarks: getCategoryUnreadCount(notifications, 'bookmarks'),
     system: getCategoryUnreadCount(notifications, 'system')
   };
 };

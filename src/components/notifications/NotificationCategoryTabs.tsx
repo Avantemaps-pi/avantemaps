@@ -14,11 +14,11 @@ const NotificationCategoryTabs: React.FC<NotificationCategoryTabsProps> = ({
   onCategoryChange,
   categoryCounts
 }) => {
-  const categories: NotificationCategory[] = ['all', 'comments', 'bookmarks', 'system'];
+  const categories: NotificationCategory[] = ['all', 'comments', 'system'];
 
   return (
     <Tabs value={activeCategory} onValueChange={(value) => onCategoryChange(value as NotificationCategory)} className="w-full">
-      <TabsList className="w-full grid grid-cols-4 h-auto">
+      <TabsList className="w-full grid grid-cols-3 h-auto">
         {categories.map((category) => (
           <TabsTrigger 
             key={category} 
