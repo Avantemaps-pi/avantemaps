@@ -131,7 +131,7 @@ const Contact = () => {
             <div className="space-y-2">
               <h3 className="font-medium">Is Avante Maps affiliated with Pi Network?</h3>
               <p className="text-sm text-muted-foreground">
-                Avante Maps is an independent platform created by Pi enthusiasts to support the Pi ecosystem.
+                Avante Maps is an independent platform created by  Pi Network enthusiast to support the Pi ecosystem.
               </p>
             </div>
           </CardContent>
