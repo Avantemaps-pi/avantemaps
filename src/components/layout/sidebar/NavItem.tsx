@@ -57,7 +57,7 @@ const NavItem = ({
       >
         <Icon className="h-5 w-5" />
         <span>{label}</span>
-        {badge && badge > 0 && (
+        {badge > 0 && (
           <span className="absolute right-4 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
             {badge}
           </span>
