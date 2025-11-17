@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Bell, MessageSquare, Star, Store, Users, ThumbsUp, ShieldCheck, Shield, Coins, Bookmark, AlertCircle, Check, Trash2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Bell, MessageSquare, Star, Store, Users, ThumbsUp, ShieldCheck, Shield, Coins, Bookmark, AlertCircle, Check } from 'lucide-react';
 import { NotificationProps } from '@/types/notification';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useSwipeable } from 'react-swipeable';
@@ -11,7 +11,6 @@ interface NotificationItemProps {
   isSelected?: boolean;
   onToggleSelection?: (id: string) => void;
   selectionMode?: boolean;
-  onDelete?: (id: string) => void;
 }
 
 const NotificationItem: React.FC<NotificationItemProps> = ({ 
@@ -19,14 +18,21 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   onReadNotification,
   isSelected = false,
   onToggleSelection,
-  selectionMode = false,
-  onDelete
+  selectionMode = false
 }) => {
   const { type, content, time, read, id } = notification;
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
+  const hasVibratedRef = useRef(false);
 
   const SWIPE_THRESHOLD = 80;
+
+  const triggerHapticFeedback = () => {
+    if ('vibrate' in navigator && !hasVibratedRef.current) {
+      navigator.vibrate(50); // 50ms vibration
+      hasVibratedRef.current = true;
+    }
+  };
   
   const getIcon = () => {
     switch (type) {
@@ -104,14 +110,20 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
       if (selectionMode) return;
       setIsSwiping(true);
       
-      // Limit swipe range: -120 (left) to 120 (right)
-      const offset = Math.max(-120, Math.min(120, eventData.deltaX));
+      // Only allow right swipe (positive deltaX) for mark as read
+      const offset = Math.max(0, Math.min(120, eventData.deltaX));
       setSwipeOffset(offset);
+
+      // Trigger haptic feedback when crossing threshold
+      if (offset > SWIPE_THRESHOLD && !read) {
+        triggerHapticFeedback();
+      }
     },
     onSwiped: (eventData) => {
       if (selectionMode) {
         setSwipeOffset(0);
         setIsSwiping(false);
+        hasVibratedRef.current = false;
         return;
       }
 
@@ -119,15 +131,12 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
       if (eventData.deltaX > SWIPE_THRESHOLD && !read) {
         onReadNotification(notification.id);
       }
-      // Swipe left - delete
-      else if (eventData.deltaX < -SWIPE_THRESHOLD && onDelete) {
-        onDelete(notification.id);
-      }
       
       // Reset
       setTimeout(() => {
         setSwipeOffset(0);
         setIsSwiping(false);
+        hasVibratedRef.current = false;
       }, 100);
     },
     trackMouse: false,
@@ -136,7 +145,6 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   });
 
   const showMarkAsReadAction = swipeOffset > SWIPE_THRESHOLD && !read;
-  const showDeleteAction = swipeOffset < -SWIPE_THRESHOLD;
 
   return (
     <div 
@@ -153,16 +161,6 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         )}
       >
         <Check className="h-6 w-6 text-white" />
-      </div>
-
-      {/* Right action - Delete */}
-      <div 
-        className={cn(
-          "absolute right-0 top-0 bottom-0 w-24 flex items-center justify-center bg-destructive transition-opacity",
-          showDeleteAction ? "opacity-100" : "opacity-0"
-        )}
-      >
-        <Trash2 className="h-6 w-6 text-white" />
       </div>
 
       {/* Main content */}
