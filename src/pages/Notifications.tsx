@@ -8,7 +8,6 @@ import {
   markNotificationAsRead, 
   markAllNotificationsAsRead, 
   markMultipleNotificationsAsRead,
-  deleteNotifications,
   notificationUpdateEvent 
 } from '@/utils/notificationUtils';
 import NotificationItem from '@/components/notifications/NotificationItem';
@@ -77,23 +76,6 @@ const Notifications = () => {
     window.dispatchEvent(notificationUpdateEvent);
   };
 
-  const handleBulkDelete = () => {
-    const idsArray = Array.from(selectedIds);
-    deleteNotifications(idsArray);
-    setNotifications(getAllNotifications());
-    toast.success(`${idsArray.length} notifications deleted`);
-    setSelectedIds(new Set());
-    setSelectionMode(false);
-    window.dispatchEvent(notificationUpdateEvent);
-  };
-
-  const handleDelete = (id: string) => {
-    deleteNotifications([id]);
-    setNotifications(getAllNotifications());
-    toast.success('Notification deleted');
-    window.dispatchEvent(notificationUpdateEvent);
-  };
-
   const handleClearSelection = () => {
     setSelectedIds(new Set());
     setSelectionMode(false);
@@ -151,7 +133,6 @@ const Notifications = () => {
                     isSelected={selectedIds.has(notification.id)}
                     onToggleSelection={toggleSelection}
                     selectionMode={selectionMode}
-                    onDelete={handleDelete}
                   />
                 ))
               ) : (
@@ -166,7 +147,6 @@ const Notifications = () => {
           <BulkActionsBar
             selectedCount={selectedIds.size}
             onMarkAsRead={handleBulkMarkAsRead}
-            onDelete={handleBulkDelete}
             onClearSelection={handleClearSelection}
           />
         )}
