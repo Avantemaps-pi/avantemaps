@@ -1,4 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts';
+import { checkRateLimit, getClientIP, createRateLimitResponse } from '../_shared/rateLimit.ts';
 
 // PiNet Metadata DTO types following Pi Platform documentation
 interface OGImage {
@@ -44,6 +45,15 @@ Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting: 30 requests per minute for metadata endpoint
+  const clientIP = getClientIP(req);
+  const rateLimitCheck = checkRateLimit(clientIP, { windowMs: 60000, maxRequests: 30 });
+  
+  if (!rateLimitCheck.allowed) {
+    console.warn(`Rate limit exceeded for IP: ${clientIP}`);
+    return createRateLimitResponse(rateLimitCheck.retryAfter!, undefined, corsHeaders);
   }
 
   try {
