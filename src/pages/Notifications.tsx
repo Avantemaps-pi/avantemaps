@@ -3,6 +3,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 import { 
   getAllNotifications, 
   markNotificationAsRead, 
@@ -15,7 +16,7 @@ import EmptyNotifications from '@/components/notifications/EmptyNotifications';
 import NotificationCategoryTabs from '@/components/notifications/NotificationCategoryTabs';
 import BulkActionsBar from '@/components/notifications/BulkActionsBar';
 import { NotificationCategory, getNotificationsByCategory, getAllCategoryCounts } from '@/utils/notificationCategories';
-import { CheckSquare } from 'lucide-react';
+import { CheckSquare, RefreshCw } from 'lucide-react';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState(getAllNotifications());
@@ -81,6 +82,23 @@ const Notifications = () => {
     setSelectionMode(false);
   };
 
+  const handleRefresh = async () => {
+    // Trigger haptic feedback
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50);
+    }
+
+    // Simulate fetching new notifications (in real app, this would be an API call)
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        setNotifications(getAllNotifications());
+        window.dispatchEvent(notificationUpdateEvent);
+        toast.success('Notifications refreshed');
+        resolve();
+      }, 800);
+    });
+  };
+
   const filteredNotifications = getNotificationsByCategory(notifications, activeCategory);
   const categoryCounts = getAllCategoryCounts(notifications);
   const unreadCount = filteredNotifications.filter(notification => !notification.read).length;
@@ -120,27 +138,44 @@ const Notifications = () => {
           </div>
         )}
         
-        {/* Notifications list */}
-        <Card>
-          <CardContent className="p-0">
-            <div className="divide-y">
-              {filteredNotifications.length > 0 ? (
-                filteredNotifications.map(notification => (
-                  <NotificationItem 
-                    key={notification.id} 
-                    notification={notification} 
-                    onReadNotification={markAsRead}
-                    isSelected={selectedIds.has(notification.id)}
-                    onToggleSelection={toggleSelection}
-                    selectionMode={selectionMode}
-                  />
-                ))
-              ) : (
-                <EmptyNotifications />
-              )}
+        {/* Notifications list with pull-to-refresh */}
+        <PullToRefresh
+          onRefresh={handleRefresh}
+          pullingContent={
+            <div className="flex justify-center py-4">
+              <RefreshCw className="h-5 w-5 text-muted-foreground animate-spin" />
             </div>
-          </CardContent>
-        </Card>
+          }
+          refreshingContent={
+            <div className="flex justify-center py-4">
+              <RefreshCw className="h-5 w-5 text-primary animate-spin" />
+            </div>
+          }
+          pullDownThreshold={80}
+          maxPullDownDistance={100}
+          resistance={2}
+        >
+          <Card>
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {filteredNotifications.length > 0 ? (
+                  filteredNotifications.map(notification => (
+                    <NotificationItem 
+                      key={notification.id} 
+                      notification={notification} 
+                      onReadNotification={markAsRead}
+                      isSelected={selectedIds.has(notification.id)}
+                      onToggleSelection={toggleSelection}
+                      selectionMode={selectionMode}
+                    />
+                  ))
+                ) : (
+                  <EmptyNotifications />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </PullToRefresh>
 
         {/* Bulk actions bar */}
         {selectionMode && selectedIds.size > 0 && (
