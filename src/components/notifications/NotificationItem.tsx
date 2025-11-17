@@ -1,7 +1,9 @@
-import React from 'react';
-import { Bell, MessageSquare, Star, Store, Users, ThumbsUp, ShieldCheck, Shield, Coins, Bookmark, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bell, MessageSquare, Star, Store, Users, ThumbsUp, ShieldCheck, Shield, Coins, Bookmark, AlertCircle, Check, Trash2 } from 'lucide-react';
 import { NotificationProps } from '@/types/notification';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useSwipeable } from 'react-swipeable';
+import { cn } from '@/lib/utils';
 
 interface NotificationItemProps {
   notification: NotificationProps;
@@ -9,6 +11,7 @@ interface NotificationItemProps {
   isSelected?: boolean;
   onToggleSelection?: (id: string) => void;
   selectionMode?: boolean;
+  onDelete?: (id: string) => void;
 }
 
 const NotificationItem: React.FC<NotificationItemProps> = ({ 
@@ -16,9 +19,14 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   onReadNotification,
   isSelected = false,
   onToggleSelection,
-  selectionMode = false
+  selectionMode = false,
+  onDelete
 }) => {
   const { type, content, time, read, id } = notification;
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+
+  const SWIPE_THRESHOLD = 80;
   
   const getIcon = () => {
     switch (type) {
@@ -75,6 +83,8 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   };
 
   const handleClick = () => {
+    if (isSwiping) return;
+    
     if (selectionMode && onToggleSelection) {
       onToggleSelection(notification.id);
     } else if (!notification.read) {
@@ -89,29 +99,104 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     }
   };
 
+  const handlers = useSwipeable({
+    onSwiping: (eventData) => {
+      if (selectionMode) return;
+      setIsSwiping(true);
+      
+      // Limit swipe range: -120 (left) to 120 (right)
+      const offset = Math.max(-120, Math.min(120, eventData.deltaX));
+      setSwipeOffset(offset);
+    },
+    onSwiped: (eventData) => {
+      if (selectionMode) {
+        setSwipeOffset(0);
+        setIsSwiping(false);
+        return;
+      }
+
+      // Swipe right - mark as read
+      if (eventData.deltaX > SWIPE_THRESHOLD && !read) {
+        onReadNotification(notification.id);
+      }
+      // Swipe left - delete
+      else if (eventData.deltaX < -SWIPE_THRESHOLD && onDelete) {
+        onDelete(notification.id);
+      }
+      
+      // Reset
+      setTimeout(() => {
+        setSwipeOffset(0);
+        setIsSwiping(false);
+      }, 100);
+    },
+    trackMouse: false,
+    trackTouch: true,
+    preventScrollOnSwipe: true,
+  });
+
+  const showMarkAsReadAction = swipeOffset > SWIPE_THRESHOLD && !read;
+  const showDeleteAction = swipeOffset < -SWIPE_THRESHOLD;
+
   return (
     <div 
-      className={`p-4 border-b border-border flex items-start ${read ? 'bg-background' : 'bg-accent/30'} cursor-pointer hover:bg-accent/50 transition-colors ${isSelected ? 'bg-accent/60' : ''}`}
-      onClick={handleClick}
+      className={cn(
+        "relative overflow-hidden border-b border-border",
+        isSelected && "bg-accent/60"
+      )}
     >
-      {selectionMode && (
-        <div className="mr-3 mt-1" onClick={handleCheckboxChange}>
-          <Checkbox checked={isSelected} />
+      {/* Left action - Mark as read */}
+      <div 
+        className={cn(
+          "absolute left-0 top-0 bottom-0 w-24 flex items-center justify-center bg-emerald-500 transition-opacity",
+          showMarkAsReadAction ? "opacity-100" : "opacity-0"
+        )}
+      >
+        <Check className="h-6 w-6 text-white" />
+      </div>
+
+      {/* Right action - Delete */}
+      <div 
+        className={cn(
+          "absolute right-0 top-0 bottom-0 w-24 flex items-center justify-center bg-destructive transition-opacity",
+          showDeleteAction ? "opacity-100" : "opacity-0"
+        )}
+      >
+        <Trash2 className="h-6 w-6 text-white" />
+      </div>
+
+      {/* Main content */}
+      <div
+        {...handlers}
+        style={{
+          transform: `translateX(${swipeOffset}px)`,
+          transition: isSwiping ? 'none' : 'transform 0.2s ease-out'
+        }}
+        className={cn(
+          "p-4 flex items-start cursor-pointer hover:bg-accent/50 transition-colors bg-background",
+          read ? "" : "bg-accent/30"
+        )}
+        onClick={handleClick}
+      >
+        {selectionMode && (
+          <div className="mr-3 mt-1" onClick={handleCheckboxChange}>
+            <Checkbox checked={isSelected} />
+          </div>
+        )}
+        
+        <div className={`p-2 rounded-full mr-4 ${getIconColor()}`}>
+          {getIcon()}
         </div>
-      )}
-      
-      <div className={`p-2 rounded-full mr-4 ${getIconColor()}`}>
-        {getIcon()}
+        
+        <div className="flex-1">
+          <p className={`${read ? 'text-muted-foreground' : 'font-medium text-foreground'}`}>{content}</p>
+          <p className="text-xs text-muted-foreground mt-1">{time}</p>
+        </div>
+        
+        {!read && !selectionMode && (
+          <div className="ml-2 h-2 w-2 rounded-full bg-primary"></div>
+        )}
       </div>
-      
-      <div className="flex-1">
-        <p className={`${read ? 'text-muted-foreground' : 'font-medium text-foreground'}`}>{content}</p>
-        <p className="text-xs text-muted-foreground mt-1">{time}</p>
-      </div>
-      
-      {!read && !selectionMode && (
-        <div className="ml-2 h-2 w-2 rounded-full bg-primary"></div>
-      )}
     </div>
   );
 };
