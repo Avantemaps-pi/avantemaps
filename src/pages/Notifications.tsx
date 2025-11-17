@@ -87,6 +87,13 @@ const Notifications = () => {
     window.dispatchEvent(notificationUpdateEvent);
   };
 
+  const handleDelete = (id: string) => {
+    deleteNotifications([id]);
+    setNotifications(getAllNotifications());
+    toast.success('Notification deleted');
+    window.dispatchEvent(notificationUpdateEvent);
+  };
+
   const handleClearSelection = () => {
     setSelectedIds(new Set());
     setSelectionMode(false);
@@ -144,6 +151,7 @@ const Notifications = () => {
                     isSelected={selectedIds.has(notification.id)}
                     onToggleSelection={toggleSelection}
                     selectionMode={selectionMode}
+                    onDelete={handleDelete}
                   />
                 ))
               ) : (
