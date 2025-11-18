@@ -15,6 +15,8 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout>();
+  const [autofillDetected, setAutofillDetected] = useState(false);
+  const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const handleAddressChange = (value: string) => {
     form.setValue('streetAddress', value);
@@ -107,6 +109,31 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
     setShowSuggestions(false);
   };
 
+  // Detect browser autofill
+  useEffect(() => {
+    const detectAutofill = (e: AnimationEvent) => {
+      if (e.animationName === 'onAutoFillStart') {
+        setAutofillDetected(true);
+        // Reset after a delay to allow subsequent manual edits
+        setTimeout(() => setAutofillDetected(false), 500);
+      }
+    };
+
+    Object.values(inputRefs.current).forEach(input => {
+      if (input) {
+        input.addEventListener('animationstart', detectAutofill as any);
+      }
+    });
+
+    return () => {
+      Object.values(inputRefs.current).forEach(input => {
+        if (input) {
+          input.removeEventListener('animationstart', detectAutofill as any);
+        }
+      });
+    };
+  }, []);
+
   // Cleanup timeout on unmount
   useEffect(() => () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -142,8 +169,15 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                   id="streetAddress"
                   placeholder="Start typing to search for an address..."
                   {...field}
-                  
-                  onChange={(e) => handleAddressChange(e.target.value)}
+                  ref={(el) => {
+                    inputRefs.current.streetAddress = el;
+                    field.ref(el);
+                  }}
+                  onChange={(e) => {
+                    if (!autofillDetected) {
+                      handleAddressChange(e.target.value);
+                    }
+                  }}
                   onFocus={() => predictions.length > 0 && setShowSuggestions(true)}
                   disabled={disabled}
                   autoComplete="address-line1"
@@ -204,6 +238,10 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                 id="apartment"
                 placeholder="e.g., Suite 100, Unit 5B, Apt 2A"
                 {...field}
+                ref={(el) => {
+                  inputRefs.current.apartment = el;
+                  field.ref(el);
+                }}
                 disabled={disabled}
                 autoComplete="address-line2"
                 className="h-12 rounded-xl border-2 focus:border-primary transition-colors"
@@ -230,6 +268,10 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                   id="city"
                   placeholder="e.g., Toronto"
                   {...field}
+                  ref={(el) => {
+                    inputRefs.current.city = el;
+                    field.ref(el);
+                  }}
                   disabled={disabled}
                   autoComplete="address-level2"
                   className="h-12 rounded-xl border-2 focus:border-primary transition-colors"
@@ -254,6 +296,10 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                   id="state"
                   placeholder="e.g., ON"
                   {...field}
+                  ref={(el) => {
+                    inputRefs.current.state = el;
+                    field.ref(el);
+                  }}
                   disabled={disabled}
                   autoComplete="address-level1"
                   className="h-12 rounded-xl border-2 focus:border-primary transition-colors"
@@ -278,6 +324,10 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                   id="zipCode"
                   placeholder="e.g., M5H 2N2"
                   {...field}
+                  ref={(el) => {
+                    inputRefs.current.zipCode = el;
+                    field.ref(el);
+                  }}
                   disabled={disabled}
                   autoComplete="postal-code"
                   className="h-12 rounded-xl border-2 focus:border-primary transition-colors"
@@ -304,6 +354,10 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                 id="country"
                 placeholder="e.g., Canada"
                 {...field}
+                ref={(el) => {
+                  inputRefs.current.country = el;
+                  field.ref(el);
+                }}
                 disabled={disabled}
                 autoComplete="country-name"
                 className="h-12 rounded-xl border-2 focus:border-primary transition-colors"
