@@ -5,6 +5,8 @@ import { useFormContext } from 'react-hook-form';
 import { FormValues } from '../formSchema';
 import { Building2, MapPinned, Mail, Globe, MapPin, Loader2 } from 'lucide-react';
 import { useLocationIQAutocomplete } from '@/hooks/useLocationIQAutocomplete';
+import { buildStreetAddress, parseCity } from '../utils/addressParser';
+
 interface AddressFormFieldsProps {
   disabled?: boolean;
 }
@@ -40,30 +42,13 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
     console.log('📍 Address selected:', prediction);
     console.log('📦 Address object:', prediction.address);
     
-    // Build street address with better parsing
-    let streetAddress = '';
-    
-    // If we have both house_number and road, use them
-    if (prediction.address.house_number && prediction.address.road) {
-      streetAddress = `${prediction.address.house_number} ${prediction.address.road}`.trim();
-    } 
-    // If only road is available, use it
-    else if (prediction.address.road) {
-      streetAddress = prediction.address.road;
-    }
-    // Otherwise, use the mainText which is usually the first part of display_name
-    else {
-      streetAddress = prediction.mainText;
-    }
-
+    // Build street address using smart parsing
+    const streetAddress = buildStreetAddress(prediction);
     console.log('✓ Setting street address:', streetAddress);
     form.setValue('streetAddress', streetAddress, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
 
-    // Auto-fill city (LocationIQ may use city, town, village, or municipality)
-    const city = prediction.address.city || 
-                 prediction.address.town || 
-                 prediction.address.village || 
-                 prediction.address.municipality || '';
+    // Parse city with smart logic to avoid municipality names
+    const city = parseCity(prediction.address, prediction.description);
     
     if (city) {
       console.log('✓ Setting city:', city);
@@ -72,7 +57,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
       console.warn('⚠️ No city found in address');
     }
 
-    // Auto-fill state/province (LocationIQ may use state, province, or region)
+    // Auto-fill state/province
     const state = prediction.address.state || 
                   prediction.address.province || 
                   prediction.address.region || '';
@@ -104,7 +89,6 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
       console.warn('⚠️ No country found in address');
     }
 
-    console.log('✅ Address autocomplete completed with all available fields');
     clearSuggestions();
     setShowSuggestions(false);
   };
@@ -139,7 +123,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   }, []);
 
-  // Hide suggestions when clicking outside
+  // Click outside to close suggestions
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -153,18 +137,18 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
 
   return (
     <div className="space-y-6">
-      {/* Street Address - Autocomplete (First Field) */}
-      <FormField
-        control={form.control}
-        name="streetAddress"
-        render={({ field }) => (
-          <FormItem ref={containerRef} className="relative">
-            <FormLabel className="text-sm font-medium flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-muted-foreground" />
-              Street Address *
-            </FormLabel>
-            <FormControl>
-              <div className="relative">
+      {/* Street Address with Autocomplete */}
+      <div className="relative" ref={containerRef}>
+        <FormField
+          control={form.control}
+          name="streetAddress"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-base font-semibold flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-primary" />
+                Street Address
+              </FormLabel>
+              <FormControl>
                 <Input
                   id="streetAddress"
                   placeholder="Start typing to search for an address..."
@@ -181,57 +165,57 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                   onFocus={() => predictions.length > 0 && setShowSuggestions(true)}
                   disabled={disabled}
                   autoComplete="address-line1"
-                  className="h-12 rounded-xl border-2 focus:border-primary transition-colors pr-10"
+                  className="h-12 rounded-xl border-2 focus:border-primary transition-colors"
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <MapPin className="w-5 h-5" />
-                  )}
-                </div>
-              </div>
-            </FormControl>
-            <FormMessage />
-            
-            {/* Address Suggestions Dropdown */}
-            {showSuggestions && predictions.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-80 overflow-auto">
-                {predictions.map((prediction, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border last:border-b-0 flex items-start gap-3"
-                    onClick={() => handleSuggestionClick(prediction)}
-                  >
-                    <span className="text-muted-foreground mt-0.5 flex-shrink-0">
-                      📍
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-foreground truncate">
-                        {prediction.mainText}
-                      </div>
-                      <div className="text-sm text-muted-foreground truncate">
-                        {prediction.secondaryText}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </FormItem>
-        )}
-      />
+              </FormControl>
+              <FormMessage />
 
-      {/* Apartment/Complex */}
+              {/* Autocomplete Suggestions */}
+              {showSuggestions && predictions.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-80 overflow-auto">
+                  {predictions.map((prediction, index) => (
+                    <button
+                      key={prediction.placeId || index}
+                      type="button"
+                      className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border last:border-b-0 flex items-start gap-3"
+                      onClick={() => handleSuggestionClick(prediction)}
+                    >
+                      <span className="text-muted-foreground mt-0.5 flex-shrink-0">
+                        📍
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-foreground truncate">
+                          {prediction.mainText}
+                        </div>
+                        <div className="text-sm text-muted-foreground truncate">
+                          {prediction.secondaryText}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Loading indicator */}
+              {isLoading && (
+                <div className="absolute right-3 top-12 transform -translate-y-1/2">
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </FormItem>
+          )}
+        />
+      </div>
+
+      {/* Apartment/Unit (Optional) */}
       <FormField
         control={form.control}
         name="apartment"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-medium flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-muted-foreground" />
-              Apartment / Unit / Suite <span className="text-muted-foreground">(Optional)</span>
+            <FormLabel className="text-base font-semibold flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-primary" />
+              Apartment, Suite, Unit (Optional)
             </FormLabel>
             <FormControl>
               <Input
@@ -252,16 +236,17 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
         )}
       />
 
-      {/* City, Province, Postal Code - Grid Layout */}
+      {/* City, Province, Postal Code in Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* City */}
         <FormField
           control={form.control}
           name="city"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-medium flex items-center gap-2">
-                <MapPinned className="w-4 h-4 text-muted-foreground" />
-                City *
+              <FormLabel className="text-base font-semibold flex items-center gap-2">
+                <MapPinned className="w-5 h-5 text-primary" />
+                City
               </FormLabel>
               <FormControl>
                 <Input
@@ -282,14 +267,15 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
           )}
         />
 
+        {/* Province/State */}
         <FormField
           control={form.control}
           name="state"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-medium flex items-center gap-2">
-                <Mail className="w-4 h-4 text-muted-foreground" />
-                Province / State *
+              <FormLabel className="text-base font-semibold flex items-center gap-2">
+                <MapPinned className="w-5 h-5 text-primary" />
+                Province/State
               </FormLabel>
               <FormControl>
                 <Input
@@ -310,14 +296,15 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
           )}
         />
 
+        {/* Postal Code */}
         <FormField
           control={form.control}
           name="zipCode"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-medium flex items-center gap-2">
-                <Mail className="w-4 h-4 text-muted-foreground" />
-                Postal Code *
+              <FormLabel className="text-base font-semibold flex items-center gap-2">
+                <Mail className="w-5 h-5 text-primary" />
+                Postal Code
               </FormLabel>
               <FormControl>
                 <Input
@@ -339,16 +326,16 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
         />
       </div>
 
-      {/* Country - Full Width */}
+      {/* Country */}
       <FormField
         control={form.control}
         name="country"
         render={({ field }) => (
           <FormItem>
-          <FormLabel className="text-sm font-medium flex items-center gap-2">
-            <Globe className="w-4 h-4 text-muted-foreground" />
-            Country *
-          </FormLabel>
+            <FormLabel className="text-base font-semibold flex items-center gap-2">
+              <Globe className="w-5 h-5 text-primary" />
+              Country
+            </FormLabel>
             <FormControl>
               <Input
                 id="country"

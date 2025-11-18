@@ -8,6 +8,7 @@ export interface PlacePrediction {
   secondaryText: string;
   lat: number;
   lon: number;
+  originalQuery?: string; // Store original search query
   address: {
     house_number?: string;
     road?: string;
@@ -61,6 +62,7 @@ export const useLocationIQAutocomplete = () => {
           data.suggestions.map((suggestion: any) => ({
             placeId: suggestion.place_id || suggestion.osm_id || `${suggestion.lat}-${suggestion.lon}`,
             description: suggestion.display_name || suggestion.name || '',
+            originalQuery: input, // Store the original search query
             mainText: (() => {
               const addr = suggestion.address;
               if (addr?.house_number && addr?.road) {
