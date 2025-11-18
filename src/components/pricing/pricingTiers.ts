@@ -26,7 +26,6 @@ export const TIERS: PricingTier[] = [
     },
     features: [
       "Up to 3 business listings", 
-      "All Individual features",
       "No Ads",
       "Business analytics",
       "Priority business support",
