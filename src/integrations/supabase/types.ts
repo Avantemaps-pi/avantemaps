@@ -307,6 +307,7 @@ export type Database = {
           created_at: string
           id: string
           metadata: Json | null
+          priority: string
           read: boolean
           type: string
           user_id: string
@@ -316,6 +317,7 @@ export type Database = {
           created_at?: string
           id?: string
           metadata?: Json | null
+          priority?: string
           read?: boolean
           type: string
           user_id: string
@@ -325,6 +327,7 @@ export type Database = {
           created_at?: string
           id?: string
           metadata?: Json | null
+          priority?: string
           read?: boolean
           type?: string
           user_id?: string

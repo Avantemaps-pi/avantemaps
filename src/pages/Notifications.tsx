@@ -19,14 +19,17 @@ import EmptyNotifications from '@/components/notifications/EmptyNotifications';
 import NotificationCategoryTabs from '@/components/notifications/NotificationCategoryTabs';
 import BulkActionsBar from '@/components/notifications/BulkActionsBar';
 import DateRangeFilter, { DateRange } from '@/components/notifications/DateRangeFilter';
+import PriorityFilter, { PriorityFilterValue } from '@/components/notifications/PriorityFilter';
 import { NotificationCategory, getNotificationsByCategory, getAllCategoryCounts } from '@/utils/notificationCategories';
 import { filterNotificationsByDateRange } from '@/utils/dateRangeFilter';
+import { filterNotificationsByPriority } from '@/utils/priorityFilter';
 import { CheckSquare, RefreshCw } from 'lucide-react';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState<NotificationProps[]>([]);
   const [activeCategory, setActiveCategory] = useState<NotificationCategory>('all');
   const [activeDateRange, setActiveDateRange] = useState<DateRange>('all');
+  const [activePriority, setActivePriority] = useState<PriorityFilterValue>('all');
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [newNotificationIds, setNewNotificationIds] = useState<Set<string>>(new Set());
@@ -65,7 +68,8 @@ const Notifications = () => {
               content: payload.new.content,
               time: 'Just now',
               read: payload.new.read,
-              metadata: payload.new.metadata
+              metadata: payload.new.metadata,
+              priority: payload.new.priority || 'medium'
             };
 
             // Add to new notification IDs for animation
@@ -169,7 +173,8 @@ const Notifications = () => {
   };
 
   const categoryFilteredNotifications = getNotificationsByCategory(notifications, activeCategory);
-  const filteredNotifications = filterNotificationsByDateRange(categoryFilteredNotifications, activeDateRange);
+  const dateFilteredNotifications = filterNotificationsByDateRange(categoryFilteredNotifications, activeDateRange);
+  const filteredNotifications = filterNotificationsByPriority(dateFilteredNotifications, activePriority);
   const categoryCounts = getAllCategoryCounts(notifications);
   const unreadCount = filteredNotifications.filter(notification => !notification.read).length;
   return (
@@ -190,6 +195,16 @@ const Notifications = () => {
             <DateRangeFilter
               activeRange={activeDateRange}
               onRangeChange={setActiveDateRange}
+            />
+          </div>
+        )}
+
+        {/* Priority Filter */}
+        {notifications.length > 0 && (
+          <div className="px-4">
+            <PriorityFilter
+              activePriority={activePriority}
+              onPriorityChange={setActivePriority}
             />
           </div>
         )}
