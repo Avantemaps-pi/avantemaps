@@ -10,6 +10,7 @@ import {
   markNotificationAsRead, 
   markAllNotificationsAsRead, 
   markMultipleNotificationsAsRead,
+  markMultipleNotificationsAsUnread,
   notificationUpdateEvent 
 } from '@/utils/notificationUtils';
 import { NotificationProps } from '@/types/notification';
@@ -17,12 +18,15 @@ import NotificationItem from '@/components/notifications/NotificationItem';
 import EmptyNotifications from '@/components/notifications/EmptyNotifications';
 import NotificationCategoryTabs from '@/components/notifications/NotificationCategoryTabs';
 import BulkActionsBar from '@/components/notifications/BulkActionsBar';
+import DateRangeFilter, { DateRange } from '@/components/notifications/DateRangeFilter';
 import { NotificationCategory, getNotificationsByCategory, getAllCategoryCounts } from '@/utils/notificationCategories';
+import { filterNotificationsByDateRange } from '@/utils/dateRangeFilter';
 import { CheckSquare, RefreshCw } from 'lucide-react';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState<NotificationProps[]>([]);
   const [activeCategory, setActiveCategory] = useState<NotificationCategory>('all');
+  const [activeDateRange, setActiveDateRange] = useState<DateRange>('all');
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [newNotificationIds, setNewNotificationIds] = useState<Set<string>>(new Set());
@@ -138,6 +142,16 @@ const Notifications = () => {
     window.dispatchEvent(notificationUpdateEvent);
   };
 
+  const handleBulkMarkAsUnread = async () => {
+    const idsArray = Array.from(selectedIds);
+    await markMultipleNotificationsAsUnread(idsArray);
+    await loadNotifications();
+    toast.success(`${idsArray.length} notifications marked as unread`);
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+    window.dispatchEvent(notificationUpdateEvent);
+  };
+
   const handleClearSelection = () => {
     setSelectedIds(new Set());
     setSelectionMode(false);
@@ -154,7 +168,8 @@ const Notifications = () => {
     toast.success('Notifications refreshed');
   };
 
-  const filteredNotifications = getNotificationsByCategory(notifications, activeCategory);
+  const categoryFilteredNotifications = getNotificationsByCategory(notifications, activeCategory);
+  const filteredNotifications = filterNotificationsByDateRange(categoryFilteredNotifications, activeDateRange);
   const categoryCounts = getAllCategoryCounts(notifications);
   const unreadCount = filteredNotifications.filter(notification => !notification.read).length;
   return (
@@ -168,6 +183,16 @@ const Notifications = () => {
             categoryCounts={categoryCounts}
           />
         </div>
+
+        {/* Date Range Filter */}
+        {notifications.length > 0 && (
+          <div className="px-4">
+            <DateRangeFilter
+              activeRange={activeDateRange}
+              onRangeChange={setActiveDateRange}
+            />
+          </div>
+        )}
 
         {/* Action buttons */}
         {notifications.length > 0 && (
@@ -241,6 +266,7 @@ const Notifications = () => {
           <BulkActionsBar
             selectedCount={selectedIds.size}
             onMarkAsRead={handleBulkMarkAsRead}
+            onMarkAsUnread={handleBulkMarkAsUnread}
             onClearSelection={handleClearSelection}
           />
         )}
