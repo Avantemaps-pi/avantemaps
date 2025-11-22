@@ -57,6 +57,18 @@ export const markMultipleNotificationsAsRead = async (ids: string[]): Promise<vo
   }
 };
 
+// Helper function to mark multiple notifications as unread
+export const markMultipleNotificationsAsUnread = async (ids: string[]): Promise<void> => {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: false })
+    .in('id', ids);
+  
+  if (error) {
+    console.error('Error marking multiple notifications as unread:', error);
+  }
+};
+
 // Helper function to get all notifications
 export const getAllNotifications = async (): Promise<NotificationProps[]> => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -79,7 +91,8 @@ export const getAllNotifications = async (): Promise<NotificationProps[]> => {
     content: notification.content,
     time: formatRelativeTime(new Date(notification.created_at)),
     read: notification.read,
-    metadata: notification.metadata as NotificationMetadata
+    metadata: notification.metadata as NotificationMetadata,
+    created_at: notification.created_at
   }));
 };
 

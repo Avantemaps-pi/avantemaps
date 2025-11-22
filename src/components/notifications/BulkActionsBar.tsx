@@ -1,17 +1,19 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { CheckSquare, X } from 'lucide-react';
+import { CheckSquare, X, MailOpen } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
 interface BulkActionsBarProps {
   selectedCount: number;
   onMarkAsRead: () => void;
+  onMarkAsUnread: () => void;
   onClearSelection: () => void;
 }
 
 const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
   selectedCount,
   onMarkAsRead,
+  onMarkAsUnread,
   onClearSelection
 }) => {
   return (
@@ -32,6 +34,16 @@ const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
           >
             <CheckSquare className="h-4 w-4" />
             Mark as read
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onMarkAsUnread}
+            className="gap-2"
+          >
+            <MailOpen className="h-4 w-4" />
+            Mark as unread
           </Button>
           
           <Button

@@ -31,4 +31,5 @@ export interface NotificationProps {
   time: string;
   read: boolean;
   metadata?: NotificationMetadata;
+  created_at?: string;
 }
