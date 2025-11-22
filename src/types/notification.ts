@@ -10,6 +10,8 @@ export type NotificationType =
   | 'bookmark'
   | 'system';
 
+export type NotificationPriority = 'low' | 'medium' | 'high';
+
 export interface NotificationMetadata {
   businessName?: string;
   userName?: string;
@@ -32,4 +34,5 @@ export interface NotificationProps {
   read: boolean;
   metadata?: NotificationMetadata;
   created_at?: string;
+  priority: NotificationPriority;
 }

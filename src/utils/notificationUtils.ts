@@ -1,4 +1,4 @@
-import { NotificationProps, NotificationType, NotificationMetadata } from '@/types/notification';
+import { NotificationProps, NotificationType, NotificationMetadata, NotificationPriority } from '@/types/notification';
 import { generateNotificationMessage } from './notificationTemplates';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -92,7 +92,8 @@ export const getAllNotifications = async (): Promise<NotificationProps[]> => {
     time: formatRelativeTime(new Date(notification.created_at)),
     read: notification.read,
     metadata: notification.metadata as NotificationMetadata,
-    created_at: notification.created_at
+    created_at: notification.created_at,
+    priority: (notification.priority || 'medium') as NotificationPriority
   }));
 };
 

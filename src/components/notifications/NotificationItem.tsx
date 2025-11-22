@@ -4,6 +4,7 @@ import { NotificationProps } from '@/types/notification';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useSwipeable } from 'react-swipeable';
 import { cn } from '@/lib/utils';
+import PriorityIndicator from './PriorityIndicator';
 
 interface NotificationItemProps {
   notification: NotificationProps;
@@ -187,7 +188,10 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         </div>
         
         <div className="flex-1">
-          <p className={`${read ? 'text-muted-foreground' : 'font-medium text-foreground'}`}>{content}</p>
+          <div className="flex items-center gap-2">
+            <p className={`${read ? 'text-muted-foreground' : 'font-medium text-foreground'}`}>{content}</p>
+            <PriorityIndicator priority={notification.priority} variant="dot" />
+          </div>
           <p className="text-xs text-muted-foreground mt-1">{time}</p>
         </div>
         
