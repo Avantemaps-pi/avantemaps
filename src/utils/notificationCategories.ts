@@ -1,6 +1,6 @@
 import { NotificationProps, NotificationType } from '@/types/notification';
 
-export type NotificationCategory = 'all' | 'comments' | 'system';
+export type NotificationCategory = 'all' | 'account' | 'activity';
 
 export const categoryConfig: Record<NotificationCategory, {
   label: string;
@@ -8,15 +8,15 @@ export const categoryConfig: Record<NotificationCategory, {
 }> = {
   all: {
     label: 'All',
-    types: ['message', 'review', 'business', 'follower', 'like', 'verification', 'certification', 'payment', 'bookmark', 'system']
+    types: ['message', 'review', 'business', 'follower', 'like', 'verification', 'certification', 'payment', 'system']
   },
-  comments: {
-    label: 'Comments',
-    types: ['message', 'review']
+  account: {
+    label: 'Account',
+    types: ['business', 'verification', 'certification', 'payment', 'system']
   },
-  system: {
-    label: 'System',
-    types: ['business', 'follower', 'like', 'verification', 'certification', 'payment', 'bookmark', 'system']
+  activity: {
+    label: 'Activity',
+    types: ['follower', 'like', 'message', 'review']
   }
 };
 
@@ -24,10 +24,13 @@ export const getNotificationsByCategory = (
   notifications: NotificationProps[],
   category: NotificationCategory
 ): NotificationProps[] => {
-  if (category === 'all') return notifications;
+  // Always filter out bookmark notifications
+  const filteredNotifications = notifications.filter(n => n.type !== 'bookmark');
+  
+  if (category === 'all') return filteredNotifications;
   
   const categoryTypes = categoryConfig[category].types;
-  return notifications.filter(notification => 
+  return filteredNotifications.filter(notification => 
     categoryTypes.includes(notification.type)
   );
 };
@@ -41,9 +44,12 @@ export const getCategoryUnreadCount = (
 };
 
 export const getAllCategoryCounts = (notifications: NotificationProps[]) => {
+  // Filter out bookmarks from all counts
+  const filteredNotifications = notifications.filter(n => n.type !== 'bookmark');
+  
   return {
-    all: notifications.filter(n => !n.read).length,
-    comments: getCategoryUnreadCount(notifications, 'comments'),
-    system: getCategoryUnreadCount(notifications, 'system')
+    all: filteredNotifications.filter(n => !n.read).length,
+    account: getCategoryUnreadCount(notifications, 'account'),
+    activity: getCategoryUnreadCount(notifications, 'activity')
   };
 };

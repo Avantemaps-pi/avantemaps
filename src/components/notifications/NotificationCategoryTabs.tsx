@@ -14,7 +14,7 @@ const NotificationCategoryTabs: React.FC<NotificationCategoryTabsProps> = ({
   onCategoryChange,
   categoryCounts
 }) => {
-  const categories: NotificationCategory[] = ['all', 'comments', 'system'];
+  const categories: NotificationCategory[] = ['all', 'account', 'activity'];
 
   return (
     <Tabs value={activeCategory} onValueChange={(value) => onCategoryChange(value as NotificationCategory)} className="w-full">
