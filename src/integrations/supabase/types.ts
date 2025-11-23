@@ -301,6 +301,48 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_templates: {
+        Row: {
+          content_template: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          priority: string
+          type: string
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          content_template: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          priority?: string
+          type: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          content_template?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          priority?: string
+          type?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           content: string
