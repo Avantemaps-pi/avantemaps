@@ -31,6 +31,7 @@ import VerificationInfo from "./pages/VerificationInfo";
 import Review from "./pages/Review";
 import Pricing from "./pages/Pricing";
 import Analytics from "./pages/Analytics";
+import NotificationTemplates from "./pages/NotificationTemplates";
 import { initializePiNetwork } from "./utils/piNetwork";
 // Removed incomplete payments check - handled automatically by Pi Network flow
 
@@ -160,6 +161,7 @@ const App = () => {
                     <Route path="/update-registration/:businessId?" element={<UpdateRegistration />} />
                     <Route path="/pricing" element={<Pricing />} />
                     <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/notification-templates" element={<NotificationTemplates />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </SidebarProvider>

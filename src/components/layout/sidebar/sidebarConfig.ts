@@ -12,6 +12,7 @@ import {
   FileText,
   Phone,
   Cookie,
+  FileCode,
 } from 'lucide-react';
 
 // Create a function to dynamically get the notification count
@@ -53,6 +54,11 @@ export const navItems = [
     to: '/settings',
     icon: Settings,
     label: 'Settings',
+  },
+  {
+    to: '/notification-templates',
+    icon: FileCode,
+    label: 'Templates',
   },
   {
     to: '/contact',

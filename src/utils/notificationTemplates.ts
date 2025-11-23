@@ -1,6 +1,49 @@
 import { NotificationType, NotificationMetadata } from '@/types/notification';
+import { supabase } from '@/integrations/supabase/client';
+import { renderTemplate } from './templateRenderer';
 
-export const generateNotificationMessage = (
+/**
+ * Generates a notification message from a template or falls back to default messages
+ * @param type - The notification type
+ * @param metadata - The metadata containing variable values
+ * @param templateName - Optional specific template name to use
+ * @returns The generated notification message
+ */
+export const generateNotificationMessage = async (
+  type: NotificationType,
+  metadata: NotificationMetadata = {},
+  templateName?: string
+): Promise<string> => {
+  // Try to fetch template from database
+  try {
+    const query = supabase
+      .from('notification_templates')
+      .select('content_template')
+      .eq('type', type)
+      .eq('is_active', true);
+    
+    if (templateName) {
+      query.eq('name', templateName);
+    }
+    
+    const { data, error } = await query.single();
+    
+    if (!error && data) {
+      return renderTemplate(data.content_template, metadata);
+    }
+  } catch (error) {
+    console.warn('Failed to fetch notification template, using fallback', error);
+  }
+  
+  // Fallback to default messages if template not found
+  return generateFallbackMessage(type, metadata);
+};
+
+/**
+ * Legacy function that generates notification messages without template lookup
+ * Used as fallback when templates are not available
+ */
+export const generateFallbackMessage = (
   type: NotificationType,
   metadata: NotificationMetadata = {}
 ): string => {
