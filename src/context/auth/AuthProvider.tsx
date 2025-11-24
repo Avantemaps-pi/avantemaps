@@ -124,6 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Setup Supabase session in dev mode to ensure RLS works
       const setupDevSession = async () => {
         try {
+          secureLog.info('🔧 Setting up dev mode session...');
           const response = await fetch('https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/verify-pi-auth?test=true', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -134,30 +135,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             })
           });
 
+          if (!response.ok) {
+            const errorText = await response.text();
+            secureLog.error(`❌ verify-pi-auth request failed: ${response.status}`, errorText);
+            toast.error('Dev mode: Failed to get session token');
+            return;
+          }
+
           const data = await response.json();
+          secureLog.info('📦 verify-pi-auth response:', { 
+            verified: data.verified, 
+            hasToken: !!data.supabase_token,
+            testMode: data.testMode 
+          });
           
           if (data.verified && data.supabase_token) {
-            const { error: sessionError } = await supabase.auth.setSession({
+            secureLog.info('🔐 Setting Supabase session with token...');
+            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
               access_token: data.supabase_token,
               refresh_token: data.refresh_token || data.supabase_token
             });
             
             if (sessionError) {
-              secureLog.error('Failed to set Supabase session:', sessionError);
+              secureLog.error('❌ Failed to set Supabase session:', sessionError);
               toast.error('Dev mode: Failed to setup database session. RLS may block queries.');
             } else {
-              secureLog.info('✅ Dev mode Supabase session established');
+              secureLog.info('✅ Dev mode Supabase session set:', { 
+                userId: sessionData?.user?.id,
+                hasSession: !!sessionData?.session 
+              });
               
               // Verify the session is actually set
               const { data: { session } } = await supabase.auth.getSession();
               if (session) {
-                secureLog.info('✅ Session verified:', { user: session.user.id });
+                secureLog.info('✅ Session verified - User ID:', session.user.id);
+                
+                // Test that the session works by making a simple query
+                const { data: testData, error: testError } = await supabase
+                  .from('users')
+                  .select('id')
+                  .eq('id', session.user.id)
+                  .single();
+                  
+                if (testError) {
+                  secureLog.warn('⚠️ Test query failed:', testError);
+                } else {
+                  secureLog.info('✅ Session working - test query succeeded');
+                }
               } else {
                 secureLog.warn('⚠️ Session not found after setSession');
+                toast.error('Dev mode: Session verification failed');
               }
             }
           } else {
             secureLog.warn('⚠️ Dev mode: verify-pi-auth did not return session token', data);
+            toast.error('Dev mode: No session token received');
           }
         } catch (error) {
           secureLog.error('Failed to setup dev Supabase session:', error);
