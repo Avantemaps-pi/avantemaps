@@ -82,10 +82,10 @@ const VerificationInfo = () => {
                 <h3 className="text-base font-medium mb-2">Benefits:</h3>
                 <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                   <li>Premium placement in Pi business directory</li>
-                  <li>"Certified" badge with enhanced visibility</li>
+                  <li>"Certified" badge with enhanced business visibility</li>
                   <li>Access to business analytics tools</li>
-                  <li>Featured in Avante Maps communications</li>
-                  <li>Advanced transaction analytics</li>
+                  
+                  
                   <li>Eligibility for Avante Maps promotions</li>
                 </ul>
               </CardContent>
