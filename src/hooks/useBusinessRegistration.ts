@@ -289,14 +289,49 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         },
       };
 
+      // ✅ Verify user session before calling edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('No active Supabase session found');
+        toast.error('Authentication required. Please refresh the page and try again.');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      console.log('📤 Calling insert-business edge function with session:', { 
+        userId: session.user.id,
+        hasAccessToken: !!session.access_token 
+      });
+
       // ✅ Insert business via Edge Function
       const { data: insertRes, error: insertError } = await supabase.functions.invoke('insert-business', { body: payload });
 
-      if (insertError || !insertRes?.success || !insertRes?.business) {
-        const errMsg = (insertError as any)?.message || (insertRes as any)?.error || 'Unknown error';
-        toast.error(`Business registration failed: ${errMsg}`);
+      // Enhanced error logging
+      if (insertError) {
+        console.error('❌ Edge function error:', insertError);
+        const statusCode = (insertError as any)?.status;
+        const errorMsg = (insertError as any)?.message || 'Unknown error';
+        
+        if (statusCode === 401) {
+          toast.error('Authentication failed. Please refresh the page and try again.');
+        } else if (statusCode === 403) {
+          toast.error('Permission denied. Please check your account status.');
+        } else {
+          toast.error(`Business registration failed: ${errorMsg} (${statusCode || 'unknown status'})`);
+        }
+        setIsSubmitting(false);
         return;
       }
+
+      if (!insertRes?.success || !insertRes?.business) {
+        console.error('❌ Invalid response from edge function:', insertRes);
+        const errMsg = (insertRes as any)?.error || 'Invalid response from server';
+        toast.error(`Business registration failed: ${errMsg}`);
+        setIsSubmitting(false);
+        return;
+      }
+      
+      console.log('✅ Business registered successfully:', insertRes.business.id);
 
       const newBusiness = insertRes.business;
 
