@@ -84,28 +84,97 @@ Deno.serve(async (req) => {
       // Render template
       const content = renderTemplate(template.content_template, metadata || {});
 
-      // Send notifications
-      const notifications = targetUsers.map(userId => ({
-        user_id: userId,
-        type: template.type,
-        content,
-        metadata: metadata || {},
-        priority: template.priority,
-        read: false,
-      }));
+      // Send notifications to each user with frequency capping and A/B testing
+      let sentCount = 0;
+      let failedCount = 0;
+      let skippedCount = 0;
 
-      const { error: insertError } = await supabase
-        .from('notifications')
-        .insert(notifications);
+      // Check if there's an active A/B test for this template
+      const { data: abTest } = await supabase
+        .from('notification_ab_tests')
+        .select('*, notification_ab_variants(*)')
+        .eq('template_id', template_id)
+        .eq('status', 'running')
+        .single();
 
-      if (insertError) {
-        throw insertError;
+      for (const userId of targetUsers) {
+        try {
+          // Check frequency cap
+          const { data: canSend } = await supabase.rpc('check_frequency_cap', {
+            p_user_id: userId,
+            p_notification_type: template.type,
+            p_priority: template.priority
+          });
+
+          if (!canSend) {
+            console.log(`Skipping user ${userId} due to frequency cap`);
+            skippedCount++;
+            continue;
+          }
+
+          // Select variant if A/B testing
+          let finalContent = content;
+          let abTestId = null;
+          let abVariantId = null;
+
+          if (abTest && abTest.notification_ab_variants) {
+            // Simple random selection based on traffic percentage
+            const random = Math.random() * 100;
+            let cumulative = 0;
+            
+            for (const variant of abTest.notification_ab_variants) {
+              cumulative += variant.traffic_percentage;
+              if (random <= cumulative) {
+                finalContent = renderTemplate(variant.content_template, metadata || {});
+                abTestId = abTest.id;
+                abVariantId = variant.id;
+                
+                // Increment sent count for variant
+                await supabase
+                  .from('notification_ab_variants')
+                  .update({ sent_count: variant.sent_count + 1 })
+                  .eq('id', variant.id);
+                
+                break;
+              }
+            }
+          }
+
+          const { error: insertError } = await supabase
+            .from('notifications')
+            .insert([{
+              user_id: userId,
+              type: template.type,
+              content: finalContent,
+              metadata: metadata || {},
+              priority: template.priority,
+              read: false,
+              delivery_status: 'delivered',
+              delivered_at: new Date().toISOString(),
+              ab_test_id: abTestId,
+              ab_variant_id: abVariantId,
+            }]);
+
+          if (insertError) {
+            console.error(`Failed to send to user ${userId}:`, insertError);
+            failedCount++;
+          } else {
+            sentCount++;
+          }
+        } catch (error) {
+          console.error(`Error sending to user ${userId}:`, error);
+          failedCount++;
+        }
       }
+
+      console.log(`✅ Sent: ${sentCount}, ❌ Failed: ${failedCount}, ⏭️ Skipped: ${skippedCount}`);
 
       return new Response(
         JSON.stringify({ 
           message: 'Notifications sent successfully',
-          count: targetUsers.length,
+          sent: sentCount,
+          failed: failedCount,
+          skipped: skippedCount,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
@@ -191,11 +260,13 @@ async function getUserIdsByCriteria(supabase: any, criteria: any): Promise<strin
 }
 
 function renderTemplate(template: string, metadata: any): string {
+  if (!template) return '';
+  
   let rendered = template;
   const variableRegex = /\{\{(\w+)\}\}/g;
   
   rendered = rendered.replace(variableRegex, (match, variableName) => {
-    const value = metadata[variableName];
+    const value = metadata?.[variableName];
     if (value !== undefined && value !== null) {
       return String(value);
     }

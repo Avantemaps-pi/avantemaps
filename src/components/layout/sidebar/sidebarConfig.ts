@@ -13,6 +13,9 @@ import {
   Phone,
   Cookie,
   FileCode,
+  Send,
+  TestTube,
+  Timer,
 } from 'lucide-react';
 
 // Create a function to dynamically get the notification count
@@ -62,8 +65,18 @@ export const navItems = [
   },
   {
     to: '/bulk-notifications',
-    icon: Bell,
+    icon: Send,
     label: 'Bulk Notifications',
+  },
+  {
+    to: '/ab-testing',
+    icon: TestTube,
+    label: 'A/B Testing',
+  },
+  {
+    to: '/frequency-caps',
+    icon: Timer,
+    label: 'Frequency Caps',
   },
   {
     to: '/contact',
