@@ -301,6 +301,151 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_ab_tests: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          start_date: string | null
+          status: string
+          target_sample_size: number | null
+          template_id: string | null
+          updated_at: string
+          winner_variant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          start_date?: string | null
+          status?: string
+          target_sample_size?: number | null
+          template_id?: string | null
+          updated_at?: string
+          winner_variant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          start_date?: string | null
+          status?: string
+          target_sample_size?: number | null
+          template_id?: string | null
+          updated_at?: string
+          winner_variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_ab_tests_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "notification_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_ab_variants: {
+        Row: {
+          ab_test_id: string
+          clicked_count: number | null
+          content_template: string
+          created_at: string
+          delivered_count: number | null
+          id: string
+          metadata: Json | null
+          name: string
+          read_count: number | null
+          sent_count: number | null
+          traffic_percentage: number
+        }
+        Insert: {
+          ab_test_id: string
+          clicked_count?: number | null
+          content_template: string
+          created_at?: string
+          delivered_count?: number | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          read_count?: number | null
+          sent_count?: number | null
+          traffic_percentage?: number
+        }
+        Update: {
+          ab_test_id?: string
+          clicked_count?: number | null
+          content_template?: string
+          created_at?: string
+          delivered_count?: number | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          read_count?: number | null
+          sent_count?: number | null
+          traffic_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_ab_variants_ab_test_id_fkey"
+            columns: ["ab_test_id"]
+            isOneToOne: false
+            referencedRelation: "notification_ab_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_frequency_caps: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          max_notifications: number
+          name: string
+          notification_type: string | null
+          priority_threshold: string | null
+          time_window_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_notifications: number
+          name: string
+          notification_type?: string | null
+          priority_threshold?: string | null
+          time_window_minutes: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_notifications?: number
+          name?: string
+          notification_type?: string | null
+          priority_threshold?: string | null
+          time_window_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notification_templates: {
         Row: {
           content_template: string
@@ -345,32 +490,53 @@ export type Database = {
       }
       notifications: {
         Row: {
+          ab_test_id: string | null
+          ab_variant_id: string | null
+          click_url: string | null
+          clicked_at: string | null
           content: string
           created_at: string
+          delivered_at: string | null
+          delivery_status: string | null
           id: string
           metadata: Json | null
           priority: string
           read: boolean
+          read_at: string | null
           type: string
           user_id: string
         }
         Insert: {
+          ab_test_id?: string | null
+          ab_variant_id?: string | null
+          click_url?: string | null
+          clicked_at?: string | null
           content: string
           created_at?: string
+          delivered_at?: string | null
+          delivery_status?: string | null
           id?: string
           metadata?: Json | null
           priority?: string
           read?: boolean
+          read_at?: string | null
           type: string
           user_id: string
         }
         Update: {
+          ab_test_id?: string | null
+          ab_variant_id?: string | null
+          click_url?: string | null
+          clicked_at?: string | null
           content?: string
           created_at?: string
+          delivered_at?: string | null
+          delivery_status?: string | null
           id?: string
           metadata?: Json | null
           priority?: string
           read?: boolean
+          read_at?: string | null
           type?: string
           user_id?: string
         }
@@ -849,6 +1015,14 @@ export type Database = {
       assign_admin_role: {
         Args: { target_user_id: string }
         Returns: undefined
+      }
+      check_frequency_cap: {
+        Args: {
+          p_notification_type: string
+          p_priority: string
+          p_user_id: string
+        }
+        Returns: boolean
       }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
