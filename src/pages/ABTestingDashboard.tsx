@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Play, Pause, Trophy } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 
 interface ABTest {
   id: string;
@@ -36,11 +37,26 @@ interface Variant {
 }
 
 export default function ABTestingDashboard() {
+  const { isAdmin, isLoading: authLoading } = useAdminAccess();
   const [tests, setTests] = useState<ABTest[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
   const [selectedTest, setSelectedTest] = useState<ABTest | null>(null);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [loading, setLoading] = useState(false);
+
+  if (authLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
 
   // Form states
   const [testName, setTestName] = useState("");

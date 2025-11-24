@@ -12,6 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import AppLayout from "@/components/layout/AppLayout";
 
 interface NotificationTemplate {
   id: string;
@@ -23,6 +25,7 @@ interface NotificationTemplate {
 }
 
 export default function BulkNotifications() {
+  const { isAdmin, isLoading: authLoading } = useAdminAccess();
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [sendImmediately, setSendImmediately] = useState(true);
   const [scheduledFor, setScheduledFor] = useState("");
@@ -36,6 +39,20 @@ export default function BulkNotifications() {
   const [specificUserIds, setSpecificUserIds] = useState("");
   const [metadata, setMetadata] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
+
+  if (authLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
 
   const { data: templates } = useQuery({
     queryKey: ['notification-templates'],

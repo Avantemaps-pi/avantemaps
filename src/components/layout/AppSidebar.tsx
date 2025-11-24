@@ -6,6 +6,7 @@ import DesktopSidebar from './sidebar/DesktopSidebar';
 import MobileSidebar from './sidebar/MobileSidebar';
 import { navItems, legalItems } from './sidebar/sidebarConfig';
 import { getUnreadNotificationsCount } from '@/utils/notificationUtils';
+import { useAuth } from '@/context/auth';
 
 interface AppSidebarProps {
   className?: string;
@@ -15,6 +16,7 @@ const AppSidebar = ({ className }: AppSidebarProps = {}) => {
   const location = useLocation();
   const { openMobile, setOpenMobile } = useSidebar();
   const isMobile = useIsMobile();
+  const { isAdmin } = useAuth();
   const [notificationCount, setNotificationCount] = useState(0);
   
   useEffect(() => {
@@ -36,19 +38,21 @@ const AppSidebar = ({ className }: AppSidebarProps = {}) => {
     setOpenMobile(false);
   };
 
-  // Update notification badge in navItems
-  const updatedNavItems = navItems.map(item => 
-    item.to === '/notifications' 
-      ? { ...item, badge: notificationCount }
-      : item
-  );
+  // Filter admin-only items and update notification badge
+  const filteredNavItems = navItems
+    .filter(item => !item.adminOnly || isAdmin)
+    .map(item => 
+      item.to === '/notifications' 
+        ? { ...item, badge: notificationCount }
+        : item
+    );
 
   return (
     <>
       {!isMobile ? (
         <DesktopSidebar
           className={className}
-          navItems={updatedNavItems}
+          navItems={filteredNavItems}
           legalItems={legalItems}
           currentPath={location.pathname}
           onLinkClick={handleLinkClick}
@@ -56,7 +60,7 @@ const AppSidebar = ({ className }: AppSidebarProps = {}) => {
       ) : (
         <MobileSidebar
           isOpen={openMobile}
-          navItems={updatedNavItems}
+          navItems={filteredNavItems}
           legalItems={legalItems}
           currentPath={location.pathname}
           onClose={() => setOpenMobile(false)}

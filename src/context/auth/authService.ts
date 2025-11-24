@@ -363,6 +363,7 @@ export const performLogin = async (
         secureLog.info("User not found in DB; defaulting subscription tier to INDIVIDUAL");
       }
 
+      // Fetch roles from database (roles will be updated in updateUserData)
       const userData: PiUser = {
         uid: authResult.user.uid,
         username: authResult.user.username,
@@ -373,7 +374,7 @@ export const performLogin = async (
         subscriptionTier
       };
 
-      // Persist user meta (the server-side updateUserData should not persist access tokens)
+      // Persist user meta (will fetch and set roles from database)
       await updateUserData(userData, setUser);
 
       toast.success(`Welcome back, ${userData.username}!`);
