@@ -82,7 +82,7 @@ const VerificationInfo = () => {
                 <h3 className="text-base font-medium mb-2">Benefits:</h3>
                 <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                   <li>Premium placement in Pi business directory</li>
-                  <li>"Verified" badge on your business listing</li>
+                  <li>"Certified" badge on your business listing</li>
                   <li>Access to business analytics tools</li>
                   
                   
