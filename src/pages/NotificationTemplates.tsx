@@ -11,6 +11,8 @@ import { Plus, Edit, Trash2, Save, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import AppLayout from "@/components/layout/AppLayout";
 
 interface NotificationTemplate {
   id: string;
@@ -25,10 +27,25 @@ interface NotificationTemplate {
 }
 
 export default function NotificationTemplates() {
+  const { isAdmin, isLoading: authLoading } = useAdminAccess();
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<Partial<NotificationTemplate>>({});
   const queryClient = useQueryClient();
+
+  if (authLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
 
   const { data: templates, isLoading } = useQuery({
     queryKey: ['notification-templates'],

@@ -62,21 +62,25 @@ export const navItems = [
     to: '/notification-templates',
     icon: FileCode,
     label: 'Templates',
+    adminOnly: true,
   },
   {
     to: '/bulk-notifications',
     icon: Send,
     label: 'Bulk Notifications',
+    adminOnly: true,
   },
   {
     to: '/ab-testing',
     icon: TestTube,
     label: 'A/B Testing',
+    adminOnly: true,
   },
   {
     to: '/frequency-caps',
     icon: Timer,
     label: 'Frequency Caps',
+    adminOnly: true,
   },
   {
     to: '/contact',

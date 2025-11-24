@@ -3,14 +3,38 @@ import { PiUser } from './types';
 import { SubscriptionTier } from '@/utils/piNetwork';
 import { supabase } from '@/integrations/supabase/client';
 
+// Get user roles from Supabase
+export const getUserRoles = async (uid: string): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', uid);
+
+    if (error) {
+      console.error("Error fetching user roles:", error);
+      return [];
+    }
+
+    return data?.map(r => r.role) || [];
+  } catch (error) {
+    console.error("Error in getUserRoles:", error);
+    return [];
+  }
+};
+
 // Update user data in Supabase and local storage
 export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) => void): Promise<void> => {
   try {
+    // Fetch roles from database
+    const roles = await getUserRoles(userData.uid);
+    const updatedUserData = { ...userData, roles };
+
     // Save to Supabase using security definer function to bypass RLS
     const { error } = await supabase.rpc('upsert_user_profile', {
-      p_user_id: userData.uid,
-      p_username: userData.username,
-      p_subscription: userData.subscriptionTier
+      p_user_id: updatedUserData.uid,
+      p_username: updatedUserData.username,
+      p_subscription: updatedUserData.subscriptionTier
     });
 
     if (error) {
@@ -24,8 +48,8 @@ export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) =
     }
 
     // Save to localStorage
-    localStorage.setItem('avante_maps_auth', JSON.stringify(userData));
-    setUser(userData);
+    localStorage.setItem('avante_maps_auth', JSON.stringify(updatedUserData));
+    setUser(updatedUserData);
   } catch (error) {
     console.error("Error updating user data:", error);
   }

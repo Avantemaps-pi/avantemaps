@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Plus, Trash2, Edit } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 
 interface FrequencyCap {
   id: string;
@@ -23,6 +24,7 @@ interface FrequencyCap {
 }
 
 export default function FrequencyCaps() {
+  const { isAdmin, isLoading: authLoading } = useAdminAccess();
   const [caps, setCaps] = useState<FrequencyCap[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -35,6 +37,20 @@ export default function FrequencyCaps() {
   const [timeWindowMinutes, setTimeWindowMinutes] = useState(60);
   const [priorityThreshold, setPriorityThreshold] = useState("");
   const [isActive, setIsActive] = useState(true);
+
+  if (authLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
 
   useEffect(() => {
     loadCaps();

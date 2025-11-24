@@ -354,6 +354,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [user]
   );
 
+  // ✅ Admin check
+  const isAdmin = user?.roles?.includes('admin') ?? false;
+
   // ✅ Runtime token monitor
   useEffect(() => {
     if (!user?.accessToken) return;
@@ -388,6 +391,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         hasAccess,
         refreshUserData: () => refreshUserData(true),
         setUser: safeSetUser,
+        isAdmin,
       }}
     >
       {children}

@@ -24,6 +24,7 @@ export interface AuthContextType {
   hasAccess: (requiredTier: SubscriptionTier) => boolean;
   refreshUserData: () => Promise<void>;
   setUser: (user: PiUser) => void;
+  isAdmin: boolean;
 }
 
 // Session expires after 24 hours of inactivity
