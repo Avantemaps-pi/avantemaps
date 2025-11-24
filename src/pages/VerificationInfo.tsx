@@ -74,7 +74,7 @@ const VerificationInfo = () => {
                   <li>Minimum 3 months of active Pi transactions</li>
                   <li>Video of business operations</li>
                   <li>Images of services / products offered</li>
-                  <li>Compliance with Pi Network policies</li>
+                  <li>Compliance with Pi Network policy</li>
                   <li>Regular business activity updates</li>
                   <li>Subscription member</li>
                 </ul>
