@@ -93,7 +93,7 @@ const AppPreferences = ({
           <p className="text-sm text-muted-foreground mt-1 text-left">As a Business Owner, you need to complete these steps to get verified:</p>
         </div>
 
-        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-100 dark:border-blue-900 rounded-md w-full max-h-[400px] overflow-y-auto overflow-x-hidden">
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-100 dark:border-blue-900 rounded-md w-full max-h-[400px] overflow-y-auto overflow-x-auto">
           <div className="flex items-start text-left">
             <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
             <div className="w-full text-left">
