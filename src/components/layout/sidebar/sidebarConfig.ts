@@ -61,6 +61,11 @@ export const navItems = [
     label: 'Templates',
   },
   {
+    to: '/bulk-notifications',
+    icon: Bell,
+    label: 'Bulk Notifications',
+  },
+  {
     to: '/contact',
     icon: Phone,
     label: 'Contact Us',

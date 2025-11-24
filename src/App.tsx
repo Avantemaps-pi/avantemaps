@@ -32,6 +32,8 @@ import Review from "./pages/Review";
 import Pricing from "./pages/Pricing";
 import Analytics from "./pages/Analytics";
 import NotificationTemplates from "./pages/NotificationTemplates";
+import BulkNotifications from "./pages/BulkNotifications";
+import CronSetup from "./pages/CronSetup";
 import { initializePiNetwork } from "./utils/piNetwork";
 // Removed incomplete payments check - handled automatically by Pi Network flow
 
@@ -162,6 +164,8 @@ const App = () => {
                     <Route path="/pricing" element={<Pricing />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/notification-templates" element={<NotificationTemplates />} />
+                    <Route path="/bulk-notifications" element={<BulkNotifications />} />
+                    <Route path="/cron-setup" element={<CronSetup />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </SidebarProvider>

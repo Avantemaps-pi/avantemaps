@@ -433,6 +433,65 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_notifications: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          failed_count: number | null
+          id: string
+          metadata: Json | null
+          processed_at: string | null
+          scheduled_for: string
+          sent_count: number | null
+          status: string
+          target_criteria: Json | null
+          target_user_ids: string[] | null
+          template_id: string | null
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          failed_count?: number | null
+          id?: string
+          metadata?: Json | null
+          processed_at?: string | null
+          scheduled_for: string
+          sent_count?: number | null
+          status?: string
+          target_criteria?: Json | null
+          target_user_ids?: string[] | null
+          template_id?: string | null
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          failed_count?: number | null
+          id?: string
+          metadata?: Json | null
+          processed_at?: string | null
+          scheduled_for?: string
+          sent_count?: number | null
+          status?: string
+          target_criteria?: Json | null
+          target_user_ids?: string[] | null
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_notifications_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "notification_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
