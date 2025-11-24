@@ -91,6 +91,19 @@ Deno.serve(async (req) => {
           try {
             const template = notification.notification_templates;
             
+            // Check frequency cap
+            const { data: canSend } = await supabase.rpc('check_frequency_cap', {
+              p_user_id: userId,
+              p_notification_type: template.type,
+              p_priority: template.priority
+            });
+
+            if (!canSend) {
+              console.log(`Skipping user ${userId} due to frequency cap`);
+              failedCount++;
+              continue;
+            }
+            
             // Render template with metadata
             let content = template.content_template;
             if (notification.metadata) {
@@ -107,6 +120,8 @@ Deno.serve(async (req) => {
                 metadata: notification.metadata,
                 priority: template.priority,
                 read: false,
+                delivery_status: 'delivered',
+                delivered_at: new Date().toISOString(),
               }]);
 
             if (insertError) {

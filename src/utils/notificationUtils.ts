@@ -21,11 +21,27 @@ export const getUnreadNotificationsCount = async (): Promise<number> => {
 export const markNotificationAsRead = async (id: string): Promise<void> => {
   const { error } = await supabase
     .from('notifications')
-    .update({ read: true })
+    .update({ 
+      read: true,
+      read_at: new Date().toISOString()
+    })
     .eq('id', id);
   
   if (error) {
     console.error('Error marking notification as read:', error);
+    return;
+  }
+
+  // Track the read event
+  try {
+    await supabase.functions.invoke('track-notification', {
+      body: {
+        notification_id: id,
+        event_type: 'read'
+      }
+    });
+  } catch (trackError) {
+    console.error('Error tracking notification read:', trackError);
   }
 };
 
@@ -36,7 +52,10 @@ export const markAllNotificationsAsRead = async (): Promise<void> => {
 
   const { error } = await supabase
     .from('notifications')
-    .update({ read: true })
+    .update({ 
+      read: true,
+      read_at: new Date().toISOString()
+    })
     .eq('user_id', user.id)
     .eq('read', false);
   
@@ -49,7 +68,10 @@ export const markAllNotificationsAsRead = async (): Promise<void> => {
 export const markMultipleNotificationsAsRead = async (ids: string[]): Promise<void> => {
   const { error } = await supabase
     .from('notifications')
-    .update({ read: true })
+    .update({ 
+      read: true,
+      read_at: new Date().toISOString()
+    })
     .in('id', ids);
   
   if (error) {
