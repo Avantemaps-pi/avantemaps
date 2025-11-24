@@ -137,13 +137,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const data = await response.json();
           
           if (data.verified && data.supabase_token) {
-            await supabase.auth.setSession({
+            const { error: sessionError } = await supabase.auth.setSession({
               access_token: data.supabase_token,
-              refresh_token: data.supabase_token
+              refresh_token: data.refresh_token || data.supabase_token
             });
-            secureLog.info('✅ Dev mode Supabase session established');
+            
+            if (sessionError) {
+              secureLog.error('Failed to set Supabase session:', sessionError);
+              toast.error('Dev mode: Failed to setup database session. RLS may block queries.');
+            } else {
+              secureLog.info('✅ Dev mode Supabase session established');
+              
+              // Verify the session is actually set
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session) {
+                secureLog.info('✅ Session verified:', { user: session.user.id });
+              } else {
+                secureLog.warn('⚠️ Session not found after setSession');
+              }
+            }
           } else {
-            secureLog.warn('⚠️ Dev mode: verify-pi-auth did not return session token');
+            secureLog.warn('⚠️ Dev mode: verify-pi-auth did not return session token', data);
           }
         } catch (error) {
           secureLog.error('Failed to setup dev Supabase session:', error);
@@ -226,11 +240,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const data = await response.json();
         
         if (data.verified && data.supabase_token) {
-          await supabase.auth.setSession({
+          const { error: sessionError } = await supabase.auth.setSession({
             access_token: data.supabase_token,
-            refresh_token: data.supabase_token
+            refresh_token: data.refresh_token || data.supabase_token
           });
-          secureLog.info('✅ Dev mode Supabase session established');
+          
+          if (!sessionError) {
+            secureLog.info('✅ Dev mode Supabase session established in login()');
+          }
         }
       } catch (error) {
         secureLog.error('Failed to setup dev Supabase session:', error);
