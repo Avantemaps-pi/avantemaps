@@ -84,8 +84,7 @@ const VerificationInfo = () => {
                   <li>Premium placement in Pi business directory</li>
                   <li>"Certified" badge on your business listing</li>
                   <li>Access to business analytics tools</li>
-                  
-                  
+                  <li>Increased visibility in Recommendations</li>
                   <li>Eligibility for Avante Maps promotions</li>
                 </ul>
               </CardContent>
