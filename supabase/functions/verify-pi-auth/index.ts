@@ -200,6 +200,35 @@ Deno.serve(async (req: Request) => {
         console.warn(`ℹ️ [${traceId}] admin.createSession not available in this runtime.`);
       }
 
+      // Fallback: Use email/password sign-in if admin.createSession didn't work
+      if (!access_token) {
+        console.log(`🔄 [${traceId}] Falling back to email/password sign-in...`);
+        const testPassword = 'test-dev-password-12345';
+        
+        // Set a password for the user (idempotent)
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(uid, {
+          password: testPassword,
+        });
+        
+        if (updateError) {
+          console.warn(`⚠️ [${traceId}] Failed to set password:`, updateError);
+        } else {
+          // Sign in with email/password to get real tokens
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password: testPassword,
+          });
+          
+          if (signInError || !signInData?.session) {
+            console.error(`❌ [${traceId}] Email/password sign-in failed:`, signInError);
+          } else {
+            access_token = signInData.session.access_token;
+            refresh_token = signInData.session.refresh_token;
+            console.log(`✅ [${traceId}] Test mode session created via email/password sign-in`);
+          }
+        }
+      }
+
       // Always succeed in test mode to unblock local development
       return new Response(JSON.stringify({
         verified: true,
