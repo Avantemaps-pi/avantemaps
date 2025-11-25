@@ -205,56 +205,19 @@ Deno.serve(async (req: Request) => {
         console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
       }
 
-      // Try to create a real session using the admin API (no email provider needed)
-      let access_token: string | null = null;
-      let refresh_token: string | null = null;
-      const adminApi: any = (supabaseAdmin as any).auth?.admin;
-
-      if (adminApi && typeof adminApi.createSession === 'function') {
-        const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-          user_id: supabaseUserId,
-        });
-        if (sessionError || !sessionData?.session) {
-          console.warn(`⚠️ [${traceId}] Admin createSession failed in test mode:`, sessionError);
-        } else {
-          access_token = sessionData.session.access_token;
-          refresh_token = sessionData.session.refresh_token;
-          console.log(`✅ [${traceId}] Test mode session created via admin.createSession`);
-        }
-      } else {
-        console.warn(`ℹ️ [${traceId}] admin.createSession not available in this runtime.`);
+      // Create session using admin API (no email provider needed)
+      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+        user_id: supabaseUserId,
+      });
+      
+      if (sessionError || !sessionData?.session?.access_token) {
+        console.error(`❌ [${traceId}] Test mode session creation failed:`, sessionError);
+        throw new Error(`Test mode session creation failed: ${sessionError?.message || 'No session data'}`);
       }
 
-      // Fallback: Use email/password sign-in if admin.createSession didn't work
-      if (!access_token) {
-        console.log(`🔄 [${traceId}] Falling back to email/password sign-in...`);
-        const testPassword = 'test-dev-password-12345';
-        
-        // Set a password for the user (idempotent)
-        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
-          password: testPassword,
-        });
-        
-        if (updateError) {
-          console.warn(`⚠️ [${traceId}] Failed to set password:`, updateError);
-        } else {
-          // Sign in with email/password to get real tokens
-          const { data: signInData, error: signInError } = await supabaseAnon.auth.signInWithPassword({
-            email,
-            password: testPassword,
-          });
-          
-          if (signInError || !signInData?.session) {
-            console.error(`❌ [${traceId}] Email/password sign-in failed:`, signInError);
-          } else {
-            access_token = signInData.session.access_token;
-            refresh_token = signInData.session.refresh_token;
-            console.log(`✅ [${traceId}] Test mode session created via email/password sign-in`);
-          }
-        }
-      }
-
-      // Always succeed in test mode to unblock local development
+      const access_token = sessionData.session.access_token;
+      const refresh_token = sessionData.session.refresh_token;
+      console.log(`✅ [${traceId}] Test mode session created successfully`);
       return new Response(JSON.stringify({
         verified: true,
         testMode: true,
@@ -374,82 +337,24 @@ Deno.serve(async (req: Request) => {
       console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
     }
 
-    // --- Create proper session ---
-    let access_token: string | undefined;
-    let refresh_token: string | undefined;
-
-    try {
-      // Try to create session using admin API
-      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-        user_id: supabaseUserId,
-      });
-      
-      if (sessionError) {
-        console.error(`❌ [${traceId}] Session creation error: ${sessionError.message}`);
-        throw sessionError;
-      }
-      
-      if (!sessionData?.session?.access_token) {
-        console.error(`❌ [${traceId}] No session data returned`);
-        throw new Error('Session creation failed');
-      }
-      
-      access_token = sessionData.session.access_token;
-      refresh_token = sessionData.session.refresh_token;
-      console.log(`✅ [${traceId}] Session created successfully`);
-      
-    } catch (sessionErr) {
-      console.error(`❌ [${traceId}] createSession failed, trying email/password fallback:`, sessionErr);
-      
-      // IMPORTANT: This fallback requires Email provider to be enabled in Supabase
-      // Dashboard → Authentication → Providers → Email → Enable
-      const tempPassword = crypto.randomUUID();
-      
-      try {
-        // Update user with temporary password
-        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
-          password: tempPassword,
-        });
-        
-        if (updateError) {
-          console.error(`❌ [${traceId}] Failed to set password (Email provider may not be enabled): ${updateError.message}`);
-          throw updateError;
-        }
-        
-        // Sign in with password to get valid session tokens
-        const { data: signInData, error: signInError } = await supabaseAnon.auth.signInWithPassword({
-          email,
-          password: tempPassword,
-        });
-        
-        if (signInError || !signInData?.session) {
-          console.error(`❌ [${traceId}] Failed to sign in with password: ${signInError?.message || 'No session'}`);
-          throw signInError || new Error('Session creation failed');
-        }
-        
-        access_token = signInData.session.access_token;
-        refresh_token = signInData.session.refresh_token;
-        console.log(`✅ [${traceId}] Session created via email/password fallback`);
-        
-      } catch (fallbackErr) {
-        console.error(`❌ [${traceId}] Email/password fallback failed: ${fallbackErr instanceof Error ? fallbackErr.message : 'Unknown error'}`);
-        // Return verified but without session if all methods fail
-        return new Response(JSON.stringify({
-          verified: true,
-          user: {
-            uid: supabaseUserId,
-            pi_uid: uid,
-            username: user.username,
-            wallet_address: user.wallet_address || null,
-          },
-          supabase_token: null,
-          refresh_token: null,
-          session: 'unavailable',
-          error: 'Session creation unavailable',
-          traceId,
-        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
+    // --- Create session using admin API ---
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+      user_id: supabaseUserId,
+    });
+    
+    if (sessionError) {
+      console.error(`❌ [${traceId}] Session creation error: ${sessionError.message}`);
+      throw new Error(`Session creation failed: ${sessionError.message}`);
     }
+    
+    if (!sessionData?.session?.access_token) {
+      console.error(`❌ [${traceId}] No session data returned from admin.createSession`);
+      throw new Error('Session creation failed: No session data returned');
+    }
+    
+    const access_token = sessionData.session.access_token;
+    const refresh_token = sessionData.session.refresh_token;
+    console.log(`✅ [${traceId}] Production session created successfully`);
 
     return new Response(JSON.stringify({
       verified: true,
