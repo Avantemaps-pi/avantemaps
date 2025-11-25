@@ -161,8 +161,11 @@ Deno.serve(async (req: Request) => {
         console.error(`❌ [${traceId}] Failed to list users:`, listError);
         throw new Error(`Failed to list users: ${listError.message}`);
       }
-    // Look up by pi_uid in user_metadata (not by id)
-    const existingUser = usersList?.users.find((u) => u.user_metadata?.pi_uid === uid);
+    // Look up by BOTH old format (id = pi_uid) and new format (metadata.pi_uid)
+    // This handles the transition period where old users exist
+    const existingUser = usersList?.users.find((u) => 
+      u.id === uid || u.user_metadata?.pi_uid === uid
+    );
     
     let supabaseUserId: string;
 
@@ -326,8 +329,11 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to list users: ${listError.message}`);
     }
     
-    // Look up by pi_uid in user_metadata (not by id)
-    const existingUser = usersList?.users.find((u) => u.user_metadata?.pi_uid === uid);
+    // Look up by BOTH old format (id = pi_uid) and new format (metadata.pi_uid)
+    // This handles the transition period where old users exist
+    const existingUser = usersList?.users.find((u) => 
+      u.id === uid || u.user_metadata?.pi_uid === uid
+    );
 
     let supabaseUserId: string;
     
