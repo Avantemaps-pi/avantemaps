@@ -214,7 +214,7 @@ Deno.serve(async (req: Request) => {
           console.warn(`⚠️ [${traceId}] Failed to set password:`, updateError);
         } else {
           // Sign in with email/password to get real tokens
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          const { data: signInData, error: signInError } = await supabaseAnon.auth.signInWithPassword({
             email,
             password: testPassword,
           });
