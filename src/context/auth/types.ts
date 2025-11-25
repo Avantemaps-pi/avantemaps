@@ -2,7 +2,8 @@
 import { SubscriptionTier } from '@/utils/piNetwork';
 
 export interface PiUser {
-  uid: string;
+  uid: string;                      // Supabase UUID (for auth.uid())
+  pi_uid?: string;                  // Pi Network UID (optional for backwards compatibility)
   username: string;
   walletAddress?: string;
   roles?: string[];

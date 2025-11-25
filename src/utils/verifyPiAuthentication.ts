@@ -1,7 +1,8 @@
 import { secureLog } from './secureLogger';
 
 export interface PiUser {
-  uid: string;
+  uid: string;           // Supabase UUID (from auth.uid())
+  pi_uid: string;        // Pi Network UID
   username: string;
   wallet_address?: string | null;
 }

@@ -51,7 +51,8 @@ export function usePiAuth(): UsePiAuthReturn {
 
       // 4️⃣ Update local auth context
       setUser({
-        uid: verification.user.uid,
+        uid: verification.user.uid,              // Supabase UUID
+        pi_uid: verification.user.pi_uid,        // Pi Network UID
         username: verification.user.username,
         walletAddress: verification.user.wallet_address || '',
         lastAuthenticated: Date.now(),
