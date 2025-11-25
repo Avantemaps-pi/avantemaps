@@ -743,6 +743,7 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
+          pi_uid: string | null
           subscription: string | null
           username: string
         }
@@ -750,6 +751,7 @@ export type Database = {
           created_at?: string | null
           email: string
           id?: string
+          pi_uid?: string | null
           subscription?: string | null
           username: string
         }
@@ -757,6 +759,7 @@ export type Database = {
           created_at?: string | null
           email?: string
           id?: string
+          pi_uid?: string | null
           subscription?: string | null
           username?: string
         }

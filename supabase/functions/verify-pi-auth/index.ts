@@ -161,23 +161,45 @@ Deno.serve(async (req: Request) => {
         console.error(`❌ [${traceId}] Failed to list users:`, listError);
         throw new Error(`Failed to list users: ${listError.message}`);
       }
-      const existingUser = usersList?.users.find((u) => u.id === uid);
+    // Look up by pi_uid in user_metadata (not by id)
+    const existingUser = usersList?.users.find((u) => u.user_metadata?.pi_uid === uid);
+    
+    let supabaseUserId: string;
 
       if (!existingUser) {
         console.log(`🔨 [${traceId}] Creating new test user:`, { uid, email, username });
-        const { error: createError } = await supabaseAdmin.auth.admin.createUser({
-          id: uid,
+        // Let Supabase generate the UUID
+        const { data: newUserData, error: createError } = await supabaseAdmin.auth.admin.createUser({
           email,
           email_confirm: true,
-          user_metadata: { username, full_name: username },
+          user_metadata: { username, full_name: username, pi_uid: uid },
         });
         if (createError) {
           console.error(`❌ [${traceId}] Failed to create user:`, createError);
           throw new Error(`Failed to create user: ${createError.message}`);
         }
-        console.log(`✅ [${traceId}] Created test Supabase user ${uid}`);
+        
+        supabaseUserId = newUserData.user.id;
+        console.log(`✅ [${traceId}] Created test Supabase user ${supabaseUserId} for Pi UID ${uid}`);
+        
+        // Insert into public.users with pi_uid mapping
+        const { error: insertError } = await supabaseAdmin
+          .from('users')
+          .insert({
+            id: supabaseUserId,
+            pi_uid: uid,
+            username,
+            email,
+            subscription: 'individual',
+          });
+        
+        if (insertError) {
+          console.error(`❌ [${traceId}] Failed to create public user:`, insertError);
+          throw new Error(`Failed to create public user: ${insertError.message}`);
+        }
       } else {
-        console.log(`ℹ️ [${traceId}] Test user already exists:`, { uid, email });
+        supabaseUserId = existingUser.id;
+        console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
       }
 
       // Try to create a real session using the admin API (no email provider needed)
@@ -187,7 +209,7 @@ Deno.serve(async (req: Request) => {
 
       if (adminApi && typeof adminApi.createSession === 'function') {
         const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-          user_id: uid,
+          user_id: supabaseUserId,
         });
         if (sessionError || !sessionData?.session) {
           console.warn(`⚠️ [${traceId}] Admin createSession failed in test mode:`, sessionError);
@@ -206,7 +228,7 @@ Deno.serve(async (req: Request) => {
         const testPassword = 'test-dev-password-12345';
         
         // Set a password for the user (idempotent)
-        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(uid, {
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
           password: testPassword,
         });
         
@@ -233,7 +255,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({
         verified: true,
         testMode: true,
-        user: { uid, username, wallet_address: 'TEST_WALLET_123' },
+        user: { uid: supabaseUserId, pi_uid: uid, username, wallet_address: 'TEST_WALLET_123' },
         supabase_token: access_token,
         refresh_token: refresh_token,
         traceId,
@@ -304,24 +326,46 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to list users: ${listError.message}`);
     }
     
-    const existingUser = usersList?.users.find((u) => u.id === uid);
+    // Look up by pi_uid in user_metadata (not by id)
+    const existingUser = usersList?.users.find((u) => u.user_metadata?.pi_uid === uid);
 
+    let supabaseUserId: string;
+    
     if (!existingUser) {
       console.log(`🔨 [${traceId}] Creating new Supabase user:`, { uid, email, username });
-      const { error: createError } = await supabaseAdmin.auth.admin.createUser({
-        id: uid,
+      // Let Supabase generate the UUID
+      const { data: newUserData, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         email_confirm: true,
-        user_metadata: { username, full_name: username },
+        user_metadata: { username, full_name: username, pi_uid: uid },
       });
       
       if (createError) {
         console.error(`❌ [${traceId}] Failed to create user:`, createError);
         throw new Error(`Failed to create user: ${createError.message}`);
       }
-      console.log(`✅ [${traceId}] Created new Supabase user ${uid}`);
+      
+      supabaseUserId = newUserData.user.id;
+      console.log(`✅ [${traceId}] Created Supabase user ${supabaseUserId} for Pi UID ${uid}`);
+      
+      // Insert into public.users with pi_uid mapping
+      const { error: insertError } = await supabaseAdmin
+        .from('users')
+        .insert({
+          id: supabaseUserId,
+          pi_uid: uid,
+          username,
+          email,
+          subscription: 'individual',
+        });
+      
+      if (insertError) {
+        console.error(`❌ [${traceId}] Failed to create public user:`, insertError);
+        throw new Error(`Failed to create public user: ${insertError.message}`);
+      }
     } else {
-      console.log(`ℹ️ [${traceId}] User already exists:`, { uid, email });
+      supabaseUserId = existingUser.id;
+      console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
     }
 
     // --- Create proper session ---
@@ -331,7 +375,7 @@ Deno.serve(async (req: Request) => {
     try {
       // Try to create session using admin API
       const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-        user_id: uid,
+        user_id: supabaseUserId,
       });
       
       if (sessionError) {
@@ -357,7 +401,7 @@ Deno.serve(async (req: Request) => {
       
       try {
         // Update user with temporary password
-        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(uid, {
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
           password: tempPassword,
         });
         
@@ -387,7 +431,8 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify({
           verified: true,
           user: {
-            uid: user.uid,
+            uid: supabaseUserId,
+            pi_uid: uid,
             username: user.username,
             wallet_address: user.wallet_address || null,
           },
@@ -403,7 +448,8 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({
       verified: true,
       user: {
-        uid: user.uid,
+        uid: supabaseUserId,
+        pi_uid: uid,
         username: user.username,
         wallet_address: user.wallet_address || null,
       },
