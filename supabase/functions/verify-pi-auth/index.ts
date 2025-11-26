@@ -206,17 +206,21 @@ Deno.serve(async (req: Request) => {
       }
 
       // Create session using admin API (no email provider needed)
-      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-        user_id: supabaseUserId,
+      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: email,
+        options: {
+          redirectTo: 'https://ad58478f-862b-4337-99c0-4bd1bc66d916.lovableproject.com'
+        }
       });
       
-      if (sessionError || !sessionData?.session?.access_token) {
-        console.error(`❌ [${traceId}] Test mode session creation failed:`, sessionError);
-        throw new Error(`Test mode session creation failed: ${sessionError?.message || 'No session data'}`);
+      if (linkError || !linkData?.properties) {
+        console.error(`❌ [${traceId}] Test mode session creation failed:`, linkError);
+        throw new Error(`Test mode session creation failed: ${linkError?.message || 'No session data'}`);
       }
 
-      const access_token = sessionData.session.access_token;
-      const refresh_token = sessionData.session.refresh_token;
+      const access_token = linkData.properties.access_token;
+      const refresh_token = linkData.properties.refresh_token;
       console.log(`✅ [${traceId}] Test mode session created successfully`);
       return new Response(JSON.stringify({
         verified: true,
@@ -338,22 +342,26 @@ Deno.serve(async (req: Request) => {
     }
 
     // --- Create session using admin API ---
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-      user_id: supabaseUserId,
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: email,
+      options: {
+        redirectTo: 'https://ad58478f-862b-4337-99c0-4bd1bc66d916.lovableproject.com'
+      }
     });
     
-    if (sessionError) {
-      console.error(`❌ [${traceId}] Session creation error: ${sessionError.message}`);
-      throw new Error(`Session creation failed: ${sessionError.message}`);
+    if (linkError) {
+      console.error(`❌ [${traceId}] Session creation error: ${linkError.message}`);
+      throw new Error(`Session creation failed: ${linkError.message}`);
     }
     
-    if (!sessionData?.session?.access_token) {
-      console.error(`❌ [${traceId}] No session data returned from admin.createSession`);
+    if (!linkData?.properties?.access_token) {
+      console.error(`❌ [${traceId}] No session data returned from generateLink`);
       throw new Error('Session creation failed: No session data returned');
     }
     
-    const access_token = sessionData.session.access_token;
-    const refresh_token = sessionData.session.refresh_token;
+    const access_token = linkData.properties.access_token;
+    const refresh_token = linkData.properties.refresh_token;
     console.log(`✅ [${traceId}] Production session created successfully`);
 
     return new Response(JSON.stringify({
