@@ -303,29 +303,39 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         hasAccessToken: !!session.access_token 
       });
 
-      // ✅ Insert business via Edge Function
-      const { data: insertRes, error: insertError } = await supabase.functions.invoke('insert-business', { body: payload });
+      // ✅ Insert business via Edge Function with explicit Authorization header
+      const response = await fetch(
+        `https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/insert-business`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
-      // Enhanced error logging
-      if (insertError) {
-        console.error('❌ Edge function error:', insertError);
-        const statusCode = (insertError as any)?.status;
-        const errorMsg = (insertError as any)?.message || 'Unknown error';
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Edge function error:', errorText);
         
-        if (statusCode === 401) {
+        if (response.status === 401) {
           toast.error('Authentication failed. Please refresh the page and try again.');
-        } else if (statusCode === 403) {
+        } else if (response.status === 403) {
           toast.error('Permission denied. Please check your account status.');
         } else {
-          toast.error(`Business registration failed: ${errorMsg} (${statusCode || 'unknown status'})`);
+          toast.error(`Business registration failed: ${errorText} (${response.status})`);
         }
         setIsSubmitting(false);
         return;
       }
 
+      const insertRes = await response.json();
+      
       if (!insertRes?.success || !insertRes?.business) {
         console.error('❌ Invalid response from edge function:', insertRes);
-        const errMsg = (insertRes as any)?.error || 'Invalid response from server';
+        const errMsg = insertRes?.error || 'Invalid response from server';
         toast.error(`Business registration failed: ${errMsg}`);
         setIsSubmitting(false);
         return;
