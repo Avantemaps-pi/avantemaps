@@ -24,6 +24,10 @@ const supabaseAnon = createClient(
   Deno.env.get('SUPABASE_ANON_KEY')!
 );
 
+// Internal password used only for Pi auth synthetic accounts
+const INTERNAL_PASSWORD =
+  Deno.env.get('PI_INTERNAL_PASSWORD') || 'INTERNAL_PI_AUTH_PASSWORD_2024!#%';
+
 // Rate limiting tracking
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
@@ -205,22 +209,29 @@ Deno.serve(async (req: Request) => {
         console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
       }
 
-      // Create session using admin API (no email provider needed)
-      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'magiclink',
-        email: email,
-        options: {
-          redirectTo: 'https://ad58478f-862b-4337-99c0-4bd1bc66d916.lovableproject.com'
-        }
+      // Create session using password auth (internal password, no email provider needed)
+      // Ensure user has the internal password set (idempotent)
+      const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
+        password: INTERNAL_PASSWORD,
       });
-      
-      if (linkError || !linkData?.properties) {
-        console.error(`❌ [${traceId}] Test mode session creation failed:`, linkError);
-        throw new Error(`Test mode session creation failed: ${linkError?.message || 'No session data'}`);
+
+      if (passwordError) {
+        console.error(`❌ [${traceId}] Failed to set internal password for test user:`, passwordError);
+        throw new Error(`Failed to set internal password: ${passwordError.message}`);
       }
 
-      const access_token = linkData.properties.access_token;
-      const refresh_token = linkData.properties.refresh_token;
+      const { data: sessionData, error: sessionError } = await supabaseAnon.auth.signInWithPassword({
+        email,
+        password: INTERNAL_PASSWORD,
+      });
+
+      if (sessionError || !sessionData.session?.access_token) {
+        console.error(`❌ [${traceId}] Test mode session creation failed:`, sessionError);
+        throw new Error(`Test mode session creation failed: ${sessionError?.message || 'No session data'}`);
+      }
+
+      const access_token = sessionData.session.access_token;
+      const refresh_token = sessionData.session.refresh_token;
       console.log(`✅ [${traceId}] Test mode session created successfully`);
       return new Response(JSON.stringify({
         verified: true,
@@ -341,27 +352,29 @@ Deno.serve(async (req: Request) => {
       console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
     }
 
-    // --- Create session using admin API ---
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: email,
-      options: {
-        redirectTo: 'https://ad58478f-862b-4337-99c0-4bd1bc66d916.lovableproject.com'
-      }
+    // --- Create session using password auth (internal password) ---
+    // Ensure user has the internal password set (idempotent)
+    const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
+      password: INTERNAL_PASSWORD,
     });
-    
-    if (linkError) {
-      console.error(`❌ [${traceId}] Session creation error: ${linkError.message}`);
-      throw new Error(`Session creation failed: ${linkError.message}`);
+
+    if (passwordError) {
+      console.error(`❌ [${traceId}] Failed to set internal password for user:`, passwordError);
+      throw new Error(`Failed to set internal password: ${passwordError.message}`);
+    }
+
+    const { data: sessionData, error: sessionError } = await supabaseAnon.auth.signInWithPassword({
+      email,
+      password: INTERNAL_PASSWORD,
+    });
+
+    if (sessionError || !sessionData.session?.access_token) {
+      console.error(`❌ [${traceId}] Session creation error:`, sessionError);
+      throw new Error(`Session creation failed: ${sessionError?.message || 'No session data'}`);
     }
     
-    if (!linkData?.properties?.access_token) {
-      console.error(`❌ [${traceId}] No session data returned from generateLink`);
-      throw new Error('Session creation failed: No session data returned');
-    }
-    
-    const access_token = linkData.properties.access_token;
-    const refresh_token = linkData.properties.refresh_token;
+    const access_token = sessionData.session.access_token;
+    const refresh_token = sessionData.session.refresh_token;
     console.log(`✅ [${traceId}] Production session created successfully`);
 
     return new Response(JSON.stringify({
