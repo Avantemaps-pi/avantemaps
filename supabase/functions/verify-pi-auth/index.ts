@@ -397,9 +397,6 @@ Deno.serve(async (req: Request) => {
       console.error(`❌ [${traceId}] Session verification failed:`, verifyError);
       throw new Error(`Session verification failed: ${verifyError?.message || 'User mismatch'}`);
     }
-      console.error(`❌ [${traceId}] Session verification failed:`, verifyError);
-      throw new Error(`Session verification failed: ${verifyError?.message || 'User mismatch'}`);
-    }
     
     const access_token = sessionData.session.access_token;
     const refresh_token = sessionData.session.refresh_token;
