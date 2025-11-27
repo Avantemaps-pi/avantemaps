@@ -76,7 +76,7 @@ Deno.serve(async (req: Request) => {
       }
     });
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
     if (authError || !user) {
       console.error(`[${traceId}] Auth validation failed:`, authError);
