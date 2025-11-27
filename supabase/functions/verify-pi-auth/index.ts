@@ -209,30 +209,44 @@ Deno.serve(async (req: Request) => {
         console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
       }
 
-      // Create session using password auth (internal password, no email provider needed)
-      // Ensure user has the internal password set (idempotent)
+      // Create session using password auth with verification
       const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
         password: INTERNAL_PASSWORD,
+        email_confirm: true, // Ensure email is confirmed
       });
 
       if (passwordError) {
-        console.error(`❌ [${traceId}] Failed to set internal password for test user:`, passwordError);
+        console.error(`❌ [${traceId}] Failed to set internal password:`, passwordError);
         throw new Error(`Failed to set internal password: ${passwordError.message}`);
       }
+
+      // Small delay to ensure password is committed
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       const { data: sessionData, error: sessionError } = await supabaseAnon.auth.signInWithPassword({
         email,
         password: INTERNAL_PASSWORD,
       });
 
-      if (sessionError || !sessionData.session?.access_token) {
-        console.error(`❌ [${traceId}] Test mode session creation failed:`, sessionError);
-        throw new Error(`Test mode session creation failed: ${sessionError?.message || 'No session data'}`);
+      if (sessionError || !sessionData?.session?.access_token) {
+        console.error(`❌ [${traceId}] Session creation failed:`, sessionError);
+        throw new Error(`Session creation failed: ${sessionError?.message || 'No session data'}`);
+      }
+
+      // Verify the session works by checking the user
+      const verifyClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: `Bearer ${sessionData.session.access_token}` } }
+      });
+      
+      const { data: verifyUser, error: verifyError } = await verifyClient.auth.getUser();
+      if (verifyError || !verifyUser?.user || verifyUser.user.id !== supabaseUserId) {
+        console.error(`❌ [${traceId}] Session verification failed:`, verifyError);
+        throw new Error(`Session verification failed: ${verifyError?.message || 'User mismatch'}`);
       }
 
       const access_token = sessionData.session.access_token;
       const refresh_token = sessionData.session.refresh_token;
-      console.log(`✅ [${traceId}] Test mode session created successfully`);
+      console.log(`✅ [${traceId}] Test session created and verified successfully`);
       return new Response(JSON.stringify({
         verified: true,
         testMode: true,
@@ -352,30 +366,44 @@ Deno.serve(async (req: Request) => {
       console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
     }
 
-    // --- Create session using password auth (internal password) ---
-    // Ensure user has the internal password set (idempotent)
+    // --- Create session using password auth with verification ---
     const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
       password: INTERNAL_PASSWORD,
+      email_confirm: true, // Ensure email is confirmed
     });
 
     if (passwordError) {
-      console.error(`❌ [${traceId}] Failed to set internal password for user:`, passwordError);
+      console.error(`❌ [${traceId}] Failed to set internal password:`, passwordError);
       throw new Error(`Failed to set internal password: ${passwordError.message}`);
     }
+
+    // Small delay to ensure password is committed
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     const { data: sessionData, error: sessionError } = await supabaseAnon.auth.signInWithPassword({
       email,
       password: INTERNAL_PASSWORD,
     });
 
-    if (sessionError || !sessionData.session?.access_token) {
+    if (sessionError || !sessionData?.session?.access_token) {
       console.error(`❌ [${traceId}] Session creation error:`, sessionError);
       throw new Error(`Session creation failed: ${sessionError?.message || 'No session data'}`);
+    }
+
+    // Verify the session works by checking the user
+    const verifyClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${sessionData.session.access_token}` } }
+    });
+    
+    const { data: verifyUser, error: verifyError } = await verifyClient.auth.getUser();
+    if (verifyError || !verifyUser?.user || verifyUser.user.id !== supabaseUserId) {
+      console.error(`❌ [${traceId}] Session verification failed:`, verifyError);
+      throw new Error(`Session verification failed: ${verifyError?.message || 'User mismatch'}`);
     }
     
     const access_token = sessionData.session.access_token;
     const refresh_token = sessionData.session.refresh_token;
-    console.log(`✅ [${traceId}] Production session created successfully`);
+    console.log(`✅ [${traceId}] Production session created and verified successfully`);
 
     return new Response(JSON.stringify({
       verified: true,
