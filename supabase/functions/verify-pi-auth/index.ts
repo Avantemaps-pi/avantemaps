@@ -234,12 +234,12 @@ Deno.serve(async (req: Request) => {
       }
 
       // Verify the session works by checking the user
-      const verifyClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        global: { headers: { Authorization: `Bearer ${sessionData.session.access_token}` } }
-      });
-      
-      const { data: verifyUser, error: verifyError } = await verifyClient.auth.getUser();
+      const { data: verifyUser, error: verifyError } =
+        await supabaseAnon.auth.getUser(sessionData.session.access_token);
       if (verifyError || !verifyUser?.user || verifyUser.user.id !== supabaseUserId) {
+        console.error(`❌ [${traceId}] Session verification failed:`, verifyError);
+        throw new Error(`Session verification failed: ${verifyError?.message || 'User mismatch'}`);
+      }
         console.error(`❌ [${traceId}] Session verification failed:`, verifyError);
         throw new Error(`Session verification failed: ${verifyError?.message || 'User mismatch'}`);
       }
@@ -391,12 +391,12 @@ Deno.serve(async (req: Request) => {
     }
 
     // Verify the session works by checking the user
-    const verifyClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionData.session.access_token}` } }
-    });
-    
-    const { data: verifyUser, error: verifyError } = await verifyClient.auth.getUser();
+    const { data: verifyUser, error: verifyError } =
+      await supabaseAnon.auth.getUser(sessionData.session.access_token);
     if (verifyError || !verifyUser?.user || verifyUser.user.id !== supabaseUserId) {
+      console.error(`❌ [${traceId}] Session verification failed:`, verifyError);
+      throw new Error(`Session verification failed: ${verifyError?.message || 'User mismatch'}`);
+    }
       console.error(`❌ [${traceId}] Session verification failed:`, verifyError);
       throw new Error(`Session verification failed: ${verifyError?.message || 'User mismatch'}`);
     }
