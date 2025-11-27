@@ -18,15 +18,7 @@ const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-// Create Supabase Anon client for test mode sign-ins
-const supabaseAnon = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_ANON_KEY')!
-);
 
-// Internal password used only for Pi auth synthetic accounts
-const INTERNAL_PASSWORD =
-  Deno.env.get('PI_INTERNAL_PASSWORD') || 'INTERNAL_PI_AUTH_PASSWORD_2024!#%';
 
 // Rate limiting tracking
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -175,8 +167,8 @@ Deno.serve(async (req: Request) => {
 
       if (!existingUser) {
         console.log(`🔨 [${traceId}] Creating new test user:`, { uid, email, username });
-        // Let Supabase generate the UUID
         const { data: newUserData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          user_id: uid, // Use Pi UID as Supabase user ID
           email,
           email_confirm: true,
           user_metadata: { username, full_name: username, pi_uid: uid },
@@ -189,7 +181,7 @@ Deno.serve(async (req: Request) => {
         supabaseUserId = newUserData.user.id;
         console.log(`✅ [${traceId}] Created test Supabase user ${supabaseUserId} for Pi UID ${uid}`);
         
-        // Insert into public.users with pi_uid mapping
+        // Insert into public.users
         const { error: insertError } = await supabaseAdmin
           .from('users')
           .insert({
@@ -209,40 +201,16 @@ Deno.serve(async (req: Request) => {
         console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
       }
 
-      // Create session using password auth with verification
-      const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
-        password: INTERNAL_PASSWORD,
-        email_confirm: true, // Ensure email is confirmed
-      });
-
-      if (passwordError) {
-        console.error(`❌ [${traceId}] Failed to set internal password:`, passwordError);
-        throw new Error(`Failed to set internal password: ${passwordError.message}`);
+      // Generate proper JWT token with sub claim
+      const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.createToken(supabaseUserId);
+      
+      if (tokenError || !tokenData?.access_token) {
+        console.error(`❌ [${traceId}] Token creation failed:`, tokenError);
+        throw new Error(`Token creation failed: ${tokenError?.message || 'No token data'}`);
       }
 
-      // Small delay to ensure password is committed
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      const { data: sessionData, error: sessionError } = await supabaseAnon.auth.signInWithPassword({
-        email,
-        password: INTERNAL_PASSWORD,
-      });
-
-      if (sessionError || !sessionData?.session?.access_token) {
-        console.error(`❌ [${traceId}] Session creation failed:`, sessionError);
-        throw new Error(`Session creation failed: ${sessionError?.message || 'No session data'}`);
-      }
-
-      // Verify the session works by checking the user
-      const { data: verifyUser, error: verifyError } =
-        await supabaseAnon.auth.getUser(sessionData.session.access_token);
-      if (verifyError || !verifyUser?.user || verifyUser.user.id !== supabaseUserId) {
-        console.error(`❌ [${traceId}] Session verification failed:`, verifyError);
-        throw new Error(`Session verification failed: ${verifyError?.message || 'User mismatch'}`);
-      }
-
-      const access_token = sessionData.session.access_token;
-      const refresh_token = sessionData.session.refresh_token;
+      const access_token = tokenData.access_token;
+      const refresh_token = tokenData.refresh_token;
       console.log(`✅ [${traceId}] Test session created and verified successfully`);
       return new Response(JSON.stringify({
         verified: true,
@@ -328,8 +296,8 @@ Deno.serve(async (req: Request) => {
     
     if (!existingUser) {
       console.log(`🔨 [${traceId}] Creating new Supabase user:`, { uid, email, username });
-      // Let Supabase generate the UUID
       const { data: newUserData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        user_id: uid, // Use Pi UID as Supabase user ID
         email,
         email_confirm: true,
         user_metadata: { username, full_name: username, pi_uid: uid },
@@ -343,7 +311,7 @@ Deno.serve(async (req: Request) => {
       supabaseUserId = newUserData.user.id;
       console.log(`✅ [${traceId}] Created Supabase user ${supabaseUserId} for Pi UID ${uid}`);
       
-      // Insert into public.users with pi_uid mapping
+      // Insert into public.users
       const { error: insertError } = await supabaseAdmin
         .from('users')
         .insert({
@@ -363,40 +331,16 @@ Deno.serve(async (req: Request) => {
       console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
     }
 
-    // --- Create session using password auth with verification ---
-    const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
-      password: INTERNAL_PASSWORD,
-      email_confirm: true, // Ensure email is confirmed
-    });
-
-    if (passwordError) {
-      console.error(`❌ [${traceId}] Failed to set internal password:`, passwordError);
-      throw new Error(`Failed to set internal password: ${passwordError.message}`);
-    }
-
-    // Small delay to ensure password is committed
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    const { data: sessionData, error: sessionError } = await supabaseAnon.auth.signInWithPassword({
-      email,
-      password: INTERNAL_PASSWORD,
-    });
-
-    if (sessionError || !sessionData?.session?.access_token) {
-      console.error(`❌ [${traceId}] Session creation error:`, sessionError);
-      throw new Error(`Session creation failed: ${sessionError?.message || 'No session data'}`);
-    }
-
-    // Verify the session works by checking the user
-    const { data: verifyUser, error: verifyError } =
-      await supabaseAnon.auth.getUser(sessionData.session.access_token);
-    if (verifyError || !verifyUser?.user || verifyUser.user.id !== supabaseUserId) {
-      console.error(`❌ [${traceId}] Session verification failed:`, verifyError);
-      throw new Error(`Session verification failed: ${verifyError?.message || 'User mismatch'}`);
+    // Generate proper JWT token with sub claim
+    const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.createToken(supabaseUserId);
+    
+    if (tokenError || !tokenData?.access_token) {
+      console.error(`❌ [${traceId}] Token creation failed:`, tokenError);
+      throw new Error(`Token creation failed: ${tokenError?.message || 'No token data'}`);
     }
     
-    const access_token = sessionData.session.access_token;
-    const refresh_token = sessionData.session.refresh_token;
+    const access_token = tokenData.access_token;
+    const refresh_token = tokenData.refresh_token;
     console.log(`✅ [${traceId}] Production session created and verified successfully`);
 
     return new Response(JSON.stringify({
