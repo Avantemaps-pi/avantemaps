@@ -234,14 +234,14 @@ private async initializeAttempt(): Promise<void> {
             const { supabase } = await import('@/integrations/supabase/client');
             await supabase.auth.setSession({
               access_token: responseData.supabase_token,
-              refresh_token: responseData.supabase_token, // optional if you don't issue refresh tokens
+              refresh_token: null, // we currently do not issue separate refresh tokens
             });
-            console.log("✅ Supabase session established for Pi user");
+            console.log('✅ Supabase session established for Pi user');
           } catch (sessionErr) {
-            console.error("❌ Failed to set Supabase session:", sessionErr);
+            console.error('❌ Failed to set Supabase session:', sessionErr);
           }
         }
-        
+
         if (!verifyResponse.ok) {
           console.warn("⚠️ Supabase verification endpoint returned:", verifyResponse.status, verifyResponse.statusText);
         }
@@ -254,21 +254,21 @@ private async initializeAttempt(): Promise<void> {
 
         console.log("✅ Token successfully verified with backend");
 
-        // 🆕 Automatically log user into Supabase (if token returned)
+      // 🆕 Automatically log user into Supabase (if token returned)
       if (responseData?.supabase_token) {
         try {
           const { supabase } = await import('@/integrations/supabase/client');
           const { data: session, error } = await supabase.auth.setSession({
             access_token: responseData.supabase_token,
-            refresh_token: responseData.supabase_token, // fallback
+            refresh_token: null,
           });
           if (error) {
-            console.warn("⚠️ Supabase session setup failed:", error.message);
+            console.warn('⚠️ Supabase session setup failed:', error.message);
           } else {
-            console.log("✅ Supabase session established:", session);
+            console.log('✅ Supabase session established:', session);
           }
         } catch (sessionErr) {
-          console.error("⚠️ Could not initialize Supabase session:", sessionErr);
+          console.error('⚠️ Could not initialize Supabase session:', sessionErr);
         }
       }
 

@@ -153,9 +153,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             secureLog.info('🔐 Setting Supabase session with token...');
             const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
               access_token: data.supabase_token,
-              refresh_token: data.refresh_token || data.supabase_token
+              refresh_token: data.refresh_token ?? null,
             });
-            
+
             if (sessionError) {
               secureLog.error('❌ Failed to set Supabase session:', sessionError);
               toast.error('Dev mode: Failed to setup database session. RLS may block queries.');
