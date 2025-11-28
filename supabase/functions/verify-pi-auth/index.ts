@@ -201,23 +201,14 @@ Deno.serve(async (req: Request) => {
         console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
       }
 
-      // Generate proper JWT token with sub claim
-      const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.createToken(supabaseUserId);
-      
-      if (tokenError || !tokenData?.access_token) {
-        console.error(`❌ [${traceId}] Token creation failed:`, tokenError);
-        throw new Error(`Token creation failed: ${tokenError?.message || 'No token data'}`);
-      }
-
-      const access_token = tokenData.access_token;
-      const refresh_token = tokenData.refresh_token;
-      console.log(`✅ [${traceId}] Test session created and verified successfully`);
+      // In test mode, skip Supabase session creation (no admin.createToken available in this runtime)
+      console.log(`✅ [${traceId}] Test user verified (no Supabase JWT generated in test mode)`);
       return new Response(JSON.stringify({
         verified: true,
         testMode: true,
         user: { uid: supabaseUserId, pi_uid: uid, username, wallet_address: 'TEST_WALLET_123' },
-        supabase_token: access_token,
-        refresh_token: refresh_token,
+        supabase_token: null,
+        refresh_token: null,
         traceId,
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -331,17 +322,10 @@ Deno.serve(async (req: Request) => {
       console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
     }
 
-    // Generate proper JWT token with sub claim
-    const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.createToken(supabaseUserId);
-    
-    if (tokenError || !tokenData?.access_token) {
-      console.error(`❌ [${traceId}] Token creation failed:`, tokenError);
-      throw new Error(`Token creation failed: ${tokenError?.message || 'No token data'}`);
-    }
-    
-    const access_token = tokenData.access_token;
-    const refresh_token = tokenData.refresh_token;
-    console.log(`✅ [${traceId}] Production session created and verified successfully`);
+    // NOTE: admin.createToken is not available in this Edge runtime, so we cannot mint a Supabase JWT here.
+    // Instead, we return verification + mapped user identity; the frontend must not call setSession with
+    // non-Supabase tokens to avoid "missing sub" errors.
+    console.log(`✅ [${traceId}] Production Pi user verified (no Supabase JWT generated)`);
 
     return new Response(JSON.stringify({
       verified: true,
@@ -351,8 +335,8 @@ Deno.serve(async (req: Request) => {
         username: user.username,
         wallet_address: user.wallet_address || null,
       },
-      supabase_token: access_token,
-      refresh_token,
+      supabase_token: null,
+      refresh_token: null,
       traceId,
     }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
