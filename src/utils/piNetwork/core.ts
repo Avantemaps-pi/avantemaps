@@ -232,10 +232,12 @@ private async initializeAttempt(): Promise<void> {
         if (responseData?.supabase_token) {
           try {
             const { supabase } = await import('@/integrations/supabase/client');
-            await supabase.auth.setSession({
-              access_token: responseData.supabase_token,
-              refresh_token: null, // we currently do not issue separate refresh tokens
-            });
+            const sessionPayload: any = { access_token: responseData.supabase_token };
+            if (responseData.refresh_token) {
+              sessionPayload.refresh_token = responseData.refresh_token;
+            }
+            
+            await supabase.auth.setSession(sessionPayload);
             console.log('✅ Supabase session established for Pi user');
           } catch (sessionErr) {
             console.error('❌ Failed to set Supabase session:', sessionErr);
@@ -258,10 +260,12 @@ private async initializeAttempt(): Promise<void> {
       if (responseData?.supabase_token) {
         try {
           const { supabase } = await import('@/integrations/supabase/client');
-          const { data: session, error } = await supabase.auth.setSession({
-            access_token: responseData.supabase_token,
-            refresh_token: null,
-          });
+          const sessionPayload: any = { access_token: responseData.supabase_token };
+          if (responseData.refresh_token) {
+            sessionPayload.refresh_token = responseData.refresh_token;
+          }
+          
+          const { data: session, error } = await supabase.auth.setSession(sessionPayload);
           if (error) {
             console.warn('⚠️ Supabase session setup failed:', error.message);
           } else {

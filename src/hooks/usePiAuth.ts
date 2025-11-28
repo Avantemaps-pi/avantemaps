@@ -42,10 +42,12 @@ export function usePiAuth(): UsePiAuthReturn {
 
       // 3️⃣ If we received Supabase tokens, create a session. Otherwise skip (test mode).
       if (verification.supabaseToken) {
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: verification.supabaseToken!,
-          refresh_token: null,
-        });
+        const sessionPayload: any = { access_token: verification.supabaseToken };
+        if (verification.refreshToken) {
+          sessionPayload.refresh_token = verification.refreshToken;
+        }
+        
+        const { error: sessionError } = await supabase.auth.setSession(sessionPayload);
         if (sessionError) throw new Error('Failed to create Supabase session');
       }
 

@@ -151,10 +151,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           if (data.verified && data.supabase_token) {
             secureLog.info('🔐 Setting Supabase session with token...');
-            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-              access_token: data.supabase_token,
-              refresh_token: data.refresh_token ?? null,
-            });
+            const sessionPayload: any = { access_token: data.supabase_token };
+            if (data.refresh_token) {
+              sessionPayload.refresh_token = data.refresh_token;
+            }
+            
+            const { data: sessionData, error: sessionError } = await supabase.auth.setSession(sessionPayload);
 
             if (sessionError) {
               secureLog.error('❌ Failed to set Supabase session:', sessionError);
@@ -162,7 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } else {
               secureLog.info('✅ Dev mode Supabase session set:', { 
                 userId: sessionData?.user?.id,
-                hasSession: !!sessionData?.session 
+                hasSession: !!sessionData?.session
               });
               
               // Verify the session is actually set
@@ -272,10 +274,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const data = await response.json();
         
         if (data.verified && data.supabase_token) {
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: data.supabase_token,
-            refresh_token: data.refresh_token || data.supabase_token
-          });
+          const sessionPayload: any = { access_token: data.supabase_token };
+          if (data.refresh_token) {
+            sessionPayload.refresh_token = data.refresh_token;
+          }
+          
+          const { error: sessionError } = await supabase.auth.setSession(sessionPayload);
           
           if (!sessionError) {
             secureLog.info('✅ Dev mode Supabase session established in login()');

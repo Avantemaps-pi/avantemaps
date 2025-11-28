@@ -198,12 +198,14 @@ export const performLogin = async (
           });
           
           const token = (verificationResult as any).supabase_token || (verificationResult as any).supabaseToken;
-          const refreshToken = (verificationResult as any).refresh_token ?? null;
+          const refreshToken = (verificationResult as any).refresh_token;
           if (verificationResult.verified && token) {
-            const { error: sessionError } = await supabase.auth.setSession({
-              access_token: token,
-              refresh_token: refreshToken,
-            });
+            const sessionPayload: any = { access_token: token };
+            if (refreshToken) {
+              sessionPayload.refresh_token = refreshToken;
+            }
+            
+            const { error: sessionError } = await supabase.auth.setSession(sessionPayload);
 
             if (sessionError) {
               console.error("❌ Failed to set Supabase session:", {
@@ -298,13 +300,15 @@ export const performLogin = async (
             
             // 🔧 FIX: Set Supabase session with the JWT token
             const token = (verificationResult as any).supabase_token || (verificationResult as any).supabaseToken;
-            const refreshToken = (verificationResult as any).refresh_token || token;
+            const refreshToken = (verificationResult as any).refresh_token;
             if (token) {
+              const sessionPayload: any = { access_token: token };
+              if (refreshToken) {
+                sessionPayload.refresh_token = refreshToken;
+              }
+              
               secureLog.info("Setting Supabase session with JWT token");
-              const { error: sessionError } = await supabase.auth.setSession({
-                access_token: token,
-                refresh_token: refreshToken
-              });
+              const { error: sessionError } = await supabase.auth.setSession(sessionPayload);
               
               if (sessionError) {
                 console.error("❌ Failed to set Supabase session:", {
