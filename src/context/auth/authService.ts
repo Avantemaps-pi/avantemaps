@@ -198,13 +198,13 @@ export const performLogin = async (
           });
           
           const token = (verificationResult as any).supabase_token || (verificationResult as any).supabaseToken;
-          const refreshToken = (verificationResult as any).refresh_token || token;
+          const refreshToken = (verificationResult as any).refresh_token ?? null;
           if (verificationResult.verified && token) {
             const { error: sessionError } = await supabase.auth.setSession({
               access_token: token,
-              refresh_token: refreshToken
+              refresh_token: refreshToken,
             });
-            
+
             if (sessionError) {
               console.error("❌ Failed to set Supabase session:", {
                 error: sessionError,
