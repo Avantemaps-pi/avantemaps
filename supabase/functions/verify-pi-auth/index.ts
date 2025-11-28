@@ -81,13 +81,13 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`🚀 [${traceId}] verify-pi-auth invoked from IP: ${clientIP}`);
-
-    const url = new URL(req.url);
+ 
+    const requestUrl = new URL(req.url);
     const isDev = Deno.env.get('ENVIRONMENT') === 'development';
     const originHeader = req.headers.get('origin') || req.headers.get('referer') || '';
     const isPreviewOrigin = originHeader.includes('lovableproject.com') || originHeader.includes('lovable.app');
     const allowTestMode = Deno.env.get('ALLOW_TEST_MODE') === 'true';
-    const testParam = url.searchParams.get('test') === 'true';
+    const testParam = requestUrl.searchParams.get('test') === 'true';
     // Allow test mode on previews or dev when explicitly requested via query OR dev token
     let testMode = (testParam && (isDev || isPreviewOrigin));
     
