@@ -61,6 +61,7 @@ const SortableImage: React.FC<SortableImageProps> = ({ image, index, id }) => {
         <img 
           src={image} 
           alt={`Business image ${index + 1}`}
+          loading="lazy"
           className="max-w-full max-h-full object-contain rounded-md"
         />
       </div>
