@@ -1,5 +1,6 @@
 
 import React from 'react';
+import ProgressiveImage from './ProgressiveImage';
 
 interface PlaceCardImageProps {
   image: string;
@@ -19,9 +20,9 @@ const PlaceCardImage: React.FC<PlaceCardImageProps> = ({
       className="h-40 overflow-hidden cursor-pointer relative"
       onClick={onClick}
     >
-      <img 
-        src={image} 
-        alt={name} 
+      <ProgressiveImage
+        src={image}
+        alt={name}
         className="w-full h-full object-cover hover:opacity-90 transition-opacity"
         onError={(e) => {
           e.currentTarget.src = 'public/placeholder.svg';
