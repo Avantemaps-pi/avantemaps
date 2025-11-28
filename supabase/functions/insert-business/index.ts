@@ -133,12 +133,16 @@ Deno.serve(async (req: Request) => {
     }
 
     // Insert business using service role (bypasses RLS)
+    const fullStreetAddress = body.address.apartment 
+      ? `${body.address.street}, ${body.address.apartment}`
+      : body.address.street;
+
     const { data, error } = await supabaseAdmin
       .from('businesses')
       .insert({
         owner_id: body.user_id,
-        name: body.business_name,
-        description: body.business_description || null,
+        business_name: body.business_name,
+        business_description: body.business_description || null,
         category: body.business_types[0] || 'Other',
         business_types: body.business_types,
         contact_info: {
@@ -148,17 +152,19 @@ Deno.serve(async (req: Request) => {
           phone: body.phone_number,
           website: body.website,
         },
-        street_address: body.address.street,
-        apartment: body.address.apartment,
+        street_address: fullStreetAddress,
         city: body.address.city,
         state: body.address.state,
-        postal_code: body.address.zip_code,
+        zip_code: body.address.zip_code,
         country: body.address.country,
         lat: body.address.lat,
         lng: body.address.lng,
         coordinates: JSON.stringify({ lat: body.address.lat || null, lng: body.address.lng || null }),
         hours: body.hours,
         pi_wallet_address: body.pi_wallet_address,
+        address_components: {
+          apartment: body.address.apartment,
+        },
       })
       .select();
 
