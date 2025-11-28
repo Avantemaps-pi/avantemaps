@@ -225,9 +225,9 @@ Deno.serve(async (req: Request) => {
       console.log(`✅ [${traceId}] [TEST] Successfully generated tokens for user ${supabaseUserId}`);
 
       // Extract token from the magic link
-      const url = new URL(linkData.properties.action_link);
-      const access_token = url.searchParams.get('token');
-      const refresh_token = url.searchParams.get('refresh_token');
+      const tokenUrl = new URL(linkData.properties.action_link);
+      const access_token = tokenUrl.searchParams.get('token');
+      const refresh_token = tokenUrl.searchParams.get('refresh_token');
 
       return new Response(JSON.stringify({
         verified: true,
@@ -372,9 +372,9 @@ Deno.serve(async (req: Request) => {
     console.log(`✅ [${traceId}] Successfully generated tokens for user ${supabaseUserId}`);
 
     // Extract token from the magic link
-    const url = new URL(linkData.properties.action_link);
-    const access_token = url.searchParams.get('token');
-    const refresh_token = url.searchParams.get('refresh_token');
+    const tokenUrl = new URL(linkData.properties.action_link);
+    const access_token = tokenUrl.searchParams.get('token');
+    const refresh_token = tokenUrl.searchParams.get('refresh_token');
 
     return new Response(JSON.stringify({
       verified: true,
