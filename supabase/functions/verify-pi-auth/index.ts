@@ -19,6 +19,7 @@ async function mintJwtForUser(userId: string): Promise<string | null> {
     sub: userId,
     role: 'authenticated',
     aud: 'authenticated',
+    iss: `https://${Deno.env.get('SUPABASE_URL')?.split('//')[1]}/auth/v1`,
     iat: getNumericDate(0),
     exp: getNumericDate(60 * 60 * 24 * 7), // 7 days
   };
@@ -194,9 +195,9 @@ Deno.serve(async (req: Request) => {
       let supabaseUserId: string;
 
       if (!existingUser) {
-        console.log(`🔨 [${traceId}] Creating new test user:`, { uid, email, username });
+        console.log(`🔨 [${traceId}] Creating new test user:`, { pi_uid: uid, email, username });
         const { data: newUserData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          user_id: uid, // Use Pi UID as Supabase user ID
+          // Let Supabase generate UUID for auth.users.id
           email,
           email_confirm: true,
           user_metadata: { username, full_name: username, pi_uid: uid },
@@ -322,9 +323,9 @@ Deno.serve(async (req: Request) => {
     let supabaseUserId: string;
     
     if (!existingUser) {
-      console.log(`🔨 [${traceId}] Creating new Supabase user:`, { uid, email, username });
+      console.log(`🔨 [${traceId}] Creating new Supabase user:`, { pi_uid: uid, email, username });
       const { data: newUserData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        user_id: uid, // Use Pi UID as Supabase user ID
+        // Let Supabase generate UUID for auth.users.id
         email,
         email_confirm: true,
         user_metadata: { username, full_name: username, pi_uid: uid },
