@@ -1,39 +1,10 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
-import { create as createJwt, getNumericDate } from 'https://deno.land/x/djwt@v3.0.2/mod.ts';
 
 /**
  * Pi Network Authentication Verification
- * with Supabase Auth integration (fixed JWT)
+ * with Supabase Auth integration using native admin methods
  */
-
-// Manual JWT generator for Supabase tokens
-async function mintJwtForUser(userId: string): Promise<string | null> {
-  const jwtSecret = Deno.env.get('JWT_SECRET');
-  if (!jwtSecret) {
-    console.error('❌ JWT_SECRET not configured');
-    return null;
-  }
-
-  const payload = {
-    sub: userId,
-    role: 'authenticated',
-    aud: 'authenticated',
-    iss: `https://${Deno.env.get('SUPABASE_URL')?.split('//')[1]}/auth/v1`,
-    iat: getNumericDate(0),
-    exp: getNumericDate(60 * 60 * 24 * 7), // 7 days
-  };
-
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(jwtSecret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-
-  return await createJwt({ alg: 'HS256', typ: 'JWT' }, payload, key);
-}
 
 interface VerifyAuthRequest {
   accessToken: string;
@@ -230,22 +201,32 @@ Deno.serve(async (req: Request) => {
         console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
       }
 
-      // Generate Supabase JWT manually (works on all plans)
-      const access_token = await mintJwtForUser(supabaseUserId);
-      const refresh_token = null; // not using refresh tokens
+      // Create session for the user using Supabase Admin API
+      console.log(`🔐 [${traceId}] [TEST] Creating session for user ${supabaseUserId}`);
+      
+      // Sign the user in server-side to get a valid session
+      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+        user_id: supabaseUserId
+      });
 
-      if (!access_token) {
-        console.error(`❌ [${traceId}] [TEST] Could not generate JWT. Missing JWT_SECRET environment variable`);
-      } else {
-        console.log(`✅ [${traceId}] [TEST] Successfully generated Supabase JWT with sub: ${supabaseUserId}`);
+      if (sessionError || !sessionData?.session) {
+        console.error(`❌ [${traceId}] [TEST] Failed to create session:`, sessionError);
+        return new Response(JSON.stringify({
+          verified: false,
+          error: 'Session creation failed',
+          details: sessionError?.message || 'Could not create authentication session',
+          traceId,
+        }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+
+      console.log(`✅ [${traceId}] [TEST] Successfully created session for user ${supabaseUserId}`);
 
       return new Response(JSON.stringify({
         verified: true,
         testMode: true,
         user: { uid: supabaseUserId, pi_uid: uid, username, wallet_address: 'TEST_WALLET_123' },
-        supabase_token: access_token,
-        refresh_token,
+        supabase_token: sessionData.session.access_token,
+        refresh_token: sessionData.session.refresh_token,
         traceId,
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -359,15 +340,25 @@ Deno.serve(async (req: Request) => {
       console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
     }
 
-    // Generate Supabase JWT manually (works on all plans)
-    const access_token = await mintJwtForUser(supabaseUserId);
-    const refresh_token = null; // not using refresh tokens
+    // Create session for the user using Supabase Admin API
+    console.log(`🔐 [${traceId}] Creating session for user ${supabaseUserId}`);
+    
+    // Sign the user in server-side to get a valid session
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+      user_id: supabaseUserId
+    });
 
-    if (!access_token) {
-      console.error(`❌ [${traceId}] Could not generate JWT. Missing JWT_SECRET environment variable`);
-    } else {
-      console.log(`✅ [${traceId}] Successfully generated Supabase JWT with sub: ${supabaseUserId}`);
+    if (sessionError || !sessionData?.session) {
+      console.error(`❌ [${traceId}] Failed to create session:`, sessionError);
+      return new Response(JSON.stringify({
+        verified: false,
+        error: 'Session creation failed',
+        details: sessionError?.message || 'Could not create authentication session',
+        traceId,
+      }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+
+    console.log(`✅ [${traceId}] Successfully created session for user ${supabaseUserId}`);
 
     return new Response(JSON.stringify({
       verified: true,
@@ -377,8 +368,8 @@ Deno.serve(async (req: Request) => {
         username: user.username,
         wallet_address: user.wallet_address || null,
       },
-      supabase_token: access_token,
-      refresh_token,
+      supabase_token: sessionData.session.access_token,
+      refresh_token: sessionData.session.refresh_token,
       traceId,
     }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
