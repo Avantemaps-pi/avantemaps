@@ -1,10 +1,38 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
+import { create as createJwt, getNumericDate } from 'https://deno.land/x/djwt@v3.0.2/mod.ts';
 
 /**
  * Pi Network Authentication Verification
  * with Supabase Auth integration (fixed JWT)
  */
+
+// Manual JWT generator for Supabase tokens
+async function mintJwtForUser(userId: string): Promise<string | null> {
+  const jwtSecret = Deno.env.get('JWT_SECRET');
+  if (!jwtSecret) {
+    console.error('❌ JWT_SECRET not configured');
+    return null;
+  }
+
+  const payload = {
+    sub: userId,
+    role: 'authenticated',
+    aud: 'authenticated',
+    iat: getNumericDate(0),
+    exp: getNumericDate(60 * 60 * 24 * 7), // 7 days
+  };
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(jwtSecret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  return await createJwt({ alg: 'HS256', typ: 'JWT' }, payload, key);
+}
 
 interface VerifyAuthRequest {
   accessToken: string;
@@ -201,24 +229,14 @@ Deno.serve(async (req: Request) => {
         console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
       }
 
-      // Attempt to mint a Supabase JWT for this user.
-      // On plans/runtimes where admin.createToken is unavailable, we gracefully fall back
-      // to returning verification only (supabase_token will be null).
-      let access_token: string | null = null;
-      let refresh_token: string | null = null;
-      try {
-        const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.createToken(supabaseUserId);
-        if (tokenError) {
-          console.warn(`⚠️ [${traceId}] Test mode token creation failed (non-fatal):`, tokenError);
-        } else if (tokenData?.access_token) {
-          access_token = tokenData.access_token;
-          refresh_token = tokenData.refresh_token ?? null;
-          console.log(`✅ [${traceId}] Test mode Supabase JWT created successfully`);
-        } else {
-          console.warn(`⚠️ [${traceId}] Test mode token data missing access_token (non-fatal)`);
-        }
-      } catch (tokenErr) {
-        console.error(`⚠️ [${traceId}] admin.createToken threw (non-fatal in test mode):`, tokenErr);
+      // Generate Supabase JWT manually (works on all plans)
+      const access_token = await mintJwtForUser(supabaseUserId);
+      const refresh_token = null; // not using refresh tokens
+
+      if (!access_token) {
+        console.error(`❌ [${traceId}] [TEST] Could not generate JWT. Missing JWT_SECRET environment variable`);
+      } else {
+        console.log(`✅ [${traceId}] [TEST] Successfully generated Supabase JWT with sub: ${supabaseUserId}`);
       }
 
       return new Response(JSON.stringify({
@@ -340,24 +358,14 @@ Deno.serve(async (req: Request) => {
       console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
     }
 
-    // Attempt to mint a Supabase JWT for this user.
-    // On plans/runtimes where admin.createToken is unavailable, we gracefully fall back
-    // to returning verification only (supabase_token will be null).
-    let access_token: string | null = null;
-    let refresh_token: string | null = null;
-    try {
-      const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.createToken(supabaseUserId);
-      if (tokenError) {
-        console.warn(`⚠️ [${traceId}] Production token creation failed (non-fatal):`, tokenError);
-      } else if (tokenData?.access_token) {
-        access_token = tokenData.access_token;
-        refresh_token = tokenData.refresh_token ?? null;
-        console.log(`✅ [${traceId}] Production Supabase JWT created successfully`);
-      } else {
-        console.warn(`⚠️ [${traceId}] Production token data missing access_token (non-fatal)`);
-      }
-    } catch (tokenErr) {
-      console.error(`⚠️ [${traceId}] admin.createToken threw (non-fatal in production):`, tokenErr);
+    // Generate Supabase JWT manually (works on all plans)
+    const access_token = await mintJwtForUser(supabaseUserId);
+    const refresh_token = null; // not using refresh tokens
+
+    if (!access_token) {
+      console.error(`❌ [${traceId}] Could not generate JWT. Missing JWT_SECRET environment variable`);
+    } else {
+      console.log(`✅ [${traceId}] Successfully generated Supabase JWT with sub: ${supabaseUserId}`);
     }
 
     return new Response(JSON.stringify({
