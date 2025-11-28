@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/auth';
 import { containsInappropriateContent } from '@/utils/contentFilter';
 import type { BusinessInsertPayload } from '@/types/businessPayload';
+import { compressImages, getSizeReduction } from '@/utils/imageCompression';
 
 export const useBusinessRegistration = (onSuccess?: () => void) => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
@@ -350,9 +351,25 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       // ---------------------------
       if (selectedImages.length && newBusiness?.id) {
         try {
-          const uploadPromises = selectedImages.map(async (file, index) => {
-            const fileExt = file.name.split('.').pop();
-            const filePath = `${newBusiness.id}/image-${index}-${Date.now()}.${fileExt}`;
+          // Compress images before upload
+          toast.info('Optimizing images...');
+          const originalSizes = selectedImages.map(img => img.size);
+          const compressedImages = await compressImages(selectedImages, {
+            maxWidth: 1920,
+            maxHeight: 1920,
+            quality: 0.85,
+            targetFormat: 'image/webp',
+          });
+          
+          // Calculate total size reduction
+          const totalOriginal = originalSizes.reduce((sum, size) => sum + size, 0);
+          const totalCompressed = compressedImages.reduce((sum, img) => sum + img.size, 0);
+          const reduction = getSizeReduction(totalOriginal, totalCompressed);
+          
+          console.log(`Image compression: ${reduction}% size reduction (${(totalOriginal / 1024 / 1024).toFixed(2)}MB → ${(totalCompressed / 1024 / 1024).toFixed(2)}MB)`);
+          
+          const uploadPromises = compressedImages.map(async (file, index) => {
+            const filePath = `${newBusiness.id}/image-${index}-${Date.now()}.webp`;
 
             const { error: uploadError } = await supabase.storage
               .from('business-images')
@@ -369,8 +386,8 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
           const successfulUploads = uploadedPaths.filter(path => path !== null);
 
           if (successfulUploads.length > 0) {
-            console.log(`✅ Uploaded ${successfulUploads.length} images to storage`);
-            toast.success(`Business registered with ${successfulUploads.length} image(s)!`);
+            console.log(`✅ Uploaded ${successfulUploads.length} optimized images to storage`);
+            toast.success(`Business registered with ${successfulUploads.length} image(s) (${reduction}% smaller)!`);
           }
         } catch (imgErr) {
           console.error('Image upload process error:', imgErr);
