@@ -20,13 +20,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isSdkInitialized, setIsSdkInitialized] = useState<boolean>(false);
   const [lastRefresh, setLastRefresh] = useState<number>(0);
   const [appReady, setAppReady] = useState<boolean>(true);
+
   const pendingAuthRef = useRef<boolean>(false);
   const initAttempted = useRef<boolean>(false);
   const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const devModeToastShown = useRef<boolean>(false);
   const isMountedRef = useRef<boolean>(true);
 
-  // ✅ Safe state setters
+  // safe setters
   const safeSetUser = useCallback((u: PiUser | null) => {
     if (isMountedRef.current) setUser(u);
   }, []);
@@ -47,7 +48,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (isMountedRef.current) setAppReady(ready);
   }, []);
 
-  // ✅ Lifecycle cleanup
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // ✅ Global error and unhandled rejection monitoring
+  // global error handlers (unchanged)
   useEffect(() => {
     let reloadTimeout: NodeJS.Timeout | null = null;
 
@@ -98,13 +98,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const REFRESH_COOLDOWN = 15 * 60 * 1000;
   const AUTH_TIMEOUT = 45 * 1000;
 
-  // ✅ Token verification
+  // --- Token verification (fixed: return false when no token unless bypass) ---
   const isTokenValid = async (accessToken?: string): Promise<boolean> => {
     try {
       if (shouldBypassAuth()) return true;
 
-      const token = accessToken || getPiAuthResult()?.accessToken || '';
-      if (!token) return true;
+      const token = accessToken || getPiAuthResult()?.accessToken;
+      // if there is no token, treat as invalid (force re-auth)
+      if (!token) return false;
 
       const result = await verifyPiAuthentication(token, user?.uid ?? '', user?.username ?? '');
       return !!result.verified;
@@ -114,14 +115,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // ✅ Cached session restoration
+  // --- Cached session restoration & dev bypass handling (unchanged logic, kept safe) ---
   useEffect(() => {
     if (shouldBypassAuth()) {
       secureLog.info('Development mode: bypassing authentication');
       const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
       safeSetUser(mockUser);
-      
-      // Setup Supabase session in dev mode to ensure RLS works
+
       const setupDevSession = async () => {
         try {
           secureLog.info('🔧 Setting up dev mode session...');
@@ -152,9 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (data.verified && data.supabase_token) {
             secureLog.info('🔐 Setting Supabase session with token...');
             const sessionPayload: any = { access_token: data.supabase_token };
-            if (data.refresh_token) {
-              sessionPayload.refresh_token = data.refresh_token;
-            }
+            if (data.refresh_token) sessionPayload.refresh_token = data.refresh_token;
             
             const { data: sessionData, error: sessionError } = await supabase.auth.setSession(sessionPayload);
 
@@ -166,24 +164,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 userId: sessionData?.user?.id,
                 hasSession: !!sessionData?.session
               });
-              
-              // Verify the session is actually set
               const { data: { session } } = await supabase.auth.getSession();
               if (session) {
                 secureLog.info('✅ Session verified - User ID:', session.user.id);
-                
-                // Test that the session works by making a simple query
                 const { data: testData, error: testError } = await supabase
                   .from('users')
                   .select('id')
                   .eq('id', session.user.id)
                   .single();
-                  
-                if (testError) {
-                  secureLog.warn('⚠️ Test query failed:', testError);
-                } else {
-                  secureLog.info('✅ Session working - test query succeeded');
-                }
+                if (testError) secureLog.warn('⚠️ Test query failed:', testError);
+                else secureLog.info('✅ Session working - test query succeeded');
               } else {
                 secureLog.warn('⚠️ Session not found after setSession');
                 toast.error('Dev mode: Session verification failed');
@@ -200,7 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       setupDevSession();
-      
+
       import('./authUtils').then(({ updateUserData }) => {
         updateUserData(mockUser, safeSetUser).catch(err =>
           secureLog.warn('Failed to create dev user in database:', err)
@@ -228,38 +218,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Delay session restore until SDK initializes
+    // Delay restore slightly to allow SDK load
     const timer = setTimeout(restoreSession, 1500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [safeSetUser]);
 
-  // ✅ Initialize Pi SDK
-  useEffect(() => {
-    if (initAttempted.current) return;
+  // --- Robust SDK initialization helper (retries + timeout) ---
+  const ensureSdkInitialized = useCallback(async (maxAttempts = 3, delayMs = 700): Promise<boolean> => {
+    if (isSdkInitialized) return true;
+    // prevent parallel inits
+    if (initAttempted.current && !isSdkInitialized) {
+      // If initAttempted but isn't initialized yet, still try a few times:
+      // fall through to attempts
+    }
     initAttempted.current = true;
 
-    const initSdk = async () => {
+    let attempt = 0;
+    while (attempt < maxAttempts) {
+      attempt++;
       try {
-        secureLog.info('Starting Pi Network SDK initialization...');
+        secureLog.info(`Attempting Pi SDK init (attempt ${attempt})...`);
         const result = await initializePiNetwork();
-        safeSetIsSdkInitialized(result);
-        secureLog.info('Pi Network SDK initialization complete:', result);
-      } catch (error) {
-        secureLog.error('Failed to initialize Pi SDK:', error);
-        toast.error('Failed to initialize Pi Network SDK. Some features may not work.');
-        safeSetIsSdkInitialized(false);
+        safeSetIsSdkInitialized(!!result);
+        if (result) {
+          secureLog.info('Pi SDK initialized successfully');
+          return true;
+        }
+        secureLog.warn('initializePiNetwork returned falsy result, retrying...');
+      } catch (err) {
+        secureLog.error('initializePiNetwork threw:', err);
       }
-    };
-    initSdk();
-  }, [safeSetIsSdkInitialized]);
+      // delay before next attempt
+      await new Promise((res) => setTimeout(res, delayMs));
+    }
+    secureLog.error('Pi SDK failed to initialize after attempts');
+    safeSetIsSdkInitialized(false);
+    return false;
+  }, [isSdkInitialized, safeSetIsSdkInitialized]);
 
-  // ✅ Login
+  // initialize once on mount (best-effort)
+  useEffect(() => {
+    (async () => {
+      await ensureSdkInitialized(3, 700);
+    })();
+  }, [ensureSdkInitialized]);
+
+  // --- Login flow (fixed cleanup + ensure SDK ready) ---
   const login = useCallback(async (): Promise<void> => {
     if (shouldBypassAuth()) {
       const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
       safeSetUser(mockUser);
-      
-      // Setup Supabase session in dev mode
       try {
         const response = await fetch('https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/verify-pi-auth?test=true', {
           method: 'POST',
@@ -272,23 +280,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         const data = await response.json();
-        
         if (data.verified && data.supabase_token) {
           const sessionPayload: any = { access_token: data.supabase_token };
-          if (data.refresh_token) {
-            sessionPayload.refresh_token = data.refresh_token;
-          }
-          
-          const { error: sessionError } = await supabase.auth.setSession(sessionPayload);
-          
-          if (!sessionError) {
-            secureLog.info('✅ Dev mode Supabase session established in login()');
-          }
+          if (data.refresh_token) sessionPayload.refresh_token = data.refresh_token;
+          await supabase.auth.setSession(sessionPayload);
+          secureLog.info('✅ Dev mode Supabase session established in login()');
         }
       } catch (error) {
         secureLog.error('Failed to setup dev Supabase session:', error);
       }
-      
       if (!devModeToastShown.current) {
         toast.success('Development mode: Logged in as mock user');
         devModeToastShown.current = true;
@@ -314,14 +314,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, AUTH_TIMEOUT);
 
     try {
-      if (!isSdkInitialized) {
-        const sdkResult = await initializePiNetwork();
-        safeSetIsSdkInitialized(sdkResult);
-        if (!sdkResult) throw new Error('SDK initialization failed');
-      }
+      // ensure the SDK is initialized before proceeding
+      const sdkReady = await ensureSdkInitialized(4, 600);
+      if (!sdkReady) throw new Error('SDK initialization failed');
 
       const permissionsGranted = await requestAuthPermissions(isSdkInitialized, safeSetIsLoading, safeSetAuthError);
-      if (!permissionsGranted) return;
+      if (!permissionsGranted) {
+        // Clean up properly if the user declined or permissions step failed
+        secureLog.warn('Permissions not granted or were declined by user');
+        if (authTimeoutRef.current) {
+          clearTimeout(authTimeoutRef.current);
+          authTimeoutRef.current = null;
+        }
+        safeSetIsLoading(false);
+        pendingAuthRef.current = false;
+        safeSetAppReady(true);
+        return;
+      }
 
       await performLogin(
         isSdkInitialized,
@@ -332,32 +341,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
 
       setLastRefresh(Date.now());
-      safeSetAppReady(true); // ✅ ensure app resumes
-    } catch (error) {
+      safeSetAppReady(true);
+    } catch (error: any) {
       console.error('Login process error:', error);
+      secureLog.error('Login failed:', error);
       toast.error(error instanceof Error ? error.message : 'Authentication failed.');
     } finally {
-      if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
-      authTimeoutRef.current = null;
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+        authTimeoutRef.current = null;
+      }
       safeSetIsLoading(false);
-      pendingAuthRef.current = false; // ✅ ensure reset
+      pendingAuthRef.current = false;
     }
-  }, [isSdkInitialized, AUTH_TIMEOUT, safeSetIsLoading, safeSetAuthError, safeSetIsSdkInitialized, safeSetUser, safeSetAppReady]);
+  }, [ensureSdkInitialized, isSdkInitialized, safeSetIsLoading, safeSetAuthError, safeSetUser, safeSetAppReady]);
 
-  // ✅ Offline handler
+  // offline handler
   const isOffline = useNetworkStatus(pendingAuthRef, login);
 
-  // ✅ Refresh user data
+  // refresh user data
   const refreshUserData = useCallback(async (force = false): Promise<void> => {
     const now = Date.now();
     if (!force && now - lastRefresh < REFRESH_COOLDOWN) return;
 
     if (!isSdkInitialized) {
-      try {
-        const result = await initializePiNetwork();
-        safeSetIsSdkInitialized(result);
-      } catch (error) {
-        console.error('Failed to init SDK during refresh:', error);
+      const ok = await ensureSdkInitialized(3, 600);
+      if (!ok) {
+        secureLog.error('Failed to init SDK during refresh: aborting refresh');
         return;
       }
     }
@@ -384,9 +394,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       safeSetIsLoading(false);
     }
-  }, [user, isSdkInitialized, lastRefresh, login, safeSetIsSdkInitialized]);
+  }, [user, isSdkInitialized, lastRefresh, login, ensureSdkInitialized]);
 
-  // ✅ Silent refresh
+  // silent refresh when appropriate
   useEffect(() => {
     if (user && !isOffline && isSdkInitialized) {
       const timer = setTimeout(() => refreshUserData(false), 1000);
@@ -394,23 +404,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user, isOffline, isSdkInitialized, refreshUserData]);
 
-  // ✅ Logout
+  // logout
   const logout = (): void => {
     localStorage.removeItem(STORAGE_KEY);
     safeSetUser(null);
     toast.info("You've been logged out");
   };
 
-  // ✅ Subscription check
+  // access helpers
   const hasAccess = useCallback(
     (requiredTier: SubscriptionTier): boolean => user ? checkAccess(user.subscriptionTier, requiredTier) : false,
     [user]
   );
 
-  // ✅ Admin check
   const isAdmin = user?.roles?.includes('admin') ?? false;
 
-  // ✅ Runtime token monitor
+  // runtime token monitor
   useEffect(() => {
     if (!user?.accessToken) return;
     const interval = setInterval(async () => {
@@ -423,7 +432,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearInterval(interval);
   }, [user, login]);
 
-  // ✅ Listen for "app-ready" events
+  // app-ready event
   useEffect(() => {
     const handleAppReady = () => safeSetAppReady(true);
     window.addEventListener('app-ready', handleAppReady);
@@ -451,3 +460,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
+export default AuthProvider;
