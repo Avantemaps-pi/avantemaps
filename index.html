@@ -1,49 +1,55 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- Security: Content Security Policy to mitigate XSS attacks -->
+
+    <!-- SECURITY: Pi-Compatible Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="
-      default-src * data: blob:;
-      script-src * 'unsafe-inline' 'unsafe-eval' blob:;
-      style-src * 'unsafe-inline';
-      img-src * data: blob:;
-      font-src * data:;
-      connect-src *;
-      frame-src *;
+      default-src 'self' https: blob: data:;
+      script-src 'self' https://sdk.minepi.com 'unsafe-inline' 'unsafe-eval';
+      style-src 'self' 'unsafe-inline' https:;
+      img-src 'self' https: data: blob:;
+      font-src 'self' https: data:;
+      connect-src 'self' https://api.minepi.com https://socialchain.app https:;
+      frame-src https:;
       object-src 'none';
       base-uri 'self';
       form-action 'self';
       upgrade-insecure-requests;
     " />
 
-    
     <title>Avante Maps - Discover Local Businesses with Pi Network</title>
-    
-    <!-- ✅ Load Pi SDK first -->
+
+    <!-- Load Pi SDK -->
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
     <script>
-      const isSandbox = window.location.hostname.includes("sandbox.minepi.com");
+      // Correct sandbox detection for Pi Testnet
+      const isSandbox =
+        window.location.hostname.includes("testnet") ||
+        window.location.hostname.includes("localhost") ||
+        window.location.hostname.includes("127.0.0.1");
 
       window.addEventListener("load", () => {
         if (window.Pi) {
-          console.log("✅ Pi SDK loaded successfully");
-          Pi.init({ version: "2.0", sandbox: isSandbox });
+          console.log("✅ Pi SDK loaded");
+          Pi.init({
+            version: "2.0",
+            sandbox: isSandbox,
+          });
         } else {
-          console.error("❌ Pi SDK failed to load — window.Pi is undefined");
+          console.error("❌ Pi SDK failed to load – window.Pi is undefined");
         }
       });
     </script>
-    
+
     <!-- Primary Meta Tags -->
     <meta name="title" content="Avante Maps - Local Business Discovery" />
     <meta name="description" content="Find and explore local businesses on Avante Maps. Register your business, get discovered by customers, and transact with Pi cryptocurrency." />
     <meta name="keywords" content="pi network, local businesses, business directory, cryptocurrency, pi payment, avante maps" />
     <meta name="author" content="Avante Maps Team" />
-    
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://avantemaps.com/" />
@@ -57,7 +63,7 @@
     <meta property="og:image:alt" content="Avante Maps - Local Business Directory" />
     <meta property="og:site_name" content="Avante Maps" />
     <meta property="og:locale" content="en_US" />
-    
+
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@AvanteMap" />
@@ -66,14 +72,28 @@
     <meta name="twitter:description" content="Find local businesses and pay with Pi Network cryptocurrency" />
     <meta name="twitter:image" content="/og-image.png" />
     <meta name="twitter:image:alt" content="Avante Maps Preview" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" type="module"></script>
+
+    <!-- Leaflet Maps -->
+    <link 
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      type="module"
+    ></script>
   </head>
 
   <body>
     <div id="root"></div>
-    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module" defer></script>
+
+    <!-- IMPORTANT: DO NOT REMOVE THIS COMMENT OR TAG -->
+    <script
+      src="https://cdn.gpteng.co/gptengineer.js"
+      type="module"
+      defer
+    ></script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
