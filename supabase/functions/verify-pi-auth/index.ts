@@ -201,31 +201,40 @@ Deno.serve(async (req: Request) => {
         console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
       }
 
-      // Create a Supabase session for this test user
-      console.log(`🔐 [${traceId}] [TEST] Creating Supabase session for user ${supabaseUserId}`);
-
-      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-        userId: supabaseUserId,
+      // Generate auth link to get tokens
+      console.log(`🔐 [${traceId}] [TEST] Generating auth tokens for user ${supabaseUserId}`);
+      
+      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email,
+        options: {
+          redirectTo: 'https://testnet.avantemaps.com/'
+        }
       });
 
-      if (sessionError || !sessionData?.session) {
-        console.error(`❌ [${traceId}] [TEST] Failed to create session:`, sessionError);
+      if (linkError || !linkData) {
+        console.error(`❌ [${traceId}] [TEST] Failed to generate tokens:`, linkError);
         return new Response(JSON.stringify({
           verified: false,
-          error: 'Session creation failed',
-          details: sessionError?.message || 'Could not create authentication session',
+          error: 'Token generation failed',
+          details: linkError?.message || 'Could not generate authentication tokens',
           traceId,
         }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      const { access_token, refresh_token } = sessionData.session;
+      console.log(`✅ [${traceId}] [TEST] Successfully generated tokens for user ${supabaseUserId}`);
+
+      // Extract token from the magic link
+      const tokenUrl = new URL(linkData.properties.action_link);
+      const access_token = tokenUrl.searchParams.get('token');
+      const refresh_token = tokenUrl.searchParams.get('refresh_token');
 
       return new Response(JSON.stringify({
         verified: true,
         testMode: true,
         user: { uid: supabaseUserId, pi_uid: uid, username, wallet_address: 'TEST_WALLET_123' },
         supabase_token: access_token,
-        refresh_token,
+        refresh_token: refresh_token,
         traceId,
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -339,26 +348,33 @@ Deno.serve(async (req: Request) => {
       console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
     }
 
-    // Create a Supabase session for this user
-    console.log(`🔐 [${traceId}] Creating auth session for user ${supabaseUserId}`);
+    // Generate auth link to get tokens
+    console.log(`🔐 [${traceId}] Generating auth tokens for user ${supabaseUserId}`);
     
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-      userId: supabaseUserId,
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+      options: {
+        redirectTo: 'https://testnet.avantemaps.com/'
+      }
     });
 
-    if (sessionError || !sessionData?.session) {
-      console.error(`❌ [${traceId}] Failed to create session:`, sessionError);
+    if (linkError || !linkData) {
+      console.error(`❌ [${traceId}] Failed to generate tokens:`, linkError);
       return new Response(JSON.stringify({
         verified: false,
         error: 'Token generation failed',
-        details: sessionError?.message || 'Could not create authentication session',
+        details: linkError?.message || 'Could not generate authentication tokens',
         traceId,
       }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    console.log(`✅ [${traceId}] Successfully created session for user ${supabaseUserId}`);
+    console.log(`✅ [${traceId}] Successfully generated tokens for user ${supabaseUserId}`);
 
-    const { access_token, refresh_token } = sessionData.session;
+    // Extract token from the magic link
+    const tokenUrl = new URL(linkData.properties.action_link);
+    const access_token = tokenUrl.searchParams.get('token');
+    const refresh_token = tokenUrl.searchParams.get('refresh_token');
 
     return new Response(JSON.stringify({
       verified: true,
@@ -369,7 +385,7 @@ Deno.serve(async (req: Request) => {
         wallet_address: user.wallet_address || null,
       },
       supabase_token: access_token,
-      refresh_token,
+      refresh_token: refresh_token,
       traceId,
     }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
