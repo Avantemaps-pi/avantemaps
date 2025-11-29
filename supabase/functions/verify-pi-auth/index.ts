@@ -228,7 +228,7 @@ Deno.serve(async (req: Request) => {
 
       // Use anon client to exchange hashed token for a real session
       const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
-        type: 'email',
+        type: 'magiclink',
         token_hash: linkData.properties.hashed_token,
       });
 
@@ -387,10 +387,10 @@ Deno.serve(async (req: Request) => {
     console.log(`✅ [${traceId}] Successfully generated tokens for user ${supabaseUserId}`);
 
     // Use anon client to exchange hashed token for a real session
-    const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
-      type: 'email',
-      token_hash: linkData.properties.hashed_token,
-    });
+      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+        type: 'magiclink',
+        token_hash: linkData.properties.hashed_token,
+      });
 
     if (verifyError || !verifyData?.session) {
       console.error(`❌ [${traceId}] Failed to verify OTP and create session:`, verifyError);
