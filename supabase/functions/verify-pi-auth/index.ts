@@ -203,41 +203,63 @@ Deno.serve(async (req: Request) => {
         console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
       }
 
-      // Generate auth link to get hashed token
       console.log(`🔐 [${traceId}] [TEST] Generating auth tokens for user ${supabaseUserId}`);
-      
-      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'magiclink',
-        email,
-        options: {
-          redirectTo: 'https://testnet.avantemaps.com/'
-        }
-      });
 
-      if (linkError || !linkData?.properties?.hashed_token) {
-        console.error(`❌ [${traceId}] [TEST] Failed to generate tokens:`, linkError);
-        return new Response(JSON.stringify({
-          verified: false,
-          error: 'Token generation failed',
-          details: linkError?.message || 'Could not generate authentication tokens',
-          traceId,
-        }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      let verifyData: any = null;
+      let verifyError: any = null;
+
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'magiclink',
+          email,
+          options: {
+            redirectTo: 'https://testnet.avantemaps.com/'
+          }
+        });
+
+        if (linkError || !linkData?.properties?.hashed_token) {
+          console.error(`❌ [${traceId}] [TEST] Failed to generate tokens (attempt ${attempt}):`, linkError);
+          if (attempt === 2) {
+            return new Response(JSON.stringify({
+              verified: false,
+              error: 'Token generation failed',
+              details: linkError?.message || 'Could not generate authentication tokens',
+              traceId,
+            }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          continue;
+        }
+
+        console.log(`✅ [${traceId}] [TEST] Successfully generated tokens for user ${supabaseUserId} (attempt ${attempt})`);
+
+        const verifyResult = await supabase.auth.verifyOtp({
+          type: 'magiclink',
+          token_hash: linkData.properties.hashed_token,
+        });
+
+        verifyData = verifyResult.data;
+        verifyError = verifyResult.error;
+
+        if (!verifyError && verifyData?.session) {
+          break;
+        }
+
+        // Handle edge case where the one-time token expires immediately; retry once
+        const errorCode = (verifyError as any)?.code;
+        console.warn(`❌ [${traceId}] [TEST] Failed to verify OTP and create session (attempt ${attempt}):`, verifyError);
+
+        if (attempt === 2 || errorCode !== 'otp_expired') {
+          break;
+        }
+
+        console.log(`🔁 [${traceId}] [TEST] OTP expired, retrying token generation...`);
       }
 
-      console.log(`✅ [${traceId}] [TEST] Successfully generated tokens for user ${supabaseUserId}`);
-
-      // Use anon client to exchange hashed token for a real session
-      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
-        type: 'magiclink',
-        token_hash: linkData.properties.hashed_token,
-      });
-
       if (verifyError || !verifyData?.session) {
-        console.error(`❌ [${traceId}] [TEST] Failed to verify OTP and create session:`, verifyError);
         return new Response(JSON.stringify({
           verified: false,
           error: 'Session creation failed',
-          details: verifyError?.message || 'Could not create authentication session',
+          details: (verifyError as any)?.message || 'Could not create authentication session',
           traceId,
         }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
@@ -363,41 +385,62 @@ Deno.serve(async (req: Request) => {
       console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
     }
 
-    // Generate auth link to get hashed token
     console.log(`🔐 [${traceId}] Generating auth tokens for user ${supabaseUserId}`);
     
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-      options: {
-        redirectTo: 'https://testnet.avantemaps.com/'
+    let verifyData: any = null;
+    let verifyError: any = null;
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email,
+        options: {
+          redirectTo: 'https://testnet.avantemaps.com/'
+        }
+      });
+
+      if (linkError || !linkData?.properties?.hashed_token) {
+        console.error(`❌ [${traceId}] Failed to generate tokens (attempt ${attempt}):`, linkError);
+        if (attempt === 2) {
+          return new Response(JSON.stringify({
+            verified: false,
+            error: 'Token generation failed',
+            details: linkError?.message || 'Could not generate authentication tokens',
+            traceId,
+          }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        continue;
       }
-    });
 
-    if (linkError || !linkData?.properties?.hashed_token) {
-      console.error(`❌ [${traceId}] Failed to generate tokens:`, linkError);
-      return new Response(JSON.stringify({
-        verified: false,
-        error: 'Token generation failed',
-        details: linkError?.message || 'Could not generate authentication tokens',
-        traceId,
-      }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
+      console.log(`✅ [${traceId}] Successfully generated tokens for user ${supabaseUserId} (attempt ${attempt})`);
 
-    console.log(`✅ [${traceId}] Successfully generated tokens for user ${supabaseUserId}`);
-
-    // Use anon client to exchange hashed token for a real session
-      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+      const verifyResult = await supabase.auth.verifyOtp({
         type: 'magiclink',
         token_hash: linkData.properties.hashed_token,
       });
 
+      verifyData = verifyResult.data;
+      verifyError = verifyResult.error;
+
+      if (!verifyError && verifyData?.session) {
+        break;
+      }
+
+      const errorCode = (verifyError as any)?.code;
+      console.error(`❌ [${traceId}] Failed to verify OTP and create session (attempt ${attempt}):`, verifyError);
+
+      if (attempt === 2 || errorCode !== 'otp_expired') {
+        break;
+      }
+
+      console.log(`🔁 [${traceId}] OTP expired, retrying token generation...`);
+    }
+
     if (verifyError || !verifyData?.session) {
-      console.error(`❌ [${traceId}] Failed to verify OTP and create session:`, verifyError);
       return new Response(JSON.stringify({
         verified: false,
         error: 'Token generation failed',
-        details: verifyError?.message || 'Could not create authentication session',
+        details: (verifyError as any)?.message || 'Could not create authentication session',
         traceId,
       }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
