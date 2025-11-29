@@ -12,15 +12,17 @@ interface VerifyAuthRequest {
   username: string;
 }
 
-// Create Supabase Admin client (Service Role Key)
+// Admin client (service role) for user management and DB writes
 const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-
-
-// Rate limiting tracking
+// Public client (anon key) for creating sessions via verifyOtp
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_ANON_KEY')!
+);
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
 const MAX_REQUESTS = 10; // 10 requests per minute
@@ -201,7 +203,7 @@ Deno.serve(async (req: Request) => {
         console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
       }
 
-      // Generate auth link to get tokens
+      // Generate auth link to get hashed token
       console.log(`🔐 [${traceId}] [TEST] Generating auth tokens for user ${supabaseUserId}`);
       
       const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
@@ -212,7 +214,7 @@ Deno.serve(async (req: Request) => {
         }
       });
 
-      if (linkError || !linkData) {
+      if (linkError || !linkData?.properties?.hashed_token) {
         console.error(`❌ [${traceId}] [TEST] Failed to generate tokens:`, linkError);
         return new Response(JSON.stringify({
           verified: false,
@@ -224,17 +226,30 @@ Deno.serve(async (req: Request) => {
 
       console.log(`✅ [${traceId}] [TEST] Successfully generated tokens for user ${supabaseUserId}`);
 
-      // Extract token from the magic link
-      const tokenUrl = new URL(linkData.properties.action_link);
-      const access_token = tokenUrl.searchParams.get('token');
-      const refresh_token = tokenUrl.searchParams.get('refresh_token');
+      // Use anon client to exchange hashed token for a real session
+      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+        type: 'email',
+        token_hash: linkData.properties.hashed_token,
+      });
+
+      if (verifyError || !verifyData?.session) {
+        console.error(`❌ [${traceId}] [TEST] Failed to verify OTP and create session:`, verifyError);
+        return new Response(JSON.stringify({
+          verified: false,
+          error: 'Session creation failed',
+          details: verifyError?.message || 'Could not create authentication session',
+          traceId,
+        }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const { access_token, refresh_token } = verifyData.session;
 
       return new Response(JSON.stringify({
         verified: true,
         testMode: true,
         user: { uid: supabaseUserId, pi_uid: uid, username, wallet_address: 'TEST_WALLET_123' },
         supabase_token: access_token,
-        refresh_token: refresh_token,
+        refresh_token,
         traceId,
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -348,7 +363,7 @@ Deno.serve(async (req: Request) => {
       console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
     }
 
-    // Generate auth link to get tokens
+    // Generate auth link to get hashed token
     console.log(`🔐 [${traceId}] Generating auth tokens for user ${supabaseUserId}`);
     
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
@@ -359,7 +374,7 @@ Deno.serve(async (req: Request) => {
       }
     });
 
-    if (linkError || !linkData) {
+    if (linkError || !linkData?.properties?.hashed_token) {
       console.error(`❌ [${traceId}] Failed to generate tokens:`, linkError);
       return new Response(JSON.stringify({
         verified: false,
@@ -371,10 +386,25 @@ Deno.serve(async (req: Request) => {
 
     console.log(`✅ [${traceId}] Successfully generated tokens for user ${supabaseUserId}`);
 
-    // Extract token from the magic link
-    const tokenUrl = new URL(linkData.properties.action_link);
-    const access_token = tokenUrl.searchParams.get('token');
-    const refresh_token = tokenUrl.searchParams.get('refresh_token');
+    // Use anon client to exchange hashed token for a real session
+    const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+      type: 'email',
+      token_hash: linkData.properties.hashed_token,
+    });
+
+    if (verifyError || !verifyData?.session) {
+      console.error(`❌ [${traceId}] Failed to verify OTP and create session:`, verifyError);
+      return new Response(JSON.stringify({
+        verified: false,
+        error: 'Token generation failed',
+        details: verifyError?.message || 'Could not create authentication session',
+        traceId,
+      }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    console.log(`✅ [${traceId}] Successfully created session for user ${supabaseUserId}`);
+
+    const { access_token, refresh_token } = verifyData.session;
 
     return new Response(JSON.stringify({
       verified: true,
@@ -385,7 +415,7 @@ Deno.serve(async (req: Request) => {
         wallet_address: user.wallet_address || null,
       },
       supabase_token: access_token,
-      refresh_token: refresh_token,
+      refresh_token,
       traceId,
     }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
