@@ -324,15 +324,19 @@ export const clearPiAuth = () => piNetworkCore.clearAuth();
 export const getPiAuthResult = () => piNetworkCore.getAuthResult();
 
 // export determineSandboxMode for other modules
-export const determineSandboxMode = (): boolean => {
-  try {
-    return typeof window !== 'undefined'
-      ? (window.location.hostname || '').toLowerCase().includes('testnet') ||
-        (window.location.hostname || '').toLowerCase().includes('localhost') ||
-        (window.location.hostname || '').toLowerCase().includes('127.0.0.1') ||
-        (window.location.hostname || '').toLowerCase().includes('dev')
-      : false;
-};
+private determineSandboxMode(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const hostname = window.location.hostname.toLowerCase();
+
+  return (
+    hostname === "localhost" ||
+    hostname.includes("127.0.0.1") ||
+    hostname.includes("dev") ||
+    hostname.includes("sandbox") ||
+    hostname.endsWith("minepi.com")
+  );
+}
 
 // legacy exports
 export const initializePiNetwork = initializePi;
