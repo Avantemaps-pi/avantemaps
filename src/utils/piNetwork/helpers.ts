@@ -1,6 +1,6 @@
 /**
- * src/utils/piNetwork/helpers.ts
- * Safe, consistent helpers used by the Pi Network core module.
+ * Pi Network – helpers
+ * Clean, safe utilities used by core.ts
  */
 
 declare global {
@@ -11,18 +11,18 @@ declare global {
 }
 
 /**
- * Detect whether the app is running inside the Pi Browser.
- * - Uses safe user-agent checks
- * - Also checks window.Pi existence
+ * Detects Pi Browser reliably.
  */
 export const isPiBrowser = (): boolean => {
   try {
     if (typeof navigator === "undefined") return false;
 
-    const ua = navigator.userAgent || "";
+    const ua = navigator.userAgent.toLowerCase();
     return (
-      /PiBrowser|Pi Browser|Minepi|minepi/i.test(ua) ||
-      (typeof window !== "undefined" && !!window.Pi)
+      ua.includes("pibrowser") ||
+      ua.includes("pi browser") ||
+      ua.includes("minepi") ||
+      !!(window && (window as any).Pi)
     );
   } catch {
     return false;
@@ -30,7 +30,7 @@ export const isPiBrowser = (): boolean => {
 };
 
 /**
- * Returns detailed browser info for debugging.
+ * Returns basic browser diagnostics.
  */
 export const getBrowserInfo = () => {
   try {
@@ -54,33 +54,34 @@ export const getBrowserInfo = () => {
 };
 
 /**
- * isPiNetworkAvailable():
- * - Ensures window.Pi exists
- * - Ensures authenticate() exists (core requirement)
- * - Ensures initialize() was successfully executed
+ * Determines if the Pi SDK is really available and initialized.
  */
 export const isPiNetworkAvailable = (): boolean => {
   try {
     if (typeof window === "undefined") return false;
 
-    const pi = window.Pi;
+    const pi = (window as any).Pi;
     if (!pi) return false;
 
-    const hasAuth = typeof pi.authenticate === "function";
-    const initialized = !!window.__piInitialized;
+    const hasAuthMethod = typeof pi.authenticate === "function";
+    const isInit = !!(window as any).__piInitialized;
 
-    return hasAuth && initialized;
+    return hasAuthMethod && isInit;
   } catch {
     return false;
   }
 };
 
 /**
- * Checks if session expired based on timestamp + timeout
+ * Session expiration util (used by auth logic in core.ts)
  */
 export const isSessionExpired = (
   lastAuthenticated: number,
   timeout: number
 ): boolean => {
-  return Date.now() - lastAuthenticated > timeout;
+  try {
+    return Date.now() - lastAuthenticated > timeout;
+  } catch {
+    return true;
+  }
 };
