@@ -1,62 +1,59 @@
-
 /**
- * Helper utilities for Pi Network SDK interactions
+ * src/utils/piNetwork/helpers.ts
+ * Robust helpers for Pi presence checks and debug info.
  */
 
-// Check if Pi Network SDK is available
-export const isPiNetworkAvailable = (): boolean => {
-  if (typeof window === "undefined") return false;
+declare global {
+  interface Window {
+    Pi?: any;
+    __piInitialized?: boolean;
+  }
+}
 
-  const pi = (window as any).Pi;
-  if (!pi) return false;
-
-  // ✅ Make sure all key SDK methods exist
-  const hasCoreMethods =
-    typeof pi.init === "function" &&
-    typeof pi.authenticate === "function" &&
-    typeof pi.createPayment === "function";
-
-  // ✅ Check if we’ve already marked SDK as ready
-  const isInitialized = (window as any).__piInitialized === true;
-
-  return hasCoreMethods && isInitialized;
-};
-
-// Check if a session is expired
-export const isSessionExpired = (lastAuthenticated: number, timeout: number): boolean => {
-  return Date.now() - lastAuthenticated > timeout;
-};
-
-// Detect Pi Browser environment
 export const isPiBrowser = (): boolean => {
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+  try {
+    if (typeof navigator === 'undefined') return false;
+    const ua = navigator.userAgent || '';
+    // match common tokens, case-insensitive
+    return /PiBrowser|Pi Browser|Minepi|minepi/i.test(ua) || !!(window && (window as any).Pi);
+  } catch {
     return false;
   }
-  
-  const userAgent = navigator.userAgent.toLowerCase();
-  return userAgent.includes('pi browser') || userAgent.includes('minepi');
 };
 
-// Get browser environment details for debugging
-export const getBrowserInfo = (): {
-  isPi: boolean;
-  userAgent: string;
-  platform: string;
-  vendor: string;
-} => {
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+export const getBrowserInfo = () => {
+  try {
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
     return {
-      isPi: false,
-      userAgent: 'unknown',
-      platform: 'unknown',
-      vendor: 'unknown'
+      userAgent: ua,
+      isPiBrowser: isPiBrowser(),
+      platform: typeof navigator !== 'undefined' ? navigator.platform : 'unknown',
+      vendor: typeof navigator !== 'undefined' ? navigator.vendor : 'unknown'
     };
+  } catch {
+    return { userAgent: '', isPiBrowser: false, platform: 'unknown', vendor: 'unknown' };
   }
-  
-  return {
-    isPi: isPiBrowser(),
-    userAgent: navigator.userAgent,
-    platform: navigator.platform,
-    vendor: navigator.vendor
-  };
+};
+
+/**
+ * isPiNetworkAvailable:
+ * - checks that window.Pi exists
+ * - checks that authenticate() is present (the essential RW method)
+ * - checks the global __piInitialized flag (set by core initialize())
+ */
+export const isPiNetworkAvailable = (): boolean => {
+  try {
+    if (typeof window === 'undefined') return false;
+    const pi = (window as any).Pi;
+    if (!pi) return false;
+    const hasAuth = typeof pi.authenticate === 'function';
+    const initialized = !!(window as any).__piInitialized;
+    return hasAuth && initialized;
+  } catch {
+    return false;
+  }
+};
+
+export const isSessionExpired = (lastAuthenticated: number, timeout: number): boolean => {
+  return Date.now() - lastAuthenticated > timeout;
 };
