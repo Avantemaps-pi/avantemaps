@@ -323,21 +323,6 @@ export const setIncompletePaymentHandler = (handler: (p: PaymentDTO) => void) =>
 export const clearPiAuth = () => piNetworkCore.clearAuth();
 export const getPiAuthResult = () => piNetworkCore.getAuthResult();
 
-// export determineSandboxMode for other modules
-private determineSandboxMode(): boolean {
-  if (typeof window === "undefined") return false;
-
-  const hostname = window.location.hostname.toLowerCase();
-
-  return (
-    hostname === "localhost" ||
-    hostname.includes("127.0.0.1") ||
-    hostname.includes("dev") ||
-    hostname.includes("sandbox") ||
-    hostname.endsWith("minepi.com")
-  );
-}
-
 // legacy exports
 export const initializePiNetwork = initializePi;
 export const requestUserPermissions = async () => {
