@@ -1,132 +1,54 @@
+/**
+ * Pi Payment Utilities – Clean Rewrite
+ * ------------------------------------
+ * Works with the new core.ts (Option A rewrite)
+ */
+
 import {
   initializePiNetwork,
   createPiPayment,
-  setIncompletePaymentHandler,
   getPiAuthResult,
-  determineSandboxMode
+  setIncompletePaymentHandler,
 } from '../piNetwork/core';
 
+import type {
+  PiPaymentInitiateOptions,
+  PiPaymentCallbacks,
+} from '../piNetwork/types';
+
 /**
- * Full Payment Flow:
- * 1. Initialize Pi Network SDK
- * 2. Authenticate user if needed
- * 3. Create a payment
- * 4. Call your server to approve
- * 5. Complete the payment
- * 6. Handle incomplete payments
+ * Ensures the Pi SDK is fully initialized before doing anything.
  */
+export async function initPiForPayments(): Promise<void> {
+  const ok = await initializePiNetwork();
 
-export interface PiPaymentMetadata {
-  businessId?: string;
-  subscriptionTier?: string;
-  [key: string]: any;
-}
-
-export interface CreatePaymentInput {
-  amount: number;
-  memo: string;
-  metadata?: PiPaymentMetadata;
-}
-
-export interface ServerPaymentResponse {
-  status: 'ok' | 'error';
-  error?: string;
-}
-
-export interface PaymentResult {
-  ok: boolean;
-  paymentId?: string;
-  error?: string;
-  raw?: any;
-}
-
-let initialized = false;
-
-async function ensureInitialized(): Promise<void> {
-  if (!initialized) {
-    await initializePiNetwork();
-    initialized = true;
+  if (!ok) {
+    throw new Error('Failed to initialize Pi Network SDK');
   }
 }
 
-async function authenticateIfNeeded() {
-  const result = await getPiAuthResult();
-  if (result?.user) return result.user;
-  throw new Error('User is not authenticated with Pi.');
+/**
+ * Start a payment (full metadata + callbacks).
+ * This is now the unified entry point your UI calls.
+ */
+export async function startPayment(
+  options: PiPaymentInitiateOptions,
+  callbacks?: PiPaymentCallbacks
+) {
+  // Guarantee SDK + auth loaded
+  await initPiForPayments();
+
+  // Only then create the payment
+  return await createPiPayment(options, callbacks);
 }
 
-async function approvePaymentOnServer(paymentId: string): Promise<ServerPaymentResponse> {
-  const res = await fetch('/api/pi/approve', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ paymentId })
-  });
-  return res.json();
-}
+/**
+ * Fetches the latest Pi Auth payload from localStorage (if any).
+ * Useful for restoring sessions after reload.
+ */
+export { getPiAuthResult };
 
-async function completePaymentOnServer(paymentId: string): Promise<ServerPaymentResponse> {
-  const res = await fetch('/api/pi/complete', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ paymentId })
-  });
-  return res.json();
-}
-
-export function registerIncompletePaymentHandler() {
-  setIncompletePaymentHandler(async (payment) => {
-    if (!payment.identifier) return;
-
-    try {
-      await approvePaymentOnServer(payment.identifier);
-      await completePaymentOnServer(payment.identifier);
-    } catch (err) {
-      console.error('Failed incomplete payment recovery:', err);
-    }
-  });
-}
-
-export async function createFullPayment(
-  input: CreatePaymentInput
-): Promise<PaymentResult> {
-  try {
-    await ensureInitialized();
-
-    const user = await authenticateIfNeeded();
-    if (!user) throw new Error('Pi authentication failed.');
-
-    const sandbox = determineSandboxMode();
-
-    const payment = await createPiPayment({
-      amount: input.amount,
-      memo: input.memo,
-      metadata: input.metadata ?? {},
-      sandbox,
-    });
-
-    if (!payment?.identifier) {
-      throw new Error('Payment was created but returned no identifier.');
-    }
-
-    const approved = await approvePaymentOnServer(payment.identifier);
-    if (approved.status !== 'ok') {
-      throw new Error(approved.error || 'Server approval failed.');
-    }
-
-    const completed = await completePaymentOnServer(payment.identifier);
-    if (completed.status !== 'ok') {
-      throw new Error(completed.error || 'Server completion failed.');
-    }
-
-    return {
-      ok: true,
-      paymentId: payment.identifier,
-      raw: payment
-    };
-  } catch (err: any) {
-    return {
-      ok: false,
-      error: err?.message || 'Unknown error in createFullPayment'
-    };
-  }
-}
+/**
+ * Registers the cross-session handler for unfinished payments.
+ */
+export { setIncompletePaymentHandler };
