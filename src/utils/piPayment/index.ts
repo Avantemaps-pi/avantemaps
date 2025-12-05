@@ -1,7 +1,23 @@
 
-import { executeSubscriptionPayment, isPaymentInProgress, resetPaymentState } from './payments';
+import { 
+  executeSubscriptionPayment, 
+  isPaymentInProgress, 
+  resetPaymentState,
+  startPayment,
+  initPiForPayments,
+  getPiAuthResult,
+  setIncompletePaymentHandler,
+} from './payments';
 
-export { executeSubscriptionPayment, isPaymentInProgress, resetPaymentState };
+export { 
+  executeSubscriptionPayment, 
+  isPaymentInProgress, 
+  resetPaymentState,
+  startPayment,
+  initPiForPayments,
+  getPiAuthResult,
+  setIncompletePaymentHandler,
+};
 
 // Export pricing functions
 export { getSubscriptionPrice } from './pricing';

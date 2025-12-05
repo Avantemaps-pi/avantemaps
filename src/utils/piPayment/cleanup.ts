@@ -7,7 +7,7 @@
 
 import { toast } from 'sonner';
 import { cleanupStalePayments } from '@/api/payments/cleanupStalePayments';
-import { getPiAuthResult, clearPiAuth, initializePi, authenticateUser } from '../piNetwork/core';
+import { getPiAuthResult, clearPiAuth, initializePiNetwork, authenticateUser } from '../piNetwork/core';
 
 /**
  * Clear any stored local payment data
@@ -83,7 +83,7 @@ export const forceResolvePendingPayments = async (): Promise<boolean> => {
 export const canProceedWithPayment = async (): Promise<boolean> => {
   try {
     // Ensure we have authentication
-    let authResult = getPiAuthResult();
+    const authResult = getPiAuthResult();
     if (!authResult) {
       return false; // Need authentication first
     }

@@ -4,7 +4,24 @@
  */
 
 // Export core SDK functionality
-export { initializePiNetwork, isSdkInitialized, requestUserPermissions, forceSdkReinitialization, determineSandboxMode } from './core';
+export { 
+  initializePiNetwork, 
+  isSdkInitialized, 
+  requestUserPermissions, 
+  forceSdkReinitialization, 
+  determineSandboxMode,
+  authenticate,
+  authenticateUser,
+  getPiAuthResult,
+  clearPiAuth,
+  createPayment,
+  createPiPayment,
+  setIncompletePaymentHandler,
+  initializePi,
+  initPi,
+  PiClient,
+  piNetworkCore,
+} from './core';
 
 // Export helpers
 export { isPiNetworkAvailable, isSessionExpired, isPiBrowser, getBrowserInfo } from './helpers';
@@ -17,3 +34,15 @@ export { verifyPiAuthentication, getDetailedAuthError } from './verification';
 
 // Export types
 export { SubscriptionTier } from './types';
+export type { 
+  AuthResult, 
+  PaymentDTO, 
+  PaymentCallbacks, 
+  PiUserAuthResult,
+  PiPaymentDTO,
+  PiPaymentCallbacks,
+  PiCallbacks,
+  PiConfig,
+  PiInitData,
+  PiPaymentInitiateOptions,
+} from './types';

@@ -25,7 +25,7 @@ interface OGMetadata {
   type: 'website' | 'article' | 'business.business' | 'profile';
   url: string;
   title: string;
-  description: string;
+  description?: string;
   image?: OGImage | OGImage[];
   site_name?: string;
   locale?: string;

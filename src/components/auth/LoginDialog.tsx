@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from '@/context/auth';
 import { isPiNetworkAvailable } from '@/utils/piNetwork';
 import AuthTroubleshooting from './AuthTroubleshooting';
-import { authenticateUser } from '@/utils/piNetwork/core';
+import { authenticateUser, initializePiNetwork } from '@/utils/piNetwork/core';
 import { secureLog } from '@/utils/secureLogger';
 
 interface LoginDialogProps {
@@ -65,8 +65,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
       // ✅ STEP 1: Check SDK readiness
       if (!window.Pi || typeof window.Pi.authenticate !== "function") {
         secureLog.warn("⚠️ Pi SDK not ready. Attempting to reinitialize...");
-        const { piNetworkCore } = await import("@/utils/piNetwork/core");
-        await piNetworkCore.initialize();
+        await initializePiNetwork();
         
         if (!window.Pi || typeof window.Pi.authenticate !== "function") {
           alert("Pi SDK not loaded yet. Please refresh or open this page in Pi Browser.");
