@@ -1,20 +1,12 @@
-/**
- * src/utils/piNetwork/core.ts
- *
- * Final, robust Pi SDK loader & core wrapper.
- * - Idempotent SDK loader
- * - Public determineSandboxMode()
- * - Dev mock fallback (import.meta.env.DEV)
- * - Payment callbacks support
- * - Re-init / retry logic
- * - Minimal session persistence (sessionStorage)
- *
- * Usage:
- *  import { initializePiNetwork, authenticateUser, getPiAuthResult, determineSandboxMode } from '@/utils/piNetwork/core';
- */
+// ======================
+// Clean, Full-Feature core.ts
+// ======================
 
 import { SubscriptionTier } from './types';
 
+/*********************************
+ * Types
+ *********************************/
 export interface AuthResult {
   accessToken: string;
   user: {
@@ -68,6 +60,9 @@ export interface PaymentDTO {
   };
 }
 
+/*********************************
+ * Globals
+ *********************************/
 declare global {
   interface Window {
     Pi?: any;
@@ -75,447 +70,293 @@ declare global {
       loading: boolean;
       loaded: boolean;
       error?: string | null;
+      promise?: Promise<boolean> | null;
       scriptEl?: HTMLScriptElement | null;
-      promise?: Promise<boolean>;
       lastInitAttempt?: number;
     };
     __piAuthSession?: {
-      user?: { uid: string; username: string; wallet_address?: string; roles?: string[] };
+      user?: AuthResult['user'];
       lastAuthenticated?: number;
     } | null;
-
-    /** ✅ NEW: Required by helpers.ts */
     __piInitialized?: boolean;
   }
 }
 
-/* ========== Configuration ========== */
+/*********************************
+ * Config
+ *********************************/
 const SDK_URL = 'https://sdk.minepi.com/pi-sdk.js';
-const LOAD_TIMEOUT = 15_000;
-const INIT_TIMEOUT = 6_000;
-const DEFAULT_RETRY_ATTEMPTS = 2;
-const SESSION_STORAGE_KEY = 'avante_pi_auth_v1';
-/* =================================== */
+const LOAD_TIMEOUT = 15000;
+const INIT_TIMEOUT = 6000;
+const RETRIES = 2;
+const SESSION_KEY = 'avante_pi_auth_v1';
 
+/*********************************
+ * Core Class
+ *********************************/
 class PiNetworkCore {
-  private isInitialized = false;
-  private authResult: AuthResult | null = null;
-  private incompletePaymentHandler: ((p: PaymentDTO) => void) | null = null;
-  private initInProgressPromise: Promise<boolean> | null = null;
+  private initialized = false;
+  private auth: AuthResult | null = null;
+  private inProgressInit: Promise<boolean> | null = null;
+  private incompleteHandler: ((p: PaymentDTO) => void) | null = null;
 
-  private async loadSdkScript(timeout = LOAD_TIMEOUT): Promise<boolean> {
+  /*********************************
+   * SDK Loader
+   *********************************/
+  private async loadSdk(timeout = LOAD_TIMEOUT): Promise<boolean> {
     if (typeof window === 'undefined') return false;
 
+    // Already loaded
     if (window.Pi) {
-      window.__piInitState = window.__piInitState || {
-        loading: false,
-        loaded: true,
-        error: null,
-        scriptEl: null,
-        promise: Promise.resolve(true)
-      };
+      window.__piInitState = { loading: false, loaded: true, scriptEl: null, promise: null };
       return true;
     }
 
+    // If loading is already happening
     if (window.__piInitState?.promise) {
-      try {
-        return await window.__piInitState.promise;
-      } catch {}
+      return window.__piInitState.promise;
     }
 
-    const existing = document.querySelector<HTMLScriptElement>('script[src*="pi-sdk.js"]');
+    const script = document.createElement('script');
+    script.src = SDK_URL;
+    script.async = true;
+    script.defer = true;
 
-    let externallyResolved = false;
     const promise = new Promise<boolean>((resolve) => {
-      const cleanupResolve = (val: boolean) => {
-        if (externallyResolved) return;
-        externallyResolved = true;
-        window.__piInitState = window.__piInitState || {
-          loading: false,
-          loaded: val,
-          error: val ? null : 'load_failed',
-          scriptEl: existing ?? null,
-          promise: undefined
-        };
-        resolve(val);
+      let resolved = false;
+      const finish = (ok: boolean) => {
+        if (resolved) return;
+        resolved = true;
+        resolve(ok);
       };
 
-      const t = setTimeout(() => cleanupResolve(false), timeout);
-
-      const onLoad = () => {
+      const t = setTimeout(() => finish(false), timeout);
+      script.onload = () => {
         clearTimeout(t);
-        cleanupResolve(!!window.Pi);
+        finish(!!window.Pi);
       };
-      const onError = () => {
+      script.onerror = () => {
         clearTimeout(t);
-        cleanupResolve(false);
+        finish(false);
       };
-
-      if (existing) {
-        existing.addEventListener('load', onLoad, { once: true });
-        existing.addEventListener('error', onError, { once: true });
-
-        if ((window as any).Pi) {
-          clearTimeout(t);
-          cleanupResolve(true);
-        }
-      } else {
-        const script = document.createElement('script');
-        script.src = SDK_URL;
-        script.async = true;
-        script.defer = true;
-        script.setAttribute('data-pi-sdk', 'true');
-
-        script.addEventListener('load', onLoad, { once: true });
-        script.addEventListener('error', onError, { once: true });
-
-        document.head.appendChild(script);
-        window.__piInitState = {
-          loading: true,
-          loaded: false,
-          error: null,
-          scriptEl: script,
-          promise: undefined
-        };
-      }
     });
 
-    window.__piInitState = window.__piInitState || {
+    window.__piInitState = {
       loading: true,
       loaded: false,
-      error: null,
-      scriptEl: null,
+      scriptEl: script,
       promise
     };
-    window.__piInitState.promise = promise;
-    return await promise;
+
+    document.head.appendChild(script);
+    return promise;
   }
 
+  /*********************************
+   * Sandbox mode detection
+   *********************************/
   public determineSandboxMode(): boolean {
     try {
-      if (typeof window === 'undefined') return false;
-      const hostname = (window.location?.hostname || '').toLowerCase();
+      const h = window.location.hostname.toLowerCase();
       return (
-        hostname.includes('testnet') ||
-        hostname.includes('localhost') ||
-        hostname.includes('127.0.0.1') ||
-        hostname.includes('dev') ||
-        hostname.includes('staging')
+        h.includes('localhost') ||
+        h.includes('127.0.0.1') ||
+        h.includes('dev') ||
+        h.includes('staging') ||
+        h.includes('test')
       );
     } catch {
       return false;
     }
   }
 
-  public async initialize(retries = DEFAULT_RETRY_ATTEMPTS): Promise<boolean> {
-    if (this.isInitialized) return true;
-    if (this.initInProgressPromise) return this.initInProgressPromise;
+  /*********************************
+   * Initialization
+   *********************************/
+  public async initialize(retries = RETRIES): Promise<boolean> {
+    if (this.initialized) return true;
+    if (this.inProgressInit) return this.inProgressInit;
 
-    this.initInProgressPromise = (async (): Promise<boolean> => {
+    this.inProgressInit = (async () => {
       let attempt = 0;
-
       while (attempt <= retries) {
         attempt++;
-
         try {
-          const loaded = await this.loadSdkScript();
+          const loaded = await this.loadSdk();
           if (!loaded) {
             if (import.meta.env.DEV) {
-              // @ts-ignore
-              window.Pi = window.Pi || {
-                init: () => {},
-                authenticate: async () => ({ user: { uid: 'dev', username: 'dev_user' }, accessToken: 'dev_token' }),
-                createPayment: () => {}
-              };
-            } else {
-              continue;
-            }
+              window.Pi = this.mockPi();
+            } else continue;
           }
 
-          if (!window.Pi) {
-            if (import.meta.env.DEV) {
-              // @ts-ignore
-              window.Pi = {
-                init: () => {},
-                authenticate: async () => ({ user: { uid: 'dev', username: 'dev_user' }, accessToken: 'dev_token' }),
-                createPayment: () => {}
-              };
-            } else {
-              throw new Error('Pi SDK not present after loading');
-            }
-          }
+          if (!window.Pi) throw new Error('Pi SDK missing after load');
 
+          // Init call
           const sandbox = this.determineSandboxMode();
-          try {
-            const maybe = window.Pi.init?.({ version: '2.0', sandbox });
-            if (maybe?.then) {
-              await Promise.race([
-                maybe,
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Pi.init timed out')), INIT_TIMEOUT))
-              ]);
-            } else {
-              await new Promise((res) => setTimeout(res, 250));
-            }
-          } catch (e) {
-            throw e;
+          const initResult = window.Pi.init?.({ version: '2.0', sandbox });
+
+          if (initResult?.then) {
+            await Promise.race([
+              initResult,
+              new Promise((_, reject) => setTimeout(() => reject(new Error('init timeout')), INIT_TIMEOUT))
+            ]);
           }
 
           if (typeof window.Pi.authenticate !== 'function') {
-            throw new Error('Pi SDK did not expose authenticate()');
+            throw new Error('Pi.authenticate missing');
           }
 
-          this.isInitialized = true;
-
-          window.__piInitState = window.__piInitState || {
-            loading: false,
-            loaded: true,
-            error: null,
-            scriptEl: window.__piInitState?.scriptEl ?? null,
-            promise: undefined
-          };
-          window.__piInitState.loaded = true;
-          window.__piInitState.lastInitAttempt = Date.now();
-
-          this.tryRestoreSession();
-          this.setupAutoReinit();
-
-          /** ✅ NEW: helpers.ts requires this */
+          this.initialized = true;
           window.__piInitialized = true;
+          window.__piInitState = { loading: false, loaded: true, scriptEl: window.__piInitState?.scriptEl ?? null };
+
+          this.restoreSession();
+          this.setupReinitWatcher();
 
           return true;
-        } catch (err) {
-          if (attempt <= retries) await new Promise((r) => setTimeout(r, 300));
+        } catch {
+          if (attempt > retries) break;
+          await new Promise((r) => setTimeout(r, 300));
         }
       }
 
-      this.isInitialized = false;
-
-      window.__piInitState = window.__piInitState || {
-        loading: false,
-        loaded: false,
-        error: 'init_failed',
-        scriptEl: window.__piInitState?.scriptEl ?? null,
-        promise: undefined
-      };
-      window.__piInitState.loaded = false;
-
-      /** ❌ Initialization failed → mark false */
       window.__piInitialized = false;
-
       return false;
     })();
 
-    const result = await this.initInProgressPromise;
-    this.initInProgressPromise = null;
-    return result;
+    const ok = await this.inProgressInit;
+    this.inProgressInit = null;
+    return ok;
   }
 
-  private tryRestoreSession(): void {
+  /*********************************
+   * Session
+   *********************************/
+  private restoreSession() {
     try {
-      if (typeof window === 'undefined') return;
-      const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      const raw = sessionStorage.getItem(SESSION_KEY);
       if (!raw) return;
 
       const parsed = JSON.parse(raw);
       if (!parsed?.user) return;
 
-      if (parsed.lastAuthenticated && Date.now() - parsed.lastAuthenticated > 24 * 60 * 60 * 1000) {
-        sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      const tooOld = parsed.lastAuthenticated && Date.now() - parsed.lastAuthenticated > 86400000;
+      if (tooOld) {
+        sessionStorage.removeItem(SESSION_KEY);
         return;
       }
 
-      this.authResult = {
+      this.auth = {
         accessToken: '',
-        user: {
-          uid: parsed.user.uid,
-          username: parsed.user.username,
-          wallet_address: parsed.user.wallet_address,
-          roles: parsed.user.roles || []
-        }
+        user: parsed.user
       };
     } catch {}
   }
 
-  private persistSession(): void {
+  private saveSession() {
     try {
-      if (!this.authResult?.user) {
-        sessionStorage.removeItem(SESSION_STORAGE_KEY);
-        return;
+      if (!this.auth) return sessionStorage.removeItem(SESSION_KEY);
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({ user: this.auth.user, lastAuthenticated: Date.now() })
+      );
+    } catch {}
+  }
+
+  /*********************************
+   * Re-init when returning to tab
+   *********************************/
+  private setupReinitWatcher() {
+    const handler = async () => {
+      if (!document.hidden && !this.initialized) {
+        await this.initialize(1);
       }
-      const payload = {
-        user: {
-          uid: this.authResult.user.uid,
-          username: this.authResult.user.username,
-          wallet_address: this.authResult.user.wallet_address,
-          roles: this.authResult.user.roles || []
-        },
-        lastAuthenticated: Date.now()
-      };
-      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
-    } catch {}
+    };
+    document.addEventListener('visibilitychange', handler);
   }
 
-  private setupAutoReinit(): void {
-    try {
-      if (typeof window === 'undefined') return;
-      const handler = async () => {
-        if (!document.hidden && !this.isInitialized) {
-          try {
-            await this.initialize(1);
-          } catch {}
-        }
-      };
-      window.removeEventListener('visibilitychange', handler);
-      window.addEventListener('visibilitychange', handler);
-    } catch {}
-  }
-
+  /*********************************
+   * Auth
+   *********************************/
   public async authenticate(scopes: string[] = ['username', 'payments', 'wallet_address']): Promise<AuthResult> {
-    try {
-      const ok = await this.initialize(DEFAULT_RETRY_ATTEMPTS);
-      if (!ok) throw new Error('Pi SDK initialization failed');
+    const ok = await this.initialize();
+    if (!ok) throw new Error('Pi SDK init failed');
 
-      if (!window.Pi?.authenticate) throw new Error('Pi SDK authenticate() unavailable');
+    const onIncomplete = (p: PaymentDTO) => {
+      try {
+        this.incompleteHandler?.(p);
+        if (!this.incompleteHandler) sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(p));
+      } catch {}
+    };
 
-      const onIncompletePayment = (payment: PaymentDTO) => {
-        try {
-          this.incompletePaymentHandler?.(payment);
-          if (!this.incompletePaymentHandler) {
-            sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
-          }
-        } catch {}
-      };
+    const r = await window.Pi.authenticate(scopes, onIncomplete);
+    if (!r?.user?.uid || !r.accessToken) throw new Error('Invalid auth result');
 
-      const auth = await window.Pi.authenticate(scopes, onIncompletePayment);
-
-      if (!auth?.user?.uid || !auth.accessToken) {
-        throw new Error('Authentication returned incomplete result');
+    this.auth = {
+      accessToken: r.accessToken,
+      user: {
+        uid: r.user.uid,
+        username: r.user.username,
+        wallet_address: r.user.wallet_address,
+        roles: r.user.roles || []
       }
+    };
 
-      this.authResult = {
-        accessToken: auth.accessToken,
-        user: {
-          uid: auth.user.uid,
-          username: auth.user.username,
-          wallet_address: auth.user.wallet_address,
-          roles: auth.user.roles || []
-        }
-      };
-
-      this.persistSession();
-      return this.authResult;
-    } catch (err) {
-      return Promise.reject(err instanceof Error ? err : new Error(String(err)));
-    }
+    this.saveSession();
+    return this.auth;
   }
 
-  public setIncompletePaymentHandler(handler: (p: PaymentDTO) => void): void {
-    this.incompletePaymentHandler = handler;
+  /*********************************
+   * Payments
+   *********************************/
+  public setIncompletePaymentHandler(handler: (p: PaymentDTO) => void) {
+    this.incompleteHandler = handler;
   }
 
-  public async createPayment(paymentData: PaymentData, callbacks: PaymentCallbacks): Promise<void> {
-    try {
-      if (!this.isInitialized) {
-        const ok = await this.initialize(1);
-        if (!ok) throw new Error('Pi SDK not initialized');
-      }
-      if (!this.authResult) throw new Error('User not authenticated');
-      if (!window.Pi?.createPayment) throw new Error('Pi.createPayment missing');
+  public async createPayment(data: PaymentData, callbacks: PaymentCallbacks) {
+    const ok = await this.initialize();
+    if (!ok) throw new Error('Pi SDK not ready');
+    if (!this.auth) throw new Error('User not authenticated');
 
-      window.Pi.createPayment(paymentData, {
-        onReadyForServerApproval: callbacks.onReadyForServerApproval,
-        onReadyForServerCompletion: callbacks.onReadyForServerCompletion,
-        onCancel: callbacks.onCancel,
-        onError: callbacks.onError
-      });
-    } catch (e) {
-      return Promise.reject(e);
-    }
+    window.Pi.createPayment(data, callbacks);
   }
 
-  public getAuthResult(): AuthResult | null {
-    return this.authResult;
+  /*********************************
+   * Utilities
+   *********************************/
+  public getAuth(): AuthResult | null {
+    return this.auth;
   }
 
   public isAuthenticated(): boolean {
-    return !!this.authResult?.user;
+    return !!this.auth;
   }
 
   public isSdkInitialized(): boolean {
-    return (
-      this.isInitialized &&
-      !!(typeof window !== 'undefined' && window.Pi && typeof window.Pi.authenticate === 'function')
-    );
+    return this.initialized && !!window.Pi?.authenticate;
   }
 
-  public clearAuth(): void {
-    this.authResult = null;
-    try {
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
-    } catch {}
+  public clearAuth() {
+    this.auth = null;
+    sessionStorage.removeItem(SESSION_KEY);
+  }
+
+  private mockPi() {
+    return {
+      init: () => {},
+      authenticate: async () => ({ user: { uid: 'dev', username: 'dev_user' }, accessToken: 'dev_token' }),
+      createPayment: () => {}
+    };
   }
 }
 
-/* ========== Singleton + wrapper exports ========== */
+/*********************************
+ * Singleton & Exports
+ *********************************/
 export const piNetworkCore = new PiNetworkCore();
 
-export const initializePiNetwork = async (retries = DEFAULT_RETRY_ATTEMPTS): Promise<boolean> => {
-  try {
-    if (typeof window === 'undefined') return false;
-
-    if (!window.Pi && import.meta.env.DEV) {
-      // @ts-ignore
-      window.Pi = {
-        init: () => {},
-        authenticate: async () => ({ user: { uid: 'dev', username: 'dev_user' }, accessToken: 'dev_token' }),
-        createPayment: () => {}
-      };
-    }
-
-    return await piNetworkCore.initialize(retries);
-  } catch {
-    return false;
-  }
-};
-
-export const authenticateUser = (scopes: string[] = ['username', 'payments', 'wallet_address']) =>
-  piNetworkCore.authenticate(scopes);
-
-export const createPiPayment = (data: PaymentData, callbacks: PaymentCallbacks) =>
-  piNetworkCore.createPayment(data, callbacks);
-
-export const isUserAuthenticated = () => piNetworkCore.isAuthenticated();
-
-export const setIncompletePaymentHandler = (handler: (p: PaymentDTO) => void) =>
-  piNetworkCore.setIncompletePaymentHandler(handler);
-
-export const clearPiAuth = () => piNetworkCore.clearAuth();
-
-export const getPiAuthResult = () => piNetworkCore.getAuthResult();
-
-export const determineSandboxMode = () => piNetworkCore.determineSandboxMode();
-
-/* === Legacy compatibility === */
-export const requestUserPermissions = async () => {
-  try {
-    const r = await authenticateUser();
-    return {
-      username: r.user.username,
-      uid: r.user.uid,
-      walletAddress: (r.user as any).wallet_address
-    };
-  } catch {
-    return null;
-  }
-};
-
-export const isSdkInitialized = () => piNetworkCore.isSdkInitialized();
-
-export const forceSdkReinitialization = async () => {
-  try {
-    piNetworkCore.clearAuth();
-    return await initializePiNetwork(1);
-  } catch {
-    return false;
-  }
-};
+export const initializePiNetwork = (r = RETRIES) => piNetworkCore.initialize(r);
+export const authenticateUser = (scopes?: string[]) => piNetworkCore.authenticate(scopes);
+export const createPiPayment = (d: PaymentData, c: PaymentCallbacks) => piNetworkCore.createPayment(d, c);
+export const setIncompletePaymentHandler = (h: (p: PaymentDTO) => void) => piNetworkCore.setIncompletePaymentHandler(h);
+export const clearPiAuth = ()
