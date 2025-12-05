@@ -15,6 +15,13 @@ export type AuthResult = {
   };
 };
 
+// Alias for backward compatibility
+export type PiUserAuthResult = {
+  uid: string;
+  username: string;
+  accessToken: string;
+};
+
 export type PaymentDTO = {
   identifier: string;
   user_uid: string;
@@ -40,6 +47,9 @@ export type PaymentDTO = {
   };
 };
 
+// Alias for backward compatibility
+export type PiPaymentDTO = PaymentDTO;
+
 export type Direction = "user_to_app" | "app_to_user";
 export type AppNetwork = "Pi Network" | "Pi Testnet";
 
@@ -56,11 +66,35 @@ export type PaymentCallbacks = {
   onError: (error: Error, payment?: PaymentDTO) => void;
 };
 
+// Alias for backward compatibility
+export type PiPaymentCallbacks = PaymentCallbacks;
+
+export type PiCallbacks = {
+  onReadyForServerApproval: (paymentId: string) => void;
+  onReadyForServerCompletion: (paymentId: string, txid: string) => void;
+  onIncompletePaymentFound: (payment: PaymentDTO) => void;
+  onCancel: (paymentId: string) => void;
+  onError: (error: Error, payment?: PaymentDTO) => void;
+};
+
+export type PiConfig = {
+  sandbox?: boolean;
+};
+
+export type PiInitData = {
+  sdk: any;
+  sandbox: boolean;
+};
+
+export type PiPaymentInitiateOptions = {
+  amount: number;
+  memo: string;
+  metadata?: Record<string, any>;
+};
+
 // Enum for subscription tiers
 export enum SubscriptionTier {
   INDIVIDUAL = 'individual',
   SMALL_BUSINESS = 'small-business',
   ORGANIZATION = 'organization',
 }
-
-// Note: We're removing the global interface declaration as it's already defined in global.d.ts

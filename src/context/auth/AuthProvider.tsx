@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { initializePiNetwork } from '@/utils/piNetwork';
+import { initializePiNetwork, getPiAuthResult } from '@/utils/piNetwork/core';
 import { PiUser, AuthContextType, STORAGE_KEY } from './types';
 import { checkAccess } from './authUtils';
 import { performLogin, refreshUserData as refreshUserDataService, requestAuthPermissions } from './authService';
@@ -10,7 +10,6 @@ import { SubscriptionTier } from '@/utils/piNetwork/types';
 import { shouldBypassAuth, DEV_CONFIG } from '@/config/environment';
 import AuthContext from './useAuth';
 import { secureLog } from '@/utils/secureLogger';
-import { getPiAuthResult } from '@/utils/piNetwork/core';
 import { verifyPiAuthentication } from '@/utils/piNetwork/verification';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
