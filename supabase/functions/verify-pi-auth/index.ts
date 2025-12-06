@@ -147,11 +147,25 @@ Deno.serve(async (req: Request) => {
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // ✅ Test mode (development / preview): do NOT rely on email-password
+    // Helper: Generate a deterministic password from pi_uid (never exposed to user)
+    const generateUserPassword = (piUid: string): string => {
+      // Use service role key as salt (only known server-side)
+      const salt = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.substring(0, 32) || 'default-salt';
+      return `pi_${piUid}_${salt}`.substring(0, 72);
+    };
+
+    // Helper: Create session using signInWithPassword (more reliable than magic links)
+    const createUserSession = async (email: string, password: string) => {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      return { data, error };
+    };
+
+    // ✅ Test mode (development / preview)
     if (testMode) {
-      console.log(`🧪 [${traceId}] Test mode: ensure user exists and try admin.createToken`);
+      console.log(`🧪 [${traceId}] Test mode: ensure user exists and create session`);
 
       const email = `${username}@pi.local`;
+      const password = generateUserPassword(uid);
 
       // Ensure user exists (idempotent)
       const { data: usersList, error: listError } = await supabaseAdmin.auth.admin.listUsers();
@@ -159,8 +173,7 @@ Deno.serve(async (req: Request) => {
         console.error(`❌ [${traceId}] Failed to list users:`, listError);
         throw new Error(`Failed to list users: ${listError.message}`);
       }
-      // Look up by BOTH old format (id = pi_uid) and new format (metadata.pi_uid)
-      // This handles the transition period where old users exist
+      
       const existingUser = usersList?.users.find((u) => 
         u.id === uid || u.user_metadata?.pi_uid === uid
       );
@@ -170,8 +183,8 @@ Deno.serve(async (req: Request) => {
       if (!existingUser) {
         console.log(`🔨 [${traceId}] Creating new test user:`, { pi_uid: uid, email, username });
         const { data: newUserData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          // Let Supabase generate UUID for auth.users.id
           email,
+          password,
           email_confirm: true,
           user_metadata: { username, full_name: username, pi_uid: uid },
         });
@@ -201,70 +214,26 @@ Deno.serve(async (req: Request) => {
       } else {
         supabaseUserId = existingUser.id;
         console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
+        
+        // Update password in case it changed (ensures login works)
+        await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, { password });
       }
 
-      console.log(`🔐 [${traceId}] [TEST] Generating auth tokens for user ${supabaseUserId}`);
+      console.log(`🔐 [${traceId}] [TEST] Creating session for user ${supabaseUserId}`);
 
-      let verifyData: any = null;
-      let verifyError: any = null;
+      const { data: sessionData, error: sessionError } = await createUserSession(email, password);
 
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-          type: 'magiclink',
-          email,
-          options: {
-            redirectTo: 'https://testnet.avantemaps.com/'
-          }
-        });
-
-        if (linkError || !linkData?.properties?.hashed_token) {
-          console.error(`❌ [${traceId}] [TEST] Failed to generate tokens (attempt ${attempt}):`, linkError);
-          if (attempt === 2) {
-            return new Response(JSON.stringify({
-              verified: false,
-              error: 'Token generation failed',
-              details: linkError?.message || 'Could not generate authentication tokens',
-              traceId,
-            }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-          }
-          continue;
-        }
-
-        console.log(`✅ [${traceId}] [TEST] Successfully generated tokens for user ${supabaseUserId} (attempt ${attempt})`);
-
-        const verifyResult = await supabase.auth.verifyOtp({
-          type: 'magiclink',
-          token_hash: linkData.properties.hashed_token,
-        });
-
-        verifyData = verifyResult.data;
-        verifyError = verifyResult.error;
-
-        if (!verifyError && verifyData?.session) {
-          break;
-        }
-
-        // Handle edge case where the one-time token expires immediately; retry once
-        const errorCode = (verifyError as any)?.code;
-        console.warn(`❌ [${traceId}] [TEST] Failed to verify OTP and create session (attempt ${attempt}):`, verifyError);
-
-        if (attempt === 2 || errorCode !== 'otp_expired') {
-          break;
-        }
-
-        console.log(`🔁 [${traceId}] [TEST] OTP expired, retrying token generation...`);
-      }
-
-      if (verifyError || !verifyData?.session) {
+      if (sessionError || !sessionData?.session) {
+        console.error(`❌ [${traceId}] [TEST] Failed to create session:`, sessionError);
         return new Response(JSON.stringify({
           verified: false,
           error: 'Session creation failed',
-          details: (verifyError as any)?.message || 'Could not create authentication session',
+          details: sessionError?.message || 'Could not create authentication session',
           traceId,
         }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      const { access_token, refresh_token } = verifyData.session;
+      const { access_token, refresh_token } = sessionData.session;
 
       return new Response(JSON.stringify({
         verified: true,
@@ -333,6 +302,7 @@ Deno.serve(async (req: Request) => {
     // --- Supabase Auth Integration ---
     console.log(`🔧 [${traceId}] Setting up Supabase auth integration`);
     const email = `${username}@pi.local`;
+    const password = generateUserPassword(uid);
 
     const { data: usersList, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     if (listError) {
@@ -340,8 +310,6 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to list users: ${listError.message}`);
     }
     
-    // Look up by BOTH old format (id = pi_uid) and new format (metadata.pi_uid)
-    // This handles the transition period where old users exist
     const existingUser = usersList?.users.find((u) => 
       u.id === uid || u.user_metadata?.pi_uid === uid
     );
@@ -351,8 +319,8 @@ Deno.serve(async (req: Request) => {
     if (!existingUser) {
       console.log(`🔨 [${traceId}] Creating new Supabase user:`, { pi_uid: uid, email, username });
       const { data: newUserData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        // Let Supabase generate UUID for auth.users.id
         email,
+        password,
         email_confirm: true,
         user_metadata: { username, full_name: username, pi_uid: uid },
       });
@@ -383,71 +351,26 @@ Deno.serve(async (req: Request) => {
     } else {
       supabaseUserId = existingUser.id;
       console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
+      
+      // Update password to ensure login works
+      await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, { password });
     }
 
-    console.log(`🔐 [${traceId}] Generating auth tokens for user ${supabaseUserId}`);
+    console.log(`🔐 [${traceId}] Creating session for user ${supabaseUserId}`);
     
-    let verifyData: any = null;
-    let verifyError: any = null;
+    const { data: sessionData, error: sessionError } = await createUserSession(email, password);
 
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'magiclink',
-        email,
-        options: {
-          redirectTo: 'https://testnet.avantemaps.com/'
-        }
-      });
-
-      if (linkError || !linkData?.properties?.hashed_token) {
-        console.error(`❌ [${traceId}] Failed to generate tokens (attempt ${attempt}):`, linkError);
-        if (attempt === 2) {
-          return new Response(JSON.stringify({
-            verified: false,
-            error: 'Token generation failed',
-            details: linkError?.message || 'Could not generate authentication tokens',
-            traceId,
-          }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        }
-        continue;
-      }
-
-      console.log(`✅ [${traceId}] Successfully generated tokens for user ${supabaseUserId} (attempt ${attempt})`);
-
-      const verifyResult = await supabase.auth.verifyOtp({
-        type: 'magiclink',
-        token_hash: linkData.properties.hashed_token,
-      });
-
-      verifyData = verifyResult.data;
-      verifyError = verifyResult.error;
-
-      if (!verifyError && verifyData?.session) {
-        break;
-      }
-
-      const errorCode = (verifyError as any)?.code;
-      console.error(`❌ [${traceId}] Failed to verify OTP and create session (attempt ${attempt}):`, verifyError);
-
-      if (attempt === 2 || errorCode !== 'otp_expired') {
-        break;
-      }
-
-      console.log(`🔁 [${traceId}] OTP expired, retrying token generation...`);
-    }
-
-    if (verifyError || !verifyData?.session) {
+    if (sessionError || !sessionData?.session) {
+      console.error(`❌ [${traceId}] Failed to create session:`, sessionError);
       return new Response(JSON.stringify({
         verified: false,
-        error: 'Token generation failed',
-        details: (verifyError as any)?.message || 'Could not create authentication session',
+        error: 'Session creation failed',
+        details: sessionError?.message || 'Could not create authentication session',
         traceId,
       }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    console.log(`✅ [${traceId}] Successfully created session for user ${supabaseUserId}`);
-
-    const { access_token, refresh_token } = verifyData.session;
+    const { access_token, refresh_token } = sessionData.session;
 
     return new Response(JSON.stringify({
       verified: true,
