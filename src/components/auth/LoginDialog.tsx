@@ -7,8 +7,16 @@ import { Link } from "react-router-dom";
 import { useAuth } from '@/context/auth';
 import { isPiNetworkAvailable } from '@/utils/piNetwork';
 import AuthTroubleshooting from './AuthTroubleshooting';
-import { authenticateUser, initializePiNetwork } from '@/utils/piNetwork/core';
 import { secureLog } from '@/utils/secureLogger';
+
+// Check if we're in a preview/dev environment where test mode is allowed
+const isPreviewOrDev = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.host;
+  return host.includes('lovableproject.com') || 
+         host.includes('localhost') || 
+         host.includes('127.0.0.1');
+};
 
 interface LoginDialogProps {
   open: boolean;
@@ -22,12 +30,13 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const [showTroubleshooting, setShowTroubleshooting] = useState<boolean>(false);
   
   useEffect(() => {
-    // Check if Pi SDK is available
-    setSdkAvailable(isPiNetworkAvailable());
+    // In preview/dev environments, allow login even without SDK
+    const allowTestMode = isPreviewOrDev();
+    setSdkAvailable(allowTestMode || isPiNetworkAvailable());
     
     // More frequent checks when dialog is open
     const checkInterval = setInterval(() => {
-      const available = isPiNetworkAvailable();
+      const available = allowTestMode || isPiNetworkAvailable();
       setSdkAvailable(available);
       
       // If dialog is open and SDK becomes available, increment retry count
@@ -41,10 +50,11 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   
   useEffect(() => {
     // Auto-retry SDK detection once when dialog opens
+    const allowTestMode = isPreviewOrDev();
     if (open && !sdkAvailable && retryCount === 0) {
       const timer = setTimeout(() => {
         setRetryCount(1);
-        setSdkAvailable(isPiNetworkAvailable());
+        setSdkAvailable(allowTestMode || isPiNetworkAvailable());
       }, 2000);
       
       return () => clearTimeout(timer);
@@ -61,31 +71,13 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const handleLogin = async () => {
     try {
       secureLog.info("Starting Pi authentication...");
-  
-      // ✅ STEP 1: Check SDK readiness
-      if (!window.Pi || typeof window.Pi.authenticate !== "function") {
-        secureLog.warn("⚠️ Pi SDK not ready. Attempting to reinitialize...");
-        await initializePiNetwork();
-        
-        if (!window.Pi || typeof window.Pi.authenticate !== "function") {
-          alert("Pi SDK not loaded yet. Please refresh or open this page in Pi Browser.");
-          return;
-        }
-      }
-  
-      // ✅ STEP 2: Attempt authentication
-      const result = await authenticateUser();
-  
-      if (result?.user) {
-        secureLog.info("✅ Pi login success:", result.user);
-        alert(`Welcome ${result.user.username}!`);
-      } else {
-        secureLog.warn("⚠️ No user data returned from Pi authentication.");
-        alert("Login failed. Please try again.");
-      }
+      
+      // Use the auth context's login function which handles both
+      // real Pi authentication and test/dev mode
+      await login();
+      onOpenChange(false);
     } catch (error) {
       secureLog.error("❌ Pi login error:", error);
-      alert("Pi Network login failed. Please try again.");
     }
   };
   
