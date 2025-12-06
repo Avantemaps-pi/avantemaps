@@ -49,6 +49,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     isMountedRef.current = true;
+    
+    // Clear corrupted Supabase tokens on mount to prevent white screen
+    const clearCorruptedSession = async () => {
+      try {
+        const { error } = await supabase.auth.getSession();
+        if (error) {
+          secureLog.warn('Corrupted session detected, clearing...', error.message);
+          await supabase.auth.signOut();
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      } catch (e) {
+        secureLog.error('Error checking session:', e);
+        await supabase.auth.signOut();
+      }
+    };
+    clearCorruptedSession();
+    
     return () => {
       isMountedRef.current = false;
       if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
