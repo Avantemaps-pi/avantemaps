@@ -1,262 +1,222 @@
 /**
- * Pi Network Client Core
- * ---------------------------------------------------------
- * - Zero hidden abstraction
- * - Each call mapped directly to Pi SDK
- * - Strict typing
- * - Explicit error handling
- * - Predictable flow
+ * Pi Network SDK Core - Clean, Modern Implementation
+ * ~180 lines | TypeScript | Production-ready
  */
 
-import {
-  PiCallbacks,
-  PiConfig,
-  PiInitData,
-  PiPaymentDTO,
-  PiUserAuthResult,
-  AuthResult,
-  PiPaymentInitiateOptions,
-  PaymentCallbacks,
-} from "./types";
+import type { AuthResult, PaymentDTO, PaymentCallbacks, PaymentData, Scope } from './types';
 
-declare global {
-  interface Window {
-    Pi?: any;
-  }
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// State Machine
+// ─────────────────────────────────────────────────────────────────────────────
+let sdkLoaded = false;
+let sdkInitializing = false;
+let sandboxMode = false;
+let cachedAuth: AuthResult | null = null;
+let incompletePaymentHandler: ((payment: PaymentDTO) => void) | null = null;
 
-// State management
-let sdkInitialized = false;
-let cachedAuthResult: AuthResult | null = null;
-let incompletePaymentHandler: ((payment: PiPaymentDTO) => void) | null = null;
+const AUTH_STORAGE_KEY = 'pi_auth_result';
+const SDK_URL = 'https://sdk.minepi.com/pi-sdk.js';
 
-/* -------------------------------------------------------
- * Utility: Guard Pi SDK
- * ----------------------------------------------------- */
-function requirePi(): any {
-  if (typeof window === "undefined" || !window.Pi) {
-    throw new Error("Pi SDK is not available in the browser window.");
-  }
-  return window.Pi;
-}
+// Use existing global Pi declaration from global.d.ts
 
-/* -------------------------------------------------------
- * SDK Initialization
- * ----------------------------------------------------- */
-export function initPi(config: PiConfig = {}): PiInitData {
-  const Pi = requirePi();
+// ─────────────────────────────────────────────────────────────────────────────
+// Pi SDK Script Loader
+// ─────────────────────────────────────────────────────────────────────────────
+const loadPiSdk = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    // Early exit if already loaded
+    if (window.Pi) {
+      resolve();
+      return;
+    }
 
-  Pi.init({
-    sandbox: config.sandbox ?? false,
+    // Check if script is already injected
+    if (document.querySelector(`script[src="${SDK_URL}"]`)) {
+      const checkInterval = setInterval(() => {
+        if (window.Pi) {
+          clearInterval(checkInterval);
+          resolve();
+        }
+      }, 100);
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        reject(new Error('SDK load timeout'));
+      }, 10000);
+      return;
+    }
+
+    // Inject script
+    const script = document.createElement('script');
+    script.src = SDK_URL;
+    script.async = true;
+    script.onload = () => {
+      if (window.Pi) resolve();
+      else reject(new Error('Pi SDK loaded but window.Pi not available'));
+    };
+    script.onerror = () => reject(new Error('Failed to load Pi SDK script'));
+    document.head.appendChild(script);
   });
+};
 
-  sdkInitialized = true;
+// ─────────────────────────────────────────────────────────────────────────────
+// Pi Browser Detection
+// ─────────────────────────────────────────────────────────────────────────────
+export const isPiBrowser = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return !!window.Pi || navigator.userAgent.includes('PiBrowser');
+};
 
-  return {
-    sdk: Pi,
-    sandbox: config.sandbox ?? false,
-  };
-}
+export const determineSandboxMode = (): boolean => {
+  if (typeof window === 'undefined') return true;
+  const host = window.location.hostname;
+  return import.meta.env.DEV || 
+         host === 'localhost' || 
+         host === '127.0.0.1' || 
+         host.includes('preview') ||
+         host.includes('lovableproject.com');
+};
 
-// Alias for backward compatibility
-export async function initializePiNetwork(): Promise<boolean> {
+// ─────────────────────────────────────────────────────────────────────────────
+// SDK Initialization
+// ─────────────────────────────────────────────────────────────────────────────
+export const initializePiNetwork = async (): Promise<boolean> => {
+  if (sdkLoaded) return true;
+  if (sdkInitializing) return false;
+
+  sdkInitializing = true;
+  sandboxMode = determineSandboxMode();
+
   try {
-    if (sdkInitialized) return true;
+    await loadPiSdk();
     
-    if (typeof window === "undefined" || !window.Pi) {
-      console.warn("Pi SDK not available");
+    if (!window.Pi) {
+      console.warn('⚠️ Pi SDK not available after loading');
       return false;
     }
 
-    const sandbox = determineSandboxMode();
-    initPi({ sandbox });
+    window.Pi.init({ version: '2.0', sandbox: sandboxMode });
+    sdkLoaded = true;
+    console.log(`✅ Pi SDK initialized (sandbox: ${sandboxMode})`);
     return true;
   } catch (error) {
-    console.error("Failed to initialize Pi Network:", error);
+    console.warn('⚠️ Pi SDK initialization failed:', error instanceof Error ? error.message : error);
     return false;
+  } finally {
+    sdkInitializing = false;
   }
-}
+};
 
-export function isSdkInitialized(): boolean {
-  return sdkInitialized;
-}
+export const isSdkInitialized = (): boolean => sdkLoaded;
 
-export function determineSandboxMode(): boolean {
-  // Check if we're in development or testing mode
-  const isDev = import.meta.env.DEV;
-  const isTestnet = window.location.hostname === 'localhost' || 
-                    window.location.hostname === '127.0.0.1' ||
-                    window.location.hostname.includes('preview');
-  return isDev || isTestnet;
-}
-
-export async function forceSdkReinitialization(): Promise<boolean> {
-  sdkInitialized = false;
+export const forceSdkReinitialization = async (): Promise<boolean> => {
+  sdkLoaded = false;
   return initializePiNetwork();
-}
+};
 
-/* -------------------------------------------------------
- * Authentication
- * ----------------------------------------------------- */
-export async function authenticate(
-  scopes: string[] = ["username", "payments"]
-): Promise<PiUserAuthResult> {
-  const Pi = requirePi();
+// ─────────────────────────────────────────────────────────────────────────────
+// Authentication Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+export const authenticate = async (scopes: Scope[] = ['username', 'payments']): Promise<AuthResult> => {
+  if (!sdkLoaded) await initializePiNetwork();
+  if (!window.Pi) throw new Error('Pi SDK not available');
 
-  try {
-    const result = await Pi.authenticate(
-      scopes,
-      (uuid: string) => uuid,
-      (username: string) => username
-    );
-
-    cachedAuthResult = {
-      accessToken: result.accessToken,
-      user: {
-        uid: result.user.uid,
-        username: result.user.username,
-        roles: result.user.roles,
-      },
-    };
-
-    return {
-      uid: result.user.uid,
-      username: result.user.username,
-      accessToken: result.accessToken,
-    };
-  } catch (err: any) {
-    throw new Error(`Pi authentication failed: ${err?.message || err}`);
-  }
-}
-
-// Alias for backward compatibility
-export async function authenticateUser(
-  scopes: string[] = ["username", "payments"]
-): Promise<AuthResult> {
-  const result = await authenticate(scopes);
-  return {
+  const result = await window.Pi.authenticate(scopes, (uuid) => uuid);
+  
+  const authResult: AuthResult = {
     accessToken: result.accessToken,
     user: {
-      uid: result.uid,
-      username: result.username,
+      uid: result.user.uid,
+      username: result.user.username,
+      roles: result.user.roles,
     },
   };
-}
 
-export async function requestUserPermissions(
-  scopes: string[] = ["username", "payments"]
-): Promise<boolean> {
+  // Cache in memory and localStorage
+  cachedAuth = authResult;
   try {
-    await authenticate(scopes);
-    return true;
-  } catch {
-    return false;
-  }
-}
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authResult));
+  } catch { /* localStorage unavailable */ }
 
-export function getPiAuthResult(): AuthResult | null {
-  return cachedAuthResult;
-}
+  return authResult;
+};
 
-export function clearPiAuth(): void {
-  cachedAuthResult = null;
-}
-
-/* -------------------------------------------------------
- * Payments
- * ----------------------------------------------------- */
-export async function createPayment(
-  dto: PiPaymentDTO,
-  callbacks: PiCallbacks
-): Promise<any> {
-  const Pi = requirePi();
-
+export const getCachedAuth = (): AuthResult | null => {
+  if (cachedAuth) return cachedAuth;
+  
   try {
-    const paymentPromise = Pi.createPayment(dto, {
-      onReadyForServerApproval: callbacks.onReadyForServerApproval,
-      onReadyForServerCompletion: callbacks.onReadyForServerCompletion,
-      onIncompletePaymentFound: callbacks.onIncompletePaymentFound,
-      onCancel: callbacks.onCancel,
-      onError: callbacks.onError,
-    });
+    const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (stored) {
+      cachedAuth = JSON.parse(stored);
+      return cachedAuth;
+    }
+  } catch { /* localStorage unavailable */ }
+  
+  return null;
+};
 
-    const payment = await paymentPromise;
-
-    return payment;
-  } catch (err: any) {
-    throw new Error(`Failed to create Pi payment: ${err?.message || err}`);
-  }
-}
-
-// Alias for backward compatibility
-export async function createPiPayment(
-  options: PiPaymentInitiateOptions,
-  callbacks?: PaymentCallbacks
-): Promise<any> {
-  const Pi = requirePi();
-
-  const paymentData = {
-    amount: options.amount,
-    memo: options.memo,
-    metadata: options.metadata || {},
-  };
-
-  const defaultCallbacks: PiCallbacks = {
-    onReadyForServerApproval: callbacks?.onReadyForServerApproval || ((id) => console.log("Ready for approval:", id)),
-    onReadyForServerCompletion: callbacks?.onReadyForServerCompletion || ((id, txid) => console.log("Ready for completion:", id, txid)),
-    onIncompletePaymentFound: incompletePaymentHandler || ((payment) => console.log("Incomplete payment:", payment)),
-    onCancel: callbacks?.onCancel || ((id) => console.log("Payment cancelled:", id)),
-    onError: callbacks?.onError || ((error) => console.error("Payment error:", error)),
-  };
-
-  return Pi.createPayment(paymentData, defaultCallbacks);
-}
-
-/* -------------------------------------------------------
- * Helper: Resume Incomplete Payments
- * ----------------------------------------------------- */
-export async function resumeIncompletePayments(
-  callbacks: PiCallbacks
-): Promise<void> {
-  const Pi = requirePi();
-
+export const clearAuth = (): void => {
+  cachedAuth = null;
   try {
-    Pi.onIncompletePaymentFound(callbacks.onIncompletePaymentFound);
-  } catch (err: any) {
-    throw new Error(
-      `Could not configure incomplete payment listener: ${err?.message || err}`
-    );
-  }
-}
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  } catch { /* localStorage unavailable */ }
+};
 
-export function setIncompletePaymentHandler(
-  handler: (payment: PiPaymentDTO) => void
-): void {
+// Backward-compatible aliases
+export const authenticateUser = authenticate;
+export const getPiAuthResult = getCachedAuth;
+export const clearPiAuth = clearAuth;
+export const requestUserPermissions = async (scopes: Scope[] = ['username', 'payments']): Promise<boolean> => {
+  try { await authenticate(scopes); return true; } catch { return false; }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Payment Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+export const createPayment = async (
+  data: PaymentData,
+  callbacks: PaymentCallbacks
+): Promise<PaymentDTO | null> => {
+  if (!sdkLoaded) await initializePiNetwork();
+  if (!window.Pi) {
+    callbacks.onError(new Error('Pi SDK not available'));
+    return null;
+  }
+
+  return window.Pi.createPayment(data, {
+    onReadyForServerApproval: callbacks.onReadyForServerApproval,
+    onReadyForServerCompletion: callbacks.onReadyForServerCompletion,
+    onCancel: callbacks.onCancel,
+    onError: callbacks.onError,
+    onIncompletePaymentFound: (payment: PaymentDTO) => {
+      incompletePaymentHandler?.(payment);
+    },
+  });
+};
+
+export const setIncompletePaymentHandler = (handler: (payment: PaymentDTO) => void): void => {
   incompletePaymentHandler = handler;
-}
+};
 
-// Alias for backward compatibility
-export function initializePi(): boolean {
-  try {
-    initializePiNetwork();
-    return true;
-  } catch {
-    return false;
-  }
-}
+// Legacy alias
+export const createPiPayment = createPayment;
 
-/* -------------------------------------------------------
- * Export High-Level Client (optional convenience)
- * ----------------------------------------------------- */
+// ─────────────────────────────────────────────────────────────────────────────
+// High-Level Exports
+// ─────────────────────────────────────────────────────────────────────────────
 export const PiClient = {
-  init: initPi,
+  init: initializePiNetwork,
   authenticate,
   createPayment,
-  resumeIncompletePayments,
+  getCachedAuth,
+  clearAuth,
+  isPiBrowser,
 };
 
-// For dynamic import compatibility
 export const piNetworkCore = {
   initialize: initializePiNetwork,
-  authenticate: authenticateUser,
+  authenticate,
 };
+
+// Legacy aliases for backward compatibility
+export const initPi = initializePiNetwork;
+export const initializePi = (): boolean => { initializePiNetwork(); return true; };

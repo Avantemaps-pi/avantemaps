@@ -50,8 +50,12 @@ export async function startPayment(
   // Guarantee SDK + auth loaded
   await initPiForPayments();
 
-  // Only then create the payment
-  return await createPiPayment(options, callbacks);
+  const paymentData = {
+    amount: options.amount,
+    memo: options.memo,
+    metadata: options.metadata || {}
+  };
+  return await createPiPayment(paymentData, callbacks);
 }
 
 /**
