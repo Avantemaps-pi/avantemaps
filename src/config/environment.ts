@@ -50,6 +50,15 @@ export const MAPS_CONFIG = {
 // Development mode helpers with production safety checks
 export const isDevelopmentMode = (): boolean => import.meta.env.DEV;
 
+// Check if we're in a preview/sandbox environment (allows test mode)
+const isPreviewEnvironment = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.host;
+  return host.includes('lovableproject.com') || 
+         host.includes('localhost') || 
+         host.includes('127.0.0.1');
+};
+
 const isProduction = (): boolean => {
   if (typeof window !== 'undefined') {
     const host = window.location.host;
@@ -69,7 +78,13 @@ export const shouldBypassAuth = (): boolean => {
     return false;
   }
   
-  if (import.meta.env.PROD) {
+  // Allow test mode in preview/dev environments
+  if (isPreviewEnvironment()) {
+    console.warn('🔓 Preview mode: Using test authentication');
+    return true;
+  }
+  
+  if (import.meta.env.PROD && !isPreviewEnvironment()) {
     console.error('⚠️ SECURITY WARNING: Auth bypass attempted in production build');
     return false;
   }
