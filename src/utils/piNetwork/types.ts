@@ -56,7 +56,7 @@ export type AppNetwork = "Pi Network" | "Pi Testnet";
 export type PaymentData = {
   amount: number;
   memo: string;
-  metadata: Record<string, any>;
+  metadata?: Record<string, any>;
 };
 
 export type PaymentCallbacks = {
