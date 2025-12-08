@@ -2,14 +2,15 @@ import { toast } from 'sonner';
 import { PiUser } from './types';
 import {
   isPiNetworkAvailable,
-  initializePiNetwork
+  initializePiNetwork,
+  isPiBrowser
 } from '@/utils/piNetwork';
 import { SubscriptionTier } from '@/utils/piNetwork/types';
 import { getUserSubscription, updateUserData } from './authUtils';
 import { secureLog } from '@/utils/secureLogger';
 import { verifyPiAuthentication, getDetailedAuthError } from '@/utils/piNetwork/verification';
 import { supabase } from '@/integrations/supabase/client';
-
+import { shouldBypassAuth, DEV_CONFIG } from '@/config/environment';
 // Simplified permission check - actual permissions are requested during authentication
 export const requestAuthPermissions = async (
   isSdkInitialized: boolean,
@@ -99,6 +100,77 @@ export const performLogin = async (
         setPendingAuth(false);
         return;
       }
+      // Check if we should use test mode (not in Pi Browser)
+      const inPiBrowser = isPiBrowser();
+      const useTestMode = shouldBypassAuth();
+      
+      if (!inPiBrowser && useTestMode) {
+        // Use mock authentication for non-Pi Browser environments
+        secureLog.info("🧪 Not in Pi Browser - using test mode authentication");
+        
+        const mockUser = DEV_CONFIG.mockUser;
+        const mockAuthResult = {
+          accessToken: 'test-access-token',
+          user: {
+            uid: mockUser.pi_uid,
+            username: mockUser.username,
+            roles: mockUser.roles,
+            wallet_address: mockUser.walletAddress
+          }
+        };
+        
+        // Verify with backend in test mode
+        try {
+          const verificationResult = await verifyPiAuthentication(
+            mockAuthResult.accessToken,
+            mockAuthResult.user.uid,
+            mockAuthResult.user.username,
+            true // testMode flag
+          );
+          
+          const token = (verificationResult as any).supabase_token || (verificationResult as any).supabaseToken;
+          const refreshToken = (verificationResult as any).refresh_token;
+          
+          if (verificationResult.verified && token) {
+            const sessionPayload: any = { access_token: token };
+            if (refreshToken) {
+              sessionPayload.refresh_token = refreshToken;
+            }
+            
+            const { error: sessionError } = await supabase.auth.setSession(sessionPayload);
+            if (sessionError) {
+              throw new Error("Test mode session setup failed");
+            }
+            
+            secureLog.info("✅ Test mode Supabase session established");
+          }
+          
+          // Build user object
+          const userData: PiUser = {
+            uid: mockUser.uid,
+            username: mockUser.username,
+            walletAddress: mockUser.walletAddress,
+            roles: mockUser.roles,
+            lastAuthenticated: Date.now(),
+            subscriptionTier: mockUser.subscriptionTier
+          };
+          
+          await updateUserData(userData, setUser);
+          toast.success(`Welcome back, ${userData.username}! (Test Mode)`);
+          secureLog.info("✅ Test mode login complete");
+          return;
+        } catch (err) {
+          secureLog.error("Test mode authentication failed:", err);
+          setAuthError("Test mode authentication failed");
+          toast.error("Test mode authentication failed. Please try again.");
+          return;
+        } finally {
+          setIsLoading(false);
+          setPendingAuth(false);
+        }
+      }
+      
+      // Real Pi Browser authentication
       if (!isPiNetworkAvailable() || !window.Pi) {
         secureLog.warn("Pi SDK not detected — prompting user to open in Pi Browser.");
         setAuthError("Please open this app in the Pi Browser to log in.");

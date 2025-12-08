@@ -83,8 +83,17 @@ export const initializePiNetwork = async (): Promise<boolean> => {
   if (sdkLoaded) return true;
   if (sdkInitializing) return false;
 
-  sdkInitializing = true;
   sandboxMode = determineSandboxMode();
+
+  // In non-Pi Browser environments with sandbox mode, skip SDK initialization
+  // and allow test mode to work without timing out
+  if (!isPiBrowser() && sandboxMode) {
+    console.warn('⚠️ Not in Pi Browser - SDK initialization skipped (test mode available)');
+    sdkLoaded = true; // Mark as "loaded" so test mode can proceed
+    return true;
+  }
+
+  sdkInitializing = true;
 
   try {
     await loadPiSdk();
