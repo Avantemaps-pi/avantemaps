@@ -60,6 +60,16 @@ export const isPiNetworkAvailable = (): boolean => {
   try {
     if (typeof window === "undefined") return false;
 
+    // Allow test mode in preview/dev environments
+    const host = window.location?.hostname || '';
+    const isPreviewOrDev = 
+      host === 'localhost' || 
+      host === '127.0.0.1' || 
+      host.includes('lovableproject.com') ||
+      host.includes('preview');
+    
+    if (isPreviewOrDev) return true;
+
     const pi = (window as any).Pi;
     if (!pi) return false;
 
