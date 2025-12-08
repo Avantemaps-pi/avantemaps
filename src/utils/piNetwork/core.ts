@@ -95,6 +95,7 @@ export const initializePiNetwork = async (): Promise<boolean> => {
     }
 
     window.Pi.init({ version: '2.0', sandbox: sandboxMode });
+    (window as any).__piInitialized = true;
     sdkLoaded = true;
     console.log(`✅ Pi SDK initialized (sandbox: ${sandboxMode})`);
     return true;
