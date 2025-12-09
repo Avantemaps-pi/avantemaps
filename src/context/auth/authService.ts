@@ -188,9 +188,10 @@ export const performLogin = async (
       }
 
       const authPromise = new Promise<any>((resolve, reject) => {
+        // Increased timeout to 30 seconds - Pi SDK can be slow on mobile/slow connections
         const authTimeout = setTimeout(() => {
-          reject(new Error('Authentication request timed out. Please try again.'));
-        }, 8000);
+          reject(new Error('Authentication request timed out. Please check your connection and try again.'));
+        }, 30000);
 
         try {
           // ✅ Defensive check before calling Pi.authenticate
@@ -199,6 +200,8 @@ export const performLogin = async (
             reject(new Error("Pi SDK not loaded yet. Please refresh the page or try again."));
             return;
           }
+          
+          secureLog.info("📱 Calling Pi.authenticate()...");
         
           window.Pi.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
             secureLog.info('Incomplete payment detected during authentication');
@@ -212,6 +215,7 @@ export const performLogin = async (
           })
           .then((res: any) => {
             clearTimeout(authTimeout);
+            secureLog.info("📱 Pi.authenticate() resolved successfully");
             resolve(res);
           })
           .catch((err: any) => {
@@ -225,6 +229,7 @@ export const performLogin = async (
           });
         } catch (err) {
           clearTimeout(authTimeout);
+          secureLog.error("❌ Exception calling Pi.authenticate():", err);
           reject(err);
         }
       });
