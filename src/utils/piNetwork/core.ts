@@ -59,11 +59,13 @@ const loadPiSdk = (): Promise<void> => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Pi Browser Detection
+// Pi Browser Detection - ONLY use user agent, never window.Pi
+// The SDK loads window.Pi in ALL browsers, making it unreliable for detection
 // ─────────────────────────────────────────────────────────────────────────────
 export const isPiBrowser = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  return !!window.Pi || navigator.userAgent.includes('PiBrowser');
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.includes('pibrowser') || ua.includes('pi browser') || ua.includes('minepi');
 };
 
 export const determineSandboxMode = (): boolean => {
