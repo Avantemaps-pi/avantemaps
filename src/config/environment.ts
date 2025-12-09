@@ -71,10 +71,12 @@ const isProduction = (): boolean => {
   return import.meta.env.PROD;
 };
 
-// Check if running in Pi Browser
+// Check if running in Pi Browser - ONLY use user agent detection
+// window.Pi exists even outside Pi Browser (SDK loads globally), so we can't rely on it
 const isPiBrowserEnvironment = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  return !!window.Pi || navigator.userAgent.includes('PiBrowser');
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.includes('pibrowser') || ua.includes('pi browser') || ua.includes('minepi');
 };
 
 export const shouldBypassAuth = (): boolean => {
