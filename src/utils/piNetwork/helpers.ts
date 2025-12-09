@@ -18,11 +18,11 @@ export const isPiBrowser = (): boolean => {
     if (typeof navigator === "undefined") return false;
 
     const ua = navigator.userAgent.toLowerCase();
+    // Only use user agent detection - window.Pi exists even outside Pi Browser
     return (
       ua.includes("pibrowser") ||
       ua.includes("pi browser") ||
-      ua.includes("minepi") ||
-      !!(window && (window as any).Pi)
+      ua.includes("minepi")
     );
   } catch {
     return false;
