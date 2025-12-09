@@ -104,6 +104,14 @@ export const performLogin = async (
       const inPiBrowser = isPiBrowser();
       const useTestMode = shouldBypassAuth();
       
+      // Log detection results for debugging
+      secureLog.info("🔍 Browser detection:", {
+        userAgent: navigator.userAgent,
+        inPiBrowser,
+        useTestMode,
+        hostname: window.location.hostname
+      });
+      
       if (!inPiBrowser && useTestMode) {
         // Use mock authentication for non-Pi Browser environments
         secureLog.info("🧪 Not in Pi Browser - using test mode authentication");
