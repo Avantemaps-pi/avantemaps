@@ -51,6 +51,7 @@ export const MAPS_CONFIG = {
 export const isDevelopmentMode = (): boolean => import.meta.env.DEV;
 
 // Check if we're in a preview/sandbox environment (allows test mode)
+// Only localhost and lovableproject.com are considered preview - custom domains use production
 const isPreviewEnvironment = (): boolean => {
   if (typeof window === 'undefined') return false;
   const host = window.location.host;
@@ -62,11 +63,12 @@ const isPreviewEnvironment = (): boolean => {
 const isProduction = (): boolean => {
   if (typeof window !== 'undefined') {
     const host = window.location.host;
-    // Only consider it production if it's on the actual deployed domains
-    // .lovableproject.com is the Lovable sandbox/preview environment
-    return (host.includes('lovable.app') || 
-            host.includes('app.lovable.dev')) &&
-           !host.includes('lovableproject.com');
+    // Production includes deployed domains AND custom domains (like testnet.avantemaps.com)
+    // Only lovableproject.com, localhost are NOT production
+    const isDevHost = host.includes('lovableproject.com') || 
+                      host.includes('localhost') || 
+                      host.includes('127.0.0.1');
+    return !isDevHost;
   }
   return import.meta.env.PROD;
 };
