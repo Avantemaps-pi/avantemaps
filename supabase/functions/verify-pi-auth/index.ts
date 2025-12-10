@@ -87,7 +87,7 @@ Deno.serve(async (req: Request) => {
     const requestUrl = new URL(req.url);
     const isDev = Deno.env.get('ENVIRONMENT') === 'development';
     const originHeader = req.headers.get('origin') || req.headers.get('referer') || '';
-    const isPreviewOrigin = originHeader.includes('lovableproject.com');
+    const isPreviewOrigin = originHeader.includes('lovableproject.com') || originHeader.includes('lovable.app');
     const allowTestMode = Deno.env.get('ALLOW_TEST_MODE') === 'true';
     const testParam = requestUrl.searchParams.get('test') === 'true';
     // Allow test mode on previews or dev when explicitly requested via query OR dev token
