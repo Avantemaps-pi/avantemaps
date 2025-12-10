@@ -82,39 +82,23 @@ const isPiBrowserEnvironment = (): boolean => {
 };
 
 export const shouldBypassAuth = (): boolean => {
-  // Triple-layer protection against production bypass
+  // Production mode: NO test mode fallback - requires real Pi Browser authentication
   if (isProduction()) {
-    // Even in production, if NOT in Pi Browser, allow test mode
-    // because real Pi auth is impossible anyway
-    if (!isPiBrowserEnvironment()) {
-      console.warn('🔓 Not in Pi Browser (production): Falling back to test mode');
-      return true;
-    }
-    console.error('⚠️ SECURITY WARNING: Auth bypass attempted in production Pi Browser');
+    console.log('🔒 Production mode: Real Pi Browser authentication required');
     return false;
   }
   
-  // Allow test mode in preview/dev environments
+  // Allow test mode ONLY in preview/dev environments (localhost, lovableproject.com)
   if (isPreviewEnvironment()) {
     console.warn('🔓 Preview mode: Using test authentication');
     return true;
   }
   
-  // Not in Pi Browser anywhere = allow test mode
-  if (!isPiBrowserEnvironment()) {
-    console.warn('🔓 Not in Pi Browser: Falling back to test mode');
+  // Development mode with bypass enabled
+  if (DEV_CONFIG.bypassAuth) {
+    console.warn('🔓 Development mode: Authentication bypass is active');
     return true;
   }
   
-  if (import.meta.env.PROD && !isPreviewEnvironment()) {
-    console.error('⚠️ SECURITY WARNING: Auth bypass attempted in production build');
-    return false;
-  }
-  
-  if (DEV_CONFIG.bypassAuth) {
-    console.warn('🔓 Development mode: Authentication bypass is active');
-    console.warn('⚠️  This feature must be disabled before production deployment');
-  }
-  
-  return DEV_CONFIG.bypassAuth;
+  return false;
 };
