@@ -100,20 +100,31 @@ export const performLogin = async (
         setPendingAuth(false);
         return;
       }
-      // Check if we're in Pi Browser
-      const inPiBrowser = isPiBrowser();
+      // Check if we're in Pi Browser (with robust fallback for trusted domains)
+      const uaPiBrowser = isPiBrowser();
+      const host = window.location.hostname;
+      const hasPiSdk = typeof window.Pi !== 'undefined';
+      const isTrustedDomain =
+        host.includes('avantemaps.com') ||
+        host.endsWith('.pinet.com') ||
+        host.includes('pinet');
+
+      const inPiBrowser = uaPiBrowser || (isTrustedDomain && hasPiSdk);
       
       // Log detection results for debugging
       secureLog.info("🔍 Browser detection:", {
         userAgent: navigator.userAgent,
+        uaPiBrowser,
         inPiBrowser,
-        hostname: window.location.hostname
+        hostname: host,
+        hasPiSdk,
+        isTrustedDomain,
       });
       
-      // PRODUCTION: Require Pi Browser - no fallback to test mode
+      // PRODUCTION: Require Pi Browser - no fallback to test mode (but allow robust detection)
       if (!inPiBrowser) {
         const errorMsg = "This app requires the Pi Browser. Please open it in the official Pi Browser app to continue.";
-        secureLog.warn("❌ Not in Pi Browser - authentication blocked");
+        secureLog.warn("❌ Not in Pi Browser - authentication blocked", { host, hasPiSdk, uaPiBrowser });
         setAuthError(errorMsg);
         toast.error(errorMsg);
         setIsLoading(false);
