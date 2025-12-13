@@ -50,12 +50,27 @@ export const MAPS_CONFIG = {
 // Development mode helpers with production safety checks
 export const isDevelopmentMode = (): boolean => import.meta.env.DEV;
 
-// PRODUCTION MODE: All environments require real Pi Browser authentication
-// No test mode, no preview fallbacks - Pi Browser only
-
+/**
+ * Check if authentication should be bypassed (test mode)
+ * Only enabled for Lovable preview domains to allow debugging
+ * Production deployments always require real Pi authentication
+ */
 export const shouldBypassAuth = (): boolean => {
-  // PRODUCTION: Never bypass authentication
-  // Real Pi Browser authentication is always required
+  const hostname = window.location.hostname;
+  
+  // Allow test mode ONLY on Lovable preview domains
+  if (hostname.includes('lovable.app') || hostname.includes('lovableproject.com')) {
+    console.log('🧪 Preview environment: Test mode enabled');
+    return true;
+  }
+  
+  // Production: never bypass
   console.log('🔒 Production mode: Real Pi Browser authentication required');
   return false;
+};
+
+// Mock user for test mode only
+export const getMockUser = () => {
+  if (!shouldBypassAuth()) return null;
+  return DEV_CONFIG.mockUser;
 };

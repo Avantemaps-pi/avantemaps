@@ -84,10 +84,12 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🚀 [${traceId}] verify-pi-auth invoked from IP: ${clientIP}`);
  
-    // PRODUCTION MODE: Test mode is completely disabled
-    const testMode = false;
+    // Enable test mode only for Lovable preview domains
+    const originHeader = req.headers.get('origin') || '';
+    const isPreviewOrigin = originHeader.includes('lovable.app') || originHeader.includes('lovableproject.com');
+    const testMode = isPreviewOrigin;
     
-    console.log(`🔒 [${traceId}] Production mode - test mode disabled`);
+    console.log(`🔍 [${traceId}] Test mode check:`, { originHeader, isPreviewOrigin, testMode });
 
     const rawBody = await req.text();
     let parsedBody: VerifyAuthRequest;
