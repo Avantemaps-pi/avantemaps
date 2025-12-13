@@ -56,6 +56,7 @@ const isPreviewEnvironment = (): boolean => {
   if (typeof window === 'undefined') return false;
   const host = window.location.host;
   return host.includes('lovableproject.com') || 
+         host.includes('lovable.app') ||
          host.includes('localhost') || 
          host.includes('127.0.0.1');
 };
