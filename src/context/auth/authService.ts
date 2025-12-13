@@ -150,10 +150,10 @@ export const performLogin = async (
       }
 
       const authPromise = new Promise<any>((resolve, reject) => {
-        // Increased timeout to 30 seconds - Pi SDK can be slow on mobile/slow connections
+        // Increased timeout to 90 seconds - Pi SDK can be slow on mobile/slow connections or user approval
         const authTimeout = setTimeout(() => {
           reject(new Error('Authentication request timed out. Please check your connection and try again.'));
-        }, 30000);
+        }, 90000);
 
         try {
           // ✅ Defensive check before calling Pi.authenticate
