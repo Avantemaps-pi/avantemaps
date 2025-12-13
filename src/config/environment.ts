@@ -50,56 +50,12 @@ export const MAPS_CONFIG = {
 // Development mode helpers with production safety checks
 export const isDevelopmentMode = (): boolean => import.meta.env.DEV;
 
-// Check if we're in a preview/sandbox environment (allows test mode)
-// Only localhost and lovableproject.com are considered preview - custom domains use production
-const isPreviewEnvironment = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  const host = window.location.host;
-  return host.includes('lovableproject.com') || 
-         host.includes('lovable.app') ||
-         host.includes('localhost') || 
-         host.includes('127.0.0.1');
-};
-
-const isProduction = (): boolean => {
-  if (typeof window !== 'undefined') {
-    const host = window.location.host;
-    // Production includes deployed domains AND custom domains (like testnet.avantemaps.com)
-    // Only lovableproject.com, localhost are NOT production
-    const isDevHost = host.includes('lovableproject.com') || 
-                      host.includes('localhost') || 
-                      host.includes('127.0.0.1');
-    return !isDevHost;
-  }
-  return import.meta.env.PROD;
-};
-
-// Check if running in Pi Browser - ONLY use user agent detection
-// window.Pi exists even outside Pi Browser (SDK loads globally), so we can't rely on it
-const isPiBrowserEnvironment = (): boolean => {
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent.toLowerCase();
-  return ua.includes('pibrowser') || ua.includes('pi browser') || ua.includes('minepi');
-};
+// PRODUCTION MODE: All environments require real Pi Browser authentication
+// No test mode, no preview fallbacks - Pi Browser only
 
 export const shouldBypassAuth = (): boolean => {
-  // Production mode: NO test mode fallback - requires real Pi Browser authentication
-  if (isProduction()) {
-    console.log('🔒 Production mode: Real Pi Browser authentication required');
-    return false;
-  }
-  
-  // Allow test mode ONLY in preview/dev environments (localhost, lovableproject.com)
-  if (isPreviewEnvironment()) {
-    console.warn('🔓 Preview mode: Using test authentication');
-    return true;
-  }
-  
-  // Development mode with bypass enabled
-  if (DEV_CONFIG.bypassAuth) {
-    console.warn('🔓 Development mode: Authentication bypass is active');
-    return true;
-  }
-  
+  // PRODUCTION: Never bypass authentication
+  // Real Pi Browser authentication is always required
+  console.log('🔒 Production mode: Real Pi Browser authentication required');
   return false;
 };

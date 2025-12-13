@@ -100,82 +100,25 @@ export const performLogin = async (
         setPendingAuth(false);
         return;
       }
-      // Check if we should use test mode (not in Pi Browser)
+      // Check if we're in Pi Browser
       const inPiBrowser = isPiBrowser();
-      const useTestMode = shouldBypassAuth();
       
       // Log detection results for debugging
       secureLog.info("🔍 Browser detection:", {
         userAgent: navigator.userAgent,
         inPiBrowser,
-        useTestMode,
         hostname: window.location.hostname
       });
       
-      if (!inPiBrowser && useTestMode) {
-        // Use mock authentication for non-Pi Browser environments
-        secureLog.info("🧪 Not in Pi Browser - using test mode authentication");
-        
-        const mockUser = DEV_CONFIG.mockUser;
-        const mockAuthResult = {
-          accessToken: 'test-access-token',
-          user: {
-            uid: mockUser.pi_uid,
-            username: mockUser.username,
-            roles: mockUser.roles,
-            wallet_address: mockUser.walletAddress
-          }
-        };
-        
-        // Verify with backend in test mode
-        try {
-          const verificationResult = await verifyPiAuthentication(
-            mockAuthResult.accessToken,
-            mockAuthResult.user.uid,
-            mockAuthResult.user.username,
-            true // testMode flag
-          );
-          
-          const token = (verificationResult as any).supabase_token || (verificationResult as any).supabaseToken;
-          const refreshToken = (verificationResult as any).refresh_token;
-          
-          if (verificationResult.verified && token) {
-            const sessionPayload: any = { access_token: token };
-            if (refreshToken) {
-              sessionPayload.refresh_token = refreshToken;
-            }
-            
-            const { error: sessionError } = await supabase.auth.setSession(sessionPayload);
-            if (sessionError) {
-              throw new Error("Test mode session setup failed");
-            }
-            
-            secureLog.info("✅ Test mode Supabase session established");
-          }
-          
-          // Build user object
-          const userData: PiUser = {
-            uid: mockUser.uid,
-            username: mockUser.username,
-            walletAddress: mockUser.walletAddress,
-            roles: mockUser.roles,
-            lastAuthenticated: Date.now(),
-            subscriptionTier: mockUser.subscriptionTier
-          };
-          
-          await updateUserData(userData, setUser);
-          toast.success(`Welcome back, ${userData.username}! (Test Mode)`);
-          secureLog.info("✅ Test mode login complete");
-          return;
-        } catch (err) {
-          secureLog.error("Test mode authentication failed:", err);
-          setAuthError("Test mode authentication failed");
-          toast.error("Test mode authentication failed. Please try again.");
-          return;
-        } finally {
-          setIsLoading(false);
-          setPendingAuth(false);
-        }
+      // PRODUCTION: Require Pi Browser - no fallback to test mode
+      if (!inPiBrowser) {
+        const errorMsg = "This app requires the Pi Browser. Please open it in the official Pi Browser app to continue.";
+        secureLog.warn("❌ Not in Pi Browser - authentication blocked");
+        setAuthError(errorMsg);
+        toast.error(errorMsg);
+        setIsLoading(false);
+        setPendingAuth(false);
+        return;
       }
       
       // Real Pi Browser authentication
@@ -261,59 +204,10 @@ export const performLogin = async (
       }
 
       
-      // Always verify with backend to establish Supabase session
-      const isDevelopment = import.meta.env.DEV;
+      // Always verify with backend to establish Supabase session (PRODUCTION ONLY)
       let verificationSucceeded = false;
       
-      if (isDevelopment) {
-        secureLog.info("Development mode: Using test verification to create Supabase session");
-        
-        try {
-          const verificationResult = await verifyPiAuthentication(
-            authResult.accessToken,
-            authResult.user.uid,
-            authResult.user.username,
-            true  // testMode flag
-          );
-          
-          secureLog.info("✅ Backend verification result:", {
-            verified: verificationResult.verified,
-            hasToken: !!(verificationResult as any).supabase_token,
-            testMode: (verificationResult as any).testMode
-          });
-          
-          const token = (verificationResult as any).supabase_token || (verificationResult as any).supabaseToken;
-          const refreshToken = (verificationResult as any).refresh_token;
-          if (verificationResult.verified && token) {
-            const sessionPayload: any = { access_token: token };
-            if (refreshToken) {
-              sessionPayload.refresh_token = refreshToken;
-            }
-            
-            const { error: sessionError } = await supabase.auth.setSession(sessionPayload);
-
-            if (sessionError) {
-              console.error("❌ Failed to set Supabase session:", {
-                error: sessionError,
-                message: sessionError.message,
-                status: sessionError.status
-              });
-              throw new Error("Development session setup failed");
-            }
-            
-            secureLog.info("✅ Development Supabase session established");
-            verificationSucceeded = true;
-          }
-        } catch (err) {
-          secureLog.error("💥 Development verification failed:", {
-            error: err,
-            message: err instanceof Error ? err.message : 'Unknown error',
-            stack: err instanceof Error ? err.stack : undefined
-          });
-          toast.error("Development session setup failed");
-          throw err;
-        }
-      } else {
+      {
         // Immediately verify with backend (do not persist token)
         secureLog.info("Verifying token with backend", {
           uid: authResult.user.uid,
