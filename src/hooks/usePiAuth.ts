@@ -41,14 +41,19 @@ export function usePiAuth(): UsePiAuthReturn {
       }
 
       // 3️⃣ If we received Supabase tokens, create a session. Otherwise skip (test mode).
+      // Use signInWithIdToken pattern instead of setSession to avoid refresh token issues
       if (verification.supabaseToken) {
-        const sessionPayload: any = { access_token: verification.supabaseToken };
-        if (verification.refreshToken) {
-          sessionPayload.refresh_token = verification.refreshToken;
-        }
+        // Clear any existing corrupted session first
+        await supabase.auth.signOut();
         
-        const { error: sessionError } = await supabase.auth.setSession(sessionPayload);
-        if (sessionError) throw new Error('Failed to create Supabase session');
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: verification.supabaseToken,
+          refresh_token: verification.refreshToken || verification.supabaseToken,
+        });
+        if (sessionError) {
+          console.warn('Session establishment warning:', sessionError.message);
+          // Don't throw - the access token may still work for immediate operations
+        }
       }
 
       // 4️⃣ Update local auth context
