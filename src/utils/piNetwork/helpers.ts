@@ -18,16 +18,34 @@ export const isPiBrowser = (): boolean => {
     if (typeof navigator === "undefined") return false;
 
     const ua = navigator.userAgent.toLowerCase();
-    // Only use user agent detection - window.Pi exists even outside Pi Browser
-    return (
+    const uaDetected =
       ua.includes("pibrowser") ||
       ua.includes("pi browser") ||
-      ua.includes("minepi")
-    );
+      ua.includes("minepi");
+
+    if (uaDetected) return true;
+
+    // Fallback: in production custom domains, treat a loaded Pi SDK as Pi Browser
+    // This avoids blocking real users when UA strings change
+    if (typeof window !== "undefined") {
+      const host = window.location?.hostname || "";
+      const hasPiSdk = typeof (window as any).Pi !== "undefined";
+      const isTrustedDomain =
+        host.includes("avantemaps.com") ||
+        host.endsWith(".pinet.com") ||
+        host.includes("pinet");
+
+      if (hasPiSdk && isTrustedDomain) {
+        return true;
+      }
+    }
+
+    return false;
   } catch {
     return false;
   }
 };
+
 
 /**
  * Returns basic browser diagnostics.
