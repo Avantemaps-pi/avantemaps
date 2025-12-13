@@ -112,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const REFRESH_COOLDOWN = 15 * 60 * 1000;
-  const AUTH_TIMEOUT = 45 * 1000;
+  const AUTH_TIMEOUT = 120 * 1000;
 
   // --- Token verification (fixed: return false when no token unless bypass) ---
   const isTokenValid = async (accessToken?: string): Promise<boolean> => {
