@@ -8,7 +8,7 @@ export interface PlacePrediction {
   secondaryText: string;
   lat: number;
   lon: number;
-  originalQuery?: string; // Store original search query
+  originalQuery?: string;
   address: {
     house_number?: string;
     road?: string;
@@ -32,11 +32,22 @@ export interface PlaceDetails {
   placeId: string;
 }
 
+export interface GeocodingOptions {
+  viewbox?: {
+    minLon: number;
+    minLat: number;
+    maxLon: number;
+    maxLat: number;
+  };
+  countrycodes?: string;
+  tag?: string;
+}
+
 export const useLocationIQAutocomplete = () => {
   const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const getSuggestions = useCallback(async (input: string): Promise<void> => {
+  const getSuggestions = useCallback(async (input: string, options?: GeocodingOptions): Promise<void> => {
     if (!input.trim() || input.length < 3) {
       setPredictions([]);
       return;
@@ -45,8 +56,27 @@ export const useLocationIQAutocomplete = () => {
     setIsLoading(true);
 
     try {
+      // Build request body with optional parameters
+      const requestBody: Record<string, any> = { address: input };
+      
+      // Add viewbox if provided (format: "minLon,minLat,maxLon,maxLat")
+      if (options?.viewbox) {
+        const { minLon, minLat, maxLon, maxLat } = options.viewbox;
+        requestBody.viewbox = `${minLon},${minLat},${maxLon},${maxLat}`;
+      }
+      
+      // Add country codes if provided
+      if (options?.countrycodes) {
+        requestBody.countrycodes = options.countrycodes;
+      }
+      
+      // Add tag filter if provided
+      if (options?.tag) {
+        requestBody.tag = options.tag;
+      }
+
       const { data, error } = await supabase.functions.invoke('geocode-address', {
-        body: { address: input }
+        body: requestBody
       });
 
       setIsLoading(false);
@@ -62,7 +92,7 @@ export const useLocationIQAutocomplete = () => {
           data.suggestions.map((suggestion: any) => ({
             placeId: suggestion.place_id || suggestion.osm_id || `${suggestion.lat}-${suggestion.lon}`,
             description: suggestion.display_name || suggestion.name || '',
-            originalQuery: input, // Store the original search query
+            originalQuery: input,
             mainText: (() => {
               const addr = suggestion.address;
               if (addr?.house_number && addr?.road) {
@@ -75,11 +105,11 @@ export const useLocationIQAutocomplete = () => {
             })(),
             secondaryText: (() => {
               const addr = suggestion.address;
-              const parts = [
-                addr?.city || addr?.town || addr?.village,
-                addr?.state || addr?.province,
-                addr?.country
-              ].filter(Boolean);
+              // Use normalized city from API (normalizecity=1 param)
+              const city = addr?.city || addr?.town || addr?.village;
+              const state = addr?.state || addr?.province;
+              const country = addr?.country;
+              const parts = [city, state, country].filter(Boolean);
               return parts.join(', ');
             })(),
             lat: suggestion.lat,
@@ -119,30 +149,14 @@ export const useLocationIQAutocomplete = () => {
         return null;
       }
 
-      // For LocationIQ, we need to geocode again to get precise coordinates
-      // Or we could store the coordinates in the prediction
-      try {
-        const { data, error } = await supabase.functions.invoke('geocode-address', {
-          body: { address: prediction.description }
-        });
-
-        if (error || !data?.suggestions?.[0]) {
-          console.error('Error fetching place details:', error);
-          return null;
-        }
-
-        const place = data.suggestions[0];
-        return {
-          name: prediction.mainText,
-          address: prediction.description,
-          lat: parseFloat(place.lat),
-          lng: parseFloat(place.lon),
-          placeId,
-        };
-      } catch (error) {
-        console.error('Error fetching place details:', error);
-        return null;
-      }
+      // Use cached coordinates from prediction (no need to re-geocode)
+      return {
+        name: prediction.mainText,
+        address: prediction.description,
+        lat: prediction.lat,
+        lng: prediction.lon,
+        placeId,
+      };
     },
     [predictions]
   );

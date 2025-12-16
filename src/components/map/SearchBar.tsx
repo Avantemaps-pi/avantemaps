@@ -2,8 +2,15 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, MapPin } from 'lucide-react';
 import debounce from 'lodash/debounce';
-import { useLocationIQAutocomplete } from '@/hooks/useLocationIQAutocomplete';
+import { useLocationIQAutocomplete, GeocodingOptions } from '@/hooks/useLocationIQAutocomplete';
 import { cn } from '@/lib/utils';
+
+export interface MapBounds {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+}
 
 interface SearchBarProps {
   onSearch?: (searchTerm: string) => void;
@@ -11,6 +18,8 @@ interface SearchBarProps {
   placeholders?: string[];
   cycleInterval?: number;
   enableAutocomplete?: boolean;
+  mapBounds?: MapBounds;
+  countrycodes?: string;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
@@ -23,7 +32,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
     "Search by description"
   ],
   cycleInterval = 3000,
-  enableAutocomplete = true
+  enableAutocomplete = true,
+  mapBounds,
+  countrycodes
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
@@ -34,10 +45,27 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   const { predictions, getSuggestions, getPlaceDetails, clearSuggestions } = useLocationIQAutocomplete();
 
-  // Debounced autocomplete function
+  // Debounced autocomplete function with map bounds for location bias
   const debouncedAutocomplete = useCallback(
-    debounce((value: string) => {
-      getSuggestions(value);
+    debounce((value: string, bounds?: MapBounds, codes?: string) => {
+      const options: GeocodingOptions = {};
+      
+      // Add viewbox for location bias if map bounds available
+      if (bounds) {
+        options.viewbox = {
+          minLon: bounds.minLng,
+          minLat: bounds.minLat,
+          maxLon: bounds.maxLng,
+          maxLat: bounds.maxLat
+        };
+      }
+      
+      // Add country codes if provided
+      if (codes) {
+        options.countrycodes = codes;
+      }
+      
+      getSuggestions(value, Object.keys(options).length > 0 ? options : undefined);
     }, 300),
     [getSuggestions]
   );
@@ -93,7 +121,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
     if (value.trim()) {
       if (enableAutocomplete) {
-        debouncedAutocomplete(value);
+        debouncedAutocomplete(value, mapBounds, countrycodes);
       }
       debouncedSearch(value);
     } else {
