@@ -1,11 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFormContext } from 'react-hook-form';
 import { FormValues } from '../formSchema';
 import { Building2, MapPinned, Mail, Globe, MapPin, Loader2 } from 'lucide-react';
 import { useLocationIQAutocomplete } from '@/hooks/useLocationIQAutocomplete';
 import { buildStreetAddress, parseCity } from '../utils/addressParser';
+import { getCountryCode, commonCountries } from '../utils/countryCodeMapping';
 
 interface AddressFormFieldsProps {
   disabled?: boolean;
@@ -13,12 +15,15 @@ interface AddressFormFieldsProps {
 
 const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
   const form = useFormContext<FormValues>();
-  const { predictions, isLoading, getSuggestions, getPlaceDetails, clearSuggestions } = useLocationIQAutocomplete();
+  const { predictions, isLoading, getSuggestions, clearSuggestions } = useLocationIQAutocomplete();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout>();
   const [autofillDetected, setAutofillDetected] = useState(false);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
+  // Watch country field to filter address suggestions
+  const selectedCountry = form.watch('country');
 
   const handleAddressChange = (value: string) => {
     form.setValue('streetAddress', value);
@@ -33,7 +38,12 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
     }
 
     timeoutRef.current = setTimeout(() => {
-      getSuggestions(trimmedValue);
+      // Get country code for filtering
+      const countryCode = getCountryCode(selectedCountry);
+      
+      getSuggestions(trimmedValue, {
+        countrycodes: countryCode,
+      });
       setShowSuggestions(true);
     }, 200);
   };
@@ -79,26 +89,29 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
       console.warn('⚠️ No postal code found in address');
     }
 
-    // Auto-fill country
+    // Auto-fill country if not already set or if different
     const country = prediction.address.country || '';
     
-    if (country) {
+    if (country && !selectedCountry) {
       console.log('✓ Setting country:', country);
       form.setValue('country', country, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
-    } else {
-      console.warn('⚠️ No country found in address');
     }
 
     clearSuggestions();
     setShowSuggestions(false);
   };
 
+  // Clear suggestions when country changes
+  useEffect(() => {
+    clearSuggestions();
+    setShowSuggestions(false);
+  }, [selectedCountry, clearSuggestions]);
+
   // Detect browser autofill
   useEffect(() => {
     const detectAutofill = (e: AnimationEvent) => {
       if (e.animationName === 'onAutoFillStart') {
         setAutofillDetected(true);
-        // Reset after a delay to allow subsequent manual edits
         setTimeout(() => setAutofillDetected(false), 500);
       }
     };
@@ -137,6 +150,44 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
 
   return (
     <div className="space-y-6">
+      {/* Country - FIRST for filtering */}
+      <FormField
+        control={form.control}
+        name="country"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="text-base font-semibold flex items-center gap-2">
+              <Globe className="w-5 h-5 text-primary" />
+              Country
+            </FormLabel>
+            <Select
+              onValueChange={field.onChange}
+              value={field.value}
+              disabled={disabled}
+            >
+              <FormControl>
+                <SelectTrigger className="h-12 rounded-xl border-2 focus:border-primary transition-colors">
+                  <SelectValue placeholder="Select your country first..." />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent className="bg-background border border-border max-h-80">
+                {commonCountries.map((country) => (
+                  <SelectItem key={country.code} value={country.name}>
+                    {country.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+            {selectedCountry && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Address search will be filtered to {selectedCountry}
+              </p>
+            )}
+          </FormItem>
+        )}
+      />
+
       {/* Street Address with Autocomplete */}
       <div className="relative" ref={containerRef}>
         <FormField
@@ -151,7 +202,9 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
               <FormControl>
                 <Input
                   id="streetAddress"
-                  placeholder="Start typing to search for an address..."
+                  placeholder={selectedCountry 
+                    ? `Search for an address in ${selectedCountry}...` 
+                    : "Select a country first to search addresses..."}
                   {...field}
                   ref={(el) => {
                     inputRefs.current.streetAddress = el;
@@ -325,35 +378,6 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
           )}
         />
       </div>
-
-      {/* Country */}
-      <FormField
-        control={form.control}
-        name="country"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-base font-semibold flex items-center gap-2">
-              <Globe className="w-5 h-5 text-primary" />
-              Country
-            </FormLabel>
-            <FormControl>
-              <Input
-                id="country"
-                placeholder="e.g., Canada"
-                {...field}
-                ref={(el) => {
-                  inputRefs.current.country = el;
-                  field.ref(el);
-                }}
-                disabled={disabled}
-                autoComplete="country-name"
-                className="h-12 rounded-xl border-2 focus:border-primary transition-colors"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
     </div>
   );
 };
