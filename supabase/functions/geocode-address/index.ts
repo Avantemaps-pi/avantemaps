@@ -13,15 +13,29 @@ const RATE_LIMIT_WINDOW = 60_000; // 1 min
 const RATE_LIMIT_MAX = 10;
 
 type AddressValidation = { valid: boolean; error?: string };
+
+type GeocodingOptions = {
+  viewbox?: string; // "minLon,minLat,maxLon,maxLat"
+  countrycodes?: string; // e.g., "za,us"
+  tag?: string; // e.g., "place:*,highway:*"
+};
+
 type Suggestion = {
   display_name: string;
   lat: number;
   lon: number;
+  place_id?: string;
+  osm_id?: string;
   address: {
     house_number: string;
     road: string;
     city: string;
+    town: string;
+    village: string;
+    municipality: string;
     state: string;
+    province: string;
+    region: string;
     postcode: string;
     country: string;
   };
@@ -65,15 +79,42 @@ const getUserFromToken = async (token: string) => {
   }
 };
 
-const fetchLocationIQSuggestions = async (query: string): Promise<Suggestion[]> => {
+const fetchLocationIQSuggestions = async (query: string, options: GeocodingOptions = {}): Promise<Suggestion[]> => {
   const token = Deno.env.get('LOCATIONIQ_TOKEN');
   if (!token) {
     console.error('❌ LOCATIONIQ_TOKEN environment variable is not set');
     throw new Error('LocationIQ token not configured');
   }
 
-  const url = `https://api.locationiq.com/v1/autocomplete?key=${token}&q=${encodeURIComponent(query)}&format=json&limit=5`;
-  console.log('📍 Fetching from LocationIQ:', query);
+  // Build URL with improved parameters
+  const params = new URLSearchParams({
+    key: token,
+    q: query,
+    format: 'json',
+    limit: '7',
+    dedupe: '1', // Remove duplicates
+    normalizecity: '1', // Normalize city names from admin levels
+    addressdetails: '1', // Include detailed address components
+  });
+
+  // Add optional viewbox for location bias
+  if (options.viewbox) {
+    params.append('viewbox', options.viewbox);
+    params.append('bounded', '0'); // Prefer but don't restrict to viewbox
+  }
+
+  // Add optional country code filtering
+  if (options.countrycodes) {
+    params.append('countrycodes', options.countrycodes);
+  }
+
+  // Add optional tag filtering for result types
+  if (options.tag) {
+    params.append('tag', options.tag);
+  }
+
+  const url = `https://api.locationiq.com/v1/autocomplete?${params.toString()}`;
+  console.log('📍 Fetching from LocationIQ:', query, options.viewbox ? `(viewbox: ${options.viewbox})` : '');
   
   const res = await fetch(url);
   
@@ -94,22 +135,46 @@ const fetchLocationIQSuggestions = async (query: string): Promise<Suggestion[]> 
     display_name: item.display_name,
     lat: parseFloat(item.lat),
     lon: parseFloat(item.lon),
+    place_id: item.place_id,
+    osm_id: item.osm_id,
     address: {
       house_number: item.address?.house_number || '',
       road: item.address?.road || '',
-      city: item.address?.city || item.address?.town || item.address?.village || '',
-      state: item.address?.state || item.address?.state_district || '',
+      city: item.address?.city || '',
+      town: item.address?.town || '',
+      village: item.address?.village || '',
+      municipality: item.address?.municipality || '',
+      state: item.address?.state || '',
+      province: item.address?.province || '',
+      region: item.address?.region || item.address?.state_district || '',
       postcode: item.address?.postcode || '',
       country: item.address?.country || ''
     }
   }));
 };
 
-const fetchNominatimSuggestions = async (query: string): Promise<Suggestion[]> => {
-  // Nominatim is free and doesn't require an API key
-  // Rate limit: 1 request per second (we respect this in our usage)
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`;
+const fetchNominatimSuggestions = async (query: string, options: GeocodingOptions = {}): Promise<Suggestion[]> => {
+  // Build URL with improved parameters
+  const params = new URLSearchParams({
+    q: query,
+    format: 'json',
+    addressdetails: '1',
+    limit: '7',
+    dedupe: '1',
+  });
+
+  // Add optional viewbox for location bias
+  if (options.viewbox) {
+    params.append('viewbox', options.viewbox);
+    params.append('bounded', '0');
+  }
+
+  // Add optional country code filtering
+  if (options.countrycodes) {
+    params.append('countrycodes', options.countrycodes);
+  }
   
+  const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
   console.log('🌍 Fetching from Nominatim (fallback):', query);
   
   const res = await fetch(url, {
@@ -135,27 +200,34 @@ const fetchNominatimSuggestions = async (query: string): Promise<Suggestion[]> =
     display_name: item.display_name,
     lat: parseFloat(item.lat),
     lon: parseFloat(item.lon),
+    place_id: item.place_id,
+    osm_id: item.osm_id,
     address: {
       house_number: item.address?.house_number || '',
       road: item.address?.road || '',
-      city: item.address?.city || item.address?.town || item.address?.village || item.address?.municipality || '',
-      state: item.address?.state || item.address?.province || item.address?.region || item.address?.state_district || '',
+      city: item.address?.city || '',
+      town: item.address?.town || '',
+      village: item.address?.village || '',
+      municipality: item.address?.municipality || '',
+      state: item.address?.state || '',
+      province: item.address?.province || '',
+      region: item.address?.region || item.address?.state_district || '',
       postcode: item.address?.postcode || '',
       country: item.address?.country || ''
     }
   }));
 };
 
-const fetchGeocodingSuggestions = async (query: string): Promise<Suggestion[]> => {
+const fetchGeocodingSuggestions = async (query: string, options: GeocodingOptions = {}): Promise<Suggestion[]> => {
   try {
     // Try LocationIQ first (primary provider)
-    return await fetchLocationIQSuggestions(query);
+    return await fetchLocationIQSuggestions(query, options);
   } catch (locationIQError: any) {
     console.warn('⚠️ LocationIQ failed, falling back to Nominatim:', locationIQError.message);
     
     try {
       // Fallback to Nominatim (free, no API key required)
-      return await fetchNominatimSuggestions(query);
+      return await fetchNominatimSuggestions(query, options);
     } catch (nominatimError: any) {
       console.error('❌ Both geocoding providers failed');
       throw new Error('All geocoding providers unavailable');
@@ -183,11 +255,19 @@ serve(async (req) => {
     const rateCheck = checkRateLimit(rateLimitKey);
     if (!rateCheck.allowed) return new Response(JSON.stringify({ error: rateCheck.error }), { status: 429, headers: CORS_HEADERS });
 
-    const { address } = await req.json();
+    const body = await req.json();
+    const { address, viewbox, countrycodes, tag } = body;
+    
     const validation = validateAddress(address);
     if (!validation.valid) return new Response(JSON.stringify({ error: validation.error }), { status: 400, headers: CORS_HEADERS });
 
-    const suggestions = await fetchGeocodingSuggestions(address.trim());
+    // Build options from request
+    const options: GeocodingOptions = {};
+    if (viewbox) options.viewbox = viewbox;
+    if (countrycodes) options.countrycodes = countrycodes;
+    if (tag) options.tag = tag;
+
+    const suggestions = await fetchGeocodingSuggestions(address.trim(), options);
 
     return new Response(JSON.stringify({ suggestions }), { headers: CORS_HEADERS });
   } catch (err: any) {
