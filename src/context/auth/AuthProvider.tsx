@@ -234,9 +234,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Delay restore slightly to allow SDK load
-    const timer = setTimeout(restoreSession, 1500);
-    return () => clearTimeout(timer);
+    // Restore session immediately - no artificial delay needed
+    restoreSession();
   }, [safeSetUser]);
 
   // --- Robust SDK initialization helper (retries + timeout) ---
