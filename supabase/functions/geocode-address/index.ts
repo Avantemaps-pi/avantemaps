@@ -17,7 +17,7 @@ type AddressValidation = { valid: boolean; error?: string };
 type GeocodingOptions = {
   viewbox?: string; // "minLon,minLat,maxLon,maxLat"
   countrycodes?: string; // e.g., "za,us"
-  tag?: string; // e.g., "place:*,highway:*"
+  tag?: string; // e.g., "address,place"
 };
 
 type Suggestion = {
@@ -79,78 +79,86 @@ const getUserFromToken = async (token: string) => {
   }
 };
 
-const fetchLocationIQSuggestions = async (query: string, options: GeocodingOptions = {}): Promise<Suggestion[]> => {
-  const token = Deno.env.get('LOCATIONIQ_TOKEN');
+const fetchMapboxSuggestions = async (query: string, options: GeocodingOptions = {}): Promise<Suggestion[]> => {
+  const token = Deno.env.get('MAPBOX_TOKEN');
   if (!token) {
-    console.error('❌ LOCATIONIQ_TOKEN environment variable is not set');
-    throw new Error('LocationIQ token not configured');
+    console.error('❌ MAPBOX_TOKEN environment variable is not set');
+    throw new Error('Mapbox token not configured');
   }
 
-  // Build URL with improved parameters
+  // Build URL with Mapbox Geocoding API v5
+  const encodedQuery = encodeURIComponent(query);
   const params = new URLSearchParams({
-    key: token,
-    q: query,
-    format: 'json',
+    access_token: token,
     limit: '7',
-    dedupe: '1', // Remove duplicates
-    normalizecity: '1', // Normalize city names from admin levels
-    addressdetails: '1', // Include detailed address components
+    autocomplete: 'true',
+    types: 'address,place,locality,neighborhood,postcode',
   });
 
-  // Add optional viewbox for location bias
-  if (options.viewbox) {
-    params.append('viewbox', options.viewbox);
-    params.append('bounded', '0'); // Prefer but don't restrict to viewbox
-  }
-
-  // Add optional country code filtering
+  // Add optional country code filtering (Mapbox uses comma-separated ISO codes)
   if (options.countrycodes) {
-    params.append('countrycodes', options.countrycodes);
+    params.append('country', options.countrycodes.toLowerCase());
   }
 
-  // Add optional tag filtering for result types
-  if (options.tag) {
-    params.append('tag', options.tag);
+  // Add optional bbox for location bias (Mapbox format: minLon,minLat,maxLon,maxLat)
+  if (options.viewbox) {
+    params.append('bbox', options.viewbox);
   }
 
-  const url = `https://api.locationiq.com/v1/autocomplete?${params.toString()}`;
-  console.log('📍 Fetching from LocationIQ:', query, options.viewbox ? `(viewbox: ${options.viewbox})` : '');
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedQuery}.json?${params.toString()}`;
+  console.log('📍 Fetching from Mapbox:', query, options.countrycodes ? `(country: ${options.countrycodes})` : '');
   
   const res = await fetch(url);
   
   if (!res.ok) {
     const errorText = await res.text();
-    console.error('❌ LocationIQ API error:', {
+    console.error('❌ Mapbox API error:', {
       status: res.status,
       statusText: res.statusText,
       body: errorText
     });
-    throw new Error(`LocationIQ API error: ${res.status} - ${errorText}`);
+    throw new Error(`Mapbox API error: ${res.status} - ${errorText}`);
   }
   
   const data = await res.json();
-  console.log('✅ LocationIQ returned', data.length, 'suggestions');
+  console.log('✅ Mapbox returned', data.features?.length || 0, 'suggestions');
 
-  return data.map((item: any) => ({
-    display_name: item.display_name,
-    lat: parseFloat(item.lat),
-    lon: parseFloat(item.lon),
-    place_id: item.place_id,
-    osm_id: item.osm_id,
-    address: {
-      house_number: item.address?.house_number || '',
-      road: item.address?.road || '',
-      city: item.address?.city || '',
-      town: item.address?.town || '',
-      village: item.address?.village || '',
-      municipality: item.address?.municipality || '',
-      state: item.address?.state || '',
-      province: item.address?.province || '',
-      region: item.address?.region || item.address?.state_district || '',
-      postcode: item.address?.postcode || '',
-      country: item.address?.country || ''
-    }
-  }));
+  return (data.features || []).map((feature: any) => {
+    // Parse context for address components
+    const context = feature.context || [];
+    const getContextValue = (type: string) => {
+      const item = context.find((c: any) => c.id?.startsWith(type));
+      return item?.text || '';
+    };
+
+    // Extract address number from the feature
+    const addressNumber = feature.address || '';
+    const streetName = feature.text || '';
+    
+    // Build display name similar to LocationIQ format
+    const placeName = feature.place_name || '';
+
+    return {
+      display_name: placeName,
+      lat: feature.center?.[1] || 0,
+      lon: feature.center?.[0] || 0,
+      place_id: feature.id,
+      osm_id: feature.id,
+      address: {
+        house_number: addressNumber,
+        road: streetName,
+        city: getContextValue('place') || getContextValue('locality'),
+        town: getContextValue('place'),
+        village: getContextValue('locality'),
+        municipality: getContextValue('district'),
+        state: getContextValue('region'),
+        province: getContextValue('region'),
+        region: getContextValue('region'),
+        postcode: getContextValue('postcode'),
+        country: getContextValue('country'),
+      }
+    };
+  });
 };
 
 const fetchNominatimSuggestions = async (query: string, options: GeocodingOptions = {}): Promise<Suggestion[]> => {
@@ -220,10 +228,10 @@ const fetchNominatimSuggestions = async (query: string, options: GeocodingOption
 
 const fetchGeocodingSuggestions = async (query: string, options: GeocodingOptions = {}): Promise<Suggestion[]> => {
   try {
-    // Try LocationIQ first (primary provider)
-    return await fetchLocationIQSuggestions(query, options);
-  } catch (locationIQError: any) {
-    console.warn('⚠️ LocationIQ failed, falling back to Nominatim:', locationIQError.message);
+    // Try Mapbox first (primary provider)
+    return await fetchMapboxSuggestions(query, options);
+  } catch (mapboxError: any) {
+    console.warn('⚠️ Mapbox failed, falling back to Nominatim:', mapboxError.message);
     
     try {
       // Fallback to Nominatim (free, no API key required)
@@ -272,7 +280,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ suggestions }), { headers: CORS_HEADERS });
   } catch (err: any) {
     console.error('❌ Geocode error:', err.message || err);
-    const errorMessage = err.message?.includes('LocationIQ') 
+    const errorMessage = err.message?.includes('Mapbox') 
       ? 'Address lookup service error. Please try again.'
       : 'Service temporarily unavailable';
     return new Response(JSON.stringify({ error: errorMessage }), { status: 500, headers: CORS_HEADERS });
