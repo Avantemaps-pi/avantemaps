@@ -1,13 +1,17 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFormContext } from 'react-hook-form';
 import { FormValues } from '../formSchema';
-import { Building2, MapPinned, Mail, Globe, MapPin, Loader2 } from 'lucide-react';
+import { Building2, MapPinned, Mail, Globe, MapPin, Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { useLocationIQAutocomplete } from '@/hooks/useLocationIQAutocomplete';
 import { buildStreetAddress, parseCity } from '../utils/addressParser';
-import { getCountryCode, commonCountries } from '../utils/countryCodeMapping';
+import { getCountryCode, allCountries, commonCountries } from '../utils/countryCodeMapping';
+import { useCountryGeolocation } from '@/hooks/useCountryGeolocation';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface AddressFormFieldsProps {
   disabled?: boolean;
@@ -21,9 +25,20 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
   const timeoutRef = useRef<NodeJS.Timeout>();
   const [autofillDetected, setAutofillDetected] = useState(false);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const [countryOpen, setCountryOpen] = useState(false);
 
   // Watch country field to filter address suggestions
   const selectedCountry = form.watch('country');
+
+  // Auto-detect user's country
+  const { country: detectedCountry, isLoading: isDetectingCountry } = useCountryGeolocation();
+
+  // Pre-select detected country if form is empty
+  useEffect(() => {
+    if (detectedCountry && !selectedCountry && !isDetectingCountry) {
+      form.setValue('country', detectedCountry, { shouldValidate: true });
+    }
+  }, [detectedCountry, selectedCountry, isDetectingCountry, form]);
 
   const handleAddressChange = (value: string) => {
     form.setValue('streetAddress', value);
@@ -150,34 +165,87 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
 
   return (
     <div className="space-y-6">
-      {/* Country - FIRST for filtering */}
+      {/* Country - FIRST for filtering (Searchable Combobox) */}
       <FormField
         control={form.control}
         name="country"
         render={({ field }) => (
-          <FormItem>
+          <FormItem className="flex flex-col">
             <FormLabel className="text-base font-semibold flex items-center gap-2">
               <Globe className="w-5 h-5 text-primary" />
               Country
+              {isDetectingCountry && (
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              )}
             </FormLabel>
-            <Select
-              onValueChange={field.onChange}
-              value={field.value}
-              disabled={disabled}
-            >
-              <FormControl>
-                <SelectTrigger className="h-12 rounded-xl border-2 focus:border-primary transition-colors">
-                  <SelectValue placeholder="Select your country first..." />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent className="bg-background border border-border max-h-80">
-                {commonCountries.map((country) => (
-                  <SelectItem key={country.code} value={country.name}>
-                    {country.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+              <PopoverTrigger asChild>
+                <FormControl>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={countryOpen}
+                    disabled={disabled}
+                    className={cn(
+                      "h-12 w-full justify-between rounded-xl border-2 hover:bg-transparent",
+                      !field.value && "text-muted-foreground"
+                    )}
+                  >
+                    {field.value || "Select your country first..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </FormControl>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0 bg-background border border-border" align="start">
+                <Command>
+                  <CommandInput placeholder="Search countries..." />
+                  <CommandList className="max-h-80">
+                    <CommandEmpty>No country found.</CommandEmpty>
+                    <CommandGroup heading="Popular">
+                      {commonCountries.map((country) => (
+                        <CommandItem
+                          key={`common-${country.code}`}
+                          value={country.name}
+                          onSelect={() => {
+                            field.onChange(country.name);
+                            setCountryOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              field.value === country.name ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {country.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    <CommandSeparator />
+                    <CommandGroup heading="All Countries">
+                      {allCountries.map((country) => (
+                        <CommandItem
+                          key={`all-${country.code}`}
+                          value={country.name}
+                          onSelect={() => {
+                            field.onChange(country.name);
+                            setCountryOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              field.value === country.name ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {country.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
             <FormMessage />
             {selectedCountry && (
               <p className="text-sm text-muted-foreground mt-1">
