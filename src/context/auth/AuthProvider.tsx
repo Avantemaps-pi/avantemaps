@@ -49,23 +49,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     isMountedRef.current = true;
-    
-    // Clear corrupted Supabase tokens on mount to prevent white screen
+
+    // Clear corrupted / stale Supabase tokens on mount to prevent auth loops
     const clearCorruptedSession = async () => {
       try {
-        const { error } = await supabase.auth.getSession();
-        if (error) {
-          secureLog.warn('Corrupted session detected, clearing...', error.message);
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        // getSession can succeed even when the server no longer recognizes the session.
+        // Validate with getUser() to catch "Session not found" and similar errors.
+        if (sessionError) {
+          secureLog.warn('Corrupted session detected (getSession), clearing...', sessionError.message);
+          await supabase.auth.signOut();
+          localStorage.removeItem(STORAGE_KEY);
+          return;
+        }
+
+        if (!session) return;
+
+        const { data: { user: supaUser }, error: userError } = await supabase.auth.getUser();
+        if (userError || !supaUser) {
+          secureLog.warn('Stale session detected (getUser), clearing...', userError?.message);
           await supabase.auth.signOut();
           localStorage.removeItem(STORAGE_KEY);
         }
       } catch (e) {
-        secureLog.error('Error checking session:', e);
+        secureLog.error('Error validating session on startup:', e);
         await supabase.auth.signOut();
+        localStorage.removeItem(STORAGE_KEY);
       }
     };
+
     clearCorruptedSession();
-    
+
     return () => {
       isMountedRef.current = false;
       if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
