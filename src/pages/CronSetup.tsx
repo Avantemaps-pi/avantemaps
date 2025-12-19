@@ -9,8 +9,9 @@ import { toast } from "sonner";
 export default function CronSetup() {
   const [copied, setCopied] = useState(false);
 
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  // Hardcoded Supabase config - Lovable doesn't support VITE_* env variables
+  const supabaseUrl = 'https://xvpwbocwasbtzrzrxyvu.supabase.co';
+  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cHdib2N3YXNidHpyenJ4eXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI4MDE2NjUsImV4cCI6MjA1ODM3NzY2NX0.J8yp04TRmdyM_l5FaOFP7Elz16n1ZlQkawH5Xp1vCs0';
 
   const cronSQL = `-- Enable required extensions (run once)
 -- CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA extensions;

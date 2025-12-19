@@ -24,7 +24,8 @@ export const DEV_CONFIG = {
   // Enable this to bypass Pi Network authentication during development
   // SECURITY: This is automatically disabled in production builds
   // CRITICAL: Remove this entire config before deploying to production
-  bypassAuth: import.meta.env.DEV && import.meta.env.VITE_ALLOW_AUTH_BYPASS !== 'false', // Only bypass in development mode
+  // Only bypass in development mode (import.meta.env.DEV is safe to use)
+  bypassAuth: import.meta.env.DEV,
   mockUser: {
     uid: "79f9f9a7-a8b8-4724-9f04-51a58c183899", // Match the actual business owner in database
     pi_uid: "dev-mock-pi-uid", // Pi Network UID
