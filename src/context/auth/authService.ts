@@ -149,11 +149,15 @@ export const performLogin = async (
         throw new Error("Pi SDK not loaded. Please open this app in the Pi Browser or reload the page.");
       }
 
+      // Show progress indicator
+      toast.info('Connecting to Pi Network...', { id: 'auth-progress', duration: 120000 });
+      
       const authPromise = new Promise<any>((resolve, reject) => {
-        // Increased timeout to 90 seconds - Pi SDK can be slow on mobile/slow connections or user approval
+        // Increased timeout to 120 seconds - Pi SDK can be slow on mobile/slow connections or user approval
         const authTimeout = setTimeout(() => {
+          toast.dismiss('auth-progress');
           reject(new Error('Authentication request timed out. Please check your connection and try again.'));
-        }, 90000);
+        }, 120000);
 
         try {
           // ✅ Defensive check before calling Pi.authenticate
@@ -164,6 +168,7 @@ export const performLogin = async (
           }
           
           secureLog.info("📱 Calling Pi.authenticate()...");
+          toast.info('Waiting for Pi Browser approval...', { id: 'auth-progress', duration: 120000 });
         
           window.Pi.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
             secureLog.info('Incomplete payment detected during authentication');
@@ -177,11 +182,13 @@ export const performLogin = async (
           })
           .then((res: any) => {
             clearTimeout(authTimeout);
+            toast.info('Verifying authentication...', { id: 'auth-progress', duration: 30000 });
             secureLog.info("📱 Pi.authenticate() resolved successfully");
             resolve(res);
           })
           .catch((err: any) => {
             clearTimeout(authTimeout);
+            toast.dismiss('auth-progress');
             console.error('❌ Pi SDK authentication error:', {
               error: err,
               errorType: err?.constructor?.name,
@@ -191,6 +198,7 @@ export const performLogin = async (
           });
         } catch (err) {
           clearTimeout(authTimeout);
+          toast.dismiss('auth-progress');
           secureLog.error("❌ Exception calling Pi.authenticate():", err);
           reject(err);
         }
@@ -371,6 +379,7 @@ export const performLogin = async (
       // Persist user meta (will fetch and set roles from database)
       await updateUserData(userData, setUser);
 
+      toast.dismiss('auth-progress');
       toast.success(`Welcome back, ${userData.username}!`);
       secureLog.info("User stored and login complete");
 

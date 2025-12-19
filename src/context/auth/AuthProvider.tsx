@@ -434,12 +434,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user, isOffline, isSdkInitialized, refreshUserData]);
 
-  // logout
-  const logout = (): void => {
+  // logout - properly clear Supabase session and all storage
+  const logout = useCallback(async (): Promise<void> => {
+    try {
+      // Clear Supabase session first
+      await supabase.auth.signOut();
+      secureLog.info('Supabase session cleared');
+    } catch (error) {
+      secureLog.error('Error signing out from Supabase:', error);
+    }
+    
+    // Clear local storage
     localStorage.removeItem(STORAGE_KEY);
+    
+    // Clear any Supabase auth storage keys
+    const keysToRemove = Object.keys(localStorage).filter(key => 
+      key.startsWith('sb-') || key.includes('supabase')
+    );
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
     safeSetUser(null);
     toast.info("You've been logged out");
-  };
+  }, [safeSetUser]);
 
   // access helpers
   const hasAccess = useCallback(
