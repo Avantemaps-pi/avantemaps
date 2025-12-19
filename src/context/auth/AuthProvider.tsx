@@ -49,39 +49,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     isMountedRef.current = true;
+    let isCleanupCanceled = false;
 
     // Clear corrupted / stale Supabase tokens on mount to prevent auth loops
     const clearCorruptedSession = async () => {
       try {
+        // Use getSession first (local check, doesn't hit server)
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        // getSession can succeed even when the server no longer recognizes the session.
-        // Validate with getUser() to catch "Session not found" and similar errors.
+        // Check if cleanup was canceled (component unmounted)
+        if (isCleanupCanceled) return;
+
         if (sessionError) {
           secureLog.warn('Corrupted session detected (getSession), clearing...', sessionError.message);
-          await supabase.auth.signOut();
-          localStorage.removeItem(STORAGE_KEY);
+          if (!isCleanupCanceled) {
+            await supabase.auth.signOut();
+            localStorage.removeItem(STORAGE_KEY);
+          }
           return;
         }
 
+        // No session means nothing to validate
         if (!session) return;
 
-        const { data: { user: supaUser }, error: userError } = await supabase.auth.getUser();
-        if (userError || !supaUser) {
-          secureLog.warn('Stale session detected (getUser), clearing...', userError?.message);
+        // Only validate with getUser if we have a session (this hits the server)
+        // Wrap in try-catch to handle "context canceled" gracefully
+        try {
+          const { data: { user: supaUser }, error: userError } = await supabase.auth.getUser();
+          
+          if (isCleanupCanceled) return;
+          
+          if (userError || !supaUser) {
+            // Handle specific error types - "context canceled" is benign
+            const errorMsg = userError?.message?.toLowerCase() || '';
+            if (errorMsg.includes('context canceled') || errorMsg.includes('aborted')) {
+              secureLog.info('Session validation was interrupted, will retry on next mount');
+              return;
+            }
+            
+            secureLog.warn('Stale session detected (getUser), clearing...', userError?.message);
+            if (!isCleanupCanceled) {
+              await supabase.auth.signOut();
+              localStorage.removeItem(STORAGE_KEY);
+            }
+          }
+        } catch (userCheckError: any) {
+          // "context canceled" is expected if component unmounts during the request
+          const errorMsg = userCheckError?.message?.toLowerCase() || '';
+          if (errorMsg.includes('context canceled') || errorMsg.includes('aborted')) {
+            secureLog.info('Session validation interrupted during unmount');
+            return;
+          }
+          throw userCheckError;
+        }
+      } catch (e: any) {
+        // Don't log or act on context canceled errors
+        const errorMsg = e?.message?.toLowerCase() || '';
+        if (errorMsg.includes('context canceled') || errorMsg.includes('aborted')) {
+          return;
+        }
+        
+        secureLog.error('Error validating session on startup:', e);
+        if (!isCleanupCanceled) {
           await supabase.auth.signOut();
           localStorage.removeItem(STORAGE_KEY);
         }
-      } catch (e) {
-        secureLog.error('Error validating session on startup:', e);
-        await supabase.auth.signOut();
-        localStorage.removeItem(STORAGE_KEY);
       }
     };
 
     clearCorruptedSession();
 
     return () => {
+      isCleanupCanceled = true;
       isMountedRef.current = false;
       if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
     };
