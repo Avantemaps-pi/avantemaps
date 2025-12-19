@@ -136,8 +136,25 @@ Deno.serve(async (req: Request) => {
     };
 
     // Helper: Create session using signInWithPassword (more reliable than magic links)
-    const createUserSession = async (email: string, password: string) => {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    // IMPORTANT: do NOT rotate/update password on every login; it invalidates existing sessions.
+    // Instead: try sign-in first, and only reset password if credentials are invalid.
+    const createUserSession = async (email: string, password: string, supabaseUserId: string) => {
+      let { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (!error && data?.session) return { data, error };
+
+      const msg = (error?.message || '').toLowerCase();
+      const status = (error as any)?.status;
+      const invalidCreds = msg.includes('invalid login') || msg.includes('invalid') || status === 400;
+
+      if (invalidCreds) {
+        console.warn(`🔧 [${traceId}] signInWithPassword failed (invalid creds). Resetting password + retrying...`);
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, { password });
+        if (updateError) return { data: null, error: updateError };
+
+        ({ data, error } = await supabase.auth.signInWithPassword({ email, password }));
+      }
+
       return { data, error };
     };
 
@@ -195,9 +212,7 @@ Deno.serve(async (req: Request) => {
       } else {
         supabaseUserId = existingUser.id;
         console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
-        
-        // Update password in case it changed (ensures login works)
-        await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, { password });
+        // Password reset (if needed) is handled inside createUserSession()
       }
 
       console.log(`🔐 [${traceId}] [TEST] Creating session for user ${supabaseUserId}`);
@@ -332,9 +347,7 @@ Deno.serve(async (req: Request) => {
     } else {
       supabaseUserId = existingUser.id;
       console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
-      
-      // Update password to ensure login works
-      await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, { password });
+      // Password reset (if needed) is handled inside createUserSession()
     }
 
     console.log(`🔐 [${traceId}] Creating session for user ${supabaseUserId}`);
