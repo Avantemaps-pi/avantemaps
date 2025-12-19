@@ -296,16 +296,17 @@ export const performLogin = async (
           } else {
             verificationSucceeded = true;
             
-            // 🔧 FIX: Set Supabase session with the JWT token
+            // 🔧 FIX: Set Supabase session with JWT token and refresh token
             const token = (verificationResult as any).supabase_token || (verificationResult as any).supabaseToken;
-            const refreshToken = (verificationResult as any).refresh_token;
+            const refreshToken = (verificationResult as any).refresh_token || (verificationResult as any).refreshToken;
             if (token) {
-              const sessionPayload: any = { access_token: token };
-              if (refreshToken) {
-                sessionPayload.refresh_token = refreshToken;
-              }
+              // CRITICAL: Always include refresh_token for session persistence
+              const sessionPayload: { access_token: string; refresh_token: string } = { 
+                access_token: token,
+                refresh_token: refreshToken || token // Use access token as fallback (session will be short-lived)
+              };
               
-              secureLog.info("Setting Supabase session with JWT token");
+              secureLog.info("Setting Supabase session with JWT token", { hasRefreshToken: !!refreshToken });
               const { error: sessionError } = await supabase.auth.setSession(sessionPayload);
               
               if (sessionError) {
