@@ -70,34 +70,48 @@ export const isPiBrowser = (): boolean => {
 
 export const determineSandboxMode = (): boolean => {
   if (typeof window === 'undefined') return true;
+  
+  // Check if index.html already set the sandbox mode
+  if (typeof (window as any).__piSandboxMode === 'boolean') {
+    return (window as any).__piSandboxMode;
+  }
+  
+  // Fallback: only production domain uses sandbox: false
   const host = window.location.hostname;
-  return import.meta.env.DEV || 
-         host === 'localhost' || 
-         host === '127.0.0.1' || 
-         host.includes('preview') ||
-         host.includes('lovableproject.com');
+  const isProduction = host === 'avantemaps.com' || host.endsWith('.avantemaps.com');
+  return !isProduction;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SDK Initialization
+// IMPORTANT: Pi.init() is called in index.html. This function only validates
+// that initialization happened and sets internal state.
 // ─────────────────────────────────────────────────────────────────────────────
 export const initializePiNetwork = async (): Promise<boolean> => {
   if (sdkLoaded) return true;
   if (sdkInitializing) return false;
 
   sandboxMode = determineSandboxMode();
+  const host = window.location?.hostname || 'unknown';
 
-  // In non-Pi Browser environments with sandbox mode, skip SDK initialization
-  // and allow test mode to work without timing out
+  // Check if SDK was already initialized by index.html
+  if (window.Pi && (window as any).__piInitialized) {
+    sdkLoaded = true;
+    console.log(`✅ Pi SDK already initialized by index.html (sandbox: ${sandboxMode}, host: ${host})`);
+    return true;
+  }
+
+  // In non-Pi Browser environments with sandbox mode, allow test mode
   if (!isPiBrowser() && sandboxMode) {
-    console.warn('⚠️ Not in Pi Browser - SDK initialization skipped (test mode available)');
-    sdkLoaded = true; // Mark as "loaded" so test mode can proceed
+    console.warn('⚠️ Not in Pi Browser - test mode available');
+    sdkLoaded = true;
     return true;
   }
 
   sdkInitializing = true;
 
   try {
+    // Wait for SDK to be available (index.html loads it)
     await loadPiSdk();
     
     if (!window.Pi) {
@@ -105,10 +119,20 @@ export const initializePiNetwork = async (): Promise<boolean> => {
       return false;
     }
 
+    // Check again if it was initialized while we were waiting
+    if ((window as any).__piInitialized) {
+      sdkLoaded = true;
+      console.log(`✅ Pi SDK initialized (detected from index.html, sandbox: ${sandboxMode})`);
+      return true;
+    }
+
+    // Last resort: initialize here (should rarely happen)
+    console.warn('⚠️ Pi SDK not initialized by index.html - initializing now');
     window.Pi.init({ version: '2.0', sandbox: sandboxMode });
     (window as any).__piInitialized = true;
+    (window as any).__piSandboxMode = sandboxMode;
     sdkLoaded = true;
-    console.log(`✅ Pi SDK initialized (sandbox: ${sandboxMode})`);
+    console.log(`✅ Pi SDK initialized (fallback, sandbox: ${sandboxMode})`);
     return true;
   } catch (error) {
     console.warn('⚠️ Pi SDK initialization failed:', error instanceof Error ? error.message : error);
@@ -130,7 +154,16 @@ export const forceSdkReinitialization = async (): Promise<boolean> => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const authenticate = async (scopes: Scope[] = ['username', 'payments']): Promise<AuthResult> => {
   if (!sdkLoaded) await initializePiNetwork();
+  
+  const host = window.location?.hostname || 'unknown';
+  const piExists = !!window.Pi;
+  const piInit = !!(window as any).__piInitialized;
+  const piSandbox = (window as any).__piSandboxMode;
+  
+  console.log('🔐 Pi.authenticate() pre-check:', { host, piExists, piInit, piSandbox, sdkLoaded });
+  
   if (!window.Pi) throw new Error('Pi SDK not available');
+  if (!window.Pi.authenticate) throw new Error('Pi.authenticate not available');
 
   const result = await window.Pi.authenticate(scopes, (uuid) => uuid);
   
