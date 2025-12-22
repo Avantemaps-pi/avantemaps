@@ -17,7 +17,7 @@ const FormContainer = ({ form, onSubmit, children, isSubmitting }: FormContainer
       <Form {...form}>
         <form 
           onSubmit={form.handleSubmit(onSubmit)} 
-          className="space-y-6 w-full max-w-4xl"
+          className="space-y-6 w-full max-w-2xl mx-auto"
         >
           {children}
         </form>
