@@ -167,17 +167,17 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
             </div>
           </div>
           
-          {!previewMode && (
-            <div className="flex flex-col gap-2 items-end">
-              <PlaceCardWebsiteButton url={place.website} />
-              
+          <div className="flex flex-col gap-2 items-end">
+            {!previewMode && <PlaceCardWebsiteButton url={place.website} />}
+            
+            <div className={previewMode ? 'pointer-events-auto' : ''}>
               <PlaceCardDetails 
                 place={place} 
                 showDetails={showDetails} 
                 isRecommendationsPage={isRecommendationsPage} 
               />
             </div>
-          )}
+          </div>
         </div>
       </CardContent>
     </Card>
