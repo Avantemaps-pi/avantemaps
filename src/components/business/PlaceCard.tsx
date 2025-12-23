@@ -24,6 +24,7 @@ interface PlaceCardProps {
   className?: string;
   showDetails?: boolean;
   isBookmarked?: boolean;
+  previewMode?: boolean;
 }
 
 const PlaceCard: React.FC<PlaceCardProps> = ({ 
@@ -32,7 +33,8 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   onRemove, 
   className,
   showDetails = false,
-  isBookmarked: initialIsBookmarked = false
+  isBookmarked: initialIsBookmarked = false,
+  previewMode = false
 }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -86,25 +88,27 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   return (
     <Card 
       key={place.id} 
-      className={`material-card card-hover ${className || 'w-full'} place-card-container`}
+      className={`material-card ${previewMode ? '' : 'card-hover'} ${className || 'w-full'} place-card-container ${previewMode ? 'pointer-events-none select-none' : ''}`}
     >
       {images.length > 0 ? (
         <div className="relative">
           <PlaceCardImage 
             image={images[currentImageIndex]} 
             name={place.name} 
-            onClick={handlePlaceClick}
+            onClick={previewMode ? undefined : handlePlaceClick}
           >
-            <PlaceCardActions 
-              isBookmarked={isBookmarked} 
-              onBookmarkToggle={handleBookmarkToggle} 
-              onShare={handleShare} 
-              placeName={place.name}
-              placeId={place.id}
-            />
+            {!previewMode && (
+              <PlaceCardActions 
+                isBookmarked={isBookmarked} 
+                onBookmarkToggle={handleBookmarkToggle} 
+                onShare={handleShare} 
+                placeName={place.name}
+                placeId={place.id}
+              />
+            )}
           </PlaceCardImage>
           
-          {images.length > 1 && (
+          {images.length > 1 && !previewMode && (
             <ImageCarousel 
               images={images}
               currentIndex={currentImageIndex}
@@ -116,15 +120,17 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
         <PlaceCardImage 
           image={place.image} 
           name={place.name} 
-          onClick={handlePlaceClick}
+          onClick={previewMode ? undefined : handlePlaceClick}
         >
-          <PlaceCardActions 
-            isBookmarked={isBookmarked} 
-            onBookmarkToggle={handleBookmarkToggle} 
-            onShare={handleShare} 
-            placeName={place.name}
-            placeId={place.id}
-          />
+          {!previewMode && (
+            <PlaceCardActions 
+              isBookmarked={isBookmarked} 
+              onBookmarkToggle={handleBookmarkToggle} 
+              onShare={handleShare} 
+              placeName={place.name}
+              placeId={place.id}
+            />
+          )}
         </PlaceCardImage>
       )}
       
@@ -136,13 +142,13 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
             </div>
           )}
           <div className="flex-1">
-            <PlaceCardTitle name={place.name} onClick={handlePlaceClick} isVerified={place.isVerified} />
+            <PlaceCardTitle name={place.name} onClick={previewMode ? undefined : handlePlaceClick} isVerified={place.isVerified} />
           </div>
         </div>
       </CardHeader>
       
       <CardContent className="pt-2 px-3 pb-3">
-        <PlaceCardAddress address={place.address} onClick={handleAddressClick} />
+        <PlaceCardAddress address={place.address} onClick={previewMode ? undefined : handleAddressClick} />
 
         <div className="relative h-20 mb-3 overflow-hidden">
           <ExpandableDescription text={place.description} maxLines={4} />
@@ -151,7 +157,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
 
         <div className="flex flex-wrap justify-between items-start gap-2">
           <div className="flex flex-col items-start gap-2">
-            <PlaceCardRating rating={place.rating} onClick={handleRatingClick} />
+            <PlaceCardRating rating={place.rating} onClick={previewMode ? undefined : handleRatingClick} />
             
             {/* Display up to 2 categories vertically */}
             <div className="flex flex-col gap-1.5">
@@ -161,15 +167,17 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
             </div>
           </div>
           
-          <div className="flex flex-col gap-2 items-end">
-            <PlaceCardWebsiteButton url={place.website} />
-            
-            <PlaceCardDetails 
-              place={place} 
-              showDetails={showDetails} 
-              isRecommendationsPage={isRecommendationsPage} 
-            />
-          </div>
+          {!previewMode && (
+            <div className="flex flex-col gap-2 items-end">
+              <PlaceCardWebsiteButton url={place.website} />
+              
+              <PlaceCardDetails 
+                place={place} 
+                showDetails={showDetails} 
+                isRecommendationsPage={isRecommendationsPage} 
+              />
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
