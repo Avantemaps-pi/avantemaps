@@ -187,7 +187,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                     aria-expanded={countryOpen}
                     disabled={disabled}
                     className={cn(
-                      "h-12 w-full justify-between rounded-xl border-2 hover:bg-transparent",
+                      "h-11 sm:h-10 w-full justify-between rounded-xl border-2 hover:bg-transparent",
                       !field.value && "text-muted-foreground"
                     )}
                   >
@@ -286,7 +286,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                   onFocus={() => predictions.length > 0 && setShowSuggestions(true)}
                   disabled={disabled}
                   autoComplete="address-line1"
-                  className="h-12 rounded-xl border-2 focus:border-primary transition-colors"
+                  className="h-11 sm:h-10 rounded-xl border-2 focus:border-primary transition-colors"
                 />
               </FormControl>
               <FormMessage />
@@ -349,7 +349,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                 }}
                 disabled={disabled}
                 autoComplete="address-line2"
-                className="h-12 rounded-xl border-2 focus:border-primary transition-colors"
+                className="h-11 sm:h-10 rounded-xl border-2 focus:border-primary transition-colors"
               />
             </FormControl>
             <FormMessage />
@@ -380,7 +380,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                   }}
                   disabled={disabled}
                   autoComplete="address-level2"
-                  className="h-12 rounded-xl border-2 focus:border-primary transition-colors"
+                  className="h-11 sm:h-10 rounded-xl border-2 focus:border-primary transition-colors"
                 />
               </FormControl>
               <FormMessage />
@@ -409,7 +409,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                   }}
                   disabled={disabled}
                   autoComplete="address-level1"
-                  className="h-12 rounded-xl border-2 focus:border-primary transition-colors"
+                  className="h-11 sm:h-10 rounded-xl border-2 focus:border-primary transition-colors"
                 />
               </FormControl>
               <FormMessage />
@@ -438,7 +438,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                   }}
                   disabled={disabled}
                   autoComplete="postal-code"
-                  className="h-12 rounded-xl border-2 focus:border-primary transition-colors"
+                  className="h-11 sm:h-10 rounded-xl border-2 focus:border-primary transition-colors"
                 />
               </FormControl>
               <FormMessage />
