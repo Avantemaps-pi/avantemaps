@@ -10,12 +10,15 @@ import {
 
 interface PlaceCardWebsiteButtonProps {
   url: string;
+  disabled?: boolean;
 }
 
-const PlaceCardWebsiteButton: React.FC<PlaceCardWebsiteButtonProps> = ({ url }) => {
+const PlaceCardWebsiteButton: React.FC<PlaceCardWebsiteButtonProps> = ({ url, disabled = false }) => {
   const handleWebsiteClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the parent's onClick
-    window.open(url, '_blank', 'noopener,noreferrer');
+    if (!disabled) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -25,8 +28,9 @@ const PlaceCardWebsiteButton: React.FC<PlaceCardWebsiteButtonProps> = ({ url }) 
           <Button 
             variant="default" 
             size="sm" 
-            className="bg-green-500 hover:bg-green-600 text-xs font-medium flex items-center gap-1 whitespace-nowrap h-9 px-3"
+            className="bg-green-500 hover:bg-green-600 text-xs font-medium flex items-center gap-1 whitespace-nowrap h-9 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleWebsiteClick}
+            disabled={disabled}
           >
             Link
             <ExternalLink className="h-3 w-3" />

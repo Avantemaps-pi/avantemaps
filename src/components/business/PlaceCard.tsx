@@ -168,7 +168,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
           </div>
           
           <div className="flex flex-col gap-2 items-end">
-            {!previewMode && <PlaceCardWebsiteButton url={place.website} />}
+            <PlaceCardWebsiteButton url={place.website} disabled={previewMode} />
             
             <div className={previewMode ? 'pointer-events-auto' : ''}>
               <PlaceCardDetails 
