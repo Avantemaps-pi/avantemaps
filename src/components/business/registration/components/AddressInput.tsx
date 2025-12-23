@@ -142,7 +142,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ disabled }) => {
                   }}
                   disabled={disabled}
                   autoComplete="off"
-                  className="pl-12 h-14 text-base rounded-xl border-2 focus:border-primary transition-colors shadow-sm"
+                  className="pl-12 h-11 sm:h-10 text-base rounded-xl border-2 focus:border-primary transition-colors shadow-sm"
                 />
               </div>
             </FormControl>
