@@ -1221,6 +1221,7 @@ export type Database = {
           created_at: string
           description: string
           id: number
+          images: string[]
           is_certified: boolean
           is_verified: boolean
           keywords: string[]

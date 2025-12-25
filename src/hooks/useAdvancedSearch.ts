@@ -17,6 +17,7 @@ interface SearchNearbyResult {
   is_verified: boolean;
   is_certified: boolean;
   relevance: number;
+  images?: string[];
 }
 
 interface SearchByLocationResult {
@@ -34,6 +35,7 @@ interface SearchByLocationResult {
   is_verified: boolean;
   is_certified: boolean;
   relevance: number;
+  images?: string[];
 }
 
 const transformToPlace = (result: SearchNearbyResult | SearchByLocationResult): Place => {
@@ -65,7 +67,7 @@ const transformToPlace = (result: SearchNearbyResult | SearchByLocationResult): 
     postalCode: result.postal_code,
     distance: 'distance_meters' in result ? result.distance_meters : undefined,
     relevance: result.relevance,
-    image: '/placeholder.svg',
+    image: result.images?.[0] || '/placeholder.svg',
     website: '',
     phone: '',
     hours: {},

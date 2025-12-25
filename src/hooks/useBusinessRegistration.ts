@@ -383,11 +383,30 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
           });
 
           const uploadedPaths = await Promise.all(uploadPromises);
-          const successfulUploads = uploadedPaths.filter(path => path !== null);
+          const successfulUploads = uploadedPaths.filter(path => path !== null) as string[];
 
           if (successfulUploads.length > 0) {
-            console.log(`✅ Uploaded ${successfulUploads.length} optimized images to storage`);
-            toast.success(`Business registered with ${successfulUploads.length} image(s) (${reduction}% smaller)!`);
+            // Generate public URLs for the uploaded images
+            const imageUrls = successfulUploads.map(path => {
+              const { data } = supabase.storage
+                .from('business-images')
+                .getPublicUrl(path);
+              return data.publicUrl;
+            });
+
+            // Update the business record with image URLs
+            const { error: updateError } = await supabase
+              .from('businesses')
+              .update({ images: imageUrls })
+              .eq('id', newBusiness.id);
+
+            if (updateError) {
+              console.error('Error saving image URLs to database:', updateError);
+              toast.warning('Images uploaded but URLs could not be saved');
+            } else {
+              console.log(`✅ Uploaded ${successfulUploads.length} optimized images and saved URLs to database`);
+              toast.success(`Business registered with ${successfulUploads.length} image(s) (${reduction}% smaller)!`);
+            }
           }
         } catch (imgErr) {
           console.error('Image upload process error:', imgErr);
