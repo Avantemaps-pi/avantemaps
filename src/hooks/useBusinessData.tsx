@@ -22,6 +22,7 @@ interface PublicBusinessInfo {
   country?: string;
   latitude?: number;
   longitude?: number;
+  images?: string[];
 }
 
 export const useBusinessData = () => {
@@ -77,7 +78,7 @@ export const useBusinessData = () => {
             totalReviews: 0,
             description: business.description || "No description provided",
             category: business.category || "Other",
-            image: "/placeholder.svg",
+            image: business.images?.[0] || "/placeholder.svg",
             website: "", // Not available in public data for security
             phone: "", // Not available in public data for security
             hours: {}, // Not available in public data for security
