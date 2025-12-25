@@ -116,23 +116,48 @@ export const useBusinessData = () => {
     
     const normalizedSearch = searchTerm.toLowerCase();
     
-    const filtered = places.filter(place => {
-      const nameMatch = place.name?.toLowerCase().includes(normalizedSearch);
-      const addressMatch = place.address?.toLowerCase().includes(normalizedSearch);
-      const categoryMatch = place.category?.toLowerCase().includes(normalizedSearch);
-      const typeMatch = place.business_types?.some(type => 
-        type?.toLowerCase().includes(normalizedSearch)
-      );
-      const keywordMatch = place.keywords?.some(keyword =>
-        keyword?.toLowerCase().includes(normalizedSearch)
-      );
+    // Calculate relevance score for each place
+    const scoredPlaces = places.map(place => {
+      let score = 0;
       
-      const businessTypeMatch = Array.isArray(place.business_types)
-        ? place.business_types.some(type => type?.toLowerCase().includes(normalizedSearch))
-        : false;
-
-      return nameMatch || addressMatch || categoryMatch || typeMatch || keywordMatch || businessTypeMatch;
+      // Business name - highest priority (100 points)
+      if (place.name?.toLowerCase().includes(normalizedSearch)) {
+        score += 100;
+      }
+      
+      // Keywords - high priority (50 points)
+      if (place.keywords?.some(keyword => keyword?.toLowerCase().includes(normalizedSearch))) {
+        score += 50;
+      }
+      
+      // Business types - medium-high priority (40 points)
+      if (place.business_types?.some(type => type?.toLowerCase().includes(normalizedSearch))) {
+        score += 40;
+      }
+      
+      // Category - medium priority (30 points)
+      if (place.category?.toLowerCase().includes(normalizedSearch)) {
+        score += 30;
+      }
+      
+      // Description - lower priority, used as a "clue" (20 points)
+      if (place.description?.toLowerCase().includes(normalizedSearch)) {
+        score += 20;
+      }
+      
+      // Address - lowest priority (10 points)
+      if (place.address?.toLowerCase().includes(normalizedSearch)) {
+        score += 10;
+      }
+      
+      return { place, score };
     });
+    
+    // Filter places with any match and sort by score (highest first)
+    const filtered = scoredPlaces
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(({ place }) => place);
     
     setFilteredPlaces(filtered);
   };
