@@ -1,98 +1,205 @@
-
-import React from 'react';
-import { Eye, MousePointerClick, Search, Bookmark } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, Bookmark, MessageSquare, TrendingUp } from 'lucide-react';
 import AnalyticCard from './AnalyticCard';
 import AnalyticsHeader from './AnalyticsHeader';
 import EngagementChart from './EngagementChart';
-import RankingChart from './RankingChart';
-import DistributionChart from './DistributionChart';
 import { useAnalyticsData } from './hooks/useAnalyticsData';
-import { rankingData, sourceDistribution, deviceDistribution } from './data/AnalyticsData';
+import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/context/auth/useAuth';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AnalyticsMainViewProps {
   handleExport: (format: 'csv' | 'pdf') => void;
 }
 
+interface UserBusiness {
+  id: number;
+  business_name: string;
+}
+
 const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) => {
-  const { dateRange, setDateRange, engagementData, metrics } = useAnalyticsData();
+  const { user } = useAuth();
+  const [userBusinesses, setUserBusinesses] = useState<UserBusiness[]>([]);
+  const [selectedBusinessId, setSelectedBusinessId] = useState<number | undefined>();
+  const [loadingBusinesses, setLoadingBusinesses] = useState(true);
+
+  // Fetch user's businesses
+  useEffect(() => {
+    const fetchUserBusinesses = async () => {
+      if (!user?.uid) {
+        setLoadingBusinesses(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('id, business_name')
+          .eq('owner_id', user.uid);
+
+        if (error) {
+          console.error('Error fetching businesses:', error);
+        } else if (data && data.length > 0) {
+          setUserBusinesses(data);
+          setSelectedBusinessId(data[0].id);
+        }
+      } catch (err) {
+        console.error('Error:', err);
+      } finally {
+        setLoadingBusinesses(false);
+      }
+    };
+
+    fetchUserBusinesses();
+  }, [user?.uid]);
+
+  const { dateRange, setDateRange, engagementData, metrics, isLoading, error } = useAnalyticsData(selectedBusinessId);
+
+  const selectedBusiness = userBusinesses.find(b => b.id === selectedBusinessId);
   
+  // Loading state
+  if (loadingBusinesses) {
+    return (
+      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl">
+        <Skeleton className="h-12 w-64 mb-6" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4">
+          {[1, 2, 3, 4].map(i => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+        <Skeleton className="h-[400px]" />
+      </div>
+    );
+  }
+
+  // No businesses state
+  if (userBusinesses.length === 0) {
+    return (
+      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl">
+        <Card className="text-center py-12">
+          <CardHeader>
+            <CardTitle>No Businesses Found</CardTitle>
+            <CardDescription>
+              Register a business to start tracking analytics
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              Once you register a business, you'll be able to see real-time analytics including views, bookmarks, and engagement metrics.
+            </p>
+            <a href="/registration" className="text-primary hover:underline">
+              Register a Business →
+            </a>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl">
+      {/* Business selector if multiple businesses */}
+      {userBusinesses.length > 1 && (
+        <div className="mb-4">
+          <Select 
+            value={selectedBusinessId?.toString()} 
+            onValueChange={(v) => setSelectedBusinessId(parseInt(v))}
+          >
+            <SelectTrigger className="w-full max-w-xs">
+              <SelectValue placeholder="Select a business" />
+            </SelectTrigger>
+            <SelectContent>
+              {userBusinesses.map(b => (
+                <SelectItem key={b.id} value={b.id.toString()}>
+                  {b.business_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <AnalyticsHeader 
-        businessName="Pi Cafe"
+        businessName={selectedBusiness?.business_name || 'My Business'}
         dateRange={dateRange}
         onDateRangeChange={setDateRange}
         onExport={handleExport}
       />
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8">
-        <AnalyticCard 
-          title="Total Views"
-          value={metrics.totalViews.toLocaleString()}
-          description="Impressions of your listing"
-          icon={<Eye />}
-          trend={12}
-          trendDirection="up"
-        />
-        
-        <AnalyticCard 
-          title="Total Clicks"
-          value={metrics.totalClicks.toLocaleString()}
-          description={`${metrics.clickRate}% click rate`}
-          icon={<MousePointerClick />}
-          trend={8}
-          trendDirection="up"
-        />
-        
-        <AnalyticCard 
-          title="Average Position"
-          value="2.4"
-          description="In search results"
-          icon={<Search />}
-          trend={2}
-          trendDirection="up"
-        />
-        
-        <AnalyticCard 
-          title="Total Bookmarks"
-          value={metrics.totalBookmarks.toLocaleString()}
-          description={`${metrics.bookmarkRate}% bookmark rate`}
-          icon={<Bookmark />}
-          trend={5}
-          trendDirection="up"
-        />
-      </div>
-      
-      <div className="w-full mb-4 sm:mb-8 h-[400px] sm:h-[500px] md:h-[600px]">
-        <EngagementChart 
-          data={engagementData}
-          title="Engagement Overview"
-        />
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-8">
-        <div className="lg:col-span-2">
-          <RankingChart 
-            data={rankingData}
-            title="Search Rankings"
-            description="Your position for popular search keywords"
-          />
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4">
+          {[1, 2, 3, 4].map(i => (
+            <Skeleton key={i} className="h-32" />
+          ))}
         </div>
-        
-        <div className="lg:col-span-1 grid grid-cols-1 gap-4 sm:gap-6">
-          <DistributionChart 
-            data={sourceDistribution}
-            title="Traffic Sources"
-            description="How users find your business"
-          />
+      ) : error ? (
+        <Card className="text-center py-8 mb-4">
+          <CardContent>
+            <p className="text-destructive">{error}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8">
+            <AnalyticCard 
+              title="Total Views"
+              value={metrics.totalViews.toLocaleString()}
+              description="All-time impressions"
+              icon={<Eye />}
+              trend={metrics.viewsTrend}
+              trendDirection={metrics.viewsTrend >= 0 ? "up" : "down"}
+            />
+            
+            <AnalyticCard 
+              title="This Week"
+              value={(metrics.totalViews > 0 ? 
+                engagementData.reduce((sum, d) => sum + d.views, 0) : 0
+              ).toLocaleString()}
+              description="Views in selected period"
+              icon={<TrendingUp />}
+              trend={0}
+              trendDirection="neutral"
+            />
+            
+            <AnalyticCard 
+              title="Total Bookmarks"
+              value={metrics.totalBookmarks.toLocaleString()}
+              description={`${metrics.bookmarkRate}% bookmark rate`}
+              icon={<Bookmark />}
+              trend={0}
+              trendDirection="neutral"
+            />
+            
+            <AnalyticCard 
+              title="Comments"
+              value={metrics.totalComments.toLocaleString()}
+              description="User reviews"
+              icon={<MessageSquare />}
+              trend={0}
+              trendDirection="neutral"
+            />
+          </div>
           
-          <DistributionChart 
-            data={deviceDistribution}
-            title="Device Usage"
-            description="Devices used to access your listing"
-          />
-        </div>
-      </div>
+          <div className="w-full mb-4 sm:mb-8 h-[400px] sm:h-[500px] md:h-[600px]">
+            <EngagementChart 
+              data={engagementData}
+              title="Views Over Time"
+            />
+          </div>
+
+          {metrics.totalViews === 0 && (
+            <Card className="text-center py-8">
+              <CardContent>
+                <p className="text-muted-foreground">
+                  No view data yet. As users view your business listing, analytics will appear here.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
     </div>
   );
 };
