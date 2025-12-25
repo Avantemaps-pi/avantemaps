@@ -25,7 +25,7 @@ const PlaceCardImage: React.FC<PlaceCardImageProps> = ({
         alt={name}
         className="w-full h-full object-cover hover:opacity-90 transition-opacity"
         onError={(e) => {
-          e.currentTarget.src = 'public/placeholder.svg';
+          e.currentTarget.src = '/placeholder.svg';
           e.currentTarget.alt = 'Business Image';
         }}
       />

@@ -20,7 +20,7 @@ const PlaceImage: React.FC<PlaceImageProps> = ({ src, alt, onClick }) => {
           alt={alt}
           className="w-full h-full object-cover rounded-md hover:opacity-90 transition-opacity"
           onError={(e) => {
-            e.currentTarget.src = 'public/placeholder.svg';
+            e.currentTarget.src = '/placeholder.svg';
             e.currentTarget.alt = 'Business Image';
           }}
         />
