@@ -39,6 +39,15 @@ const Review = () => {
     window.scrollTo(0, 0);
   }, []);
 
+  // Safe back navigation - falls back to recommendations if no history
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/recommendations');
+    }
+  };
+
   const handleSubmitReview = () => {
     if (rating === 0) {
       toast.error("Please select a rating before submitting");
@@ -51,7 +60,7 @@ const Review = () => {
     });
     
     // Navigate back to business page
-    setTimeout(() => navigate(-1), 1500);
+    setTimeout(() => handleGoBack(), 1500);
   };
 
   return (
@@ -66,7 +75,7 @@ const Review = () => {
         <Button 
           variant="ghost" 
           className="mb-4" 
-          onClick={() => navigate(-1)}
+          onClick={handleGoBack}
         >
           <ChevronLeft className="h-4 w-4 mr-2" /> Back
         </Button>
@@ -165,7 +174,7 @@ const Review = () => {
                 </div>
                 
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
+                  <Button variant="outline" onClick={handleGoBack}>Cancel</Button>
                   <Button onClick={handleSubmitReview}>Submit Review</Button>
                 </div>
               </CardContent>
