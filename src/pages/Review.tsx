@@ -105,7 +105,7 @@ const Review = () => {
                             }`}
                           />
                         ))}
-                        <span className="text-sm ml-1">{(business.rating || business.currentRating).toFixed(1)}</span>
+                        <span className="text-sm ml-1">{(business.rating ?? business.currentRating ?? 0).toFixed(1)}</span>
                       </div>
                       <span className="text-sm text-muted-foreground">
                         ({business.totalReviews} reviews)
