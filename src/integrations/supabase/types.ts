@@ -71,6 +71,41 @@ export type Database = {
           },
         ]
       }
+      business_views: {
+        Row: {
+          business_id: number
+          id: string
+          referrer: string | null
+          user_agent: string | null
+          user_id: string | null
+          viewed_at: string
+        }
+        Insert: {
+          business_id: number
+          id?: string
+          referrer?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          viewed_at?: string
+        }
+        Update: {
+          business_id?: number
+          id?: string
+          referrer?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_views_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           address_components: Json | null
@@ -1158,6 +1193,23 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
+      get_business_analytics: {
+        Args: { p_business_id: number; p_days?: number }
+        Returns: {
+          view_count: number
+          view_date: string
+        }[]
+      }
+      get_business_stats: {
+        Args: { p_business_id: number }
+        Returns: {
+          total_bookmarks: number
+          total_comments: number
+          total_views: number
+          views_last_week: number
+          views_this_week: number
+        }[]
+      }
       get_public_business_info: {
         Args: never
         Returns: {
