@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import UserProfileCard from '@/components/chat/UserProfileCard';
 import ChatInterface from '@/components/chat/ChatInterface';
@@ -47,16 +47,22 @@ const Communicon = () => {
     };
   }, [sendVerificationRequest, handleBusinessSelection]);
 
+  // Guard to prevent double-triggering verification flow
+  const hasTriggeredVerification = useRef(false);
+
   // Handle verification trigger from navigation state
   useEffect(() => {
-    if (location.state?.triggerVerification) {
+    if (location.state?.triggerVerification && !hasTriggeredVerification.current) {
+      hasTriggeredVerification.current = true;
       const verificationType = location.state.verificationType || 'verification';
-      // Clear the state to prevent re-triggering
-      window.history.replaceState({}, document.title);
+      
+      // Use navigate with replace to properly clear state in React Router
+      navigate(location.pathname, { replace: true, state: {} });
+      
       // Trigger verification flow
       triggerVerificationFlow(verificationType);
     }
-  }, [location.state, triggerVerificationFlow]);
+  }, [location.state, triggerVerificationFlow, navigate, location.pathname]);
 
   // Create wrapper function to match expected signature
   const handleSendMessageWrapper = () => {
