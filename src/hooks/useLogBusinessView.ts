@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,28 +22,15 @@ export const useLogBusinessView = (businessId?: string | number) => {
         if (error) {
           // Log but do not throw/app block
           console.warn("Could not fetch user session for log-business-view:", error);
-          return;
-        }
-        if (!session) {
-          // Not authenticated, skip
-          return;
         }
 
-        const accessToken = session.access_token;
-        const response = await fetch("/functions/v1/log-business-view", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            business_id: businessId,
-          }),
+        // Call the edge function - works for both authenticated and anonymous users
+        const response = await supabase.functions.invoke('log-business-view', {
+          body: { business_id: businessId },
         });
 
-        // Optional: Check status/log; do nothing visually
-        if (!response.ok) {
-          console.warn(`log-business-view failed (${response.status}):`, await response.text());
+        if (response.error) {
+          console.warn("log-business-view failed:", response.error);
         }
       } catch (err) {
         // Catch all, but do not block rendering
