@@ -1211,7 +1211,7 @@ export type Database = {
         }[]
       }
       get_public_business_info: {
-        Args: never
+        Args: { user_uuid?: string }
         Returns: {
           business_types: string[]
           category: string
@@ -1223,6 +1223,7 @@ export type Database = {
           id: number
           images: string[]
           is_certified: boolean
+          is_user_business: boolean
           is_verified: boolean
           keywords: string[]
           latitude: number

@@ -23,6 +23,7 @@ interface PublicBusinessInfo {
   latitude?: number;
   longitude?: number;
   images?: string[];
+  is_user_business?: boolean;
 }
 
 export const useBusinessData = () => {
@@ -34,9 +35,13 @@ export const useBusinessData = () => {
     const fetchBusinesses = async () => {
       setIsLoading(true);
       try {
-        // Use the secure function to get only public business info
+        // Get current user ID to show their own businesses (even if unverified)
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id || null;
+        
+        // Use the secure function to get public business info + user's own businesses
         const { data, error } = await supabase
-          .rpc('get_public_business_info');
+          .rpc('get_public_business_info', { user_uuid: userId });
         
         if (error) throw error;
         
@@ -86,7 +91,7 @@ export const useBusinessData = () => {
             isCertified: business.is_certified || false,
             business_types: business.business_types || [],
             keywords: business.keywords || [],
-            isUserBusiness: false, // Cannot determine ownership from public data
+            isUserBusiness: business.is_user_business || false,
             // Enhanced address fields
             streetAddress: business.street_address,
             city: business.city,
