@@ -126,24 +126,36 @@ const RegisteredBusiness = () => {
             b.street_address,
             b.city,
             b.state,
-            b.postal_code,
+            b.zip_code,
             b.country
           ].filter(Boolean);
           const address = addressParts.join(', ');
 
           return {
             id: b.id,
-            name: b.name,
+            name: b.business_name,
             address: address || b.location || '',
-            description: b.description || '',
+            description: b.business_description || '',
             isCertified: b.is_certified,
             isVerified: b.is_verified,
+            verificationStatus: b.verification_status,
+            // Extended fields
+            streetAddress: b.street_address,
+            city: b.city,
+            state: b.state,
+            zipCode: b.zip_code,
+            country: b.country,
+            businessTypes: b.business_types,
+            keywords: b.keywords,
             category: b.category,
             coordinates: b.coordinates,
-            business_types: b.business_types,
-            keywords: b.keywords,
-            created_at: b.created_at
-          } as any;
+            contactInfo: b.contact_info,
+            hours: b.hours,
+            piWalletAddress: b.pi_wallet_address,
+            images: b.images,
+            lat: b.lat,
+            lng: b.lng,
+          };
         });
 
         setBusinesses(transformedBusinesses);
