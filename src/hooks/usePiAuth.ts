@@ -45,13 +45,15 @@ export function usePiAuth(): UsePiAuthReturn {
         // Clear any existing corrupted session first
         await supabase.auth.signOut();
         
-        // CRITICAL: Always provide a refresh_token for session persistence
-        // If the backend didn't provide one, use the access token as fallback
-        const refreshToken = verification.refreshToken || verification.supabaseToken;
+        // CRITICAL: Never use access_token as refresh_token - causes "illegal base64" errors
+        // Only use refreshToken if it exists AND is different from the access token
+        const hasValidRefreshToken = verification.refreshToken && 
+          verification.refreshToken !== verification.supabaseToken;
         
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: verification.supabaseToken,
-          refresh_token: refreshToken,
+          // Use valid refresh token or empty string (never use access_token as fallback)
+          refresh_token: hasValidRefreshToken ? verification.refreshToken : '',
         });
         
         if (sessionError) {
