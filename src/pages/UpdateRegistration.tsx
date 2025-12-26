@@ -33,7 +33,12 @@ const UpdateRegistration = () => {
     if (businessUpdateFormRef.current) {
       businessUpdateFormRef.current.checkAndHandleBackNavigation();
     } else {
-      navigate('/registered-business');
+      // Fallback: check if there's history to go back to
+      if (window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate('/registered-business');
+      }
     }
   };
 
