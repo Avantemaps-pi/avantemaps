@@ -1,3 +1,19 @@
+export interface BusinessContactInfo {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+}
+
+export interface BusinessHours {
+  [day: string]: {
+    open: string;
+    close: string;
+    closed: boolean;
+  };
+}
+
 export interface Business {
   id: number;
   name: string;
@@ -6,6 +22,22 @@ export interface Business {
   isCertified: boolean;
   isVerified?: boolean;
   verificationStatus?: 'pending' | 'verified' | 'rejected';
+  // Extended fields from database
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+  businessTypes?: string[];
+  keywords?: string[];
+  category?: string;
+  coordinates?: string;
+  contactInfo?: BusinessContactInfo;
+  hours?: BusinessHours;
+  piWalletAddress?: string;
+  images?: string[];
+  lat?: number;
+  lng?: number;
 }
 
 export interface Place {

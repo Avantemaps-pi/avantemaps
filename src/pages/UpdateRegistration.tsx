@@ -18,23 +18,14 @@ const UpdateRegistration = () => {
   const businessUpdateFormRef = useRef<BusinessUpdateFormRef>(null);
   
   useEffect(() => {
-    // In a real app, we would fetch the business data from the API
-    // For now, let's check if we have data in the location state
+    // Check if we have business data in the location state
     if (location.state?.business) {
       setBusiness(location.state.business);
       setIsLoading(false);
     } else {
-      // For demo purposes, load a mock business
-      setTimeout(() => {
-        setBusiness({
-          id: 1,
-          name: "Pi Cafe",
-          address: "123 Main St, San Francisco, CA",
-          description: "A cozy cafe serving coffee and pastries. We accept Pi payments for all items.",
-          isCertified: false
-        });
-        setIsLoading(false);
-      }, 1000);
+      // No business data provided - show error
+      setIsLoading(false);
+      toast.error('No business data found. Please select a business to edit.');
     }
   }, [location]);
 
