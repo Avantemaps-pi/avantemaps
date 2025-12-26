@@ -145,9 +145,6 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
 
       setIsSubmitting(true);
 
-      // Always use latest wallet address from Pi user
-      values.piWalletAddress = piWalletAddress;
-
       // ✅ Validation of inappropriate content
       if (containsInappropriateContent(values.businessName)) {
         toast.error('Business name contains inappropriate content.');
