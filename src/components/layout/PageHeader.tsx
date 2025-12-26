@@ -102,24 +102,23 @@ const PageHeader = ({
     <header className="sticky top-0 z-10 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-full items-center px-[14px] bg-transparent">
         <div className="flex items-center">
+          {/* Show menu buttons only on pages without back button */}
           {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && !isVerificationInfoPage && !isUpdateRegistrationPage && <MobileMenuButton />}
           {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && !isVerificationInfoPage && !isUpdateRegistrationPage && <DesktopMenuButton onClick={() => console.log('Desktop menu clicked')} />}
           
-          {isIndexPage && <Button variant="ghost" size="icon" onClick={handleMenuClick} className="mr-2 sm:hidden">
+          {/* Index page menu button */}
+          {isIndexPage && (
+            <Button variant="ghost" size="icon" onClick={handleMenuClick} className="mr-2 sm:hidden">
               <Menu className="h-5 w-5" />
-            </Button>}
+            </Button>
+          )}
           
-          {(isAnalyticsPage || backButton || isUpdateRegistrationPage) && <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-2">
+          {/* Consolidated back button for all pages that need it */}
+          {(isAnalyticsPage || isRegistrationPage || isUpdateRegistrationPage || isVerificationInfoPage || backButton) && (
+            <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-2">
               <ArrowLeft className="h-5 w-5" />
-            </Button>}
-          
-          {isRegistrationPage && <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-2">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>}
-          
-          {isVerificationInfoPage && <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mr-2">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>}
+            </Button>
+          )}
         </div>
         
         <div className={`flex-1 flex ${showSearch && isIndexPage ? 'items-center justify-between' : 'justify-center'}`}>
