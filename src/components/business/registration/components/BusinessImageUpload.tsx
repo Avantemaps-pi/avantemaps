@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, CheckCircle, AlertCircle, Loader2, ImageIcon } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Loader2, ImageIcon, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ImageUploadStatus } from '@/hooks/useImageUpload';
 import ImageUploadCounter from './ImageUploadCounter';
@@ -15,6 +15,8 @@ interface BusinessImageUploadProps {
   maxImages?: number;
   disabled?: boolean;
   isProcessing?: boolean;
+  existingImages?: string[];
+  onRemoveExistingImage?: (index: number) => void;
 }
 
 const StatusIcon: React.FC<{ status: ImageUploadStatus['status'] }> = ({ status }) => {
@@ -54,8 +56,20 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
   maxImages = 3,
   disabled = false,
   isProcessing = false,
+  existingImages = [],
+  onRemoveExistingImage,
 }) => {
-  const canAddMore = images.length < maxImages && !disabled && !isProcessing;
+  const [imagesToRemove, setImagesToRemove] = useState<number[]>([]);
+  
+  // Calculate how many images are effectively in use
+  const activeExistingImages = existingImages.filter((_, i) => !imagesToRemove.includes(i));
+  const totalImageCount = activeExistingImages.length + images.length;
+  const canAddMore = totalImageCount < maxImages && !disabled && !isProcessing;
+
+  const handleRemoveExisting = (index: number) => {
+    setImagesToRemove(prev => [...prev, index]);
+    onRemoveExistingImage?.(index);
+  };
 
   return (
     <FormItem>
@@ -75,7 +89,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
               )}
             />
             <ImageUploadCounter 
-              currentCount={images.length} 
+              currentCount={totalImageCount} 
               maxCount={maxImages} 
             />
           </div>
@@ -84,9 +98,56 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
             Upload images of your business (max {maxImages}). JPG, PNG, GIF, or WebP up to 10MB each.
           </FormDescription>
 
-          {/* Image Grid */}
-          {images.length > 0 && (
+          {/* Combined Image Grid - Existing + New */}
+          {(activeExistingImages.length > 0 || images.length > 0) && (
             <div className="grid grid-cols-3 gap-3">
+              {/* Existing Images */}
+              {existingImages.map((imageUrl, index) => {
+                const isMarkedForRemoval = imagesToRemove.includes(index);
+                if (isMarkedForRemoval) return null;
+                
+                return (
+                  <div
+                    key={`existing-${index}`}
+                    className="relative aspect-square rounded-lg overflow-hidden border-2 border-green-500 bg-green-50 dark:bg-green-950/20"
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`Business image ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder.svg';
+                      }}
+                    />
+
+                    {/* Status Overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-background/90 backdrop-blur-sm px-2 py-1.5 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span className="text-xs text-green-600">Saved</span>
+                      </div>
+                      {index === 0 && activeExistingImages.length > 0 && images.length === 0 && (
+                        <span className="text-xs font-medium text-primary">Main</span>
+                      )}
+                    </div>
+
+                    {/* Remove Button */}
+                    {!isProcessing && onRemoveExistingImage && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="destructive"
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full shadow-md"
+                        onClick={() => handleRemoveExisting(index)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* New Images */}
               {images.map((image, index) => (
                 <div
                   key={image.id}
@@ -103,7 +164,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
                   {image.previewUrl ? (
                     <img
                       src={image.previewUrl}
-                      alt={`Business image ${index + 1}`}
+                      alt={`New image ${index + 1}`}
                       className={cn(
                         "w-full h-full object-cover transition-opacity",
                         (image.status === 'compressing' || image.status === 'uploading') && "opacity-50"
@@ -121,7 +182,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
                       <StatusIcon status={image.status} />
                       <StatusLabel status={image.status} />
                     </div>
-                    {index === 0 && (
+                    {index === 0 && activeExistingImages.length === 0 && (
                       <span className="text-xs font-medium text-primary">Main</span>
                     )}
                   </div>
@@ -193,7 +254,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
           )}
 
           {/* Empty State */}
-          {images.length === 0 && (
+          {activeExistingImages.length === 0 && images.length === 0 && (
             <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-8 text-center">
               <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
               <p className="text-sm text-muted-foreground">

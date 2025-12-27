@@ -17,6 +17,8 @@ interface TabContentProps {
   isProcessing?: boolean;
   setSelectedTab: (tab: string) => void;
   isSubmitting?: boolean;
+  existingImages?: string[];
+  onRemoveExistingImage?: (index: number) => void;
 }
 
 const TabContent: React.FC<TabContentProps> = ({ 
@@ -26,7 +28,9 @@ const TabContent: React.FC<TabContentProps> = ({
   onRetryImage,
   isProcessing,
   setSelectedTab,
-  isSubmitting
+  isSubmitting,
+  existingImages = [],
+  onRemoveExistingImage,
 }) => {
   return (
     <div className="w-full min-h-[500px]">
@@ -71,6 +75,8 @@ const TabContent: React.FC<TabContentProps> = ({
           onRetryImage={onRetryImage}
           isProcessing={isProcessing}
           disabled={isSubmitting}
+          existingImages={existingImages}
+          onRemoveExistingImage={onRemoveExistingImage}
         />
       </TabsContent>
 
@@ -79,6 +85,7 @@ const TabContent: React.FC<TabContentProps> = ({
           onNext={() => {}}
           onPrevious={() => setSelectedTab('details')}
           images={images}
+          existingImages={existingImages}
           disabled={isSubmitting}
         />
       </TabsContent>

@@ -3,16 +3,15 @@ import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'rea
 import { FormProvider } from 'react-hook-form';
 import { Form } from '@/components/ui/form';
 import { Tabs } from '@/components/ui/tabs';
-import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
 import { Business } from '@/types/business';
-import { FormValues } from './registration/formSchema';
 import { useBusinessFormInit } from '@/hooks/useBusinessFormInit';
-import { useImageUpload } from '@/hooks/useImageUpload';
+import { useBusinessUpdate } from '@/hooks/useBusinessUpdate';
 import FormHeader from './registration/components/FormHeader';
 import TabNavigation from './registration/components/TabNavigation';
 import TabContent from './registration/components/TabContent';
+import { Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,18 +38,27 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('business-owner');
   const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false);
+  
+  // Initialize form with business data
   const form = useBusinessFormInit(business);
   
-  // Use the new image upload hook
-  const imageUpload = useImageUpload({ maxImages: 3, bucketName: 'business-images' });
+  // Use the business update hook
+  const { 
+    imageUpload, 
+    existingImages,
+    removeExistingImage,
+    hasImageChanges,
+    onSubmit, 
+    isSubmitting 
+  } = useBusinessUpdate(business, onSuccess);
 
   // Track if form has unsaved changes
-  const hasUnsavedChanges = form.formState.isDirty || imageUpload.hasImages;
+  const hasUnsavedChanges = form.formState.isDirty || imageUpload.hasImages || hasImageChanges;
 
   // Listen for navigation attempts (back button in header)
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
+      if (hasUnsavedChanges && !isSubmitting) {
         e.preventDefault();
         e.returnValue = '';
       }
@@ -58,19 +66,19 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
+  }, [hasUnsavedChanges, isSubmitting]);
 
   // Override browser back button
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
-      if (hasUnsavedChanges) {
+      if (hasUnsavedChanges && !isSubmitting) {
         e.preventDefault();
         setShowUnsavedChangesDialog(true);
         window.history.pushState(null, '', window.location.pathname);
       }
     };
 
-    if (hasUnsavedChanges) {
+    if (hasUnsavedChanges && !isSubmitting) {
       window.history.pushState(null, '', window.location.pathname);
       window.addEventListener('popstate', handlePopState);
     }
@@ -78,17 +86,7 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [hasUnsavedChanges]);
-
-  const onSubmit = (values: FormValues) => {
-    console.log('Updated form values:', values);
-    console.log('Selected images:', imageUpload.images);
-    
-    toast.success('Business information updated successfully!');
-    form.reset(values); // Reset form state to mark as clean
-    imageUpload.clearImages(); // Clear images
-    if (onSuccess) onSuccess();
-  };
+  }, [hasUnsavedChanges, isSubmitting]);
 
   const handleDiscardChanges = () => {
     // Reset form to clear dirty state
@@ -101,12 +99,18 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
     navigate(-1);
   };
 
+  const handleSubmit = async (values: any) => {
+    await onSubmit(values);
+    // Reset form state after successful submission
+    form.reset(values);
+  };
+
   // Expose method to parent via ref
   useImperativeHandle(ref, () => ({
     checkAndHandleBackNavigation: () => {
-      if (hasUnsavedChanges) {
+      if (hasUnsavedChanges && !isSubmitting) {
         setShowUnsavedChangesDialog(true);
-      } else {
+      } else if (!isSubmitting) {
         navigate(-1);
       }
     }
@@ -121,10 +125,11 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
 
       <FormProvider {...form}>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 w-full">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 w-full">
             <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
               <TabNavigation 
-                isMobile={isMobile} 
+                isMobile={isMobile}
+                disabled={isSubmitting}
               />
               <TabContent 
                 images={imageUpload.images}
@@ -133,11 +138,24 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
                 onRetryImage={imageUpload.retryImage}
                 isProcessing={imageUpload.isProcessing}
                 setSelectedTab={setSelectedTab}
+                isSubmitting={isSubmitting}
+                existingImages={existingImages}
+                onRemoveExistingImage={removeExistingImage}
               />
             </Tabs>
           </form>
         </Form>
       </FormProvider>
+
+      {/* Loading overlay during submission */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-card p-6 rounded-lg shadow-lg flex flex-col items-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-lg font-medium">Updating your business...</p>
+          </div>
+        </div>
+      )}
 
       <AlertDialog open={showUnsavedChangesDialog} onOpenChange={setShowUnsavedChangesDialog}>
         <AlertDialogContent>
@@ -153,7 +171,7 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
             </AlertDialogCancel>
             <AlertDialogAction onClick={() => {
               setShowUnsavedChangesDialog(false);
-              form.handleSubmit(onSubmit)();
+              form.handleSubmit(handleSubmit)();
             }}>
               Save Changes
             </AlertDialogAction>
