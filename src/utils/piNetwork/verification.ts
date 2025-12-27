@@ -9,6 +9,7 @@ import { secureLog } from "@/utils/secureLogger";
 export interface VerificationResult {
   verified: boolean;
   supabaseToken?: string | null;
+  refreshToken?: string | null;
   error?: string;
   details?: string;
   traceId?: string;
@@ -160,6 +161,7 @@ export const verifyPiAuthentication = async (
       return {
         verified: true,
         supabaseToken: data.supabase_token ?? null,
+        refreshToken: data.refresh_token ?? null,
         traceId: data.traceId,
       };
     }
