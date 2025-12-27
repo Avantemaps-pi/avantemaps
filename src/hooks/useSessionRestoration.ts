@@ -1,16 +1,44 @@
-
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/auth';
+import { supabase } from '@/integrations/supabase/client';
+import { secureLog } from '@/utils/secureLogger';
+import { STORAGE_KEY } from '@/context/auth/types';
 
 /**
  * Hook to restore the user's session when they return to the app
  * and handle automatic session management.
  * 
- * Only triggers re-authentication after 15 minutes of inactivity
- * AND when the Pi Browser was completely closed (not just tab switches).
+ * Includes detection and recovery from corrupted refresh tokens.
  */
 export const useSessionRestoration = () => {
-  const { user, isOffline, refreshUserData } = useAuth();
+  const { user, isOffline, refreshUserData, login, logout } = useAuth();
+
+  /**
+   * Clear corrupted session data and trigger re-authentication
+   */
+  const handleCorruptedSession = useCallback(async () => {
+    secureLog.warn('Handling corrupted session - clearing and re-authenticating');
+    
+    try {
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+    } catch (e) {
+      // Ignore errors during signout
+    }
+    
+    // Clear all auth-related storage
+    localStorage.removeItem(STORAGE_KEY);
+    const keysToRemove = Object.keys(localStorage).filter(key => 
+      key.startsWith('sb-') || key.includes('supabase')
+    );
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Clear session storage
+    sessionStorage.removeItem('browser_active');
+    
+    // Trigger re-login
+    await login();
+  }, [login]);
 
   // Initialize browser active flag on mount
   useEffect(() => {
@@ -20,68 +48,89 @@ export const useSessionRestoration = () => {
   // Detect when browser is closing
   useEffect(() => {
     const handlePageHide = () => {
-      // Remove the flag when browser is closing
       sessionStorage.removeItem('browser_active');
     };
 
     window.addEventListener('pagehide', handlePageHide);
-    
-    return () => {
-      window.removeEventListener('pagehide', handlePageHide);
-    };
+    return () => window.removeEventListener('pagehide', handlePageHide);
   }, []);
 
-  // Handle page visibility changes
+  // Monitor for refresh token errors
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && user && !isOffline) {
-        // User has returned to the app after being away
-        console.log("User returned to app, checking session status");
-        
-        // Get the last refresh time from localStorage
-        const lastRefresh = localStorage.getItem('last_user_refresh');
-        const refreshThreshold = 15 * 60 * 1000; // 15 minutes
-        
-        // Check if browser was actually closed (sessionStorage cleared)
-        const browserWasClosed = !sessionStorage.getItem('browser_active');
-        
-        // Re-set the browser active flag
-        sessionStorage.setItem('browser_active', 'true');
-        
-        // Only refresh if:
-        // 1. More than 15 minutes have passed since last refresh
-        // 2. AND the browser was actually closed (not just tab switch)
-        if (browserWasClosed && (!lastRefresh || (Date.now() - parseInt(lastRefresh, 10) > refreshThreshold))) {
-          console.log("Browser was closed and 15+ minutes elapsed, refreshing user data");
-          refreshUserData();
-          localStorage.setItem('last_user_refresh', Date.now().toString());
+    const handleAuthError = async (event: CustomEvent) => {
+      const error = event.detail?.error;
+      if (error) {
+        const message = error.message?.toLowerCase() || '';
+        if (
+          message.includes('illegal base64') ||
+          message.includes('refresh_token') ||
+          message.includes('invalid refresh token')
+        ) {
+          secureLog.error('Refresh token error detected via event:', error);
+          await handleCorruptedSession();
         }
       }
     };
 
-    // Listen for visibility changes
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Clean up
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('supabase-auth-error' as any, handleAuthError);
+    return () => window.removeEventListener('supabase-auth-error' as any, handleAuthError);
+  }, [handleCorruptedSession]);
+
+  // Handle page visibility changes
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && user && !isOffline) {
+        secureLog.info("User returned to app, checking session status");
+        
+        const lastRefresh = localStorage.getItem('last_user_refresh');
+        const refreshThreshold = 15 * 60 * 1000; // 15 minutes
+        const browserWasClosed = !sessionStorage.getItem('browser_active');
+        
+        sessionStorage.setItem('browser_active', 'true');
+        
+        // Check if session is still valid before refreshing
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            const errorMsg = error.message?.toLowerCase() || '';
+            if (errorMsg.includes('illegal base64') || errorMsg.includes('refresh')) {
+              secureLog.error('Session check revealed corrupted token:', error);
+              await handleCorruptedSession();
+              return;
+            }
+          }
+          
+          // Only refresh if browser was closed and threshold passed
+          if (browserWasClosed && (!lastRefresh || (Date.now() - parseInt(lastRefresh, 10) > refreshThreshold))) {
+            secureLog.info("Browser was closed and 15+ minutes elapsed, refreshing user data");
+            refreshUserData();
+            localStorage.setItem('last_user_refresh', Date.now().toString());
+          }
+        } catch (e: any) {
+          const errorMsg = e?.message?.toLowerCase() || '';
+          if (errorMsg.includes('illegal base64') || errorMsg.includes('refresh')) {
+            await handleCorruptedSession();
+          }
+        }
+      }
     };
-  }, [user, isOffline, refreshUserData]);
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user, isOffline, refreshUserData, handleCorruptedSession]);
 
   // Handle network status changes
   useEffect(() => {
     const handleOnline = () => {
       if (user) {
-        console.log("Network connection restored, refreshing user data");
+        secureLog.info("Network connection restored, refreshing user data");
         refreshUserData();
       }
     };
 
     window.addEventListener('online', handleOnline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-    };
+    return () => window.removeEventListener('online', handleOnline);
   }, [user, refreshUserData]);
 
   return null;

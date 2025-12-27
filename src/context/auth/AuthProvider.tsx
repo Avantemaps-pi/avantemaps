@@ -47,6 +47,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (isMountedRef.current) setAppReady(ready);
   }, []);
 
+  /**
+   * Helper to check if an error is a refresh token corruption error
+   */
+  const isRefreshTokenError = useCallback((error: any): boolean => {
+    const message = error?.message?.toLowerCase() || '';
+    return (
+      message.includes('illegal base64') ||
+      message.includes('refresh_token') ||
+      message.includes('invalid refresh token') ||
+      message.includes('token is expired') ||
+      message.includes('invalid jwt')
+    );
+  }, []);
+
+  /**
+   * Clear all auth-related storage to recover from corrupted sessions
+   */
+  const clearAllAuthStorage = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY);
+    const keysToRemove = Object.keys(localStorage).filter(key => 
+      key.startsWith('sb-') || key.includes('supabase')
+    );
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Clear session storage too
+    const sessionKeysToRemove = Object.keys(sessionStorage).filter(key =>
+      key.startsWith('sb-') || key.includes('supabase')
+    );
+    sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
+  }, []);
+
   useEffect(() => {
     isMountedRef.current = true;
     let isCleanupCanceled = false;
@@ -57,10 +88,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Use getSession first (local check, doesn't hit server)
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        // Check if cleanup was canceled (component unmounted)
         if (isCleanupCanceled) return;
 
         if (sessionError) {
+          const errorMsg = sessionError.message?.toLowerCase() || '';
+          
+          // Check specifically for refresh token errors
+          if (errorMsg.includes('illegal base64') || 
+              errorMsg.includes('refresh_token') ||
+              errorMsg.includes('invalid refresh token')) {
+            secureLog.warn('Corrupted refresh token detected, clearing all auth storage...');
+            clearAllAuthStorage();
+            await supabase.auth.signOut();
+            return;
+          }
+          
           secureLog.warn('Corrupted session detected (getSession), clearing...', sessionError.message);
           if (!isCleanupCanceled) {
             await supabase.auth.signOut();
@@ -73,17 +115,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!session) return;
 
         // Only validate with getUser if we have a session (this hits the server)
-        // Wrap in try-catch to handle "context canceled" gracefully
         try {
           const { data: { user: supaUser }, error: userError } = await supabase.auth.getUser();
           
           if (isCleanupCanceled) return;
           
           if (userError || !supaUser) {
-            // Handle specific error types - "context canceled" is benign
             const errorMsg = userError?.message?.toLowerCase() || '';
+            
+            // Handle "context canceled" gracefully
             if (errorMsg.includes('context canceled') || errorMsg.includes('aborted')) {
               secureLog.info('Session validation was interrupted, will retry on next mount');
+              return;
+            }
+            
+            // Check for refresh token errors
+            if (errorMsg.includes('illegal base64') || 
+                errorMsg.includes('refresh_token') ||
+                errorMsg.includes('invalid refresh token')) {
+              secureLog.warn('Corrupted refresh token detected during validation, clearing all auth storage...');
+              clearAllAuthStorage();
+              await supabase.auth.signOut();
               return;
             }
             
@@ -94,18 +146,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }
         } catch (userCheckError: any) {
-          // "context canceled" is expected if component unmounts during the request
           const errorMsg = userCheckError?.message?.toLowerCase() || '';
           if (errorMsg.includes('context canceled') || errorMsg.includes('aborted')) {
             secureLog.info('Session validation interrupted during unmount');
             return;
           }
+          
+          // Check for refresh token errors
+          if (errorMsg.includes('illegal base64') || 
+              errorMsg.includes('refresh_token') ||
+              errorMsg.includes('invalid refresh token')) {
+            secureLog.warn('Corrupted refresh token error caught, clearing all auth storage...');
+            clearAllAuthStorage();
+            await supabase.auth.signOut();
+            return;
+          }
+          
           throw userCheckError;
         }
       } catch (e: any) {
-        // Don't log or act on context canceled errors
         const errorMsg = e?.message?.toLowerCase() || '';
         if (errorMsg.includes('context canceled') || errorMsg.includes('aborted')) {
+          return;
+        }
+        
+        // Check for refresh token errors
+        if (errorMsg.includes('illegal base64') || 
+            errorMsg.includes('refresh_token') ||
+            errorMsg.includes('invalid refresh token')) {
+          secureLog.warn('Corrupted refresh token error in outer catch, clearing all auth storage...');
+          clearAllAuthStorage();
+          try {
+            await supabase.auth.signOut();
+          } catch {
+            // Ignore signout errors
+          }
           return;
         }
         
@@ -124,7 +199,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isMountedRef.current = false;
       if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
     };
-  }, []);
+  }, [clearAllAuthStorage]);
 
   // global error handlers (unchanged)
   useEffect(() => {
