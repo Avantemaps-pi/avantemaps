@@ -151,7 +151,7 @@ const Index = () => {
             <SearchBar 
               onSearch={handleSearchChange}
               onPlaceSelect={handlePlaceSelect}
-              enableAutocomplete={false}
+              enableAutocomplete={true}
               placeholders={[
                 "Search for Address", 
                 "Search for Business name", 
