@@ -217,7 +217,7 @@ Deno.serve(async (req: Request) => {
 
       console.log(`🔐 [${traceId}] [TEST] Creating session for user ${supabaseUserId}`);
 
-      const { data: sessionData, error: sessionError } = await createUserSession(email, password);
+      const { data: sessionData, error: sessionError } = await createUserSession(email, password, supabaseUserId);
 
       if (sessionError || !sessionData?.session) {
         console.error(`❌ [${traceId}] [TEST] Failed to create session:`, sessionError);
@@ -231,12 +231,34 @@ Deno.serve(async (req: Request) => {
 
       const { access_token, refresh_token } = sessionData.session;
 
+      console.log(`✅ [${traceId}] [TEST] Session created`, {
+        hasAccessToken: !!access_token,
+        accessTokenLen: access_token?.length ?? 0,
+        hasRefreshToken: !!refresh_token,
+        refreshTokenLen: refresh_token?.length ?? 0,
+      });
+
+      if (!refresh_token) {
+        return new Response(
+          JSON.stringify({
+            verified: false,
+            error: 'Session creation failed',
+            details: 'No refresh token returned from Supabase',
+            traceId,
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(JSON.stringify({
         verified: true,
         testMode: true,
         user: { uid: supabaseUserId, pi_uid: uid, username, wallet_address: 'TEST_WALLET_123' },
         supabase_token: access_token,
         refresh_token,
+        // Backwards/forwards-compat aliases
+        supabaseToken: access_token,
+        refreshToken: refresh_token,
         traceId,
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -352,7 +374,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🔐 [${traceId}] Creating session for user ${supabaseUserId}`);
     
-    const { data: sessionData, error: sessionError } = await createUserSession(email, password);
+    const { data: sessionData, error: sessionError } = await createUserSession(email, password, supabaseUserId);
 
     if (sessionError || !sessionData?.session) {
       console.error(`❌ [${traceId}] Failed to create session:`, sessionError);
@@ -366,6 +388,22 @@ Deno.serve(async (req: Request) => {
 
     const { access_token, refresh_token } = sessionData.session;
 
+    console.log(`✅ [${traceId}] Session created`, {
+      hasAccessToken: !!access_token,
+      accessTokenLen: access_token?.length ?? 0,
+      hasRefreshToken: !!refresh_token,
+      refreshTokenLen: refresh_token?.length ?? 0,
+    });
+
+    if (!refresh_token) {
+      return new Response(JSON.stringify({
+        verified: false,
+        error: 'Session creation failed',
+        details: 'No refresh token returned from Supabase',
+        traceId,
+      }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     return new Response(JSON.stringify({
       verified: true,
       user: {
@@ -376,6 +414,9 @@ Deno.serve(async (req: Request) => {
       },
       supabase_token: access_token,
       refresh_token,
+      // Backwards/forwards-compat aliases
+      supabaseToken: access_token,
+      refreshToken: refresh_token,
       traceId,
     }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
