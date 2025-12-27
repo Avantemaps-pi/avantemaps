@@ -14,16 +14,29 @@ interface PreviewTabProps {
   onPrevious: () => void;
   disabled?: boolean;
   images: ImageUploadStatus[];
+  existingImages?: string[];
 }
 
 const PreviewTab: React.FC<PreviewTabProps> = ({
   onNext,
   onPrevious,
   disabled,
-  images
+  images,
+  existingImages = [],
 }) => {
   const { getValues } = useFormContext<FormValues>();
   const values = getValues();
+
+  // Determine the preview image - prioritize existing images, then new uploads
+  const getPreviewImage = (): string | undefined => {
+    if (existingImages.length > 0) {
+      return existingImages[0];
+    }
+    if (images.length > 0 && images[0].previewUrl) {
+      return images[0].previewUrl;
+    }
+    return undefined;
+  };
 
   // Convert form values to Place object for preview
   const previewPlace: Place = {
@@ -45,7 +58,7 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
     totalReviews: 0,
     category: values.businessTypes.join(', ') || 'Business',
     description: values.businessDescription || 'Your business description will appear here',
-    image: images.length > 0 && images[0].previewUrl ? images[0].previewUrl : undefined,
+    image: getPreviewImage(),
     phone: values.phone ? `${values.countryCode || ''}${values.phone}` : undefined,
     website: values.website || undefined,
     hours: {

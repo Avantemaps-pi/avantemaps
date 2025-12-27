@@ -19,6 +19,8 @@ interface DetailsTabProps {
   onRetryImage?: (id: string) => void;
   isProcessing?: boolean;
   disabled?: boolean;
+  existingImages?: string[];
+  onRemoveExistingImage?: (index: number) => void;
 }
 
 const DetailsTab: React.FC<DetailsTabProps> = ({
@@ -29,7 +31,9 @@ const DetailsTab: React.FC<DetailsTabProps> = ({
   onRemoveImage,
   onRetryImage,
   isProcessing,
-  disabled
+  disabled,
+  existingImages = [],
+  onRemoveExistingImage,
 }) => {
   const form = useFormContext<FormValues>();
   
@@ -52,6 +56,8 @@ const DetailsTab: React.FC<DetailsTabProps> = ({
           maxImages={3}
           disabled={disabled}
           isProcessing={isProcessing}
+          existingImages={existingImages}
+          onRemoveExistingImage={onRemoveExistingImage}
         />
         <BusinessDescriptionField disabled={disabled} />
         <WalletAddressField disabled={disabled} />
