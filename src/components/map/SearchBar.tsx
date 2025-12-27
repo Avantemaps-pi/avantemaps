@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Input } from '@/components/ui/input';
-import { Search, MapPin } from 'lucide-react';
+import { Search, MapPin, Store, BadgeCheck } from 'lucide-react';
 import debounce from 'lodash/debounce';
 import { useLocationIQAutocomplete, GeocodingOptions } from '@/hooks/useLocationIQAutocomplete';
+import { useBusinessAutocomplete, BusinessSuggestion } from '@/hooks/useBusinessAutocomplete';
+import { Place } from '@/types/business';
 import { cn } from '@/lib/utils';
 
 export interface MapBounds {
@@ -15,9 +17,12 @@ export interface MapBounds {
 interface SearchBarProps {
   onSearch?: (searchTerm: string) => void;
   onPlaceSelect?: (place: { name: string; lat: number; lng: number }) => void;
+  onBusinessSelect?: (business: BusinessSuggestion) => void;
   placeholders?: string[];
   cycleInterval?: number;
   enableAutocomplete?: boolean;
+  autocompleteMode?: 'address' | 'business';
+  businesses?: Place[];
   mapBounds?: MapBounds;
   countrycodes?: string;
 }
@@ -25,6 +30,7 @@ interface SearchBarProps {
 const SearchBar: React.FC<SearchBarProps> = ({
   onSearch,
   onPlaceSelect,
+  onBusinessSelect,
   placeholders = [
     "Search for business name",
     "Search by location",
@@ -33,6 +39,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
   ],
   cycleInterval = 3000,
   enableAutocomplete = true,
+  autocompleteMode = 'business',
+  businesses = [],
   mapBounds,
   countrycodes
 }) => {
@@ -43,14 +51,29 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { predictions, getSuggestions, getPlaceDetails, clearSuggestions } = useLocationIQAutocomplete();
+  // Address autocomplete hook
+  const { 
+    predictions: addressPredictions, 
+    getSuggestions: getAddressSuggestions, 
+    getPlaceDetails, 
+    clearSuggestions: clearAddressSuggestions 
+  } = useLocationIQAutocomplete();
 
-  // Debounced autocomplete function with map bounds for location bias
-  const debouncedAutocomplete = useCallback(
+  // Business autocomplete hook
+  const { 
+    suggestions: businessSuggestions, 
+    searchBusinesses, 
+    clearSuggestions: clearBusinessSuggestions 
+  } = useBusinessAutocomplete(businesses);
+
+  // Get current suggestions based on mode
+  const currentSuggestions = autocompleteMode === 'business' ? businessSuggestions : addressPredictions;
+
+  // Debounced autocomplete function for addresses
+  const debouncedAddressAutocomplete = useCallback(
     debounce((value: string, bounds?: MapBounds, codes?: string) => {
       const options: GeocodingOptions = {};
       
-      // Add viewbox for location bias if map bounds available
       if (bounds) {
         options.viewbox = {
           minLon: bounds.minLng,
@@ -60,14 +83,21 @@ const SearchBar: React.FC<SearchBarProps> = ({
         };
       }
       
-      // Add country codes if provided
       if (codes) {
         options.countrycodes = codes;
       }
       
-      getSuggestions(value, Object.keys(options).length > 0 ? options : undefined);
+      getAddressSuggestions(value, Object.keys(options).length > 0 ? options : undefined);
     }, 300),
-    [getSuggestions]
+    [getAddressSuggestions]
+  );
+
+  // Debounced autocomplete function for businesses
+  const debouncedBusinessAutocomplete = useCallback(
+    debounce((value: string) => {
+      searchBusinesses(value);
+    }, 200),
+    [searchBusinesses]
   );
 
   // Debounced search function
@@ -88,10 +118,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
     return () => clearInterval(intervalId);
   }, [placeholders.length, cycleInterval]);
 
-  // Show/hide dropdown based on predictions
+  // Show/hide dropdown based on suggestions
   useEffect(() => {
-    setShowDropdown(predictions.length > 0);
-  }, [predictions]);
+    setShowDropdown(currentSuggestions.length > 0);
+  }, [currentSuggestions]);
 
   // Click outside to close dropdown
   useEffect(() => {
@@ -121,16 +151,24 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
     if (value.trim()) {
       if (enableAutocomplete) {
-        debouncedAutocomplete(value, mapBounds, countrycodes);
+        if (autocompleteMode === 'business') {
+          debouncedBusinessAutocomplete(value);
+        } else {
+          debouncedAddressAutocomplete(value, mapBounds, countrycodes);
+        }
       }
       debouncedSearch(value);
     } else {
-      clearSuggestions();
+      if (autocompleteMode === 'business') {
+        clearBusinessSuggestions();
+      } else {
+        clearAddressSuggestions();
+      }
       setShowDropdown(false);
     }
   };
 
-  const handlePredictionClick = async (placeId: string, description: string) => {
+  const handleAddressPredictionClick = async (placeId: string, description: string) => {
     setSearchTerm(description);
     setShowDropdown(false);
     setSelectedIndex(-1);
@@ -149,14 +187,36 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }
   };
 
+  const handleBusinessSuggestionClick = (suggestion: BusinessSuggestion) => {
+    setSearchTerm(suggestion.name);
+    setShowDropdown(false);
+    setSelectedIndex(-1);
+
+    if (onBusinessSelect) {
+      onBusinessSelect(suggestion);
+    }
+
+    if (onPlaceSelect) {
+      onPlaceSelect({
+        name: suggestion.name,
+        lat: suggestion.lat,
+        lng: suggestion.lng,
+      });
+    }
+
+    if (onSearch) {
+      onSearch(suggestion.name);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showDropdown || predictions.length === 0) return;
+    if (!showDropdown || currentSuggestions.length === 0) return;
 
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
         setSelectedIndex(prev =>
-          prev < predictions.length - 1 ? prev + 1 : prev
+          prev < currentSuggestions.length - 1 ? prev + 1 : prev
         );
         break;
       case 'ArrowUp':
@@ -165,9 +225,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
         break;
       case 'Enter':
         e.preventDefault();
-        if (selectedIndex >= 0 && selectedIndex < predictions.length) {
-          const prediction = predictions[selectedIndex];
-          handlePredictionClick(prediction.placeId, prediction.description);
+        if (selectedIndex >= 0 && selectedIndex < currentSuggestions.length) {
+          if (autocompleteMode === 'business') {
+            const suggestion = businessSuggestions[selectedIndex];
+            handleBusinessSuggestionClick(suggestion);
+          } else {
+            const prediction = addressPredictions[selectedIndex];
+            handleAddressPredictionClick(prediction.placeId, prediction.description);
+          }
         } else if (searchTerm.trim()) {
           handleSearch(e);
         }
@@ -199,29 +264,60 @@ const SearchBar: React.FC<SearchBarProps> = ({
         </div>
       </form>
 
-      {enableAutocomplete && showDropdown && predictions.length > 0 && (
+      {enableAutocomplete && showDropdown && currentSuggestions.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-lg shadow-lg max-h-[300px] overflow-y-auto z-[2000]">
-          {predictions.map((prediction, index) => (
-            <button
-              key={prediction.placeId}
-              type="button"
-              onClick={() => handlePredictionClick(prediction.placeId, prediction.description)}
-              className={cn(
-                "w-full px-4 py-3 text-left hover:bg-accent transition-colors flex items-start gap-3 border-b border-border last:border-b-0",
-                selectedIndex === index && "bg-accent"
-              )}
-            >
-              <MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-foreground truncate">
-                  {prediction.mainText}
+          {autocompleteMode === 'business' ? (
+            // Business suggestions
+            businessSuggestions.map((suggestion, index) => (
+              <button
+                key={suggestion.id}
+                type="button"
+                onClick={() => handleBusinessSuggestionClick(suggestion)}
+                className={cn(
+                  "w-full px-4 py-3 text-left hover:bg-accent transition-colors flex items-start gap-3 border-b border-border last:border-b-0",
+                  selectedIndex === index && "bg-accent"
+                )}
+              >
+                <Store className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-foreground truncate flex items-center gap-1.5">
+                    {suggestion.name}
+                    {(suggestion.isVerified || suggestion.isCertified) && (
+                      <BadgeCheck className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground truncate">
+                    {suggestion.category}
+                    {suggestion.city && ` • ${suggestion.city}`}
+                    {suggestion.country && `, ${suggestion.country}`}
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground truncate">
-                  {prediction.secondaryText}
+              </button>
+            ))
+          ) : (
+            // Address predictions
+            addressPredictions.map((prediction, index) => (
+              <button
+                key={prediction.placeId}
+                type="button"
+                onClick={() => handleAddressPredictionClick(prediction.placeId, prediction.description)}
+                className={cn(
+                  "w-full px-4 py-3 text-left hover:bg-accent transition-colors flex items-start gap-3 border-b border-border last:border-b-0",
+                  selectedIndex === index && "bg-accent"
+                )}
+              >
+                <MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-foreground truncate">
+                    {prediction.mainText}
+                  </div>
+                  <div className="text-sm text-muted-foreground truncate">
+                    {prediction.secondaryText}
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            ))
+          )}
         </div>
       )}
     </div>

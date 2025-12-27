@@ -12,6 +12,7 @@ import AvanteMapLogo from '@/components/layout/header/AvanteMapLogo';
 import AppSidebar from '@/components/layout/AppSidebar';
 import PlaceCardSEO from '@/components/seo/PlaceCardSEO';
 import MetaTags from '@/components/seo/MetaTags';
+import { BusinessSuggestion } from '@/hooks/useBusinessAutocomplete';
 import '../styles/map.css';
 
 const Index = () => {
@@ -37,6 +38,14 @@ const Index = () => {
     // Center the map on the selected place
     window.dispatchEvent(new CustomEvent('centerMap', { 
       detail: { lat: place.lat, lng: place.lng, zoom: 15 } 
+    }));
+  };
+
+  const handleBusinessSelect = (business: BusinessSuggestion) => {
+    // Set selected place and zoom to it
+    setSelectedPlace(business.id);
+    window.dispatchEvent(new CustomEvent('centerMap', { 
+      detail: { lat: business.lat, lng: business.lng, zoom: 16 } 
     }));
   };
 
@@ -151,12 +160,14 @@ const Index = () => {
             <SearchBar 
               onSearch={handleSearchChange}
               onPlaceSelect={handlePlaceSelect}
+              onBusinessSelect={handleBusinessSelect}
               enableAutocomplete={true}
+              autocompleteMode="business"
+              businesses={places}
               placeholders={[
-                "Search for Address", 
                 "Search for Business name", 
-                "Search for Business Type", 
-                "Search for Keywords"
+                "Search by Category", 
+                "Search by Keywords"
               ]} 
               cycleInterval={3000} 
             />
