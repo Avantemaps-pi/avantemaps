@@ -1,96 +1,208 @@
-
 import React from 'react';
 import { FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import ImageUploadCounter from './ImageUploadCounter';
-import ImageCarousel from '../../ImageCarousel';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Loader2, ImageIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { ImageUploadStatus } from '@/hooks/useImageUpload';
+import ImageUploadCounter from './ImageUploadCounter';
 
 interface BusinessImageUploadProps {
-  selectedImages: File[];
-  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleImageRemove?: (index: number) => void;
-  handleImageReorder?: (newImages: File[]) => void;
+  images: ImageUploadStatus[];
+  onAddImage: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveImage: (id: string) => void;
+  onRetryImage?: (id: string) => void;
   maxImages?: number;
   disabled?: boolean;
+  isProcessing?: boolean;
 }
 
-const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
-  selectedImages, 
-  handleImageUpload,
-  handleImageRemove,
-  handleImageReorder,
-  maxImages = 3,
-  disabled = false
-}) => {
-  const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
-  
-  const imageUrls = selectedImages.map(file => URL.createObjectURL(file));
-  
-  React.useEffect(() => {
-    // Cleanup URLs when component unmounts
-    return () => {
-      imageUrls.forEach(URL.revokeObjectURL);
-    };
-  }, []);
+const StatusIcon: React.FC<{ status: ImageUploadStatus['status'] }> = ({ status }) => {
+  switch (status) {
+    case 'compressing':
+    case 'uploading':
+      return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
+    case 'success':
+      return <CheckCircle className="h-4 w-4 text-green-500" />;
+    case 'error':
+      return <AlertCircle className="h-4 w-4 text-destructive" />;
+    default:
+      return null;
+  }
+};
 
-  const handleReorder = (newOrder: string[]) => {
-    if (!handleImageReorder) return;
-    
-    // Map URLs back to File objects in new order
-    const newImages = newOrder.map(url => {
-      const index = imageUrls.indexOf(url);
-      return selectedImages[index];
-    });
-    
-    handleImageReorder(newImages);
-  };
+const StatusLabel: React.FC<{ status: ImageUploadStatus['status'] }> = ({ status }) => {
+  switch (status) {
+    case 'compressing':
+      return <span className="text-xs text-muted-foreground">Optimizing...</span>;
+    case 'uploading':
+      return <span className="text-xs text-muted-foreground">Uploading...</span>;
+    case 'success':
+      return <span className="text-xs text-green-600">Ready</span>;
+    case 'error':
+      return <span className="text-xs text-destructive">Failed</span>;
+    default:
+      return <span className="text-xs text-muted-foreground">Pending</span>;
+  }
+};
+
+const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
+  images,
+  onAddImage,
+  onRemoveImage,
+  onRetryImage,
+  maxImages = 3,
+  disabled = false,
+  isProcessing = false,
+}) => {
+  const canAddMore = images.length < maxImages && !disabled && !isProcessing;
 
   return (
     <FormItem>
       <FormLabel className="text-base mb-1.5">Business Images</FormLabel>
       <FormControl>
-        <Input 
-          type="file" 
-          accept="image/*" 
-          onChange={handleImageUpload}
-          disabled={selectedImages.length >= maxImages || disabled}
-          className="cursor-pointer"
-        />
-      </FormControl>
-      <FormDescription className="text-sm mt-1.5 flex items-center justify-between">
-        <span>Upload images of your business (max {maxImages}). Drag to reorder.</span>
-        <ImageUploadCounter 
-          currentCount={selectedImages.length} 
-          maxCount={maxImages} 
-        />
-      </FormDescription>
-      
-      {selectedImages.length > 0 && (
-        <div className="mt-4">
-          <div className="relative">
-            <ImageCarousel
-              images={imageUrls}
-              currentIndex={currentImageIndex}
-              onImageChange={setCurrentImageIndex}
-              onReorder={handleReorder}
+        <div className="space-y-4">
+          {/* File Input */}
+          <div className="flex items-center gap-4">
+            <Input 
+              type="file" 
+              accept="image/jpeg,image/png,image/gif,image/webp" 
+              onChange={onAddImage}
+              disabled={!canAddMore}
+              className={cn(
+                "cursor-pointer flex-1",
+                !canAddMore && "opacity-50 cursor-not-allowed"
+              )}
             />
-            
-            {handleImageRemove && !disabled && (
-              <Button
-                type="button"
-                size="icon"
-                variant="destructive"
-                className="absolute -top-2 -right-2 h-6 w-6 rounded-full z-10"
-                onClick={() => handleImageRemove(currentImageIndex)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            )}
+            <ImageUploadCounter 
+              currentCount={images.length} 
+              maxCount={maxImages} 
+            />
           </div>
+          
+          <FormDescription className="text-sm">
+            Upload images of your business (max {maxImages}). JPG, PNG, GIF, or WebP up to 10MB each.
+          </FormDescription>
+
+          {/* Image Grid */}
+          {images.length > 0 && (
+            <div className="grid grid-cols-3 gap-3">
+              {images.map((image, index) => (
+                <div
+                  key={image.id}
+                  className={cn(
+                    "relative aspect-square rounded-lg overflow-hidden border-2 transition-all",
+                    image.status === 'error' 
+                      ? "border-destructive bg-destructive/10" 
+                      : image.status === 'success'
+                      ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                      : "border-border bg-muted/30"
+                  )}
+                >
+                  {/* Image Preview */}
+                  {image.previewUrl ? (
+                    <img
+                      src={image.previewUrl}
+                      alt={`Business image ${index + 1}`}
+                      className={cn(
+                        "w-full h-full object-cover transition-opacity",
+                        (image.status === 'compressing' || image.status === 'uploading') && "opacity-50"
+                      )}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+                    </div>
+                  )}
+
+                  {/* Status Overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-background/90 backdrop-blur-sm px-2 py-1.5 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <StatusIcon status={image.status} />
+                      <StatusLabel status={image.status} />
+                    </div>
+                    {index === 0 && (
+                      <span className="text-xs font-medium text-primary">Main</span>
+                    )}
+                  </div>
+
+                  {/* Error Message */}
+                  {image.status === 'error' && image.error && (
+                    <div className="absolute top-0 left-0 right-0 bg-destructive/90 px-2 py-1">
+                      <p className="text-xs text-destructive-foreground truncate">
+                        {image.error}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Remove Button */}
+                  {!isProcessing && (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="destructive"
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full shadow-md"
+                      onClick={() => onRemoveImage(image.id)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+
+                  {/* Retry Button for failed uploads */}
+                  {image.status === 'error' && onRetryImage && !isProcessing && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                      onClick={() => onRetryImage(image.id)}
+                    >
+                      Retry
+                    </Button>
+                  )}
+
+                  {/* Processing Overlay */}
+                  {(image.status === 'compressing' || image.status === 'uploading') && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Add More Placeholder */}
+              {canAddMore && (
+                <label
+                  className={cn(
+                    "aspect-square rounded-lg border-2 border-dashed border-muted-foreground/30",
+                    "flex flex-col items-center justify-center gap-2 cursor-pointer",
+                    "hover:border-primary hover:bg-primary/5 transition-colors"
+                  )}
+                >
+                  <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
+                  <span className="text-xs text-muted-foreground">Add Image</span>
+                  <Input 
+                    type="file" 
+                    accept="image/jpeg,image/png,image/gif,image/webp" 
+                    onChange={onAddImage}
+                    className="sr-only"
+                  />
+                </label>
+              )}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {images.length === 0 && (
+            <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-8 text-center">
+              <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+              <p className="text-sm text-muted-foreground">
+                No images added yet. Upload up to {maxImages} images to showcase your business.
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </FormControl>
     </FormItem>
   );
 };

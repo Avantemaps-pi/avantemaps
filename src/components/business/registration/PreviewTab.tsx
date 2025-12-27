@@ -7,19 +7,20 @@ import { Place } from '@/types/business';
 import PlaceCard from '../PlaceCard';
 import { Info } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ImageUploadStatus } from '@/hooks/useImageUpload';
 
 interface PreviewTabProps {
   onNext: () => void;
   onPrevious: () => void;
   disabled?: boolean;
-  selectedImages: File[];
+  images: ImageUploadStatus[];
 }
 
 const PreviewTab: React.FC<PreviewTabProps> = ({
   onNext,
   onPrevious,
   disabled,
-  selectedImages
+  images
 }) => {
   const { getValues } = useFormContext<FormValues>();
   const values = getValues();
@@ -44,7 +45,7 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
     totalReviews: 0,
     category: values.businessTypes.join(', ') || 'Business',
     description: values.businessDescription || 'Your business description will appear here',
-    image: selectedImages.length > 0 ? URL.createObjectURL(selectedImages[0]) : undefined,
+    image: images.length > 0 && images[0].previewUrl ? images[0].previewUrl : undefined,
     phone: values.phone ? `${values.countryCode || ''}${values.phone}` : undefined,
     website: values.website || undefined,
     hours: {

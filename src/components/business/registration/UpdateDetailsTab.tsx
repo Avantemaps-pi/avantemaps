@@ -7,22 +7,25 @@ import { FormValues } from './formSchema';
 import BusinessImageUpload from './components/BusinessImageUpload';
 import BusinessDescriptionField from './components/BusinessDescriptionField';
 import WalletAddressField from './components/WalletAddressField';
+import { ImageUploadStatus } from '@/hooks/useImageUpload';
 
 interface UpdateDetailsTabProps {
   onPrevious: () => void;
-  selectedImages: File[];
-  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleImageRemove?: (index: number) => void;
-  handleImageReorder?: (newImages: File[]) => void;
+  images: ImageUploadStatus[];
+  onAddImage: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveImage: (id: string) => void;
+  onRetryImage?: (id: string) => void;
+  isProcessing?: boolean;
   disabled?: boolean;
 }
 
 const UpdateDetailsTab: React.FC<UpdateDetailsTabProps> = ({ 
   onPrevious, 
-  selectedImages, 
-  handleImageUpload, 
-  handleImageRemove,
-  handleImageReorder,
+  images, 
+  onAddImage,
+  onRemoveImage,
+  onRetryImage,
+  isProcessing,
   disabled 
 }) => {
   const form = useFormContext<FormValues>();
@@ -37,10 +40,11 @@ const UpdateDetailsTab: React.FC<UpdateDetailsTabProps> = ({
       </CardHeader>
       <CardContent className="space-y-6">
         <BusinessImageUpload 
-          selectedImages={selectedImages}
-          handleImageUpload={handleImageUpload}
-          handleImageRemove={handleImageRemove}
-          handleImageReorder={handleImageReorder}
+          images={images}
+          onAddImage={onAddImage}
+          onRemoveImage={onRemoveImage}
+          onRetryImage={onRetryImage}
+          isProcessing={isProcessing}
           disabled={disabled}
         />
         <BusinessDescriptionField disabled={disabled} />

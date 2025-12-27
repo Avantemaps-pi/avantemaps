@@ -7,21 +7,24 @@ import AddressTab from '../AddressTab';
 import HoursTab from '../HoursTab';
 import DetailsTab from '../DetailsTab';
 import PreviewTab from '../PreviewTab';
+import { ImageUploadStatus } from '@/hooks/useImageUpload';
 
 interface TabContentProps {
-  selectedImages: File[];
-  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleImageRemove?: (index: number) => void;
-  handleImageReorder?: (newImages: File[]) => void;
+  images: ImageUploadStatus[];
+  onAddImage: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveImage: (id: string) => void;
+  onRetryImage?: (id: string) => void;
+  isProcessing?: boolean;
   setSelectedTab: (tab: string) => void;
   isSubmitting?: boolean;
 }
 
 const TabContent: React.FC<TabContentProps> = ({ 
-  selectedImages, 
-  handleImageUpload,
-  handleImageRemove,
-  handleImageReorder,
+  images, 
+  onAddImage,
+  onRemoveImage,
+  onRetryImage,
+  isProcessing,
   setSelectedTab,
   isSubmitting
 }) => {
@@ -62,10 +65,11 @@ const TabContent: React.FC<TabContentProps> = ({
         <DetailsTab 
           onNext={() => setSelectedTab('preview')}
           onPrevious={() => setSelectedTab('hours')}
-          selectedImages={selectedImages}
-          handleImageUpload={handleImageUpload}
-          handleImageRemove={handleImageRemove}
-          handleImageReorder={handleImageReorder}
+          images={images}
+          onAddImage={onAddImage}
+          onRemoveImage={onRemoveImage}
+          onRetryImage={onRetryImage}
+          isProcessing={isProcessing}
           disabled={isSubmitting}
         />
       </TabsContent>
@@ -74,7 +78,7 @@ const TabContent: React.FC<TabContentProps> = ({
         <PreviewTab 
           onNext={() => {}}
           onPrevious={() => setSelectedTab('details')}
-          selectedImages={selectedImages}
+          images={images}
           disabled={isSubmitting}
         />
       </TabsContent>

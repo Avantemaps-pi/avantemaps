@@ -12,6 +12,71 @@ const DEFAULT_OPTIONS: Required<CompressionOptions> = {
   targetFormat: 'image/webp',
 };
 
+// Constants for validation
+export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+export interface ImageValidationResult {
+  valid: boolean;
+  error?: string;
+  errorDescription?: string;
+}
+
+/**
+ * Validates an image file before processing
+ * @param file - The image file to validate
+ * @param existingFiles - Array of existing files to check for duplicates
+ * @param maxImages - Maximum number of images allowed
+ * @returns Validation result with error message if invalid
+ */
+export const validateImageFile = (
+  file: File,
+  existingFiles: File[] = [],
+  maxImages: number = 3
+): ImageValidationResult => {
+  // Check if max images reached
+  if (existingFiles.length >= maxImages) {
+    return {
+      valid: false,
+      error: `Maximum ${maxImages} images allowed`,
+      errorDescription: 'Please remove an existing image before adding a new one.',
+    };
+  }
+
+  // Check file type
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    return {
+      valid: false,
+      error: `Invalid file type: ${file.type.split('/')[1]?.toUpperCase() || 'Unknown'}`,
+      errorDescription: 'Please upload JPG, PNG, GIF, or WebP images only.',
+    };
+  }
+
+  // Check file size
+  if (file.size > MAX_FILE_SIZE) {
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+    return {
+      valid: false,
+      error: `File too large: ${sizeMB}MB`,
+      errorDescription: 'Maximum file size is 10MB. Please choose a smaller image.',
+    };
+  }
+
+  // Check for duplicates (by name and size)
+  const isDuplicate = existingFiles.some(
+    existing => existing.name === file.name && existing.size === file.size
+  );
+  if (isDuplicate) {
+    return {
+      valid: false,
+      error: 'Duplicate image',
+      errorDescription: `"${file.name}" has already been added.`,
+    };
+  }
+
+  return { valid: true };
+};
+
 /**
  * Compresses an image file by resizing and reducing quality
  * @param file - The original image file
@@ -100,6 +165,56 @@ export const compressImage = async (
 
     reader.readAsDataURL(file);
   });
+};
+
+export interface CompressionResult {
+  file: File | null;
+  originalName: string;
+  originalSize: number;
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Safely compresses an image, returning result with error info instead of throwing
+ * @param file - The original image file
+ * @param options - Compression options
+ * @returns CompressionResult with success status and error message if failed
+ */
+export const compressImageSafe = async (
+  file: File,
+  options: CompressionOptions = {}
+): Promise<CompressionResult> => {
+  try {
+    const compressed = await compressImage(file, options);
+    return {
+      file: compressed,
+      originalName: file.name,
+      originalSize: file.size,
+      success: true,
+    };
+  } catch (error) {
+    return {
+      file: null,
+      originalName: file.name,
+      originalSize: file.size,
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown compression error',
+    };
+  }
+};
+
+/**
+ * Compresses multiple images in parallel with individual error handling
+ * @param files - Array of image files
+ * @param options - Compression options
+ * @returns Array of compression results
+ */
+export const compressImagesSafe = async (
+  files: File[],
+  options: CompressionOptions = {}
+): Promise<CompressionResult[]> => {
+  return Promise.all(files.map(file => compressImageSafe(file, options)));
 };
 
 /**

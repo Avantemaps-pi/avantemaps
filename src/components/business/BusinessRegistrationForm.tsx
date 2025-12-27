@@ -25,10 +25,7 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrat
   const { user } = useAuth();
   const { 
     form, 
-    selectedImages, 
-    handleImageUpload, 
-    handleImageRemove,
-    handleImageReorder,
+    imageUpload,
     onSubmit, 
     isSubmitting,
     showAddressVerification,
@@ -56,9 +53,9 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrat
   // Track form changes
   React.useEffect(() => {
     if (onFormChange) {
-      onFormChange(form.formState.isDirty);
+      onFormChange(form.formState.isDirty || imageUpload.hasImages);
     }
-  }, [form.formState.isDirty, onFormChange]);
+  }, [form.formState.isDirty, imageUpload.hasImages, onFormChange]);
 
   // ✅ Require Pi auth before showing the form
   if (!user) {
@@ -85,10 +82,11 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrat
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
           <TabNavigation isMobile={isMobile} disabled={isSubmitting} />
           <TabContent
-            selectedImages={selectedImages}
-            handleImageUpload={handleImageUpload}
-            handleImageRemove={handleImageRemove}
-            handleImageReorder={handleImageReorder}
+            images={imageUpload.images}
+            onAddImage={imageUpload.addImage}
+            onRemoveImage={imageUpload.removeImage}
+            onRetryImage={imageUpload.retryImage}
+            isProcessing={imageUpload.isProcessing}
             setSelectedTab={setSelectedTab}
             isSubmitting={isSubmitting}
           />
