@@ -64,6 +64,8 @@ export const useBusinessUpdate = (business: Business, onSuccess?: () => void) =>
         business_types: values.businessTypes,
         pi_wallet_address: values.piWalletAddress || null,
         contact_info: {
+          first_name: values.firstName || null,
+          last_name: values.lastName || null,
           email: values.email,
           phone: values.phone ? `${values.countryCode || ''}${values.phone}` : null,
           website: values.website || null,
