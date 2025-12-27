@@ -56,8 +56,8 @@ export const verifyPiAuthentication = async (
     return {
       verified: true,
       user: data.user,
-      supabaseToken: data.supabase_token ?? null,
-      refreshToken: data.refresh_token ?? null,
+      supabaseToken: data.supabase_token ?? data.supabaseToken ?? null,
+      refreshToken: data.refresh_token ?? data.refreshToken ?? null,
       testMode: data.testMode ?? false,
       traceId: data.traceId,
     };
