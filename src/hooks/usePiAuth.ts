@@ -41,15 +41,13 @@ export function usePiAuth(): UsePiAuthReturn {
       }
 
       // 3️⃣ If we received Supabase tokens, create a session
-      // CRITICAL: Only call setSession if we have BOTH valid tokens
-      // Passing empty/invalid refresh tokens causes "illegal base64" errors
+      // Only require refresh token to be non-empty and different from access token
       if (verification.supabaseToken && verification.refreshToken) {
-        // Validate that refresh token is actually different from access token
-        // and is a non-empty string
         const refreshToken = verification.refreshToken.trim();
         const accessToken = verification.supabaseToken.trim();
         
-        if (refreshToken && refreshToken !== accessToken && refreshToken.length > 20) {
+        // Only reject if refresh token is empty or same as access token
+        if (refreshToken && refreshToken !== accessToken) {
           // Clear any existing corrupted session first
           await supabase.auth.signOut();
           
@@ -59,25 +57,18 @@ export function usePiAuth(): UsePiAuthReturn {
           });
           
           if (sessionError) {
-            // Check for specific refresh token errors
             const errorMsg = sessionError.message?.toLowerCase() || '';
             if (errorMsg.includes('illegal base64') || errorMsg.includes('refresh_token')) {
               console.warn('Invalid refresh token detected, clearing session');
               await supabase.auth.signOut();
-              // Clear any corrupted storage
               const keysToRemove = Object.keys(localStorage).filter(key => 
                 key.startsWith('sb-') || key.includes('supabase')
               );
               keysToRemove.forEach(key => localStorage.removeItem(key));
-            } else {
-              console.warn('Session establishment warning:', sessionError.message);
             }
+            // Don't throw - session setup is nice-to-have, not critical
           }
-        } else {
-          console.info('Skipping setSession: refresh token not valid for session persistence');
         }
-      } else {
-        console.info('Skipping setSession: missing required tokens for session persistence');
       }
 
       // 4️⃣ Update local auth context
