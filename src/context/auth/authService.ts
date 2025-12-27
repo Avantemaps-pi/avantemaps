@@ -296,33 +296,51 @@ export const performLogin = async (
           } else {
             verificationSucceeded = true;
             
-            // 🔧 FIX: Set Supabase session with JWT token and refresh token
-            const token = (verificationResult as any).supabase_token || (verificationResult as any).supabaseToken;
-            const refreshToken = (verificationResult as any).refresh_token || (verificationResult as any).refreshToken;
-            if (token) {
-              // CRITICAL: Always include refresh_token for session persistence
-              const sessionPayload: { access_token: string; refresh_token: string } = { 
-                access_token: token,
-                refresh_token: refreshToken || token // Use access token as fallback (session will be short-lived)
+            // 🔧 Set Supabase session with BOTH access + refresh token
+            const token =
+              (verificationResult as any).supabase_token ??
+              verificationResult.supabaseToken ??
+              (verificationResult as any).supabaseToken;
+
+            const refreshToken =
+              (verificationResult as any).refresh_token ??
+              (verificationResult as any).refreshToken ??
+              verificationResult.refreshToken;
+
+            if (!token) {
+              secureLog.warn('⚠️ No supabase_token returned from verification');
+            } else if (!refreshToken || refreshToken.trim().length < 20 || refreshToken.trim() === token.trim()) {
+              secureLog.error('❌ Missing/invalid refresh token returned from verification', {
+                hasRefreshToken: !!refreshToken,
+                tokenLen: token.length,
+                refreshLen: refreshToken?.length,
+              });
+              toast.error('Failed to establish secure session. Please try again.');
+              throw new Error('Session setup failed: missing refresh token');
+            } else {
+              // Clear any existing session first to avoid mixing tokens
+              await supabase.auth.signOut();
+
+              const sessionPayload: { access_token: string; refresh_token: string } = {
+                access_token: token.trim(),
+                refresh_token: refreshToken.trim(),
               };
-              
-              secureLog.info("Setting Supabase session with JWT token", { hasRefreshToken: !!refreshToken });
+
+              secureLog.info('Setting Supabase session with JWT token', { hasRefreshToken: true });
               const { error: sessionError } = await supabase.auth.setSession(sessionPayload);
-              
+
               if (sessionError) {
-                console.error("❌ Failed to set Supabase session:", {
+                console.error('❌ Failed to set Supabase session:', {
                   error: sessionError,
                   message: sessionError.message,
-                  status: sessionError.status
+                  status: sessionError.status,
                 });
-                secureLog.error("Failed to set Supabase session:", sessionError);
-                toast.error("Failed to establish secure session. Please try again.");
-                throw new Error("Session setup failed");
+                secureLog.error('Failed to set Supabase session:', sessionError);
+                toast.error('Failed to establish secure session. Please try again.');
+                throw new Error('Session setup failed');
               }
-              
-              secureLog.info("✅ Supabase session established successfully");
-            } else {
-              secureLog.warn("⚠️ No supabase_token returned from verification");
+
+              secureLog.info('✅ Supabase session established successfully');
             }
           }
         } catch (verificationError) {
