@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { Business } from '@/types/business';
 import { FormValues } from './registration/formSchema';
 import { useBusinessFormInit } from '@/hooks/useBusinessFormInit';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import FormHeader from './registration/components/FormHeader';
 import TabNavigation from './registration/components/TabNavigation';
 import TabContent from './registration/components/TabContent';
@@ -37,12 +38,14 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('business-owner');
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false);
   const form = useBusinessFormInit(business);
+  
+  // Use the new image upload hook
+  const imageUpload = useImageUpload({ maxImages: 3, bucketName: 'business-images' });
 
   // Track if form has unsaved changes
-  const hasUnsavedChanges = form.formState.isDirty || selectedImages.length > 0;
+  const hasUnsavedChanges = form.formState.isDirty || imageUpload.hasImages;
 
   // Listen for navigation attempts (back button in header)
   useEffect(() => {
@@ -77,28 +80,13 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
     };
   }, [hasUnsavedChanges]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const newImage = e.target.files[0];
-      setSelectedImages(prev => [...prev, newImage].slice(0, 3));
-    }
-  };
-
-  const handleImageRemove = (index: number) => {
-    setSelectedImages(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleImageReorder = (newImages: File[]) => {
-    setSelectedImages(newImages);
-  };
-
   const onSubmit = (values: FormValues) => {
     console.log('Updated form values:', values);
-    console.log('Selected images:', selectedImages);
+    console.log('Selected images:', imageUpload.images);
     
     toast.success('Business information updated successfully!');
     form.reset(values); // Reset form state to mark as clean
-    setSelectedImages([]); // Clear images
+    imageUpload.clearImages(); // Clear images
     if (onSuccess) onSuccess();
   };
 
@@ -106,7 +94,7 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
     // Reset form to clear dirty state
     form.reset();
     // Clear selected images
-    setSelectedImages([]);
+    imageUpload.clearImages();
     // Close dialog
     setShowUnsavedChangesDialog(false);
     // Navigate back immediately
@@ -139,10 +127,11 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
                 isMobile={isMobile} 
               />
               <TabContent 
-                selectedImages={selectedImages}
-                handleImageUpload={handleImageUpload}
-                handleImageRemove={handleImageRemove}
-                handleImageReorder={handleImageReorder}
+                images={imageUpload.images}
+                onAddImage={imageUpload.addImage}
+                onRemoveImage={imageUpload.removeImage}
+                onRetryImage={imageUpload.retryImage}
+                isProcessing={imageUpload.isProcessing}
                 setSelectedTab={setSelectedTab}
               />
             </Tabs>

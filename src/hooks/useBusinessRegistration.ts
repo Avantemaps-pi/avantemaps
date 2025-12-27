@@ -8,10 +8,9 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/auth';
 import { containsInappropriateContent } from '@/utils/contentFilter';
 import type { BusinessInsertPayload } from '@/types/businessPayload';
-import { compressImages, getSizeReduction } from '@/utils/imageCompression';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 export const useBusinessRegistration = (onSuccess?: () => void) => {
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAddressVerification, setShowAddressVerification] = useState(false);
   const [verifiedAddress, setVerifiedAddress] = useState<any>(null);
@@ -20,6 +19,9 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
   const [pendingSubmission, setPendingSubmission] = useState<any>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Use the new image upload hook
+  const imageUpload = useImageUpload({ maxImages: 3, bucketName: 'business-images' });
 
   const [piWalletAddress, setPiWalletAddress] = useState(user?.walletAddress || '');
 
@@ -68,24 +70,6 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       sundayClosed: false,
     },
   });
-
-  // ---------------------------
-  // IMAGE HANDLERS
-  // ---------------------------
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const newImage = e.target.files[0];
-      setSelectedImages(prev => [...prev, newImage].slice(0, 3));
-    }
-  };
-
-  const handleImageRemove = (index: number) => {
-    setSelectedImages(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleImageReorder = (newImages: File[]) => {
-    setSelectedImages(newImages);
-  };
 
   // ---------------------------
   // GEOCODE FUNCTION
@@ -346,68 +330,29 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       // ---------------------------
       // UPLOAD BUSINESS IMAGES
       // ---------------------------
-      if (selectedImages.length && newBusiness?.id) {
-        try {
-          // Compress images before upload
-          toast.info('Optimizing images...');
-          const originalSizes = selectedImages.map(img => img.size);
-          const compressedImages = await compressImages(selectedImages, {
-            maxWidth: 1920,
-            maxHeight: 1920,
-            quality: 0.85,
-            targetFormat: 'image/webp',
-          });
-          
-          // Calculate total size reduction
-          const totalOriginal = originalSizes.reduce((sum, size) => sum + size, 0);
-          const totalCompressed = compressedImages.reduce((sum, img) => sum + img.size, 0);
-          const reduction = getSizeReduction(totalOriginal, totalCompressed);
-          
-          console.log(`Image compression: ${reduction}% size reduction (${(totalOriginal / 1024 / 1024).toFixed(2)}MB → ${(totalCompressed / 1024 / 1024).toFixed(2)}MB)`);
-          
-          const uploadPromises = compressedImages.map(async (file, index) => {
-            const filePath = `${newBusiness.id}/image-${index}-${Date.now()}.webp`;
+      if (imageUpload.hasImages && newBusiness?.id) {
+        const uploadResult = await imageUpload.uploadImages(newBusiness.id);
+        
+        if (uploadResult.successfulUrls.length > 0) {
+          // Update the business record with image URLs
+          const { error: updateError } = await supabase
+            .from('businesses')
+            .update({ images: uploadResult.successfulUrls })
+            .eq('id', newBusiness.id);
 
-            const { error: uploadError } = await supabase.storage
-              .from('business-images')
-              .upload(filePath, file, { cacheControl: '3600', upsert: false });
-
-            if (uploadError) {
-              console.error('Image upload error:', uploadError);
-              return null;
-            }
-            return filePath;
-          });
-
-          const uploadedPaths = await Promise.all(uploadPromises);
-          const successfulUploads = uploadedPaths.filter(path => path !== null) as string[];
-
-          if (successfulUploads.length > 0) {
-            // Generate public URLs for the uploaded images
-            const imageUrls = successfulUploads.map(path => {
-              const { data } = supabase.storage
-                .from('business-images')
-                .getPublicUrl(path);
-              return data.publicUrl;
-            });
-
-            // Update the business record with image URLs
-            const { error: updateError } = await supabase
-              .from('businesses')
-              .update({ images: imageUrls })
-              .eq('id', newBusiness.id);
-
-            if (updateError) {
-              console.error('Error saving image URLs to database:', updateError);
-              toast.warning('Images uploaded but URLs could not be saved');
-            } else {
-              console.log(`✅ Uploaded ${successfulUploads.length} optimized images and saved URLs to database`);
-              toast.success(`Business registered with ${successfulUploads.length} image(s) (${reduction}% smaller)!`);
-            }
+          if (updateError) {
+            console.error('Error saving image URLs to database:', updateError);
+            toast.warning('Images uploaded but URLs could not be saved');
+          } else {
+            console.log(`✅ Uploaded ${uploadResult.successfulUrls.length} images and saved URLs to database`);
           }
-        } catch (imgErr) {
-          console.error('Image upload process error:', imgErr);
-          toast.warning('Business registered but some images failed to upload');
+        }
+
+        // Show warning if some images failed
+        if (uploadResult.failedCount > 0 && uploadResult.successfulUrls.length > 0) {
+          toast.warning(`Business registered but ${uploadResult.failedCount} image(s) failed to upload`);
+        } else if (uploadResult.failedCount > 0 && uploadResult.successfulUrls.length === 0) {
+          toast.warning('Business registered but all images failed to upload');
         }
       }
 
@@ -428,10 +373,8 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
 
   return {
     form,
-    selectedImages,
-    handleImageUpload,
-    handleImageRemove,
-    handleImageReorder,
+    // New image upload interface
+    imageUpload,
     onSubmit,
     isSubmitting,
     showAddressVerification,
