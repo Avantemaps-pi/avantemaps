@@ -145,6 +145,27 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
         });
       }
 
+      // Verify we have a valid session before uploading
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.user) {
+        console.error('No valid session for upload:', sessionError?.message || 'No session');
+        errors.push('Authentication required for image upload. Please log in again.');
+        toast.error('Session expired. Please re-authenticate to upload images.');
+        setImages(prev => prev.map(img => ({ 
+          ...img, 
+          status: 'error' as const, 
+          error: 'Authentication required' 
+        })));
+        return {
+          success: false,
+          successfulUrls: [],
+          failedCount: images.length,
+          errors,
+        };
+      }
+      
+      console.log('Uploading images with auth.uid:', session.user.id);
+
       // Upload successfully compressed images
       const uploadPromises = compressionResults.map(async (result, index) => {
         if (!result.success || !result.file) {
@@ -152,6 +173,7 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
         }
 
         const filePath = `${businessId}/image-${index}-${Date.now()}.webp`;
+        console.log(`Uploading to path: ${filePath}`);
 
         try {
           const { error: uploadError } = await supabase.storage
@@ -162,7 +184,15 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
             });
 
           if (uploadError) {
-            errors.push(`Failed to upload "${result.originalName}": ${uploadError.message}`);
+            console.error(`Upload error for ${result.originalName}:`, uploadError);
+            // Check for RLS policy violations
+            if (uploadError.message?.includes('security') || 
+                uploadError.message?.includes('policy') ||
+                uploadError.message?.includes('permission')) {
+              errors.push(`Permission denied for "${result.originalName}". Please ensure you own this business.`);
+            } else {
+              errors.push(`Failed to upload "${result.originalName}": ${uploadError.message}`);
+            }
             return { index, success: false, url: null };
           }
 
@@ -170,9 +200,11 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
             .from(bucketName)
             .getPublicUrl(filePath);
 
+          console.log(`Successfully uploaded: ${data.publicUrl}`);
           return { index, success: true, url: data.publicUrl };
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+          console.error(`Upload exception for ${result.originalName}:`, err);
           errors.push(`Failed to upload "${result.originalName}": ${errorMessage}`);
           return { index, success: false, url: null };
         }
