@@ -31,10 +31,17 @@ export const useBusinessUpdate = (business: Business, onSuccess?: () => void) =>
 
   const onSubmit = async (values: FormValues) => {
     try {
-      if (!user?.uid) {
-        toast.error('You must be logged in to update a business.');
+      // Get the actual Supabase session user ID (not the Pi auth user ID)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.user?.id) {
+        console.error('No valid Supabase session:', sessionError?.message);
+        toast.error('Session expired. Please log in again to update your business.');
         return;
       }
+      
+      const sessionUserId = session.user.id;
+      console.log('Updating business with session user ID:', sessionUserId);
 
       setIsSubmitting(true);
 
@@ -95,12 +102,12 @@ export const useBusinessUpdate = (business: Business, onSuccess?: () => void) =>
         updatePayload.images = combinedImages.length > 0 ? combinedImages : null;
       }
 
-      // Update business in database
+      // Update business in database using Supabase session user ID
       const { error: updateError } = await supabase
         .from('businesses')
         .update(updatePayload)
         .eq('id', business.id)
-        .eq('owner_id', user.uid); // Ensure user owns this business
+        .eq('owner_id', sessionUserId); // Use session user ID, not Pi auth user ID
 
       if (updateError) {
         console.error('Error updating business:', updateError);
