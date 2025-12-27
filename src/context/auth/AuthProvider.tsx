@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (errorMsg.includes('illegal base64') || 
               errorMsg.includes('refresh_token') ||
               errorMsg.includes('invalid refresh token')) {
-            secureLog.warn('Corrupted refresh token detected, clearing all auth storage...');
+            secureLog.warn('Corrupted refresh token detected, clearing auth storage silently...');
             clearAllAuthStorage();
             await supabase.auth.signOut();
             return;
@@ -133,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (errorMsg.includes('illegal base64') || 
                 errorMsg.includes('refresh_token') ||
                 errorMsg.includes('invalid refresh token')) {
-              secureLog.warn('Corrupted refresh token detected during validation, clearing all auth storage...');
+              secureLog.warn('Corrupted refresh token detected during validation, clearing storage silently...');
               clearAllAuthStorage();
               await supabase.auth.signOut();
               return;
@@ -156,7 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (errorMsg.includes('illegal base64') || 
               errorMsg.includes('refresh_token') ||
               errorMsg.includes('invalid refresh token')) {
-            secureLog.warn('Corrupted refresh token error caught, clearing all auth storage...');
+            secureLog.warn('Corrupted refresh token error caught, clearing storage silently...');
             clearAllAuthStorage();
             await supabase.auth.signOut();
             return;
@@ -174,7 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (errorMsg.includes('illegal base64') || 
             errorMsg.includes('refresh_token') ||
             errorMsg.includes('invalid refresh token')) {
-          secureLog.warn('Corrupted refresh token error in outer catch, clearing all auth storage...');
+          secureLog.warn('Corrupted refresh token error in outer catch, clearing storage silently...');
           clearAllAuthStorage();
           try {
             await supabase.auth.signOut();

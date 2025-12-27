@@ -309,13 +309,13 @@ export const performLogin = async (
 
             if (!token) {
               secureLog.warn('⚠️ No supabase_token returned from verification');
-            } else if (!refreshToken || refreshToken.trim().length < 20 || refreshToken.trim() === token.trim()) {
+            } else if (!refreshToken || refreshToken.trim() === '' || refreshToken.trim() === token.trim()) {
+              // Only reject if refresh token is completely missing or same as access token
               secureLog.error('❌ Missing/invalid refresh token returned from verification', {
                 hasRefreshToken: !!refreshToken,
-                tokenLen: token.length,
-                refreshLen: refreshToken?.length,
+                refreshIsEmpty: !refreshToken?.trim(),
+                refreshEqualsAccess: refreshToken?.trim() === token.trim(),
               });
-              toast.error('Failed to establish secure session. Please try again.');
               throw new Error('Session setup failed: missing refresh token');
             } else {
               // Clear any existing session first to avoid mixing tokens
@@ -336,8 +336,7 @@ export const performLogin = async (
                   status: sessionError.status,
                 });
                 secureLog.error('Failed to set Supabase session:', sessionError);
-                toast.error('Failed to establish secure session. Please try again.');
-                throw new Error('Session setup failed');
+                throw new Error('Failed to establish secure session. Please try again.');
               }
 
               secureLog.info('✅ Supabase session established successfully');

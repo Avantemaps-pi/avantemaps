@@ -21,7 +21,7 @@ export const useSupabaseSession = (
     isHandlingError.current = true;
     
     try {
-      secureLog.warn('Clearing corrupted Supabase session...');
+      secureLog.warn('Clearing corrupted Supabase session (silent)...');
       
       // Sign out from Supabase
       await supabase.auth.signOut();
@@ -33,7 +33,6 @@ export const useSupabaseSession = (
         key === STORAGE_KEY
       );
       keysToRemove.forEach(key => {
-        secureLog.info(`Removing corrupted key: ${key}`);
         localStorage.removeItem(key);
       });
       
@@ -44,6 +43,7 @@ export const useSupabaseSession = (
       sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
       
       secureLog.info('Corrupted session cleared successfully');
+      // Callback without toast - let the caller decide if user needs notification
       onSessionError?.();
     } catch (error) {
       secureLog.error('Error clearing corrupted session:', error);
