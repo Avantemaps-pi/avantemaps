@@ -41,25 +41,43 @@ export function usePiAuth(): UsePiAuthReturn {
       }
 
       // 3️⃣ If we received Supabase tokens, create a session
-      if (verification.supabaseToken) {
-        // Clear any existing corrupted session first
-        await supabase.auth.signOut();
+      // CRITICAL: Only call setSession if we have BOTH valid tokens
+      // Passing empty/invalid refresh tokens causes "illegal base64" errors
+      if (verification.supabaseToken && verification.refreshToken) {
+        // Validate that refresh token is actually different from access token
+        // and is a non-empty string
+        const refreshToken = verification.refreshToken.trim();
+        const accessToken = verification.supabaseToken.trim();
         
-        // CRITICAL: Never use access_token as refresh_token - causes "illegal base64" errors
-        // Only use refreshToken if it exists AND is different from the access token
-        const hasValidRefreshToken = verification.refreshToken && 
-          verification.refreshToken !== verification.supabaseToken;
-        
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: verification.supabaseToken,
-          // Use valid refresh token or empty string (never use access_token as fallback)
-          refresh_token: hasValidRefreshToken ? verification.refreshToken : '',
-        });
-        
-        if (sessionError) {
-          console.warn('Session establishment warning:', sessionError.message);
-          // Don't throw - the access token may still work for immediate operations
+        if (refreshToken && refreshToken !== accessToken && refreshToken.length > 20) {
+          // Clear any existing corrupted session first
+          await supabase.auth.signOut();
+          
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          
+          if (sessionError) {
+            // Check for specific refresh token errors
+            const errorMsg = sessionError.message?.toLowerCase() || '';
+            if (errorMsg.includes('illegal base64') || errorMsg.includes('refresh_token')) {
+              console.warn('Invalid refresh token detected, clearing session');
+              await supabase.auth.signOut();
+              // Clear any corrupted storage
+              const keysToRemove = Object.keys(localStorage).filter(key => 
+                key.startsWith('sb-') || key.includes('supabase')
+              );
+              keysToRemove.forEach(key => localStorage.removeItem(key));
+            } else {
+              console.warn('Session establishment warning:', sessionError.message);
+            }
+          }
+        } else {
+          console.info('Skipping setSession: refresh token not valid for session persistence');
         }
+      } else {
+        console.info('Skipping setSession: missing required tokens for session persistence');
       }
 
       // 4️⃣ Update local auth context
