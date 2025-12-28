@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,58 @@ interface BusinessImageUploadProps {
   existingImages?: string[];
   onRemoveExistingImage?: (index: number) => void;
 }
+
+// Component to handle image preview with proper blob URL regeneration
+const ImagePreview: React.FC<{ 
+  file: File; 
+  previewUrl?: string; 
+  alt: string; 
+  className?: string;
+}> = ({ file, previewUrl, alt, className }) => {
+  const [localUrl, setLocalUrl] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    // Try the provided previewUrl first, if it fails we'll create a new one
+    if (previewUrl) {
+      setLocalUrl(previewUrl);
+      setHasError(false);
+    } else if (file) {
+      // Create a new blob URL from the file
+      const url = URL.createObjectURL(file);
+      setLocalUrl(url);
+      setHasError(false);
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [file, previewUrl]);
+
+  const handleError = () => {
+    // If the previewUrl failed, try creating a new blob URL from the file
+    if (file && localUrl === previewUrl) {
+      const newUrl = URL.createObjectURL(file);
+      setLocalUrl(newUrl);
+    } else {
+      setHasError(true);
+    }
+  };
+
+  if (hasError || !localUrl) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted">
+        <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={localUrl}
+      alt={alt}
+      className={className}
+      onError={handleError}
+    />
+  );
+};
 
 const StatusIcon: React.FC<{ status: ImageUploadStatus['status'] }> = ({ status }) => {
   switch (status) {
@@ -161,20 +213,15 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
                   )}
                 >
                   {/* Image Preview */}
-                  {image.previewUrl ? (
-                    <img
-                      src={image.previewUrl}
-                      alt={`New image ${index + 1}`}
-                      className={cn(
-                        "w-full h-full object-cover transition-opacity",
-                        (image.status === 'compressing' || image.status === 'uploading') && "opacity-50"
-                      )}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
-                    </div>
-                  )}
+                  <ImagePreview 
+                    file={image.file}
+                    previewUrl={image.previewUrl}
+                    alt={`New image ${index + 1}`}
+                    className={cn(
+                      "w-full h-full object-cover transition-opacity",
+                      (image.status === 'compressing' || image.status === 'uploading') && "opacity-50"
+                    )}
+                  />
 
                   {/* Status Overlay */}
                   <div className="absolute bottom-0 left-0 right-0 bg-background/90 backdrop-blur-sm px-2 py-1.5 flex items-center justify-between">
