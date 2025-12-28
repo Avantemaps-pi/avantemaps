@@ -122,10 +122,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           if (userError || !supaUser) {
             const errorMsg = userError?.message?.toLowerCase() || '';
-            
+            const errorCode = ((userError as any)?.code ?? '').toString().toLowerCase();
+
             // Handle "context canceled" gracefully
             if (errorMsg.includes('context canceled') || errorMsg.includes('aborted')) {
               secureLog.info('Session validation was interrupted, will retry on next mount');
+              return;
+            }
+
+            // Handle stale session ids (e.g. GoTrue: session_not_found)
+            if (
+              errorMsg.includes('session not found') ||
+              errorMsg.includes('session_not_found') ||
+              errorMsg.includes("doesn't exist") ||
+              errorCode.includes('session_not_found')
+            ) {
+              secureLog.warn('Stale Supabase session detected (session_not_found), clearing auth storage silently...');
+              clearAllAuthStorage();
+              try {
+                await supabase.auth.signOut();
+              } catch {
+                // Ignore signout errors
+              }
               return;
             }
             
