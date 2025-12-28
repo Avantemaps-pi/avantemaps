@@ -53,16 +53,21 @@ export const useSupabaseSession = (
   }, [onSessionError]);
 
   /**
-   * Check if an error is related to refresh token corruption
+   * Check if an error is related to session/token issues
    */
-  const isRefreshTokenError = useCallback((error: any): boolean => {
+  const isSessionError = useCallback((error: any): boolean => {
     const message = error?.message?.toLowerCase() || '';
+    const errorCode = error?.code?.toLowerCase() || '';
     return (
       message.includes('illegal base64') ||
       message.includes('refresh_token') ||
       message.includes('invalid refresh token') ||
       message.includes('token is expired') ||
-      message.includes('invalid jwt')
+      message.includes('invalid jwt') ||
+      message.includes('session not found') ||
+      message.includes('session_not_found') ||
+      errorCode.includes('session_not_found') ||
+      message.includes("doesn't exist")
     );
   }, []);
 
@@ -95,7 +100,7 @@ export const useSupabaseSession = (
     };
   }, [onSessionRestored]);
 
-  // Monitor for refresh errors by intercepting fetch
+  // Monitor for session errors by intercepting fetch
   useEffect(() => {
     const originalFetch = window.fetch;
     
@@ -103,18 +108,34 @@ export const useSupabaseSession = (
       try {
         const response = await originalFetch(...args);
         
-        // Check if this is a Supabase auth refresh request that failed
         const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url;
-        if (url?.includes('/auth/v1/token') && url?.includes('refresh_token')) {
-          if (response.status === 400) {
-            // Clone response to read body without consuming it
+        
+        // Check if this is a Supabase auth request that failed
+        if (url?.includes('/auth/v1/')) {
+          // Handle 400 errors on token refresh
+          if (url.includes('token') && url.includes('refresh_token') && response.status === 400) {
             const clonedResponse = response.clone();
             try {
               const data = await clonedResponse.json();
               if (data?.error_description?.includes('illegal base64') || 
                   data?.error?.includes('invalid')) {
                 secureLog.error('Refresh token error detected:', data);
-                // Don't await - let the original response return
+                clearCorruptedSession();
+              }
+            } catch {
+              // Ignore JSON parse errors
+            }
+          }
+          
+          // Handle 403 "session not found" errors on /user endpoint
+          if (url.includes('/user') && response.status === 403) {
+            const clonedResponse = response.clone();
+            try {
+              const data = await clonedResponse.json();
+              if (data?.error_code === 'session_not_found' || 
+                  data?.message?.toLowerCase().includes('session not found') ||
+                  data?.msg?.toLowerCase().includes("doesn't exist")) {
+                secureLog.error('Session not found error detected:', data);
                 clearCorruptedSession();
               }
             } catch {
@@ -136,7 +157,8 @@ export const useSupabaseSession = (
 
   return {
     clearCorruptedSession,
-    isRefreshTokenError,
+    isSessionError,
+    isRefreshTokenError: isSessionError, // Alias for backward compatibility
   };
 };
 
