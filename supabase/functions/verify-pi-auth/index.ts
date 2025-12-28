@@ -149,27 +149,24 @@ Deno.serve(async (req: Request) => {
       return `pi_${piUid}_${salt}`.substring(0, 72);
     };
 
-    // Helper: Create a user session WITHOUT needing email delivery.
-    // We generate a magic link (server-side) and immediately verify its hashed token.
-    // This yields a proper Supabase session with a valid refresh_token.
-    const createUserSession = async (email: string) => {
-      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'magiclink',
-        email,
-      });
+    // Helper: Create session using signInWithPassword (most reliable for server-side)
+    // Try sign-in first; only reset password if credentials are invalid.
+    const createUserSession = async (email: string, password: string, supabaseUserId: string) => {
+      let { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-      if (linkError || !linkData?.properties?.hashed_token) {
-        return {
-          data: null,
-          error: linkError ?? new Error('Failed to generate magic link token'),
-        };
+      if (!error && data?.session) return { data, error };
+
+      const msg = (error?.message || '').toLowerCase();
+      const status = (error as any)?.status;
+      const invalidCreds = msg.includes('invalid login') || msg.includes('invalid') || status === 400;
+
+      if (invalidCreds) {
+        console.warn(`🔧 [${traceId}] signInWithPassword failed (invalid creds). Resetting password + retrying...`);
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, { password });
+        if (updateError) return { data: null, error: updateError };
+
+        ({ data, error } = await supabase.auth.signInWithPassword({ email, password }));
       }
-
-      const token_hash = linkData.properties.hashed_token;
-      const { data, error } = await supabase.auth.verifyOtp({
-        type: 'email',
-        token_hash,
-      });
 
       return { data, error };
     };
@@ -233,7 +230,7 @@ Deno.serve(async (req: Request) => {
 
       console.log(`🔐 [${traceId}] [TEST] Creating session for user ${supabaseUserId}`);
 
-      const { data: sessionData, error: sessionError } = await createUserSession(email);
+      const { data: sessionData, error: sessionError } = await createUserSession(email, password, supabaseUserId);
 
       if (sessionError || !sessionData?.session) {
         console.error(`❌ [${traceId}] [TEST] Failed to create session:`, sessionError);
@@ -390,7 +387,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🔐 [${traceId}] Creating session for user ${supabaseUserId}`);
     
-    const { data: sessionData, error: sessionError } = await createUserSession(email);
+    const { data: sessionData, error: sessionError } = await createUserSession(email, password, supabaseUserId);
 
     if (sessionError || !sessionData?.session) {
       console.error(`❌ [${traceId}] Failed to create session:`, sessionError);
