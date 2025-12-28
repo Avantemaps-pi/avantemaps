@@ -89,18 +89,28 @@ export const compressImage = async (
 ): Promise<File> => {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
+  console.log(`[ImageCompression] Starting compression for: ${file.name}, size: ${file.size}, type: ${file.type}`);
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
-    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onerror = (e) => {
+      console.error(`[ImageCompression] FileReader error for ${file.name}:`, e);
+      reject(new Error(`Failed to read file: ${file.name}`));
+    };
     
     reader.onload = (e) => {
       const img = new Image();
       
-      img.onerror = () => reject(new Error('Failed to load image'));
+      img.onerror = (imgError) => {
+        console.error(`[ImageCompression] Image load error for ${file.name}:`, imgError);
+        reject(new Error(`Failed to load image: ${file.name}`));
+      };
       
       img.onload = () => {
         try {
+          console.log(`[ImageCompression] Image loaded: ${file.name}, dimensions: ${img.width}x${img.height}`);
+          
           // Calculate new dimensions while maintaining aspect ratio
           let { width, height } = img;
           
@@ -116,6 +126,8 @@ export const compressImage = async (
             }
           }
 
+          console.log(`[ImageCompression] Resizing to: ${width}x${height}`);
+
           // Create canvas and draw resized image
           const canvas = document.createElement('canvas');
           canvas.width = width;
@@ -123,6 +135,7 @@ export const compressImage = async (
           
           const ctx = canvas.getContext('2d');
           if (!ctx) {
+            console.error(`[ImageCompression] Failed to get canvas context for ${file.name}`);
             reject(new Error('Failed to get canvas context'));
             return;
           }
@@ -136,9 +149,12 @@ export const compressImage = async (
           canvas.toBlob(
             (blob) => {
               if (!blob) {
-                reject(new Error('Failed to compress image'));
+                console.error(`[ImageCompression] toBlob returned null for ${file.name}`);
+                reject(new Error(`Failed to compress image: ${file.name}`));
                 return;
               }
+
+              console.log(`[ImageCompression] Blob created: ${blob.size} bytes, type: ${blob.type}`);
 
               // Create a new File object from the blob
               const compressedFile = new File(
@@ -150,12 +166,14 @@ export const compressImage = async (
                 }
               );
 
+              console.log(`[ImageCompression] Success: ${file.name} -> ${compressedFile.name}, ${file.size} -> ${compressedFile.size} bytes`);
               resolve(compressedFile);
             },
             opts.targetFormat,
             opts.quality
           );
         } catch (error) {
+          console.error(`[ImageCompression] Processing error for ${file.name}:`, error);
           reject(error);
         }
       };
@@ -194,6 +212,20 @@ export const compressImageSafe = async (
       success: true,
     };
   } catch (error) {
+    console.warn(`[ImageCompression] Compression failed for ${file.name}, using original file as fallback`);
+    
+    // If the file type is already acceptable, use it as-is
+    if (ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      console.log(`[ImageCompression] Using original file: ${file.name}`);
+      return {
+        file: file, // Use original file as fallback
+        originalName: file.name,
+        originalSize: file.size,
+        success: true, // Mark as success since we have a usable file
+      };
+    }
+    
+    // Only return error if we can't use the original
     return {
       file: null,
       originalName: file.name,
