@@ -374,9 +374,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    const restoreSession = () => {
+    const restoreSession = async () => {
       const cachedSession = localStorage.getItem(STORAGE_KEY);
       if (!cachedSession) return;
+
+      // If Supabase session is missing, don't restore the app user from cache.
+      // This prevents "logged-in UI" + "stale/invalid Supabase tokens" loops.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        secureLog.info('No Supabase session found; clearing cached user session');
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
 
       try {
         const userData = JSON.parse(cachedSession) as PiUser;
@@ -394,7 +403,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     // Restore session immediately - no artificial delay needed
-    restoreSession();
+    restoreSession().catch((err) => secureLog.warn('Failed to restore cached session:', err));
   }, [safeSetUser]);
 
   // --- Robust SDK initialization helper (retries + timeout) ---
