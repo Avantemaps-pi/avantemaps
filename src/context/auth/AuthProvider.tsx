@@ -96,10 +96,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Check specifically for refresh token errors
           if (errorMsg.includes('illegal base64') || 
               errorMsg.includes('refresh_token') ||
-              errorMsg.includes('invalid refresh token')) {
+              errorMsg.includes('invalid refresh token') ||
+              errorMsg.includes('refresh token not found') ||
+              errorMsg.includes('token not found')) {
             secureLog.warn('Corrupted refresh token detected, clearing auth storage silently...');
             clearAllAuthStorage();
-            await supabase.auth.signOut();
+            try {
+              await supabase.auth.signOut();
+            } catch {
+              // Ignore signout errors
+            }
             return;
           }
           
@@ -150,10 +156,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Check for refresh token errors
             if (errorMsg.includes('illegal base64') || 
                 errorMsg.includes('refresh_token') ||
-                errorMsg.includes('invalid refresh token')) {
+                errorMsg.includes('invalid refresh token') ||
+                errorMsg.includes('refresh token not found') ||
+                errorMsg.includes('token not found')) {
               secureLog.warn('Corrupted refresh token detected during validation, clearing storage silently...');
               clearAllAuthStorage();
-              await supabase.auth.signOut();
+              try {
+                await supabase.auth.signOut();
+              } catch {
+                // Ignore signout errors
+              }
               return;
             }
             
