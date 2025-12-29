@@ -16,6 +16,9 @@ const DEFAULT_OPTIONS: Required<CompressionOptions> = {
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
+// Timeout for compression operations (30 seconds)
+const COMPRESSION_TIMEOUT_MS = 30000;
+
 export interface ImageValidationResult {
   valid: boolean;
   error?: string;
@@ -78,6 +81,48 @@ export const validateImageFile = (
 };
 
 /**
+ * Attempts to convert canvas to blob with format fallback
+ * Some mobile browsers don't support WebP encoding well
+ */
+const canvasToBlob = (
+  canvas: HTMLCanvasElement,
+  primaryFormat: string,
+  quality: number
+): Promise<{ blob: Blob; format: string }> => {
+  return new Promise((resolve, reject) => {
+    // Try primary format first
+    canvas.toBlob(
+      (blob) => {
+        if (blob && blob.size > 0) {
+          resolve({ blob, format: primaryFormat });
+          return;
+        }
+        
+        // If primary format fails, fallback to JPEG
+        if (primaryFormat !== 'image/jpeg') {
+          console.log(`[ImageCompression] ${primaryFormat} failed, falling back to JPEG`);
+          canvas.toBlob(
+            (jpegBlob) => {
+              if (jpegBlob && jpegBlob.size > 0) {
+                resolve({ blob: jpegBlob, format: 'image/jpeg' });
+              } else {
+                reject(new Error('Failed to create blob in any format'));
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        } else {
+          reject(new Error('Failed to create JPEG blob'));
+        }
+      },
+      primaryFormat,
+      quality
+    );
+  });
+};
+
+/**
  * Compresses an image file by resizing and reducing quality
  * @param file - The original image file
  * @param options - Compression options
@@ -91,7 +136,8 @@ export const compressImage = async (
 
   console.log(`[ImageCompression] Starting compression for: ${file.name}, size: ${file.size}, type: ${file.type}`);
 
-  return new Promise((resolve, reject) => {
+  // Wrap the entire operation in a timeout
+  const compressionPromise = new Promise<File>((resolve, reject) => {
     const reader = new FileReader();
     
     reader.onerror = (e) => {
@@ -107,7 +153,7 @@ export const compressImage = async (
         reject(new Error(`Failed to load image: ${file.name}`));
       };
       
-      img.onload = () => {
+      img.onload = async () => {
         try {
           console.log(`[ImageCompression] Image loaded: ${file.name}, dimensions: ${img.width}x${img.height}`);
           
@@ -145,33 +191,26 @@ export const compressImage = async (
           ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Convert canvas to blob
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) {
-                console.error(`[ImageCompression] toBlob returned null for ${file.name}`);
-                reject(new Error(`Failed to compress image: ${file.name}`));
-                return;
-              }
+          // Convert canvas to blob with fallback
+          const { blob, format } = await canvasToBlob(canvas, opts.targetFormat, opts.quality);
 
-              console.log(`[ImageCompression] Blob created: ${blob.size} bytes, type: ${blob.type}`);
+          console.log(`[ImageCompression] Blob created: ${blob.size} bytes, type: ${format}`);
 
-              // Create a new File object from the blob
-              const compressedFile = new File(
-                [blob],
-                file.name.replace(/\.[^/.]+$/, '.webp'), // Change extension to .webp
-                {
-                  type: opts.targetFormat,
-                  lastModified: Date.now(),
-                }
-              );
-
-              console.log(`[ImageCompression] Success: ${file.name} -> ${compressedFile.name}, ${file.size} -> ${compressedFile.size} bytes`);
-              resolve(compressedFile);
-            },
-            opts.targetFormat,
-            opts.quality
+          // Determine file extension based on actual format used
+          const extension = format === 'image/webp' ? '.webp' : format === 'image/png' ? '.png' : '.jpg';
+          
+          // Create a new File object from the blob
+          const compressedFile = new File(
+            [blob],
+            file.name.replace(/\.[^/.]+$/, extension),
+            {
+              type: format,
+              lastModified: Date.now(),
+            }
           );
+
+          console.log(`[ImageCompression] Success: ${file.name} -> ${compressedFile.name}, ${file.size} -> ${compressedFile.size} bytes`);
+          resolve(compressedFile);
         } catch (error) {
           console.error(`[ImageCompression] Processing error for ${file.name}:`, error);
           reject(error);
@@ -183,6 +222,15 @@ export const compressImage = async (
 
     reader.readAsDataURL(file);
   });
+
+  // Add timeout wrapper
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`Compression timed out for ${file.name}`));
+    }, COMPRESSION_TIMEOUT_MS);
+  });
+
+  return Promise.race([compressionPromise, timeoutPromise]);
 };
 
 export interface CompressionResult {
