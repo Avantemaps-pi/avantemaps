@@ -169,6 +169,9 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
       // Upload images sequentially with retry logic
       const uploadResults: { index: number; success: boolean; url: string | null }[] = [];
       
+      // Small initial delay to ensure everything is ready (helps Pi Browser)
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       for (let index = 0; index < compressionResults.length; index++) {
         const result = compressionResults[index];
         
@@ -177,14 +180,25 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
           continue;
         }
 
+        // Determine correct file extension based on actual compressed file type
+        const fileExt = result.file.type === 'image/webp' ? 'webp' 
+                      : result.file.type === 'image/png' ? 'png' 
+                      : 'jpg';
         const timestamp = Date.now();
-        const filePath = `${businessId}/image-${index}-${timestamp}.webp`;
-        console.log(`[Upload] Starting upload ${index + 1}/${compressionResults.length}: ${filePath}`);
+        const filePath = `${businessId}/image-${index}-${timestamp}.${fileExt}`;
+        console.log(`[Upload] Starting upload ${index + 1}/${compressionResults.length}: ${filePath} (type: ${result.file.type})`);
 
         // Update status for this specific image
         setImages(prev => prev.map((img, i) => 
           i === index ? { ...img, status: 'uploading' as const } : img
         ));
+
+        // Refresh session before each image upload (helps with Pi Browser session caching)
+        const { data: refreshedSession, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          console.warn(`[Upload] Session refresh warning for image ${index}:`, refreshError.message);
+          // Continue with existing session as fallback
+        }
 
         let uploadSuccess = false;
         let publicUrl: string | null = null;
@@ -204,6 +218,7 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
               .upload(filePath, result.file, {
                 cacheControl: '3600',
                 upsert: attempt > 0,
+                contentType: result.file.type, // Explicit content-type
               });
 
             if (uploadError) {
@@ -234,9 +249,9 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
 
         uploadResults.push({ index, success: uploadSuccess, url: publicUrl });
 
-        // Small delay between uploads to prevent rate limiting
+        // Longer delay between uploads for Pi Browser (500ms instead of 200ms)
         if (index < compressionResults.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
 
