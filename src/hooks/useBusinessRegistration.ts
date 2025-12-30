@@ -331,13 +331,26 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       // UPLOAD BUSINESS IMAGES
       // ---------------------------
       if (imageUpload.hasImages && newBusiness?.id) {
-        // Wait for business record to be fully propagated in the database
-        // This helps with RLS policies that check for business ownership
-        console.log('⏳ Waiting for business record to propagate before image upload...');
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
+        const waitForBusinessReadable = async (businessId: number, timeoutMs = 5000) => {
+          const startedAt = Date.now();
+          while (Date.now() - startedAt < timeoutMs) {
+            const { data } = await supabase
+              .from('businesses')
+              .select('id')
+              .eq('id', businessId)
+              .maybeSingle();
+
+            if (data?.id) return true;
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+          return false;
+        };
+
+        console.log('⏳ Waiting for business record to be readable before image upload...');
+        await waitForBusinessReadable(newBusiness.id, 5000);
+
         const uploadResult = await imageUpload.uploadImages(newBusiness.id);
-        
+
         if (uploadResult.successfulUrls.length > 0) {
           // Update the business record with image URLs
           const { error: updateError } = await supabase
