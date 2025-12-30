@@ -82,8 +82,10 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
     .filter(Boolean)
     .slice(0, 2); // Limit to 2 categories
 
-  // Create an array of images from single image (ready for future multi-image support)
-  const images = place.image ? [place.image] : [];
+  // Use images array if available, otherwise fall back to single image
+  const images = place.images && place.images.length > 0 
+    ? place.images 
+    : (place.image ? [place.image] : []);
 
   return (
     <Card 
