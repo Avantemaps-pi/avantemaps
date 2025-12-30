@@ -9,6 +9,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/context/auth";
 import { useSessionRestoration } from "@/hooks/useSessionRestoration";
+import { SessionManager } from "@/components/session/SessionManager";
 import AuthenticatingOverlay from "@/components/auth/AuthenticatingOverlay";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import 'leaflet/dist/leaflet.css';
@@ -41,7 +42,11 @@ import { initializePiNetwork } from "./utils/piNetwork";
 
 const queryClient = new QueryClient();
 
-const SessionManager = () => {
+/**
+ * SessionRestoration handles visibility/network changes.
+ * SessionManager handles centralized Supabase auth error detection.
+ */
+const SessionRestoration = () => {
   useSessionRestoration();
   return null;
 };
@@ -143,6 +148,7 @@ const App = () => {
               <AuthProvider>
                 <AuthenticatingOverlay />
                 <SidebarProvider>
+                  <SessionRestoration />
                   <SessionManager />
                   <Toaster />
                   <Sonner />
