@@ -109,7 +109,7 @@ const StatusIcon: React.FC<{ status: ImageUploadStatus['status'] }> = ({ status 
   }
 };
 
-const StatusLabel: React.FC<{ status: ImageUploadStatus['status'] }> = ({ status }) => {
+const StatusLabel: React.FC<{ status: ImageUploadStatus['status']; error?: string }> = ({ status, error }) => {
   switch (status) {
     case 'compressing':
       return <span className="text-xs text-muted-foreground">Optimizing...</span>;
@@ -118,7 +118,11 @@ const StatusLabel: React.FC<{ status: ImageUploadStatus['status'] }> = ({ status
     case 'success':
       return <span className="text-xs text-green-600">Ready</span>;
     case 'error':
-      return <span className="text-xs text-destructive">Failed</span>;
+      return (
+        <span className="text-xs text-destructive truncate max-w-[80px]" title={error}>
+          {error?.includes('permission') ? 'Permission denied' : 'Failed'}
+        </span>
+      );
     default:
       return <span className="text-xs text-muted-foreground">Pending</span>;
   }
@@ -251,7 +255,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
                   <div className="absolute bottom-0 left-0 right-0 bg-background/90 backdrop-blur-sm px-2 py-1.5 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <StatusIcon status={image.status} />
-                      <StatusLabel status={image.status} />
+                      <StatusLabel status={image.status} error={image.error} />
                     </div>
                     {index === 0 && activeExistingImages.length === 0 && (
                       <span className="text-xs font-medium text-primary">Main</span>

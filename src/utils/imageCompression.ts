@@ -285,7 +285,8 @@ export const compressImageSafe = async (
 };
 
 /**
- * Compresses multiple images in parallel with individual error handling
+ * Compresses multiple images sequentially with individual error handling
+ * Sequential processing reduces memory pressure and race conditions
  * @param files - Array of image files
  * @param options - Compression options
  * @returns Array of compression results
@@ -294,7 +295,21 @@ export const compressImagesSafe = async (
   files: File[],
   options: CompressionOptions = {}
 ): Promise<CompressionResult[]> => {
-  return Promise.all(files.map(file => compressImageSafe(file, options)));
+  const results: CompressionResult[] = [];
+  
+  // Process images sequentially to reduce memory pressure and avoid race conditions
+  for (const file of files) {
+    console.log(`[ImageCompression] Processing ${file.name} (${results.length + 1}/${files.length})`);
+    const result = await compressImageSafe(file, options);
+    results.push(result);
+    
+    // Small delay between compressions to prevent browser throttling
+    if (files.indexOf(file) < files.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  
+  return results;
 };
 
 /**
