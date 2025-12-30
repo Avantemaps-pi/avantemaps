@@ -28,26 +28,49 @@ const ImagePreview: React.FC<{
 }> = ({ file, previewUrl, alt, className }) => {
   const [localUrl, setLocalUrl] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    // Try the provided previewUrl first, if it fails we'll create a new one
+    let url: string | null = null;
+    
+    // Reset error state when file changes
+    setHasError(false);
+    setRetryCount(0);
+    
+    // Try the provided previewUrl first
     if (previewUrl) {
       setLocalUrl(previewUrl);
-      setHasError(false);
     } else if (file) {
       // Create a new blob URL from the file
-      const url = URL.createObjectURL(file);
-      setLocalUrl(url);
-      setHasError(false);
-      return () => URL.revokeObjectURL(url);
+      try {
+        url = URL.createObjectURL(file);
+        setLocalUrl(url);
+      } catch (e) {
+        console.error('[ImagePreview] Failed to create blob URL:', e);
+        setHasError(true);
+      }
     }
+    
+    return () => {
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
   }, [file, previewUrl]);
 
   const handleError = () => {
+    console.log('[ImagePreview] Image load error, retry count:', retryCount);
+    
     // If the previewUrl failed, try creating a new blob URL from the file
-    if (file && localUrl === previewUrl) {
-      const newUrl = URL.createObjectURL(file);
-      setLocalUrl(newUrl);
+    if (file && retryCount < 2) {
+      try {
+        const newUrl = URL.createObjectURL(file);
+        setLocalUrl(newUrl);
+        setRetryCount(prev => prev + 1);
+      } catch (e) {
+        console.error('[ImagePreview] Failed to create retry blob URL:', e);
+        setHasError(true);
+      }
     } else {
       setHasError(true);
     }
@@ -55,8 +78,9 @@ const ImagePreview: React.FC<{
 
   if (hasError || !localUrl) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-muted">
+      <div className="w-full h-full flex flex-col items-center justify-center bg-muted gap-1">
         <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+        <span className="text-xs text-muted-foreground">Preview unavailable</span>
       </div>
     );
   }
