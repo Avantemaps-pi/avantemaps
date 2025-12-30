@@ -78,154 +78,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
   }, []);
 
+  // Lifecycle management and minimal startup cleanup
   useEffect(() => {
     isMountedRef.current = true;
-    let isCleanupCanceled = false;
 
-    // Clear corrupted / stale Supabase tokens on mount to prevent auth loops
-    const clearCorruptedSession = async () => {
+    // Light startup check - just verify local session exists
+    // Heavy error detection is now handled by SessionManager via useSupabaseSession
+    const checkSession = async () => {
       try {
-        // Use getSession first (local check, doesn't hit server)
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (isCleanupCanceled) return;
-
-        if (sessionError) {
-          const errorMsg = sessionError.message?.toLowerCase() || '';
-          
-          // Check specifically for refresh token errors
-          if (errorMsg.includes('illegal base64') || 
-              errorMsg.includes('refresh_token') ||
-              errorMsg.includes('invalid refresh token') ||
-              errorMsg.includes('refresh token not found') ||
-              errorMsg.includes('token not found')) {
-            secureLog.warn('Corrupted refresh token detected, clearing auth storage silently...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          const errorMsg = error.message?.toLowerCase() || '';
+          // Only handle critical errors that prevent any session usage
+          if (
+            errorMsg.includes('illegal base64') ||
+            errorMsg.includes('refresh_token') ||
+            errorMsg.includes('invalid refresh token') ||
+            errorMsg.includes('refresh token not found')
+          ) {
+            secureLog.warn('Startup: corrupted session detected, clearing...');
             clearAllAuthStorage();
-            try {
-              await supabase.auth.signOut();
-            } catch {
-              // Ignore signout errors
-            }
-            return;
+            try { await supabase.auth.signOut(); } catch { /* ignore */ }
           }
-          
-          secureLog.warn('Corrupted session detected (getSession), clearing...', sessionError.message);
-          if (!isCleanupCanceled) {
-            await supabase.auth.signOut();
+          return;
+        }
+
+        // If no session exists but we have cached user, clear it
+        if (!session) {
+          const cachedUser = localStorage.getItem(STORAGE_KEY);
+          if (cachedUser) {
+            secureLog.info('Startup: no Supabase session but cached user exists, clearing cache');
             localStorage.removeItem(STORAGE_KEY);
           }
-          return;
         }
-
-        // No session means nothing to validate
-        if (!session) return;
-
-        // Only validate with getUser if we have a session (this hits the server)
-        try {
-          const { data: { user: supaUser }, error: userError } = await supabase.auth.getUser();
-          
-          if (isCleanupCanceled) return;
-          
-          if (userError || !supaUser) {
-            const errorMsg = userError?.message?.toLowerCase() || '';
-            const errorCode = ((userError as any)?.code ?? '').toString().toLowerCase();
-
-            // Handle "context canceled" gracefully
-            if (errorMsg.includes('context canceled') || errorMsg.includes('aborted')) {
-              secureLog.info('Session validation was interrupted, will retry on next mount');
-              return;
-            }
-
-            // Handle stale session ids (e.g. GoTrue: session_not_found)
-            if (
-              errorMsg.includes('session not found') ||
-              errorMsg.includes('session_not_found') ||
-              errorMsg.includes("doesn't exist") ||
-              errorCode.includes('session_not_found')
-            ) {
-              secureLog.warn('Stale Supabase session detected (session_not_found), clearing auth storage silently...');
-              clearAllAuthStorage();
-              try {
-                await supabase.auth.signOut();
-              } catch {
-                // Ignore signout errors
-              }
-              return;
-            }
-            
-            // Check for refresh token errors
-            if (errorMsg.includes('illegal base64') || 
-                errorMsg.includes('refresh_token') ||
-                errorMsg.includes('invalid refresh token') ||
-                errorMsg.includes('refresh token not found') ||
-                errorMsg.includes('token not found')) {
-              secureLog.warn('Corrupted refresh token detected during validation, clearing storage silently...');
-              clearAllAuthStorage();
-              try {
-                await supabase.auth.signOut();
-              } catch {
-                // Ignore signout errors
-              }
-              return;
-            }
-            
-            secureLog.warn('Stale session detected (getUser), clearing...', userError?.message);
-            if (!isCleanupCanceled) {
-              await supabase.auth.signOut();
-              localStorage.removeItem(STORAGE_KEY);
-            }
-          }
-        } catch (userCheckError: any) {
-          const errorMsg = userCheckError?.message?.toLowerCase() || '';
-          if (errorMsg.includes('context canceled') || errorMsg.includes('aborted')) {
-            secureLog.info('Session validation interrupted during unmount');
-            return;
-          }
-          
-          // Check for refresh token errors
-          if (errorMsg.includes('illegal base64') || 
-              errorMsg.includes('refresh_token') ||
-              errorMsg.includes('invalid refresh token')) {
-            secureLog.warn('Corrupted refresh token error caught, clearing storage silently...');
-            clearAllAuthStorage();
-            await supabase.auth.signOut();
-            return;
-          }
-          
-          throw userCheckError;
-        }
-      } catch (e: any) {
-        const errorMsg = e?.message?.toLowerCase() || '';
-        if (errorMsg.includes('context canceled') || errorMsg.includes('aborted')) {
-          return;
-        }
-        
-        // Check for refresh token errors
-        if (errorMsg.includes('illegal base64') || 
-            errorMsg.includes('refresh_token') ||
-            errorMsg.includes('invalid refresh token')) {
-          secureLog.warn('Corrupted refresh token error in outer catch, clearing storage silently...');
-          clearAllAuthStorage();
-          try {
-            await supabase.auth.signOut();
-          } catch {
-            // Ignore signout errors
-          }
-          return;
-        }
-        
-        secureLog.error('Error validating session on startup:', e);
-        if (!isCleanupCanceled) {
-          await supabase.auth.signOut();
-          localStorage.removeItem(STORAGE_KEY);
-        }
+      } catch (e) {
+        secureLog.error('Startup session check failed:', e);
       }
     };
 
-    clearCorruptedSession();
+    checkSession();
 
     return () => {
-      isCleanupCanceled = true;
       isMountedRef.current = false;
       if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
     };
