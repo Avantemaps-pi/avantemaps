@@ -82,7 +82,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
     .filter(Boolean)
     .slice(0, 2); // Limit to 2 categories
 
-  // Create an array of images (for now using single image, but ready for multiple)
+  // Create an array of images from single image (ready for future multi-image support)
   const images = place.image ? [place.image] : [];
 
   return (
@@ -107,6 +107,27 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
               />
             )}
           </PlaceCardImage>
+          
+          {/* Image position indicator lines */}
+          {images.length > 1 && (
+            <div className="absolute bottom-0 left-0 right-0 flex gap-1 px-2 pb-2">
+              {images.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentImageIndex(index);
+                  }}
+                  className={`h-0.5 flex-1 rounded-full transition-all duration-200 ${
+                    index === currentImageIndex 
+                      ? 'bg-white' 
+                      : 'bg-white/40 hover:bg-white/60'
+                  }`}
+                  aria-label={`View image ${index + 1} of ${images.length}`}
+                />
+              ))}
+            </div>
+          )}
           
           {images.length > 1 && !previewMode && (
             <ImageCarousel 
