@@ -331,6 +331,11 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       // UPLOAD BUSINESS IMAGES
       // ---------------------------
       if (imageUpload.hasImages && newBusiness?.id) {
+        // Wait for business record to be fully propagated in the database
+        // This helps with RLS policies that check for business ownership
+        console.log('⏳ Waiting for business record to propagate before image upload...');
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
         const uploadResult = await imageUpload.uploadImages(newBusiness.id);
         
         if (uploadResult.successfulUrls.length > 0) {

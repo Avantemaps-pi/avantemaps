@@ -166,51 +166,81 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
       
       console.log('Uploading images with auth.uid:', session.user.id);
 
-      // Upload successfully compressed images
-      const uploadPromises = compressionResults.map(async (result, index) => {
+      // Upload images sequentially with retry logic
+      const uploadResults: { index: number; success: boolean; url: string | null }[] = [];
+      
+      for (let index = 0; index < compressionResults.length; index++) {
+        const result = compressionResults[index];
+        
         if (!result.success || !result.file) {
-          return { index, success: false, url: null };
+          uploadResults.push({ index, success: false, url: null });
+          continue;
         }
 
-        const filePath = `${businessId}/image-${index}-${Date.now()}.webp`;
-        console.log(`Uploading to path: ${filePath}`);
+        const timestamp = Date.now();
+        const filePath = `${businessId}/image-${index}-${timestamp}.webp`;
+        console.log(`[Upload] Starting upload ${index + 1}/${compressionResults.length}: ${filePath}`);
 
-        try {
-          const { error: uploadError } = await supabase.storage
-            .from(bucketName)
-            .upload(filePath, result.file, { 
-              cacheControl: '3600', 
-              upsert: false 
-            });
+        // Update status for this specific image
+        setImages(prev => prev.map((img, i) => 
+          i === index ? { ...img, status: 'uploading' as const } : img
+        ));
 
-          if (uploadError) {
-            console.error(`Upload error for ${result.originalName}:`, uploadError);
-            // Check for RLS policy violations
-            if (uploadError.message?.includes('security') || 
-                uploadError.message?.includes('policy') ||
-                uploadError.message?.includes('permission')) {
-              errors.push(`Permission denied for "${result.originalName}". Please ensure you own this business.`);
-            } else {
-              errors.push(`Failed to upload "${result.originalName}": ${uploadError.message}`);
-            }
-            return { index, success: false, url: null };
+        let uploadSuccess = false;
+        let publicUrl: string | null = null;
+        let lastError: string | null = null;
+
+        // Try upload with 1 retry
+        for (let attempt = 0; attempt < 2 && !uploadSuccess; attempt++) {
+          if (attempt > 0) {
+            console.log(`[Upload] Retry attempt ${attempt} for ${result.originalName}`);
+            await new Promise(resolve => setTimeout(resolve, 500)); // Wait before retry
           }
 
-          const { data } = supabase.storage
-            .from(bucketName)
-            .getPublicUrl(filePath);
+          try {
+            const { error: uploadError } = await supabase.storage
+              .from(bucketName)
+              .upload(filePath, result.file, { 
+                cacheControl: '3600', 
+                upsert: true // Use upsert on retry
+              });
 
-          console.log(`Successfully uploaded: ${data.publicUrl}`);
-          return { index, success: true, url: data.publicUrl };
-        } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-          console.error(`Upload exception for ${result.originalName}:`, err);
-          errors.push(`Failed to upload "${result.originalName}": ${errorMessage}`);
-          return { index, success: false, url: null };
+            if (uploadError) {
+              console.error(`[Upload] Error for ${result.originalName} (attempt ${attempt + 1}):`, uploadError);
+              lastError = uploadError.message;
+              
+              // Don't retry on permission errors
+              if (uploadError.message?.includes('security') || 
+                  uploadError.message?.includes('policy') ||
+                  uploadError.message?.includes('permission')) {
+                break;
+              }
+            } else {
+              const { data } = supabase.storage
+                .from(bucketName)
+                .getPublicUrl(filePath);
+
+              console.log(`[Upload] Success: ${data.publicUrl}`);
+              publicUrl = data.publicUrl;
+              uploadSuccess = true;
+            }
+          } catch (err) {
+            lastError = err instanceof Error ? err.message : 'Unknown error';
+            console.error(`[Upload] Exception for ${result.originalName} (attempt ${attempt + 1}):`, err);
+          }
         }
-      });
 
-      const uploadResults = await Promise.all(uploadPromises);
+        if (!uploadSuccess && lastError) {
+          errors.push(`Failed to upload "${result.originalName}": ${lastError}`);
+        }
+
+        uploadResults.push({ index, success: uploadSuccess, url: publicUrl });
+
+        // Small delay between uploads to prevent rate limiting
+        if (index < compressionResults.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
 
       // Update final statuses
       setImages(prev => prev.map((img, index) => {
