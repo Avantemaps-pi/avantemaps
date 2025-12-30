@@ -190,31 +190,25 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
         let publicUrl: string | null = null;
         let lastError: string | null = null;
 
-        // Try upload with 1 retry
-        for (let attempt = 0; attempt < 2 && !uploadSuccess; attempt++) {
-          if (attempt > 0) {
-            console.log(`[Upload] Retry attempt ${attempt} for ${result.originalName}`);
-            await new Promise(resolve => setTimeout(resolve, 500)); // Wait before retry
+        // Try upload with up to 2 retries (helps with transient RLS propagation issues)
+        for (let attempt = 0; attempt < 3 && !uploadSuccess; attempt++) {
+          const delayMs = attempt === 0 ? 0 : attempt === 1 ? 800 : 1500;
+          if (delayMs > 0) {
+            console.log(`[Upload] Retry attempt ${attempt} for ${result.originalName} (waiting ${delayMs}ms)`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
           }
 
           try {
             const { error: uploadError } = await supabase.storage
               .from(bucketName)
-              .upload(filePath, result.file, { 
-                cacheControl: '3600', 
-                upsert: true // Use upsert on retry
+              .upload(filePath, result.file, {
+                cacheControl: '3600',
+                upsert: attempt > 0,
               });
 
             if (uploadError) {
               console.error(`[Upload] Error for ${result.originalName} (attempt ${attempt + 1}):`, uploadError);
               lastError = uploadError.message;
-              
-              // Don't retry on permission errors
-              if (uploadError.message?.includes('security') || 
-                  uploadError.message?.includes('policy') ||
-                  uploadError.message?.includes('permission')) {
-                break;
-              }
             } else {
               const { data } = supabase.storage
                 .from(bucketName)
@@ -230,8 +224,12 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
           }
         }
 
-        if (!uploadSuccess && lastError) {
-          errors.push(`Failed to upload "${result.originalName}": ${lastError}`);
+        if (!uploadSuccess) {
+          const displayError = lastError || 'Upload failed';
+          errors.push(`Failed to upload "${result.originalName}": ${displayError}`);
+          setImages(prev => prev.map((img, i) =>
+            i === index ? { ...img, status: 'error' as const, error: displayError } : img
+          ));
         }
 
         uploadResults.push({ index, success: uploadSuccess, url: publicUrl });
