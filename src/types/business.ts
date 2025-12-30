@@ -53,6 +53,7 @@ export interface Place {
   category: string;
   description: string;
   image?: string;
+  images?: string[];
   website?: string;
   phone?: string;
   hours?: {

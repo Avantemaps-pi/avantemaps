@@ -84,6 +84,7 @@ export const useBusinessData = () => {
             description: business.description || "No description provided",
             category: business.category || "Other",
             image: business.images?.[0] || "/placeholder.svg",
+            images: business.images || [],
             website: "", // Not available in public data for security
             phone: "", // Not available in public data for security
             hours: {}, // Not available in public data for security
