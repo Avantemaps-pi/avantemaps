@@ -89,7 +89,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   return (
     <Card 
       key={place.id} 
-      className={`material-card ${previewMode ? '' : 'card-hover'} ${className || 'w-full'} place-card-container ${previewMode ? 'pointer-events-none select-none' : ''}`}
+      className={`material-card ${previewMode ? '' : 'card-hover'} w-full ${className || ''} place-card-container ${previewMode ? 'pointer-events-none select-none' : ''}`}
     >
       <SwipeableImageGallery
         images={images}
