@@ -72,16 +72,16 @@ const Bookmarks = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="flex flex-wrap gap-4 justify-center sm:justify-start">
+          <div className="flex flex-col gap-4 max-w-lg mx-auto">
             {bookmarkedPlaces.map((place, index) => (
-              <div key={place.id} style={{ animationDelay: `${index * 0.05}s` }} className="animate-fade-in flex-none w-80">
+              <div key={place.id} style={{ animationDelay: `${index * 0.05}s` }} className="animate-fade-in">
                 <PlaceCard 
                   place={place} 
                   onPlaceClick={handlePlaceClick} 
                   onRemove={handleRemoveBookmark} 
                   showDetails={false} 
                   isBookmarked={true}
-                  className="w-full h-full"
+                  className="w-full"
                 />
               </div>
             ))}
