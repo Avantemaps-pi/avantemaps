@@ -7,11 +7,12 @@ import { Place } from '@/types/business';
 import ExpandableDescription from '@/components/business/ExpandableDescription';
 import BookmarkButton from './buttons/BookmarkButton';
 import WebsiteButton from './buttons/WebsiteButton';
-import PlaceImage from './place/PlaceImage';
 import PlaceRating from './place/PlaceRating';
 import PlaceAddress from './place/PlaceAddress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import DetailsCard from '@/components/business/DetailsCard';
+import SwipeableImageGallery from '@/components/business/SwipeableImageGallery';
+import { useSharePlace } from '@/hooks/useSharePlace';
 
 interface PlaceCardPopupProps {
   location: Place;
@@ -24,6 +25,12 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
 }, ref) => {
   const navigate = useNavigate();
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const { handleShare } = useSharePlace(location.name, location.id);
+  
+  // Use images array if available, otherwise fall back to single image
+  const images = location.images && location.images.length > 0 
+    ? location.images 
+    : (location.image ? [location.image] : []);
   
   const handleRatingClick = () => {
     navigate(`/review/${location.id}`, { 
@@ -40,8 +47,8 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
     }
   };
   
-  const handleBookmarkToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleBookmarkToggle = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setIsBookmarked(!isBookmarked);
   };
 
@@ -74,10 +81,14 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
         </div>
       </CardHeader>
       
-      <PlaceImage 
-        src={location.image} 
-        alt={location.name} 
-        onClick={handlePlaceClick} 
+      <SwipeableImageGallery
+        images={images}
+        name={location.name}
+        isBookmarked={isBookmarked}
+        onBookmarkToggle={handleBookmarkToggle}
+        onShare={handleShare}
+        placeId={location.id}
+        onClick={handlePlaceClick}
       />
       
       <CardContent className="pt-3 px-3 space-y-3">
