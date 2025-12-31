@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +15,7 @@ import PlaceCardWebsiteButton from './PlaceCardWebsiteButton';
 import PlaceCardDetails from './PlaceCardDetails';
 import { useBookmark } from '@/hooks/useBookmark';
 import { useSharePlace } from '@/hooks/useSharePlace';
-import ImageCarousel from './ImageCarousel';
+import SwipeableImageGallery from './SwipeableImageGallery';
 
 interface PlaceCardProps {
   place: Place;
@@ -38,7 +38,6 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Use our custom hooks
   const { isBookmarked, handleBookmarkToggle } = useBookmark({
@@ -92,70 +91,16 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
       key={place.id} 
       className={`material-card ${previewMode ? '' : 'card-hover'} ${className || 'w-full'} place-card-container ${previewMode ? 'pointer-events-none select-none' : ''}`}
     >
-      {images.length > 0 ? (
-        <div className="relative">
-          <PlaceCardImage 
-            image={images[currentImageIndex]} 
-            name={place.name} 
-            onClick={previewMode ? undefined : handlePlaceClick}
-          >
-            {!previewMode && (
-              <PlaceCardActions 
-                isBookmarked={isBookmarked} 
-                onBookmarkToggle={handleBookmarkToggle} 
-                onShare={handleShare} 
-                placeName={place.name}
-                placeId={place.id}
-              />
-            )}
-          </PlaceCardImage>
-          
-          {/* Image position indicator lines */}
-          {images.length > 1 && (
-            <div className="absolute bottom-0 left-0 right-0 flex gap-1 px-2 pb-2">
-              {images.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentImageIndex(index);
-                  }}
-                  className={`h-0.5 flex-1 rounded-full transition-all duration-200 ${
-                    index === currentImageIndex 
-                      ? 'bg-white' 
-                      : 'bg-white/40 hover:bg-white/60'
-                  }`}
-                  aria-label={`View image ${index + 1} of ${images.length}`}
-                />
-              ))}
-            </div>
-          )}
-          
-          {images.length > 1 && !previewMode && (
-            <ImageCarousel 
-              images={images}
-              currentIndex={currentImageIndex}
-              onImageChange={setCurrentImageIndex}
-            />
-          )}
-        </div>
-      ) : (
-        <PlaceCardImage 
-          image={place.image} 
-          name={place.name} 
-          onClick={previewMode ? undefined : handlePlaceClick}
-        >
-          {!previewMode && (
-            <PlaceCardActions 
-              isBookmarked={isBookmarked} 
-              onBookmarkToggle={handleBookmarkToggle} 
-              onShare={handleShare} 
-              placeName={place.name}
-              placeId={place.id}
-            />
-          )}
-        </PlaceCardImage>
-      )}
+      <SwipeableImageGallery
+        images={images}
+        name={place.name}
+        isBookmarked={isBookmarked}
+        onBookmarkToggle={handleBookmarkToggle}
+        onShare={handleShare}
+        placeId={place.id}
+        onClick={previewMode ? undefined : handlePlaceClick}
+        previewMode={previewMode}
+      />
       
       <CardHeader className="pb-0 px-3 pt-3">
         <div className="flex items-start gap-2">
