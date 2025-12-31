@@ -5,7 +5,7 @@ import ProgressiveImage from './ProgressiveImage';
 interface PlaceCardImageProps {
   image: string;
   name: string;
-  onClick: () => void;
+  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
   children?: React.ReactNode;
 }
 

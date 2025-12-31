@@ -77,12 +77,24 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
     swipeDuration: 500,
   });
 
-  const handleClick = useCallback(() => {
-    // Only trigger click if we weren't swiping
-    if (!isSwiping && onClick) {
+  const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    // Only trigger navigation if we weren't swiping
+    if (isSwiping) return;
+    
+    // Get click position relative to the image container
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const containerWidth = rect.width;
+    
+    // Click on right third = next, left third = prev, middle = onClick
+    if (clickX > containerWidth * 0.66 && currentIndex < images.length - 1) {
+      goToNext();
+    } else if (clickX < containerWidth * 0.33 && currentIndex > 0) {
+      goToPrev();
+    } else if (onClick) {
       onClick();
     }
-  }, [isSwiping, onClick]);
+  }, [isSwiping, onClick, currentIndex, images.length, goToNext, goToPrev]);
 
   const handleIndicatorClick = useCallback((index: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -114,7 +126,7 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
   }
 
   return (
-    <div className="relative overflow-hidden" {...handlers}>
+    <div className="relative overflow-hidden" {...handlers} onClick={previewMode ? handleClick : undefined}>
       {/* Images container */}
       <div 
         className="flex transition-transform duration-300 ease-out"
