@@ -81,7 +81,7 @@ const Bookmarks = () => {
                   onRemove={handleRemoveBookmark} 
                   showDetails={false} 
                   isBookmarked={true}
-                  className="max-w-sm mx-auto sm:max-w-none"
+                  className="max-w-xs mx-auto sm:max-w-none"
                 />
               </div>
             ))}
