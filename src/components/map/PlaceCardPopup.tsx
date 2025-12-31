@@ -1,4 +1,4 @@
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CircleCheck, Info, Shield } from 'lucide-react';
 import CategoryBadge from '@/components/business/CategoryBadge';
@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import DetailsCard from '@/components/business/DetailsCard';
 import SwipeableImageGallery from '@/components/business/SwipeableImageGallery';
 import { useSharePlace } from '@/hooks/useSharePlace';
+import { useBookmark } from '@/hooks/useBookmark';
 
 interface PlaceCardPopupProps {
   location: Place;
@@ -24,7 +25,10 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
   detailCardRef
 }, ref) => {
   const navigate = useNavigate();
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const { isBookmarked, handleBookmarkToggle, isLoading } = useBookmark({
+    initialIsBookmarked: false,
+    id: location.id
+  });
   const { handleShare } = useSharePlace(location.name, location.id);
   
   // Use images array if available, otherwise fall back to single image
@@ -45,11 +49,6 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
     } else {
       navigate('/', { state: { selectedPlaceId: location.id } });
     }
-  };
-  
-  const handleBookmarkToggle = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setIsBookmarked(!isBookmarked);
   };
 
   return (
@@ -76,7 +75,8 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
           </div>
           <BookmarkButton 
             isBookmarked={isBookmarked} 
-            onToggle={handleBookmarkToggle} 
+            onToggle={handleBookmarkToggle}
+            isLoading={isLoading}
           />
         </div>
       </CardHeader>
