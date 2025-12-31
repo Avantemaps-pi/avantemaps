@@ -5,13 +5,13 @@ import CategoryBadge from '@/components/business/CategoryBadge';
 import { useNavigate } from 'react-router-dom';
 import { Place } from '@/types/business';
 import ExpandableDescription from '@/components/business/ExpandableDescription';
+import BookmarkButton from './buttons/BookmarkButton';
 import WebsiteButton from './buttons/WebsiteButton';
+import PlaceImage from './place/PlaceImage';
 import PlaceRating from './place/PlaceRating';
 import PlaceAddress from './place/PlaceAddress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import DetailsCard from '@/components/business/DetailsCard';
-import SwipeableImageGallery from '@/components/business/SwipeableImageGallery';
-import { useSharePlace } from '@/hooks/useSharePlace';
 
 interface PlaceCardPopupProps {
   location: Place;
@@ -40,49 +40,44 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
     }
   };
   
-  const handleBookmarkToggle = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
+  const handleBookmarkToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsBookmarked(!isBookmarked);
   };
-
-  const { handleShare } = useSharePlace(location.name, location.id);
-
-  // Use images array if available, otherwise fall back to single image
-  const images = location.images && location.images.length > 0 
-    ? location.images 
-    : (location.image ? [location.image] : []);
 
   return (
     <Card className="w-[300px] shadow-md border-gray-200 place-popup z-[100]" ref={ref}>
       <CardHeader className="pb-2 px-3 pt-3">
-        <div className="flex items-center gap-2">
-          {location.isCertified && (
-            <div className="flex-shrink-0">
-              <Shield className="h-5 w-5 text-blue-500" />
-            </div>
-          )}
-          {location.isVerified && (
-            <div className="flex-shrink-0">
-              <CircleCheck className="h-5 w-5 text-green-500" />
-            </div>
-          )}
-          <CardTitle 
-            className="text-base font-bold cursor-pointer hover:text-blue-500 transition-colors"
-            onClick={handlePlaceClick}
-          >
-            {location.name}
-          </CardTitle>
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2">
+            {location.isCertified && (
+              <div className="flex-shrink-0">
+                <Shield className="h-5 w-5 text-blue-500" />
+              </div>
+            )}
+            {location.isVerified && (
+              <div className="flex-shrink-0">
+                <CircleCheck className="h-5 w-5 text-green-500" />
+              </div>
+            )}
+            <CardTitle 
+              className="text-base font-bold cursor-pointer hover:text-blue-500 transition-colors"
+              onClick={handlePlaceClick}
+            >
+              {location.name}
+            </CardTitle>
+          </div>
+          <BookmarkButton 
+            isBookmarked={isBookmarked} 
+            onToggle={handleBookmarkToggle} 
+          />
         </div>
       </CardHeader>
       
-      <SwipeableImageGallery
-        images={images}
-        name={location.name}
-        isBookmarked={isBookmarked}
-        onBookmarkToggle={handleBookmarkToggle}
-        onShare={handleShare}
-        placeId={location.id}
-        onClick={handlePlaceClick}
+      <PlaceImage 
+        src={location.image} 
+        alt={location.name} 
+        onClick={handlePlaceClick} 
       />
       
       <CardContent className="pt-3 px-3 space-y-3">
