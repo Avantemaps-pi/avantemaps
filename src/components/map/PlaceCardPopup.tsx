@@ -89,6 +89,7 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
         onShare={handleShare}
         placeId={location.id}
         onClick={handlePlaceClick}
+        previewMode={true}
       />
       
       <CardContent className="pt-3 px-3 space-y-3">
