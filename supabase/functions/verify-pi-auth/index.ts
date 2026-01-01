@@ -225,8 +225,24 @@ Deno.serve(async (req: Request) => {
         }
       } else {
         supabaseUserId = existingUser.id;
-        console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid, email });
-        // Password reset (if needed) is handled inside createUserSession()
+        console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid });
+        
+        // Update email to UID-based format if it was previously username-based
+        if (existingUser.email !== email) {
+          console.log(`🔄 [${traceId}] Updating user email from ${existingUser.email} to ${email}`);
+          const { error: updateEmailError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
+            email,
+            email_confirm: true,
+            password, // Also reset password to ensure it matches
+          });
+          if (updateEmailError) {
+            console.error(`❌ [${traceId}] Failed to update user email:`, updateEmailError);
+            throw new Error(`Failed to update user email: ${updateEmailError.message}`);
+          }
+          
+          // Also update public.users table
+          await supabaseAdmin.from('users').update({ email }).eq('id', supabaseUserId);
+        }
       }
 
       console.log(`🔐 [${traceId}] [TEST] Creating session for user ${supabaseUserId}`);
@@ -383,8 +399,24 @@ Deno.serve(async (req: Request) => {
       }
     } else {
       supabaseUserId = existingUser.id;
-      console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid, email });
-      // Password reset (if needed) is handled inside createUserSession()
+      console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid });
+      
+      // Update email to UID-based format if it was previously username-based
+      if (existingUser.email !== email) {
+        console.log(`🔄 [${traceId}] Updating user email from ${existingUser.email} to ${email}`);
+        const { error: updateEmailError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
+          email,
+          email_confirm: true,
+          password, // Also reset password to ensure it matches
+        });
+        if (updateEmailError) {
+          console.error(`❌ [${traceId}] Failed to update user email:`, updateEmailError);
+          throw new Error(`Failed to update user email: ${updateEmailError.message}`);
+        }
+        
+        // Also update public.users table
+        await supabaseAdmin.from('users').update({ email }).eq('id', supabaseUserId);
+      }
     }
 
     console.log(`🔐 [${traceId}] Creating session for user ${supabaseUserId}`);
