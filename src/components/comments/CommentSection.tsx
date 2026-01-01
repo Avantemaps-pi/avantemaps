@@ -54,26 +54,6 @@ const CommentSection: React.FC<{ businessId?: string }> = ({ businessId }) => {
         <CardTitle className="text-xl">Comments & Reviews</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="mb-6">
-          <Textarea
-            placeholder="Share your thoughts about this place..."
-            value={comment}
-            onChange={handleCommentChange}
-            className="min-h-[100px] mb-2"
-            disabled={isSubmitting}
-          />
-          <div className="flex justify-between items-center">
-            <p className="text-xs text-muted-foreground">
-              Please keep comments respectful and relevant
-            </p>
-            <Button 
-              onClick={handleSubmitComment} 
-              disabled={isSubmitting || !comment.trim()}
-            >
-              {isSubmitting ? "Posting..." : "Post Comment"}
-            </Button>
-          </div>
-        </div>
         
         <CommentSorter 
           sortOption={sortOption} 
