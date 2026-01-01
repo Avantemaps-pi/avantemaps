@@ -186,8 +186,9 @@ Deno.serve(async (req: Request) => {
         throw new Error(`Failed to list users: ${listError.message}`);
       }
       
+      // Find user by pi_uid in metadata (NOT by id, since Supabase generates its own UUIDs)
       const existingUser = usersList?.users.find((u) => 
-        u.id === uid || u.user_metadata?.pi_uid === uid
+        u.user_metadata?.pi_uid === uid
       );
       
       let supabaseUserId: string;
@@ -359,8 +360,9 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to list users: ${listError.message}`);
     }
     
+    // Find user by pi_uid in metadata (NOT by id, since Supabase generates its own UUIDs)
     const existingUser = usersList?.users.find((u) => 
-      u.id === uid || u.user_metadata?.pi_uid === uid
+      u.user_metadata?.pi_uid === uid
     );
 
     let supabaseUserId: string;
