@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 
 interface Business {
   id: number;
-  name: string;
+  business_name: string;
+  verification_status?: string | null;
+  is_verified?: boolean;
 }
 
 interface BusinessSelectionButtonsProps {
@@ -26,7 +28,7 @@ const BusinessSelectionButtons: React.FC<BusinessSelectionButtonsProps> = ({
           onClick={() => onBusinessSelect(business)}
           className="flex-shrink-0"
         >
-          {business.name}
+          {business.business_name}
         </Button>
       ))}
     </div>

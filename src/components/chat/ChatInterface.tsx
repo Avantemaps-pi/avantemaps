@@ -21,6 +21,7 @@ interface ChatInterfaceProps {
     text: string;
     sender: string;
     timestamp: string;
+    businesses?: Array<{ id: number; business_name: string; verification_status?: string | null; is_verified?: boolean }>;
   }>;
   message: string;
   setMessage: (message: string) => void;
@@ -111,7 +112,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       return (
         <BusinessSelectionButtons 
           businesses={businesses}
-          onBusinessSelect={(business) => {
+          onBusinessSelect={(business: { id: number; business_name: string; verification_status?: string | null; is_verified?: boolean }) => {
             // Trigger the business selection logic
             if (window.handleBusinessSelection) {
               window.handleBusinessSelection(business);
