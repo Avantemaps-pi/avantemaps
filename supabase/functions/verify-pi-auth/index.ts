@@ -186,9 +186,9 @@ Deno.serve(async (req: Request) => {
         throw new Error(`Failed to list users: ${listError.message}`);
       }
       
-      // Find user by pi_uid in metadata (NOT by id, since Supabase generates its own UUIDs)
+      // Find user by pi_uid in metadata OR by email (for legacy users created before pi_uid was added)
       const existingUser = usersList?.users.find((u) => 
-        u.user_metadata?.pi_uid === uid
+        u.user_metadata?.pi_uid === uid || u.email === email
       );
       
       let supabaseUserId: string;
@@ -228,21 +228,28 @@ Deno.serve(async (req: Request) => {
         supabaseUserId = existingUser.id;
         console.log(`ℹ️ [${traceId}] Test user already exists:`, { supabaseUserId, pi_uid: uid });
         
-        // Update email to UID-based format if it was previously username-based
-        if (existingUser.email !== email) {
-          console.log(`🔄 [${traceId}] Updating user email from ${existingUser.email} to ${email}`);
-          const { error: updateEmailError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
+        // Check if we need to update email or pi_uid metadata
+        const needsEmailUpdate = existingUser.email !== email;
+        const needsPiUidUpdate = existingUser.user_metadata?.pi_uid !== uid;
+        
+        if (needsEmailUpdate || needsPiUidUpdate) {
+          console.log(`🔄 [${traceId}] Updating user:`, { 
+            emailChange: needsEmailUpdate ? `${existingUser.email} -> ${email}` : 'no',
+            piUidChange: needsPiUidUpdate ? `${existingUser.user_metadata?.pi_uid} -> ${uid}` : 'no'
+          });
+          const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
             email,
             email_confirm: true,
-            password, // Also reset password to ensure it matches
+            password, // Reset password to ensure it matches
+            user_metadata: { ...existingUser.user_metadata, pi_uid: uid, username },
           });
-          if (updateEmailError) {
-            console.error(`❌ [${traceId}] Failed to update user email:`, updateEmailError);
-            throw new Error(`Failed to update user email: ${updateEmailError.message}`);
+          if (updateError) {
+            console.error(`❌ [${traceId}] Failed to update user:`, updateError);
+            throw new Error(`Failed to update user: ${updateError.message}`);
           }
           
           // Also update public.users table
-          await supabaseAdmin.from('users').update({ email }).eq('id', supabaseUserId);
+          await supabaseAdmin.from('users').update({ email, pi_uid: uid }).eq('id', supabaseUserId);
         }
       }
 
@@ -360,9 +367,9 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to list users: ${listError.message}`);
     }
     
-    // Find user by pi_uid in metadata (NOT by id, since Supabase generates its own UUIDs)
+    // Find user by pi_uid in metadata OR by email (for legacy users created before pi_uid was added)
     const existingUser = usersList?.users.find((u) => 
-      u.user_metadata?.pi_uid === uid
+      u.user_metadata?.pi_uid === uid || u.email === email
     );
 
     let supabaseUserId: string;
@@ -403,21 +410,28 @@ Deno.serve(async (req: Request) => {
       supabaseUserId = existingUser.id;
       console.log(`ℹ️ [${traceId}] User already exists:`, { supabaseUserId, pi_uid: uid });
       
-      // Update email to UID-based format if it was previously username-based
-      if (existingUser.email !== email) {
-        console.log(`🔄 [${traceId}] Updating user email from ${existingUser.email} to ${email}`);
-        const { error: updateEmailError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
+      // Check if we need to update email or pi_uid metadata
+      const needsEmailUpdate = existingUser.email !== email;
+      const needsPiUidUpdate = existingUser.user_metadata?.pi_uid !== uid;
+      
+      if (needsEmailUpdate || needsPiUidUpdate) {
+        console.log(`🔄 [${traceId}] Updating user:`, { 
+          emailChange: needsEmailUpdate ? `${existingUser.email} -> ${email}` : 'no',
+          piUidChange: needsPiUidUpdate ? `${existingUser.user_metadata?.pi_uid} -> ${uid}` : 'no'
+        });
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
           email,
           email_confirm: true,
-          password, // Also reset password to ensure it matches
+          password, // Reset password to ensure it matches
+          user_metadata: { ...existingUser.user_metadata, pi_uid: uid, username },
         });
-        if (updateEmailError) {
-          console.error(`❌ [${traceId}] Failed to update user email:`, updateEmailError);
-          throw new Error(`Failed to update user email: ${updateEmailError.message}`);
+        if (updateError) {
+          console.error(`❌ [${traceId}] Failed to update user:`, updateError);
+          throw new Error(`Failed to update user: ${updateError.message}`);
         }
         
         // Also update public.users table
-        await supabaseAdmin.from('users').update({ email }).eq('id', supabaseUserId);
+        await supabaseAdmin.from('users').update({ email, pi_uid: uid }).eq('id', supabaseUserId);
       }
     }
 
