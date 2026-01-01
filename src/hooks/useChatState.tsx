@@ -17,6 +17,7 @@ export function useChatState() {
     text: string;
     sender: string;
     timestamp: string;
+    businesses?: Array<{ id: number; business_name: string; verification_status?: string | null; is_verified?: boolean }>;
   }>>([
     { id: 1, text: "Welcome to Avante Maps!", sender: "system", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
     { id: 2, text: "Hi there! How can I help with Avante Maps today?", sender: "support", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
