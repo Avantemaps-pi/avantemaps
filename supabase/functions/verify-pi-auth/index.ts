@@ -175,7 +175,8 @@ Deno.serve(async (req: Request) => {
     if (testMode) {
       console.log(`🧪 [${traceId}] Test mode: ensure user exists and create session`);
 
-      const email = `${username}@pi.local`;
+      // Use UID-based email to avoid UNIQUE constraint violations when username changes
+      const email = `${uid}@pi.local`;
       const password = generateUserPassword(uid);
 
       // Ensure user exists (idempotent)
@@ -332,7 +333,8 @@ Deno.serve(async (req: Request) => {
 
     // --- Supabase Auth Integration ---
     console.log(`🔧 [${traceId}] Setting up Supabase auth integration`);
-    const email = `${username}@pi.local`;
+    // Use UID-based email to avoid UNIQUE constraint violations when username changes
+    const email = `${uid}@pi.local`;
     const password = generateUserPassword(uid);
 
     const { data: usersList, error: listError } = await supabaseAdmin.auth.admin.listUsers();
