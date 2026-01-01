@@ -1,4 +1,6 @@
 // src/global.d.ts
+/// <reference types="vite/client" />
+
 interface Window {
   Pi?: any;
   handleBusinessSelection?: (business: {
@@ -7,5 +9,5 @@ interface Window {
     verification_status?: string | null;
     is_verified?: boolean;
   }) => void;
-  sendVerificationRequest?: () => void;
+  sendVerificationRequest?: (type: 'verification' | 'certification') => void;
 }
