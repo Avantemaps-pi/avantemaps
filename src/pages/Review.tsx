@@ -83,7 +83,7 @@ const Review = () => {
         <Tabs defaultValue="review" className="w-full">
           <TabsList className="w-full mb-4">
             <TabsTrigger value="review" className="flex-1">Write Review</TabsTrigger>
-            <TabsTrigger value="comments" className="flex-1">View Comments</TabsTrigger>
+            <TabsTrigger value="comments" className="flex-1">View Reviews</TabsTrigger>
           </TabsList>
           
           <TabsContent value="review" className="w-full">
