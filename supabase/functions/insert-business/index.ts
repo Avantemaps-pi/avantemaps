@@ -1,5 +1,6 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createBusinessNotification } from '../_shared/notifications.ts';
 interface BusinessInsertPayload {
   user_id: string;
   subscription: string;
@@ -176,6 +177,20 @@ Deno.serve(async (req: Request) => {
         details: error.message,
         traceId,
       }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Create notification for business registration
+    try {
+      await createBusinessNotification(
+        supabaseAdmin,
+        user.id,
+        body.business_name,
+        'registered'
+      );
+      console.log(`[${traceId}] Business registration notification created`);
+    } catch (notifError) {
+      // Don't fail the request if notification creation fails
+      console.error(`[${traceId}] Failed to create notification:`, notifError);
     }
 
     return new Response(JSON.stringify({

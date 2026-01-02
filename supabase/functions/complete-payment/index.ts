@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { createPaymentNotification } from '../_shared/notifications.ts';
 
 // Validation schema for payment completion requests with strict input validation
 const PaymentRequestSchema = z.object({
@@ -181,6 +182,20 @@ Deno.serve(async (req) => {
           console.error('Error handling subscription:', subscriptionErr);
           // Don't fail the entire request since payment was successful
         }
+      }
+
+      // Create payment notification
+      try {
+        await createPaymentNotification(
+          supabaseClient,
+          paymentRequest.userId,
+          paymentRequest.amount,
+          paymentRequest.metadata?.subscriptionTier
+        );
+        console.log('Payment notification created');
+      } catch (notifError) {
+        // Don't fail the request if notification creation fails
+        console.error('Failed to create payment notification:', notifError);
       }
 
       const endTime = Date.now();
