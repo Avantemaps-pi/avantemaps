@@ -2,13 +2,29 @@
 import { Icon } from 'leaflet';
 import { MARKER_COLORS } from './mapConfig';
 
-// Function to create marker icon based on active state and business type for Leaflet
-export const createMarkerIcon = (isActive: boolean, isUserBusiness?: boolean) => {
-  const fillColor = isActive 
-    ? MARKER_COLORS.DEFAULT  // Use DEFAULT as active color
-    : isUserBusiness 
-      ? MARKER_COLORS.USER_BUSINESS  // Use USER_BUSINESS for user businesses
-      : MARKER_COLORS.DEFAULT; // Default
+interface MarkerOptions {
+  isActive?: boolean;
+  isUserBusiness?: boolean;
+  isVerified?: boolean;
+  isCertified?: boolean;
+}
+
+// Function to create marker icon based on verification status
+export const createMarkerIcon = (options: MarkerOptions = {}) => {
+  const { isUserBusiness, isVerified, isCertified } = options;
+  
+  // Determine fill color based on verification status
+  let fillColor = MARKER_COLORS.DEFAULT; // Gray for unverified
+  
+  if (isUserBusiness) {
+    fillColor = MARKER_COLORS.USER_BUSINESS; // Gold for user's own businesses
+  } else if (isCertified) {
+    fillColor = MARKER_COLORS.CERTIFIED; // Green for certified
+  } else if (isVerified) {
+    fillColor = MARKER_COLORS.VERIFIED; // Blue for verified
+  } else {
+    fillColor = MARKER_COLORS.PENDING; // Amber for pending verification
+  }
   
   const iconUrl = `data:image/svg+xml,
     <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="${fillColor}" stroke="%23FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

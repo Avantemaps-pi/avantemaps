@@ -22,12 +22,20 @@ const MapMarkers: React.FC<MapMarkersProps> = ({ places, activeMarkerId, onMarke
         if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng)) {
           const position: LatLngTuple = [lat, lng];
           const isActive = activeMarkerId === place.id;
-          const isUserBusiness = place.isUserBusiness || false;
+          
+          // Create marker icon with verification status
+          const markerIcon = createMarkerIcon({
+            isActive,
+            isUserBusiness: place.isUserBusiness || false,
+            isVerified: place.isVerified || false,
+            isCertified: place.isCertified || false,
+          });
           
           return (
             <Marker
               key={place.id}
               position={position}
+              icon={markerIcon}
               eventHandlers={{
                 click: () => onMarkerClick(place.id)
               }}
