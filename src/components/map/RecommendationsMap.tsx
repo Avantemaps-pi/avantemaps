@@ -122,12 +122,6 @@ const RecommendationsMap: React.FC<RecommendationsMapProps> = ({
       if (selectedPlace && selectedPlace.position) {
         setCenter(selectedPlace.position);
         setZoom(15); // Zoom in when a place is selected
-        
-        // Show a toast notification
-        toast.info(`Viewing: ${selectedPlace.name}`, {
-          description: selectedPlace.category,
-          duration: 2000,
-        });
       }
     }
   }, [selectedPlaceId, allPlaces]);

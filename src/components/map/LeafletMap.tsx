@@ -56,11 +56,6 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         setZoom(15);
         setActiveMarker(selectedPlaceId);
         setShowPopover(true);
-
-        toast.info(`Viewing: ${selectedPlace.name}`, {
-          description: selectedPlace.category,
-          duration: 2000,
-        });
       }
     } else {
       // Don't reset map center when closing overlay - keep user's current view
