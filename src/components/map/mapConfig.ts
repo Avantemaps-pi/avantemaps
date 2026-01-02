@@ -16,15 +16,11 @@ export const OSM_TILE_LAYER = {
   noWrap: true // Prevent tile wrapping
 };
 
-// Default marker colors for different business types
+// Marker colors based on verification status
 export const MARKER_COLORS = {
-  DEFAULT: 'blue',
-  RESTAURANT: 'red',
-  RETAIL: 'green',
-  SERVICES: 'orange',
-  TECH: 'purple',
-  HEALTH: 'pink',
-  ENTERTAINMENT: 'yellow',
-  EDUCATION: 'teal',
-  USER_BUSINESS: 'gold'
+  CERTIFIED: '%2322c55e',    // Green for certified (URL encoded #)
+  VERIFIED: '%233b82f6',     // Blue for verified
+  PENDING: '%23f59e0b',      // Amber/orange for pending verification
+  DEFAULT: '%236b7280',      // Gray for unverified
+  USER_BUSINESS: '%23eab308' // Gold for user's own businesses
 };

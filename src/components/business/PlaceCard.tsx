@@ -1,12 +1,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Place } from '@/types/business';
 import CategoryBadge from '@/components/business/CategoryBadge';
 import ExpandableDescription from './ExpandableDescription';
 import { useIsMobile } from '@/hooks/use-mobile';
-import PlaceCardActions from './PlaceCardActions';
 import PlaceCardImage from './PlaceCardImage';
 import PlaceCardTitle from './PlaceCardTitle';
 import PlaceCardAddress from './PlaceCardAddress';
@@ -103,16 +101,12 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
       />
       
       <CardHeader className="pb-0 px-3 pt-3">
-        <div className="flex items-start gap-2">
-          {place.isCertified && (
-            <div className="flex-shrink-0">
-              <Shield className="h-5 w-5 text-blue-500" />
-            </div>
-          )}
-          <div className="flex-1">
-            <PlaceCardTitle name={place.name} onClick={previewMode ? undefined : handlePlaceClick} isVerified={place.isVerified} />
-          </div>
-        </div>
+        <PlaceCardTitle 
+          name={place.name} 
+          onClick={previewMode ? undefined : handlePlaceClick} 
+          isVerified={place.isVerified} 
+          isCertified={place.isCertified}
+        />
       </CardHeader>
       
       <CardContent className="pt-2 px-3 pb-3">
