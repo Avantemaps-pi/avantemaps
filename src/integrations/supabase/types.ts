@@ -773,6 +773,38 @@ export type Database = {
         }
         Relationships: []
       }
+      user_searches: {
+        Row: {
+          business_id: number | null
+          id: string
+          search_term: string | null
+          searched_at: string
+          user_id: string
+        }
+        Insert: {
+          business_id?: number | null
+          id?: string
+          search_term?: string | null
+          searched_at?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: number | null
+          id?: string
+          search_term?: string | null
+          searched_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_searches_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string | null
@@ -1236,6 +1268,14 @@ export type Database = {
         }[]
       }
       get_user_business_count: { Args: { user_id: string }; Returns: number }
+      get_user_recommended_businesses: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          business_id: number
+          last_searched_at: string
+          search_count: number
+        }[]
+      }
       get_user_subscription: { Args: { user_id: string }; Returns: string }
       gettransactionid: { Args: never; Returns: unknown }
       handle_subscription_after_payment: {

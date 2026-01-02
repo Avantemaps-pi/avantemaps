@@ -13,6 +13,7 @@ import AppSidebar from '@/components/layout/AppSidebar';
 import PlaceCardSEO from '@/components/seo/PlaceCardSEO';
 import MetaTags from '@/components/seo/MetaTags';
 import { BusinessSuggestion } from '@/hooks/useBusinessAutocomplete';
+import { useSearchTracking } from '@/hooks/useSearchTracking';
 import '../styles/map.css';
 
 const Index = () => {
@@ -21,6 +22,7 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const { places = [], filteredPlaces = [], isLoading = false, handleSearch } = useBusinessData();
   const { setOpenMobile } = useSidebar();
+  const { trackBusinessSearch } = useSearchTracking();
 
   const handlePlaceClick = (placeId: string, zoomToLocation?: boolean) => {
     setSelectedPlace(placeId);
@@ -42,6 +44,9 @@ const Index = () => {
   };
 
   const handleBusinessSelect = (business: BusinessSuggestion) => {
+    // Track the business search for personalized recommendations
+    trackBusinessSearch(Number(business.id), business.name);
+    
     // Set selected place and zoom to it
     setSelectedPlace(business.id);
     window.dispatchEvent(new CustomEvent('centerMap', { 
