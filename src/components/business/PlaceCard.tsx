@@ -106,6 +106,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
           onClick={previewMode ? undefined : handlePlaceClick} 
           isVerified={place.isVerified} 
           isCertified={place.isCertified}
+          verificationStatus={place.verificationStatus}
         />
       </CardHeader>
       

@@ -15,6 +15,7 @@ interface PublicBusinessInfo {
   created_at: string;
   is_verified: boolean;
   is_certified: boolean;
+  verification_status?: string | null;
   street_address?: string;
   city?: string;
   state?: string;
@@ -90,6 +91,7 @@ export const useBusinessData = () => {
             hours: {}, // Not available in public data for security
             isVerified: business.is_verified || false,
             isCertified: business.is_certified || false,
+            verificationStatus: business.verification_status as 'pending' | 'verified' | 'rejected' | null,
             business_types: business.business_types || [],
             keywords: business.keywords || [],
             isUserBusiness: business.is_user_business || false,

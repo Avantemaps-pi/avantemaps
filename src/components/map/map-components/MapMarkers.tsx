@@ -29,6 +29,7 @@ const MapMarkers: React.FC<MapMarkersProps> = ({ places, activeMarkerId, onMarke
             isUserBusiness: place.isUserBusiness || false,
             isVerified: place.isVerified || false,
             isCertified: place.isCertified || false,
+            verificationStatus: place.verificationStatus,
           });
           
           return (
