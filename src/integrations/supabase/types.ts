@@ -1265,6 +1265,7 @@ export type Database = {
           postal_code: string
           state: string
           street_address: string
+          verification_status: string
         }[]
       }
       get_user_business_count: { Args: { user_id: string }; Returns: number }
