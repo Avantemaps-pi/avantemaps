@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CircleCheck, Shield, Clock } from 'lucide-react';
+import { CircleCheck, Shield, Clock, XCircle } from 'lucide-react';
 import { CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -9,13 +9,15 @@ interface PlaceCardTitleProps {
   onClick: () => void;
   isVerified?: boolean;
   isCertified?: boolean;
+  verificationStatus?: 'pending' | 'verified' | 'rejected' | null;
 }
 
 const PlaceCardTitle: React.FC<PlaceCardTitleProps> = ({ 
   name, 
   onClick, 
   isVerified = false,
-  isCertified = false 
+  isCertified = false,
+  verificationStatus = null
 }) => {
   // Determine verification status display
   const getStatusIndicator = () => {
@@ -39,12 +41,23 @@ const PlaceCardTitle: React.FC<PlaceCardTitleProps> = ({
         </div>
       );
     }
-    // Pending verification
+    // Pending verification - only show if explicitly pending
+    if (verificationStatus === 'pending') {
+      return (
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <Clock className="h-4 w-4 text-amber-500" />
+          <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950 dark:text-amber-400">
+            Pending
+          </Badge>
+        </div>
+      );
+    }
+    // Not verified (never requested, rejected, or null)
     return (
       <div className="flex items-center gap-1 flex-shrink-0">
-        <Clock className="h-4 w-4 text-amber-500" />
-        <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950 dark:text-amber-400">
-          Pending
+        <XCircle className="h-4 w-4 text-muted-foreground" />
+        <Badge variant="outline" className="text-xs border-muted text-muted-foreground bg-muted/50">
+          Not Verified
         </Badge>
       </div>
     );

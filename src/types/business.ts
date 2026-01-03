@@ -61,6 +61,7 @@ export interface Place {
   };
   isVerified?: boolean;
   isCertified?: boolean;
+  verificationStatus?: 'pending' | 'verified' | 'rejected' | null;
   business_types?: string[];
   keywords?: string[];
   isUserBusiness?: boolean;

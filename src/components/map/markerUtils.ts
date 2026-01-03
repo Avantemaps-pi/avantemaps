@@ -7,14 +7,15 @@ interface MarkerOptions {
   isUserBusiness?: boolean;
   isVerified?: boolean;
   isCertified?: boolean;
+  verificationStatus?: 'pending' | 'verified' | 'rejected' | null;
 }
 
 // Function to create marker icon based on verification status
 export const createMarkerIcon = (options: MarkerOptions = {}) => {
-  const { isUserBusiness, isVerified, isCertified } = options;
+  const { isUserBusiness, isVerified, isCertified, verificationStatus } = options;
   
   // Determine fill color based on verification status
-  let fillColor = MARKER_COLORS.DEFAULT; // Gray for unverified
+  let fillColor = MARKER_COLORS.DEFAULT; // Gray for not verified
   
   if (isUserBusiness) {
     fillColor = MARKER_COLORS.USER_BUSINESS; // Gold for user's own businesses
@@ -22,9 +23,10 @@ export const createMarkerIcon = (options: MarkerOptions = {}) => {
     fillColor = MARKER_COLORS.CERTIFIED; // Green for certified
   } else if (isVerified) {
     fillColor = MARKER_COLORS.VERIFIED; // Blue for verified
-  } else {
+  } else if (verificationStatus === 'pending') {
     fillColor = MARKER_COLORS.PENDING; // Amber for pending verification
   }
+  // Otherwise stays DEFAULT (gray) for not verified
   
   const iconUrl = `data:image/svg+xml,
     <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="${fillColor}" stroke="%23FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
