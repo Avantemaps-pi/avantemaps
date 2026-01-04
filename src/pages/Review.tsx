@@ -12,15 +12,25 @@ import { toast } from 'sonner';
 import CommentSection from '@/components/comments/CommentSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/context/auth';
 
 const Review = () => {
   const { businessId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, isLoading } = useAuth();
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [review, setReview] = useState('');
   const isMobile = useIsMobile();
+
+  // Redirect to home if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      toast.error("Please log in to write a review");
+      navigate('/');
+    }
+  }, [user, isLoading, navigate]);
   
   // Use business data from state if available, otherwise use fallback
   const businessDetails = location.state?.businessDetails;
@@ -63,9 +73,14 @@ const Review = () => {
     setTimeout(() => handleGoBack(), 1500);
   };
 
+  // Show loading or nothing while checking auth
+  if (isLoading || !user) {
+    return null;
+  }
+
   return (
     <AppLayout 
-      title={`Review ${business.name}`} 
+      title={`Review ${business.name}`}
       withHeader={false} 
       fullHeight={false}
       fullWidth={true}
