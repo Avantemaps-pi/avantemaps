@@ -134,6 +134,7 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
               <TabContent 
                 images={imageUpload.images}
                 onAddImage={imageUpload.addImage}
+                onAddCroppedImage={imageUpload.addCroppedImage}
                 onRemoveImage={imageUpload.removeImage}
                 onRetryImage={imageUpload.retryImage}
                 isProcessing={imageUpload.isProcessing}

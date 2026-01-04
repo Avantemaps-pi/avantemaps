@@ -84,6 +84,7 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrat
           <TabContent
             images={imageUpload.images}
             onAddImage={imageUpload.addImage}
+            onAddCroppedImage={imageUpload.addCroppedImage}
             onRemoveImage={imageUpload.removeImage}
             onRetryImage={imageUpload.retryImage}
             isProcessing={imageUpload.isProcessing}
