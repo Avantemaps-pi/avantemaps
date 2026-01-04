@@ -12,6 +12,7 @@ import { ImageUploadStatus } from '@/hooks/useImageUpload';
 interface TabContentProps {
   images: ImageUploadStatus[];
   onAddImage: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onAddCroppedImage: (file: File) => void;
   onRemoveImage: (id: string) => void;
   onRetryImage?: (id: string) => void;
   isProcessing?: boolean;
@@ -24,6 +25,7 @@ interface TabContentProps {
 const TabContent: React.FC<TabContentProps> = ({ 
   images, 
   onAddImage,
+  onAddCroppedImage,
   onRemoveImage,
   onRetryImage,
   isProcessing,
@@ -71,6 +73,7 @@ const TabContent: React.FC<TabContentProps> = ({
           onPrevious={() => setSelectedTab('hours')}
           images={images}
           onAddImage={onAddImage}
+          onAddCroppedImage={onAddCroppedImage}
           onRemoveImage={onRemoveImage}
           onRetryImage={onRetryImage}
           isProcessing={isProcessing}

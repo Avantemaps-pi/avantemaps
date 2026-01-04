@@ -17,7 +17,7 @@ const PlaceCardImage: React.FC<PlaceCardImageProps> = ({
 }) => {
   return (
     <div 
-      className="h-40 overflow-hidden cursor-pointer relative"
+      className="aspect-video overflow-hidden cursor-pointer relative"
       onClick={onClick}
     >
       <ProgressiveImage

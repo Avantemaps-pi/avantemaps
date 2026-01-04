@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -6,10 +6,12 @@ import { X, CheckCircle, AlertCircle, Loader2, ImageIcon, Trash2 } from 'lucide-
 import { cn } from '@/lib/utils';
 import { ImageUploadStatus } from '@/hooks/useImageUpload';
 import ImageUploadCounter from './ImageUploadCounter';
+import ImageCropper from './ImageCropper';
 
 interface BusinessImageUploadProps {
   images: ImageUploadStatus[];
   onAddImage: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onAddCroppedImage: (file: File) => void;
   onRemoveImage: (id: string) => void;
   onRetryImage?: (id: string) => void;
   maxImages?: number;
@@ -131,6 +133,7 @@ const StatusLabel: React.FC<{ status: ImageUploadStatus['status']; error?: strin
 const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
   images,
   onAddImage,
+  onAddCroppedImage,
   onRemoveImage,
   onRetryImage,
   maxImages = 3,
@@ -140,6 +143,11 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
   onRemoveExistingImage,
 }) => {
   const [imagesToRemove, setImagesToRemove] = useState<number[]>([]);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [originalFileName, setOriginalFileName] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const placeholderInputRef = useRef<HTMLInputElement>(null);
   
   // Calculate how many images are effectively in use
   const activeExistingImages = existingImages.filter((_, i) => !imagesToRemove.includes(i));
@@ -151,6 +159,45 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
     onRemoveExistingImage?.(index);
   };
 
+  // Handle file selection - open cropper instead of directly adding
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Reset input so same file can be selected again
+    e.target.value = '';
+    
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      return;
+    }
+    
+    // Create object URL for cropper
+    const imageUrl = URL.createObjectURL(file);
+    setImageToCrop(imageUrl);
+    setOriginalFileName(file.name);
+    setCropperOpen(true);
+  };
+
+  // Handle cropped image
+  const handleCropComplete = (croppedFile: File) => {
+    if (imageToCrop) {
+      URL.revokeObjectURL(imageToCrop);
+    }
+    setImageToCrop(null);
+    onAddCroppedImage(croppedFile);
+  };
+
+  // Handle cropper close
+  const handleCropperClose = () => {
+    if (imageToCrop) {
+      URL.revokeObjectURL(imageToCrop);
+    }
+    setImageToCrop(null);
+    setCropperOpen(false);
+  };
+
   return (
     <FormItem>
       <FormLabel className="text-base mb-1.5">Business Images</FormLabel>
@@ -159,9 +206,10 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
           {/* File Input */}
           <div className="flex items-center gap-4">
             <Input 
+              ref={fileInputRef}
               type="file" 
               accept="image/jpeg,image/png,image/gif,image/webp" 
-              onChange={onAddImage}
+              onChange={handleFileSelect}
               disabled={!canAddMore}
               className={cn(
                 "cursor-pointer flex-1",
@@ -175,8 +223,19 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
           </div>
           
           <FormDescription className="text-sm">
-            Upload images of your business (max {maxImages}). JPG, PNG, GIF, or WebP up to 10MB each.
+            Upload images of your business (max {maxImages}). Images will be cropped to 16:9 for optimal display.
           </FormDescription>
+
+          {/* Image Cropper Dialog */}
+          {imageToCrop && (
+            <ImageCropper
+              open={cropperOpen}
+              imageSrc={imageToCrop}
+              onClose={handleCropperClose}
+              onCropComplete={handleCropComplete}
+              originalFileName={originalFileName}
+            />
+          )}
 
           {/* Combined Image Grid - Existing + New */}
           {(activeExistingImages.length > 0 || images.length > 0) && (
@@ -318,9 +377,10 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
                   <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
                   <span className="text-xs text-muted-foreground">Add Image</span>
                   <Input 
+                    ref={placeholderInputRef}
                     type="file" 
                     accept="image/jpeg,image/png,image/gif,image/webp" 
-                    onChange={onAddImage}
+                    onChange={handleFileSelect}
                     className="sr-only"
                   />
                 </label>

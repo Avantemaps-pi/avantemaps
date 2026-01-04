@@ -15,6 +15,7 @@ interface DetailsTabProps {
   onPrevious: () => void;
   images: ImageUploadStatus[];
   onAddImage: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onAddCroppedImage: (file: File) => void;
   onRemoveImage: (id: string) => void;
   onRetryImage?: (id: string) => void;
   isProcessing?: boolean;
@@ -28,6 +29,7 @@ const DetailsTab: React.FC<DetailsTabProps> = ({
   onPrevious,
   images,
   onAddImage,
+  onAddCroppedImage,
   onRemoveImage,
   onRetryImage,
   isProcessing,
@@ -51,6 +53,7 @@ const DetailsTab: React.FC<DetailsTabProps> = ({
         <BusinessImageUpload 
           images={images}
           onAddImage={onAddImage}
+          onAddCroppedImage={onAddCroppedImage}
           onRemoveImage={onRemoveImage}
           onRetryImage={onRetryImage}
           maxImages={3}

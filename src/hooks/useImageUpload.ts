@@ -71,6 +71,31 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
     toast.success(`Image added: ${file.name}`);
   }, [images, maxImages]);
 
+  // Add a pre-cropped file directly (from the cropper)
+  const addCroppedImage = useCallback((file: File) => {
+    // Check if we can add more
+    if (images.length >= maxImages) {
+      toast.error('Maximum images reached', {
+        description: `You can only upload up to ${maxImages} images.`,
+      });
+      return;
+    }
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    
+    // Add to state
+    const newImage: ImageUploadStatus = {
+      file,
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      status: 'pending',
+      previewUrl,
+    };
+
+    setImages(prev => [...prev, newImage]);
+    toast.success('Image cropped and added');
+  }, [images.length, maxImages]);
+
   const removeImage = useCallback((id: string) => {
     setImages(prev => {
       const imageToRemove = prev.find(img => img.id === id);
@@ -333,6 +358,7 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
     images,
     isProcessing,
     addImage,
+    addCroppedImage,
     removeImage,
     reorderImages,
     clearImages,
