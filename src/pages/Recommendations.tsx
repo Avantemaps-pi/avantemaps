@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 import PlaceCard from '@/components/business/PlaceCard';
@@ -27,6 +27,7 @@ const Recommendations = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'name' | 'rating' | 'distance'>('name');
   const { avanteTopChoice, recommendedForYou, isLoading } = useRecommendations();
+  const recommendedForYouRef = useRef<HTMLElement>(null);
 
   // Common business categories
   const categories = [
@@ -56,9 +57,9 @@ const Recommendations = () => {
     });
   };
 
-  // Filter function for businesses
+  // Filter function for businesses (without sorting)
   const filterBusinesses = (businesses: any[]) => {
-    const filtered = businesses.filter(business => {
+    return businesses.filter(business => {
       const matchesSearch = searchTerm === '' || 
         business.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         business.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -73,15 +74,21 @@ const Recommendations = () => {
       
       return matchesSearch && matchesCategory;
     });
-    
-    return sortBusinesses(filtered);
   };
 
-  // Filtered and sorted data
+  // Filtered data - sorting only applies to recommendedForYou
   const filteredData = useMemo(() => ({
     avanteTopChoice: filterBusinesses(avanteTopChoice || []),
-    recommendedForYou: filterBusinesses(recommendedForYou || [])
+    recommendedForYou: sortBusinesses(filterBusinesses(recommendedForYou || []))
   }), [avanteTopChoice, recommendedForYou, searchTerm, selectedCategories, sortBy]);
+
+  // Handle sort change and scroll to Recommended for You section
+  const handleSortChange = (newSort: 'name' | 'rating' | 'distance') => {
+    setSortBy(newSort);
+    setTimeout(() => {
+      recommendedForYouRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev =>
@@ -199,7 +206,7 @@ const Recommendations = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-48 bg-background z-50" align="start">
                   <DropdownMenuItem
-                    onClick={() => setSortBy('name')}
+                    onClick={() => handleSortChange('name')}
                     className="cursor-pointer"
                   >
                     <div className="flex items-center w-full justify-between">
@@ -208,7 +215,7 @@ const Recommendations = () => {
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => setSortBy('rating')}
+                    onClick={() => handleSortChange('rating')}
                     className="cursor-pointer"
                   >
                     <div className="flex items-center w-full justify-between">
@@ -217,7 +224,7 @@ const Recommendations = () => {
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => setSortBy('distance')}
+                    onClick={() => handleSortChange('distance')}
                     className="cursor-pointer"
                   >
                     <div className="flex items-center w-full justify-between">
@@ -272,6 +279,7 @@ const Recommendations = () => {
           ].map(({ title, data, key, icon, emptyMessage }) => (
             <section
               key={key}
+              ref={key === 'recommendedForYou' ? recommendedForYouRef : undefined}
               onMouseEnter={() => handleMouseEnter(key)}
               onMouseLeave={handleMouseLeave}
               onTouchStart={() => handleMouseEnter(key)}
