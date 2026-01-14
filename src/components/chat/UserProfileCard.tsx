@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Link as LinkIcon } from 'lucide-react';
 import { useAuth } from '@/context/auth';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const UserProfileCard: React.FC = () => {
   const { user } = useAuth();
@@ -37,10 +38,19 @@ const UserProfileCard: React.FC = () => {
           </div>
           
           <div className="w-full mt-6">
-            <Button variant="outline" className="w-full flex items-center justify-center bg-gray-800 text-white hover:bg-gray-700">
-              <LinkIcon className="h-4 w-4 mr-2" />
-              Link Fireside Forum
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" className="w-full flex items-center justify-center bg-gray-800 text-white hover:bg-gray-700 cursor-not-allowed opacity-70">
+                    <LinkIcon className="h-4 w-4 mr-2" />
+                    Link Fireside Forum
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Not available</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
       </CardContent>
