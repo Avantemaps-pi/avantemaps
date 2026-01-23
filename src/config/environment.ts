@@ -19,25 +19,25 @@ if (import.meta.env.PROD) {
   }
 }
 
-// Development configuration
-export const DEV_CONFIG = {
+// Development configuration - only available in development builds
+// SECURITY: This entire object is undefined in production builds
+export const DEV_CONFIG = import.meta.env.DEV ? {
   // Enable this to bypass Pi Network authentication during development
   // SECURITY: This is automatically disabled in production builds
-  // CRITICAL: Remove this entire config before deploying to production
-  // Only bypass in development mode (import.meta.env.DEV is safe to use)
-  bypassAuth: import.meta.env.DEV,
+  bypassAuth: true,
   mockUser: {
-    uid: "79f9f9a7-a8b8-4724-9f04-51a58c183899", // Match the actual business owner in database
-    pi_uid: "dev-mock-pi-uid", // Pi Network UID
-    username: "JordynDaniel", // Fixed: Must match the username for this uid in database
-    walletAddress: "dev-wallet-address",
+    // Use fake UUIDs that don't exist in production database
+    uid: "00000000-0000-0000-0000-000000000001", // Fake development UUID
+    pi_uid: "dev-test-pi-uid", // Fake Pi Network UID
+    username: "DevTestUser", // Generic development username
+    walletAddress: "dev-test-wallet",
     roles: ["user"],
     accessToken: "dev-access-token",
     lastAuthenticated: Date.now(),
     subscriptionTier: SubscriptionTier.ORGANIZATION, // Using the highest tier for dev access
     businessCount: 5
   }
-};
+} : undefined;
 
 // Map configuration (using OpenStreetMap via Leaflet)
 export const MAPS_CONFIG = {
@@ -73,5 +73,5 @@ export const shouldBypassAuth = (): boolean => {
 // Mock user for test mode only
 export const getMockUser = () => {
   if (!shouldBypassAuth()) return null;
-  return DEV_CONFIG.mockUser;
+  return DEV_CONFIG?.mockUser ?? null;
 };

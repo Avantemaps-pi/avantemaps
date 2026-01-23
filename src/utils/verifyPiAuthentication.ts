@@ -1,4 +1,5 @@
 import { secureLog } from './secureLogger';
+import { getSupabaseFunctionsUrl } from '@/config/supabase';
 
 export interface PiUser {
   uid: string;           // Supabase UUID (from auth.uid())
@@ -25,9 +26,8 @@ export const verifyPiAuthentication = async (
   uid: string,
   username: string
 ): Promise<VerificationResult> => {
-  // Use full Supabase URL for edge function
-  const SUPABASE_URL = 'https://xvpwbocwasbtzrzrxyvu.supabase.co';
-  const endpoint = `${SUPABASE_URL}/functions/v1/verify-pi-auth`;
+  // Use centralized Supabase config
+  const endpoint = `${getSupabaseFunctionsUrl()}/verify-pi-auth`;
 
   const payload = { accessToken, uid, username };
 
