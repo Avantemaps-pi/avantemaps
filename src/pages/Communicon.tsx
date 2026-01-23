@@ -105,14 +105,17 @@ const Communicon = () => {
   const handleCustomChatModeChange = (value: string) => {
     // If trying to switch to LIVE chat
     if (value === 'live') {
-      // Check if they have permission (hasPermission could be null during loading)
-      if (hasPermission !== true) {
-        // Show upgrade dialog instead of changing mode
+      // Wait for permission check to complete before deciding
+      if (isLoading) {
+        return; // Don't do anything while loading
+      }
+      // Only show upgrade prompt if explicitly denied (false, not null)
+      if (hasPermission === false) {
         setShowUpgradePrompt(true);
         return;
       }
     }
-    // Otherwise proceed with normal chat mode change
+    // Proceed with normal chat mode change
     handleChatModeChange(value);
   };
 
