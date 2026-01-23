@@ -93,9 +93,24 @@ const Review = () => {
     );
   }
 
-  // Redirect handled by useEffect - just return null briefly
+  // Show loading spinner while redirecting (user not authenticated)
   if (!user) {
-    return null;
+    return (
+      <AppLayout 
+        title="Redirecting..."
+        withHeader={false} 
+        fullHeight={false}
+        fullWidth={true}
+        className="px-0"
+      >
+        <div className="w-full h-[50vh] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="text-muted-foreground">Redirecting...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
   }
 
   return (
