@@ -5,6 +5,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { secureLog } from "@/utils/secureLogger";
+import { SUPABASE_CONFIG, getSupabaseFunctionsUrl } from "@/config/supabase";
 
 export interface VerificationResult {
   verified: boolean;
@@ -75,19 +76,14 @@ export const verifyPiAuthentication = async (
       secureLog.info("FALLBACK MODE: Trying direct fetch to Supabase Function...");
 
       try {
-        const baseUrl =
-          "https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/verify-pi-auth";
-
+        const baseUrl = `${getSupabaseFunctionsUrl()}/verify-pi-auth`;
         const url = testMode ? `${baseUrl}?test=true` : baseUrl;
-
-        // Hardcoded anon key - Lovable doesn't support VITE_* env variables
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cHdib2N3YXNidHpyenJ4eXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI4MDE2NjUsImV4cCI6MjA1ODM3NzY2NX0.J8yp04TRmdyM_l5FaOFP7Elz16n1ZlQkawH5Xp1vCs0';
         
         const response = await fetch(url, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            Authorization: `Bearer ${SUPABASE_CONFIG.anonKey}`,
           },
           body: JSON.stringify(payload),
         });
