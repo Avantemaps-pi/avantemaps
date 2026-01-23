@@ -73,8 +73,28 @@ const Review = () => {
     setTimeout(() => handleGoBack(), 1500);
   };
 
-  // Show loading or nothing while checking auth
-  if (isLoading || !user) {
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <AppLayout 
+        title="Loading..."
+        withHeader={false} 
+        fullHeight={false}
+        fullWidth={true}
+        className="px-0"
+      >
+        <div className="w-full h-[50vh] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Redirect handled by useEffect - just return null briefly
+  if (!user) {
     return null;
   }
 
