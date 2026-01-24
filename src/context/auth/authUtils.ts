@@ -33,10 +33,19 @@ export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) =
     // Check if we have a valid Supabase session before attempting to upsert
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    if (sessionError || !session) {
+    if (sessionError || !session?.access_token) {
       // No valid session - just update localStorage without touching the database
       // This prevents errors during page refresh when session may be stale
       console.warn("No active Supabase session, skipping database sync");
+      localStorage.setItem('avante_maps_auth', JSON.stringify(updatedUserData));
+      setUser(updatedUserData);
+      return;
+    }
+
+    // Also verify the token is not expired
+    const tokenExpiry = session.expires_at ? session.expires_at * 1000 : 0;
+    if (tokenExpiry && Date.now() > tokenExpiry) {
+      console.warn("Session token expired, skipping database sync");
       localStorage.setItem('avante_maps_auth', JSON.stringify(updatedUserData));
       setUser(updatedUserData);
       return;
@@ -52,8 +61,12 @@ export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) =
     if (error) {
       console.error("Error updating user in Supabase:", error);
       // Still update localStorage so the app can function, but warn the user
-      // Only show toast if it's not an auth-related error (which happens on refresh)
-      if (!error.message?.toLowerCase().includes('not authenticated')) {
+      // Only show toast for unexpected errors (not auth-related or constraint violations)
+      const errorMsg = error.message?.toLowerCase() || '';
+      const isAuthError = errorMsg.includes('not authenticated') || errorMsg.includes('jwt');
+      const isConstraintError = error.code === '23505' || errorMsg.includes('unique') || errorMsg.includes('duplicate');
+      
+      if (!isAuthError && !isConstraintError) {
         const { toast } = await import('sonner');
         toast.error('Failed to sync user profile', {
           description: 'Your profile data may not be up to date. Please try logging in again.'
