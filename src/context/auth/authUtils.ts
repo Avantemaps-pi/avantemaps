@@ -64,7 +64,9 @@ export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) =
       // Only show toast for unexpected errors (not auth-related or constraint violations)
       const errorMsg = error.message?.toLowerCase() || '';
       const isAuthError = errorMsg.includes('not authenticated') || errorMsg.includes('jwt');
-      const isConstraintError = error.code === '23505' || errorMsg.includes('unique') || errorMsg.includes('duplicate');
+      // 23505 = unique constraint, 23503 = foreign key constraint
+      const isConstraintError = error.code === '23505' || error.code === '23503' || 
+        errorMsg.includes('unique') || errorMsg.includes('duplicate') || errorMsg.includes('foreign key');
       
       if (!isAuthError && !isConstraintError) {
         const { toast } = await import('sonner');
