@@ -13,6 +13,8 @@ import CommentSection from '@/components/comments/CommentSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/auth';
+import { supabase } from '@/integrations/supabase/client';
+import { Place } from '@/types/business';
 
 const Review = () => {
   const { businessId } = useParams();
@@ -23,6 +25,8 @@ const Review = () => {
   const [hoverRating, setHoverRating] = useState(0);
   const [review, setReview] = useState('');
   const isMobile = useIsMobile();
+  const [business, setBusiness] = useState<Place | null>(null);
+  const [businessLoading, setBusinessLoading] = useState(true);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -32,18 +36,79 @@ const Review = () => {
     }
   }, [user, isLoading, navigate]);
   
-  // Use business data from state if available, otherwise use fallback
-  const businessDetails = location.state?.businessDetails;
-  
-  // Fallback business data if not passed through navigation
-  const business = businessDetails || {
-    id: businessId || "1",
-    name: "Pi Tech Hub",
-    image: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?q=80&w=2020&auto=format&fit=crop",
-    category: "Technology",
-    currentRating: 4.5,
-    totalReviews: 42
-  };
+  // Load business data from state or fetch from database
+  useEffect(() => {
+    const loadBusiness = async () => {
+      // First try to use state passed from navigation
+      const businessDetails = location.state?.businessDetails;
+      if (businessDetails) {
+        setBusiness(businessDetails);
+        setBusinessLoading(false);
+        return;
+      }
+
+      // If no state and we have a businessId, fetch from database
+      if (businessId) {
+        try {
+          const { data, error } = await supabase
+            .from('businesses')
+            .select('*')
+            .eq('id', parseInt(businessId))
+            .single();
+
+          if (error) throw error;
+
+          if (data) {
+            // Extract contact info
+            const contactInfo = data.contact_info as { phone?: string; website?: string } | null;
+            
+            // Build address from components
+            const addressParts = [
+              data.street_address,
+              data.city,
+              data.state,
+              data.zip_code,
+              data.country
+            ].filter(Boolean);
+            const fullAddress = addressParts.join(', ') || data.location || '';
+
+            // Transform database record to Place type
+            const place: Place = {
+              id: data.id.toString(),
+              name: data.business_name,
+              position: { lat: data.lat || 0, lng: data.lng || 0 },
+              address: fullAddress,
+              streetAddress: data.street_address || undefined,
+              city: data.city || undefined,
+              state: data.state || undefined,
+              postalCode: data.zip_code || undefined,
+              country: data.country || undefined,
+              rating: 0, // Will be calculated from reviews
+              totalReviews: 0,
+              category: data.business_types?.join(', ') || data.category || '',
+              description: data.business_description || '',
+              image: data.images?.[0] || undefined,
+              images: data.images || undefined,
+              phone: contactInfo?.phone || undefined,
+              website: contactInfo?.website || undefined,
+              hours: data.hours as Place['hours'] || undefined,
+              isVerified: data.is_verified || false,
+              isCertified: data.is_certified || false,
+              verificationStatus: data.verification_status as Place['verificationStatus'] || null,
+              business_types: data.business_types || undefined,
+            };
+            setBusiness(place);
+          }
+        } catch (error) {
+          console.error('Error fetching business:', error);
+          toast.error('Failed to load business details');
+        }
+      }
+      setBusinessLoading(false);
+    };
+
+    loadBusiness();
+  }, [businessId, location.state]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -66,7 +131,7 @@ const Review = () => {
     
     // In a real app, this would submit to a backend
     toast.success("Review submitted successfully!", {
-      description: `You gave ${business.name} a ${rating}-star rating.`
+      description: `You gave ${business?.name || 'the business'} a ${rating}-star rating.`
     });
     
     // Navigate back to business page
@@ -107,6 +172,46 @@ const Review = () => {
           <div className="flex flex-col items-center gap-4">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             <p className="text-muted-foreground">Redirecting...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Show loading while fetching business data
+  if (businessLoading) {
+    return (
+      <AppLayout 
+        title="Loading..."
+        withHeader={false} 
+        fullHeight={false}
+        fullWidth={true}
+        className="px-0"
+      >
+        <div className="w-full h-[50vh] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="text-muted-foreground">Loading business details...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Show error if business not found
+  if (!business) {
+    return (
+      <AppLayout 
+        title="Business Not Found"
+        withHeader={false} 
+        fullHeight={false}
+        fullWidth={true}
+        className="px-0"
+      >
+        <div className="w-full h-[50vh] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <p className="text-muted-foreground">Business not found</p>
+            <Button onClick={handleGoBack}>Go Back</Button>
           </div>
         </div>
       </AppLayout>
@@ -158,16 +263,16 @@ const Review = () => {
                           <StarIcon
                             key={i}
                             className={`h-4 w-4 ${
-                              i < Math.floor(business.rating || business.currentRating)
+                              i < Math.floor(business.rating || 0)
                                 ? 'text-yellow-400 fill-yellow-400'
                                 : 'text-gray-300'
                             }`}
                           />
                         ))}
-                        <span className="text-sm ml-1">{(business.rating ?? business.currentRating ?? 0).toFixed(1)}</span>
+                        <span className="text-sm ml-1">{(business.rating || 0).toFixed(1)}</span>
                       </div>
                       <span className="text-sm text-muted-foreground">
-                        ({business.totalReviews} reviews)
+                        ({business.totalReviews || 0} reviews)
                       </span>
                     </div>
                   </div>
