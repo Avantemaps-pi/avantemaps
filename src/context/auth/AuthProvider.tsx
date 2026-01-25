@@ -240,9 +240,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   .from('users')
                   .select('id')
                   .eq('id', session.user.id)
-                  .single();
+                  .maybeSingle();
                 if (testError) secureLog.warn('⚠️ Test query failed:', testError);
-                else secureLog.info('✅ Session working - test query succeeded');
+                else secureLog.info('✅ Session working - test query succeeded, user exists:', !!testData);
               } else {
                 secureLog.warn('⚠️ Session not found after setSession');
                 toast.error('Dev mode: Session verification failed');
@@ -437,7 +437,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isOffline = useNetworkStatus(pendingAuthRef, login);
 
   // refresh user data
-  const refreshUserData = useCallback(async (force = false): Promise<void> => {
+  // When silent=true, we don't show loading indicator (for background refreshes)
+  const refreshUserData = useCallback(async (force = false, silent = false): Promise<void> => {
     const now = Date.now();
     if (!force && now - lastRefresh < REFRESH_COOLDOWN) return;
 
@@ -454,7 +455,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    safeSetIsLoading(true);
+    // Only show loading for user-initiated refreshes, not background ones
+    if (!silent) {
+      safeSetIsLoading(true);
+    }
     try {
       const stillValid = await isTokenValid(user?.accessToken ?? '');
       if (!stillValid) {
@@ -463,20 +467,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      await refreshUserDataService(user, safeSetUser, safeSetIsLoading);
+      await refreshUserDataService(user, safeSetUser, silent ? () => {} : safeSetIsLoading);
       secureLog.info('User data refreshed');
       setLastRefresh(now);
     } catch (error) {
       secureLog.error('Failed to refresh user data:', error);
     } finally {
-      safeSetIsLoading(false);
+      if (!silent) {
+        safeSetIsLoading(false);
+      }
     }
   }, [user, isSdkInitialized, lastRefresh, login, ensureSdkInitialized]);
 
-  // silent refresh when appropriate
+  // silent refresh when appropriate (doesn't show loading indicator)
   useEffect(() => {
     if (user && !isOffline && isSdkInitialized) {
-      const timer = setTimeout(() => refreshUserData(false), 1000);
+      const timer = setTimeout(() => refreshUserData(false, true), 1000); // silent=true
       return () => clearTimeout(timer);
     }
   }, [user, isOffline, isSdkInitialized, refreshUserData]);
