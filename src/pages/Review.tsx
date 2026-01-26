@@ -28,9 +28,10 @@ const Review = () => {
   const [business, setBusiness] = useState<Place | null>(null);
   const [businessLoading, setBusinessLoading] = useState(true);
 
-  // Redirect to home if not authenticated
+  // Redirect to home if not authenticated (only when we're sure there's no user)
   useEffect(() => {
-    if (!isLoading && !user) {
+    // Only redirect if auth check is complete AND no user
+    if (!user && !isLoading) {
       toast.error("Please log in to write a review");
       navigate('/');
     }
@@ -138,8 +139,9 @@ const Review = () => {
     setTimeout(() => handleGoBack(), 1500);
   };
 
-  // Show loading state while checking auth
-  if (isLoading) {
+  // Show loading state only when checking auth AND no user yet
+  // If user is already set, skip the auth loading screen
+  if (isLoading && !user) {
     return (
       <AppLayout 
         title="Loading..."

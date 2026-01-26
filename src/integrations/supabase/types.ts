@@ -808,7 +808,7 @@ export type Database = {
       users: {
         Row: {
           created_at: string | null
-          email: string
+          email: string | null
           id: string
           pi_uid: string | null
           subscription: string | null
@@ -816,7 +816,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          email: string
+          email?: string | null
           id?: string
           pi_uid?: string | null
           subscription?: string | null
@@ -824,7 +824,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          email?: string
+          email?: string | null
           id?: string
           pi_uid?: string | null
           subscription?: string | null
