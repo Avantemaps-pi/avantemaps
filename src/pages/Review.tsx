@@ -1,13 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { StarIcon, ChevronLeft } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { StarIcon, ChevronLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import CommentSection from '@/components/comments/CommentSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,6 +12,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Place } from '@/types/business';
+import { useReviewSubmission } from '@/hooks/useReviewSubmission';
+
+const MAX_REVIEW_LENGTH = 2000;
 
 const Review = () => {
   const { businessId } = useParams();
@@ -27,6 +27,13 @@ const Review = () => {
   const isMobile = useIsMobile();
   const [business, setBusiness] = useState<Place | null>(null);
   const [businessLoading, setBusinessLoading] = useState(true);
+  const [existingReviewLoaded, setExistingReviewLoaded] = useState(false);
+  
+  const { submitReview, fetchUserReview, isSubmitting } = useReviewSubmission({
+    onSuccess: () => {
+      setTimeout(() => handleGoBack(), 1500);
+    },
+  });
 
   // Redirect to home if not authenticated (only when we're sure there's no user)
   useEffect(() => {
@@ -124,19 +131,46 @@ const Review = () => {
     }
   };
 
-  const handleSubmitReview = () => {
+  // Load existing review if user has one
+  useEffect(() => {
+    const loadExistingReview = async () => {
+      if (!user?.uid || !businessId || existingReviewLoaded) return;
+      
+      const existingReview = await fetchUserReview(parseInt(businessId), user.uid);
+      if (existingReview) {
+        setRating(existingReview.rating);
+        setReview(existingReview.content || '');
+      }
+      setExistingReviewLoaded(true);
+    };
+
+    loadExistingReview();
+  }, [user?.uid, businessId, existingReviewLoaded, fetchUserReview]);
+
+  const handleSubmitReview = async () => {
     if (rating === 0) {
       toast.error("Please select a rating before submitting");
       return;
     }
-    
-    // In a real app, this would submit to a backend
-    toast.success("Review submitted successfully!", {
-      description: `You gave ${business?.name || 'the business'} a ${rating}-star rating.`
-    });
-    
-    // Navigate back to business page
-    setTimeout(() => handleGoBack(), 1500);
+
+    if (review.length > MAX_REVIEW_LENGTH) {
+      toast.error(`Review must be less than ${MAX_REVIEW_LENGTH} characters`);
+      return;
+    }
+
+    if (!user?.uid || !businessId) {
+      toast.error("Unable to submit review. Please try again.");
+      return;
+    }
+
+    await submitReview(
+      {
+        rating,
+        content: review.trim() || undefined,
+        businessId: parseInt(businessId),
+      },
+      user.uid
+    );
   };
 
   // Show loading state only when checking auth AND no user yet
@@ -321,18 +355,36 @@ const Review = () => {
                 </div>
                 
                 <div className="mb-6">
-                  <h3 className="text-lg font-medium mb-3">Your Review (optional)</h3>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-lg font-medium">Your Review (optional)</h3>
+                    <span className={`text-sm ${review.length > MAX_REVIEW_LENGTH ? 'text-destructive' : 'text-muted-foreground'}`}>
+                      {review.length}/{MAX_REVIEW_LENGTH}
+                    </span>
+                  </div>
                   <Textarea
                     placeholder="Share your experience with this business..."
                     className="min-h-32"
                     value={review}
                     onChange={(e) => setReview(e.target.value)}
+                    maxLength={MAX_REVIEW_LENGTH + 100} // Allow slight overflow for UX, validate on submit
+                    disabled={isSubmitting}
                   />
                 </div>
                 
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={handleGoBack}>Cancel</Button>
-                  <Button onClick={handleSubmitReview}>Submit Review</Button>
+                  <Button variant="outline" onClick={handleGoBack} disabled={isSubmitting}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSubmitReview} disabled={isSubmitting || rating === 0}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      existingReviewLoaded && rating > 0 ? 'Update Review' : 'Submit Review'
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
