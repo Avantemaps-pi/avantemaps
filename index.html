@@ -19,6 +19,11 @@
       upgrade-insecure-requests;
     " />
 
+    <!-- Preconnect to external origins for faster loading -->
+    <link rel="preconnect" href="https://sdk.minepi.com" crossorigin />
+    <link rel="preconnect" href="https://unpkg.com" crossorigin />
+    <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
+
     <title>Avante Maps - Discover Local Businesses with Pi Network</title>
 
     <!-- Load Pi SDK -->
@@ -79,11 +84,16 @@
     <meta name="twitter:image" content="/og-image.png" />
     <meta name="twitter:image:alt" content="Avante Maps Preview" />
 
-    <!-- Leaflet Maps -->
+    <!-- Leaflet Maps - Non-blocking CSS with print media swap -->
     <link 
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    </noscript>
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       type="module"
