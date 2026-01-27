@@ -7,7 +7,33 @@ interface DetailsCardProps {
   place: Place;
 }
 
+const DAYS_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+const formatDayName = (day: string): string => {
+  return day.charAt(0).toUpperCase() + day.slice(1);
+};
+
 const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
+  // Get categories from the category string (comma-separated)
+  const categories = place.category
+    ? place.category.split(',').map(cat => cat.trim()).filter(Boolean)
+    : [];
+
+  // Format hours for display
+  const getFormattedHours = () => {
+    if (!place.hours) return null;
+    
+    return DAYS_ORDER.map(day => {
+      const hours = place.hours?.[day];
+      return {
+        day: formatDayName(day),
+        hours: hours || 'Not specified'
+      };
+    });
+  };
+
+  const formattedHours = getFormattedHours();
+
   return (
     <Card className="w-full max-w-md bg-white shadow-md rounded-xl overflow-hidden border border-gray-100">
       <CardContent className="p-5">
@@ -17,39 +43,58 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
         
         <div className="grid grid-cols-1 gap-5">
           <div className="space-y-4">
+            {/* Trading Hours */}
             <div className="flex items-start space-x-3">
               <Clock className="h-5 w-5 text-avante-blue flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Trading Hours</h3>
                 <div className="text-xs space-y-1 text-gray-600">
-                  <p><span className="font-medium">Sunday:</span> Closed</p>
-                  <p><span className="font-medium">Monday - Friday:</span> 9 AM - 6 PM</p>
-                  <p><span className="font-medium">Saturday:</span> 10 AM - 4 PM</p>
+                  {formattedHours ? (
+                    formattedHours.map(({ day, hours }) => (
+                      <p key={day}>
+                        <span className="font-medium">{day}:</span> {hours}
+                      </p>
+                    ))
+                  ) : (
+                    <p className="text-gray-400 italic">No hours specified</p>
+                  )}
                 </div>
               </div>
             </div>
             
+            {/* Categories */}
             <div className="flex items-start space-x-3">
               <Tag className="h-5 w-5 text-avante-purple flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Categories</h3>
                 <div className="text-xs space-y-1 text-gray-600">
-                  <p>{place.category}</p>
+                  {categories.length > 0 ? (
+                    categories.map((category, index) => (
+                      <p key={index}>{category}</p>
+                    ))
+                  ) : (
+                    <p className="text-gray-400 italic">No categories specified</p>
+                  )}
                 </div>
               </div>
             </div>
             
+            {/* Contact Details */}
             <div className="flex items-start space-x-3">
               <Phone className="h-5 w-5 text-avante-teal flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Contact Details</h3>
                 <div className="text-xs space-y-1 text-gray-600">
-                  <p>Phone: (123) 456-7890</p>
-                  <p>Email: info@business.com</p>
+                  {place.phone ? (
+                    <p>Phone: {place.phone}</p>
+                  ) : (
+                    <p className="text-gray-400 italic">No phone number</p>
+                  )}
                 </div>
               </div>
             </div>
             
+            {/* Website */}
             {place.website && (
               <div className="flex items-start space-x-3">
                 <Globe className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
