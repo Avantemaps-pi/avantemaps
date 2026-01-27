@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.update-pi-price]
 verify_jwt = false
+
+[functions.verify-business]
+verify_jwt = false
