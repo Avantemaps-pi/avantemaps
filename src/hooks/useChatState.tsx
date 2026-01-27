@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { filterInappropriateContent, isSafeForAI } from '@/utils/contentFilter';
 import { useToast } from '@/hooks/use-toast';
@@ -7,27 +7,61 @@ import { ChatMode } from '@/components/chat/ChatInterface';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
 
+const CHAT_STORAGE_KEY = 'avante-chat-messages';
+
+type ChatMessage = {
+  id: number;
+  text: string;
+  sender: string;
+  timestamp: string;
+  businesses?: Array<{ id: number; business_name: string; verification_status?: string | null; is_verified?: boolean }>;
+};
+
+const getDefaultMessages = (): ChatMessage[] => [
+  { id: 1, text: "Welcome to Avante Maps!", sender: "system", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+  { id: 2, text: "Hi there! How can I help with Avante Maps today?", sender: "support", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+];
+
+const loadMessagesFromStorage = (): ChatMessage[] => {
+  try {
+    const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading chat messages from storage:', error);
+  }
+  return getDefaultMessages();
+};
+
+const saveMessagesToStorage = (messages: ChatMessage[]) => {
+  try {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+  } catch (error) {
+    console.error('Error saving chat messages to storage:', error);
+  }
+};
+
 export function useChatState() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Array<{
-    id: number;
-    text: string;
-    sender: string;
-    timestamp: string;
-    businesses?: Array<{ id: number; business_name: string; verification_status?: string | null; is_verified?: boolean }>;
-  }>>([
-    { id: 1, text: "Welcome to Avante Maps!", sender: "system", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-    { id: 2, text: "Hi there! How can I help with Avante Maps today?", sender: "support", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(loadMessagesFromStorage);
   const [chatMode, setChatMode] = useState<ChatMode>("ai");
   const [awaitingVerificationConfirmation, setAwaitingVerificationConfirmation] = useState(false);
   const [awaitingBusinessSelection, setAwaitingBusinessSelection] = useState(false);
   const [awaitingVerificationBusinessSelection, setAwaitingVerificationBusinessSelection] = useState(false);
   const [selectedBusinessForVerification, setSelectedBusinessForVerification] = useState<any>(null);
   const [userBusinesses, setUserBusinesses] = useState<any[]>([]);
+
+  // Persist messages to localStorage whenever they change
+  useEffect(() => {
+    saveMessagesToStorage(messages);
+  }, [messages]);
 
   // Fetch user's businesses from Supabase
   const fetchUserBusinesses = useCallback(async () => {
