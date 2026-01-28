@@ -198,6 +198,13 @@ const RegisteredBusiness = () => {
     }
   };
 
+  const handleBusinessDeleted = (businessId: number) => {
+    setBusinesses(prev => prev.filter(b => b.id !== businessId));
+    if (selectedBusinessId === String(businessId)) {
+      setSelectedBusinessId('all');
+    }
+  };
+
   // Handle login button click
   const handleLoginClick = () => {
     login();
@@ -286,6 +293,7 @@ const RegisteredBusiness = () => {
                 key={business.id} 
                 business={business}
                 onEdit={() => handleEditBusiness(business.id)}
+                onDeleted={() => handleBusinessDeleted(business.id)}
               />
             ))}
           </div>
