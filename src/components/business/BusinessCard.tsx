@@ -17,9 +17,10 @@ import { Business } from '@/types/business';
 interface BusinessCardProps {
   business: Business;
   onEdit?: (id: number) => void;
+  onDeleted?: () => void;
 }
 
-const BusinessCard = ({ business, onEdit }: BusinessCardProps) => {
+const BusinessCard = ({ business, onEdit, onDeleted }: BusinessCardProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const images = business.images || [];
   const hasImages = images.length > 0;
@@ -101,7 +102,7 @@ const BusinessCard = ({ business, onEdit }: BusinessCardProps) => {
                 <Edit className="h-4 w-4" />
                 Edit
               </Button>
-              <BusinessDropdownMenu businessId={business.id} />
+              <BusinessDropdownMenu businessId={business.id} businessName={business.name} onDeleted={onDeleted} />
             </div>
           </div>
           
