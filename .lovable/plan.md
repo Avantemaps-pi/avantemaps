@@ -1,213 +1,223 @@
 
-# Comprehensive Testing & Fix Plan for Avante Maps Business Management
+# Fix Business Details Discrepancy Between Main Page and Registered-Business Page
 
-## Overview
+## Problem Summary
 
-This plan addresses testing and fixing all business management features end-to-end, including the RLS policy issue for verification audit logging.
+The "Details" popover on the **main page** (map view) shows "Not specified" for all trading hours and "No phone number", while the **update-registration preview** shows the correct data (09:00 - 17:00, Closed, phone number, website, etc.).
 
----
+**Root Cause:** The `get_public_business_info` PostgreSQL function does NOT return the `hours`, `contact_info`, or other sensitive columns from the database. This is by design for security reasons (hiding contact details from public view), but it means the `DetailsCard` component has no data to display.
 
-## Issues Identified
+### Data Flow Comparison
 
-### 1. Verification Audit RLS Policy Issue (Critical)
-**Problem:** The `verification_audit` table only allows admins/moderators to INSERT records, but regular users need to log verification requests from the Communicon chat interface.
-
-**Location:** `src/hooks/useChatState.tsx` lines 107-122
-
-**Impact:** When a user requests verification through the chat, the `logVerificationRequest` function silently fails because the user doesn't have permission to insert into `verification_audit`.
-
-### 2. Missing Edge Functions in config.toml
-**Problem:** Several edge functions exist but aren't listed in `supabase/config.toml`, which may cause issues with JWT verification settings:
-- `complete-payment`
-- `approve-payment`
-- `cleanup-stale-payments`
-- `payment-status`
-- `track-notification`
-- And others
-
-### 3. Business Deletion Flow
-The deletion flow is correctly implemented:
-- `DeleteBusinessDialog.tsx` handles the UI
-- RLS policy `Users can delete their own businesses` exists with proper `owner_id = auth.uid()` check
-- The `onDeleted` callback properly updates local state
+| Page | Data Source | Hours Data | Phone Data |
+|------|-------------|------------|------------|
+| Main page (map) | `get_public_business_info` RPC | ❌ Not returned | ❌ Not returned |
+| Update-registration preview | Form values directly | ✅ From form state | ✅ From form state |
+| Registered-business page | Direct query with RLS | ✅ Available in `Business` type | ✅ Available in `contact_info` |
 
 ---
 
-## Implementation Steps
+## Solution Options
 
-### Step 1: Fix Verification Audit RLS Policy
-Add a new RLS policy that allows authenticated users to log their own verification requests for businesses they own.
+### Option A: Expose Hours & Contact in Public Function (Recommended)
+
+Update `get_public_business_info` to include `hours` and `contact_info` columns. These are reasonable to share publicly as they help customers know when to visit and how to contact the business.
+
+**Pros:**
+- Business hours and phone numbers are typically public information
+- Provides consistent experience across all views
+- Simple implementation
+
+**Cons:**
+- Exposes contact info (phone/email) to all users
+- May need to consider privacy preferences
+
+### Option B: Create Separate Function for Detailed View
+
+Keep `get_public_business_info` minimal and create a new function `get_business_details` that returns hours and contact info for specific business IDs when a user clicks "Details".
+
+**Pros:**
+- Only fetches detailed data when needed
+- Can add rate limiting or access controls
+
+**Cons:**
+- More complex implementation
+- Additional API call needed
+
+---
+
+## Recommended Implementation (Option A)
+
+### Step 1: Update the Database Function
+
+Modify `get_public_business_info` to include `hours` and `contact_info` columns:
 
 ```sql
--- Allow users to log verification requests for their own businesses
-CREATE POLICY "Users can log verification requests for their businesses"
-ON public.verification_audit
-FOR INSERT
-TO authenticated
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM public.businesses
-    WHERE businesses.id = verification_audit.business_id
-    AND businesses.owner_id = auth.uid()
-  )
-  AND performed_by = auth.uid()
-);
+CREATE OR REPLACE FUNCTION public.get_public_business_info(user_uuid UUID DEFAULT NULL)
+RETURNS TABLE (
+  id INTEGER,
+  name TEXT,
+  description TEXT,
+  category TEXT,
+  business_types TEXT[],
+  keywords TEXT[],
+  images TEXT[],
+  location TEXT,
+  street_address TEXT,
+  city TEXT,
+  state TEXT,
+  postal_code TEXT,
+  country TEXT,
+  coordinates TEXT,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
+  is_verified BOOLEAN,
+  is_certified BOOLEAN,
+  verification_status TEXT,
+  is_user_business BOOLEAN,
+  created_at TIMESTAMP,
+  hours JSONB,           -- NEW
+  contact_info JSONB     -- NEW
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    b.id,
+    b.business_name AS name,
+    b.business_description AS description,
+    b.category,
+    b.business_types,
+    b.keywords,
+    b.images,
+    b.location,
+    b.street_address,
+    b.city,
+    b.state,
+    b.zip_code AS postal_code,
+    b.country,
+    b.coordinates,
+    b.lat AS latitude,
+    b.lng AS longitude,
+    b.is_verified,
+    b.is_certified,
+    b.verification_status,
+    CASE WHEN user_uuid IS NOT NULL AND b.owner_id = user_uuid THEN true ELSE false END AS is_user_business,
+    b.created_at,
+    b.hours,           -- NEW
+    b.contact_info     -- NEW
+  FROM businesses b
+  ORDER BY b.created_at DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 ```
 
-### Step 2: Update supabase/config.toml
-Add all missing edge functions to ensure proper JWT verification settings are applied.
+### Step 2: Update TypeScript Interface
 
-```toml
-project_id = "xvpwbocwasbtzrzrxyvu"
-
-[functions.chat-ai]
-verify_jwt = true
-
-[functions.verify-pi-auth]
-verify_jwt = false
-
-[functions.geocode-address]
-verify_jwt = true
-
-[functions.pinet-meta]
-verify_jwt = false
-
-[functions.list-user-businesses]
-verify_jwt = true
-
-[functions.update-pi-price]
-verify_jwt = false
-
-[functions.verify-business]
-verify_jwt = false
-
-[functions.insert-business]
-verify_jwt = false
-
-[functions.complete-payment]
-verify_jwt = false
-
-[functions.approve-payment]
-verify_jwt = false
-
-[functions.payment-status]
-verify_jwt = false
-
-[functions.cleanup-stale-payments]
-verify_jwt = false
-
-[functions.log-business-view]
-verify_jwt = false
-
-[functions.send-bulk-notification]
-verify_jwt = true
-
-[functions.process-scheduled-notifications]
-verify_jwt = false
-
-[functions.track-notification]
-verify_jwt = false
-
-[functions.create-buckets]
-verify_jwt = false
-
-[functions.supabase-set-session]
-verify_jwt = false
-
-[functions.test-env]
-verify_jwt = false
-```
-
-### Step 3: Improve Error Handling in logVerificationRequest
-Update the function to provide feedback when the audit log fails, rather than silently failing.
-
-**File:** `src/hooks/useChatState.tsx`
+Add `hours` and `contact_info` to the `PublicBusinessInfo` interface in `useBusinessData.tsx`:
 
 ```typescript
-const logVerificationRequest = async (businessId: number, action: string) => {
-  if (!user?.uid) return;
+interface PublicBusinessInfo {
+  // ... existing fields
+  hours?: {
+    [day: string]: {
+      open: string;
+      close: string;
+      closed: boolean;
+    };
+  };
+  contact_info?: {
+    phone?: string;
+    email?: string;
+    website?: string;
+    first_name?: string;
+    last_name?: string;
+  };
+}
+```
 
-  try {
-    const { error } = await supabase
-      .from('verification_audit')
-      .insert({
-        business_id: businessId,
-        performed_by: user.uid,
-        action: action,
-        notes: `Verification request submitted via chat interface`
-      });
-      
-    if (error) {
-      console.warn('Could not log verification request:', error.message);
-      // Non-critical - don't show error to user as the verification still proceeds
+### Step 3: Transform Hours Data
+
+Update the data transformation in `useBusinessData.tsx` to properly format hours for the `Place` type:
+
+```typescript
+// Transform hours from database format to Place format
+const formatHours = (dbHours: any): { [key: string]: string } | undefined => {
+  if (!dbHours) return undefined;
+  
+  const formatted: { [key: string]: string } = {};
+  const daysOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  
+  for (const day of daysOrder) {
+    const dayData = dbHours[day];
+    if (dayData) {
+      if (dayData.closed) {
+        formatted[day] = 'Closed';
+      } else if (dayData.open && dayData.close) {
+        formatted[day] = `${dayData.open} - ${dayData.close}`;
+      }
     }
-  } catch (error) {
-    console.error('Error logging verification request:', error);
   }
+  
+  return Object.keys(formatted).length > 0 ? formatted : undefined;
+};
+
+// In the transformation:
+return {
+  // ... existing fields
+  website: business.contact_info?.website || "",
+  phone: business.contact_info?.phone || "",
+  hours: formatHours(business.hours),
+};
+```
+
+### Step 4: Update DetailsCard Hours Handling
+
+The `DetailsCard` component already handles hours correctly, but ensure it falls back gracefully:
+
+```typescript
+const getFormattedHours = () => {
+  if (!place.hours || Object.keys(place.hours).length === 0) return null;
+  
+  return DAYS_ORDER.map(day => {
+    const hours = place.hours?.[day];
+    return {
+      day: formatDayName(day),
+      hours: hours || 'Not specified'
+    };
+  });
 };
 ```
 
 ---
 
-## Testing Checklist
+## Files to Modify
 
-Once the fixes are implemented, test the following scenarios:
-
-### Business Registration
-1. Navigate to `/registration`
-2. Fill out all required fields
-3. Verify address geocoding works
-4. Submit and confirm the business appears in `/registered-business`
-
-### Business Update/Edit
-1. From `/registered-business`, click "Edit" on a business
-2. Modify some fields
-3. Confirm changes are saved and reflected
-
-### Business Deletion
-1. From `/registered-business`, click the vertical ellipsis (⋮) menu
-2. Select "Delete"
-3. Confirm the dialog appears with business name
-4. Click "Delete" and verify:
-   - Toast success message appears
-   - Business is removed from the list
-   - Business no longer appears in database
-
-### Verification Request (via Communicon)
-1. Navigate to `/communicon`
-2. Initiate a verification request
-3. Select a business
-4. Confirm the status updates to "pending"
-5. Check that verification_audit receives a new entry (admin can verify)
+| File | Changes |
+|------|---------|
+| Database migration | Update `get_public_business_info` function to return `hours` and `contact_info` |
+| `src/hooks/useBusinessData.tsx` | Update interface, add hours transformer, include phone/website/hours in transformation |
+| `src/hooks/useAdvancedSearch.ts` | Update interface and transformation to include hours/contact data if search functions also need them |
 
 ---
 
-## Technical Details
+## Testing Plan
 
-### Files to Modify:
-1. **Database Migration** - Add new RLS policy for `verification_audit`
-2. `supabase/config.toml` - Add missing edge function configurations
-3. `src/hooks/useChatState.tsx` - Improve error handling in `logVerificationRequest`
+After implementation:
 
-### Files Already Correct (No Changes Needed):
-- `src/components/business/DeleteBusinessDialog.tsx` - Deletion logic is correct
-- `src/components/business/BusinessDropdownMenu.tsx` - Properly triggers deletion
-- `src/components/business/BusinessCard.tsx` - Properly passes callbacks
-- `src/pages/RegisteredBusiness.tsx` - Properly handles deletion state update
+1. **Main page test**: Click "Details" on a business card on the map and verify:
+   - Trading hours show actual times (e.g., "Monday: 09:00 - 17:00")
+   - Phone number displays correctly
+   - Website link is visible
 
-### RLS Policies Verified:
-- `businesses` table: DELETE policy with `owner_id = auth.uid()` ✓
-- `businesses` table: UPDATE policy with `owner_id = auth.uid()` ✓
-- `businesses` table: INSERT policy with `owner_id = auth.uid()` ✓
+2. **Registered-business page test**: Edit a business, go to Preview tab, click "Details" and verify data matches
+
+3. **Consistency check**: Compare Details popup between main page and update-registration preview for the same business
 
 ---
 
-## Summary
+## Security Consideration
 
-The core business deletion functionality is correctly implemented. The main fix needed is:
+Business hours and contact information are typically considered public data that businesses want customers to see. However, if there are privacy concerns:
 
-1. Adding an RLS policy to allow users to log their own verification requests
-2. Ensuring all edge functions are properly configured in config.toml
-3. Improving error handling for non-critical audit logging
-
-After implementing these fixes, a comprehensive end-to-end test of all business management features should be performed to verify everything works as intended.
+- Could add a `hide_contact_info` boolean field that business owners can set
+- Could restrict `contact_info.email` from being exposed while showing phone and website
