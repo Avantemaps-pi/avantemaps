@@ -18,6 +18,18 @@ interface SearchNearbyResult {
   is_certified: boolean;
   relevance: number;
   images?: string[];
+  hours?: {
+    [day: string]: {
+      open: string;
+      close: string;
+      closed: boolean;
+    };
+  };
+  contact_info?: {
+    phone?: string;
+    email?: string;
+    website?: string;
+  };
 }
 
 interface SearchByLocationResult {
@@ -36,7 +48,40 @@ interface SearchByLocationResult {
   is_certified: boolean;
   relevance: number;
   images?: string[];
+  hours?: {
+    [day: string]: {
+      open: string;
+      close: string;
+      closed: boolean;
+    };
+  };
+  contact_info?: {
+    phone?: string;
+    email?: string;
+    website?: string;
+  };
 }
+
+// Transform hours from database format to Place format
+const formatHours = (dbHours: SearchNearbyResult['hours']): { [key: string]: string } | undefined => {
+  if (!dbHours) return undefined;
+  
+  const formatted: { [key: string]: string } = {};
+  const daysOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  
+  for (const day of daysOrder) {
+    const dayData = dbHours[day];
+    if (dayData) {
+      if (dayData.closed) {
+        formatted[day] = 'Closed';
+      } else if (dayData.open && dayData.close) {
+        formatted[day] = `${dayData.open} - ${dayData.close}`;
+      }
+    }
+  }
+  
+  return Object.keys(formatted).length > 0 ? formatted : undefined;
+};
 
 const transformToPlace = (result: SearchNearbyResult | SearchByLocationResult): Place => {
   const fullAddress = [
@@ -68,9 +113,9 @@ const transformToPlace = (result: SearchNearbyResult | SearchByLocationResult): 
     distance: 'distance_meters' in result ? result.distance_meters : undefined,
     relevance: result.relevance,
     image: result.images?.[0] || '/placeholder.svg',
-    website: '',
-    phone: '',
-    hours: {},
+    website: result.contact_info?.website || '',
+    phone: result.contact_info?.phone || '',
+    hours: formatHours(result.hours) || {},
   };
 };
 

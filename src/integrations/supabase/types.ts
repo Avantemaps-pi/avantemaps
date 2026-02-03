@@ -1286,10 +1286,12 @@ export type Database = {
           business_types: string[]
           category: string
           city: string
+          contact_info: Json
           coordinates: string
           country: string
           created_at: string
           description: string
+          hours: Json
           id: number
           images: string[]
           is_certified: boolean
