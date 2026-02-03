@@ -25,7 +25,42 @@ interface PublicBusinessInfo {
   longitude?: number;
   images?: string[];
   is_user_business?: boolean;
+  hours?: {
+    [day: string]: {
+      open: string;
+      close: string;
+      closed: boolean;
+    };
+  };
+  contact_info?: {
+    phone?: string;
+    email?: string;
+    website?: string;
+    first_name?: string;
+    last_name?: string;
+  };
 }
+
+// Transform hours from database format to Place format
+const formatHours = (dbHours: PublicBusinessInfo['hours']): { [key: string]: string } | undefined => {
+  if (!dbHours) return undefined;
+  
+  const formatted: { [key: string]: string } = {};
+  const daysOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  
+  for (const day of daysOrder) {
+    const dayData = dbHours[day];
+    if (dayData) {
+      if (dayData.closed) {
+        formatted[day] = 'Closed';
+      } else if (dayData.open && dayData.close) {
+        formatted[day] = `${dayData.open} - ${dayData.close}`;
+      }
+    }
+  }
+  
+  return Object.keys(formatted).length > 0 ? formatted : undefined;
+};
 
 export const useBusinessData = () => {
   const [places, setPlaces] = useState<Place[]>([]);
@@ -86,9 +121,9 @@ export const useBusinessData = () => {
             category: business.category || "Other",
             image: business.images?.[0] || "/placeholder.svg",
             images: business.images || [],
-            website: "", // Not available in public data for security
-            phone: "", // Not available in public data for security
-            hours: {}, // Not available in public data for security
+            website: business.contact_info?.website || "",
+            phone: business.contact_info?.phone || "",
+            hours: formatHours(business.hours) || {},
             isVerified: business.is_verified || false,
             isCertified: business.is_certified || false,
             verificationStatus: business.verification_status as 'pending' | 'verified' | 'rejected' | null,
