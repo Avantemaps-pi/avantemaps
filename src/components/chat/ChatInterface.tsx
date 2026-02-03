@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import ChatModeToggle from './ChatModeToggle';
 import ChatMessage from './ChatMessage';
@@ -42,6 +42,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   showAttachmentIcon = false,
   hasLiveChatAccess = false
 }) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to latest message when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   const handleValidatedSendMessage = () => {
     // Validate message content before sending to AI
     if (!isSafeForAI(message)) {
@@ -149,18 +156,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </p>
             </div>
           ) : (
-            messages.map(msg => (
-              <div key={msg.id}>
-                <ChatMessage 
-                  id={msg.id} 
-                  text={msg.text} 
-                  sender={msg.sender} 
-                  timestamp={msg.timestamp} 
-                />
-                {renderAttachmentOptions(msg)}
-                {renderBusinessSelectionButtons(msg)}
-              </div>
-            ))
+            <>
+              {messages.map(msg => (
+                <div key={msg.id}>
+                  <ChatMessage 
+                    id={msg.id} 
+                    text={msg.text} 
+                    sender={msg.sender} 
+                    timestamp={msg.timestamp} 
+                  />
+                  {renderAttachmentOptions(msg)}
+                  {renderBusinessSelectionButtons(msg)}
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </>
           )}
         </div>
 
