@@ -106,8 +106,6 @@ const BusinessCard = ({ business, onEdit, onDeleted }: BusinessCardProps) => {
             </div>
           </div>
           
-          <p className="mt-4 text-gray-700">{business.description}</p>
-          
           <div className="mt-6 space-y-5">
             <BusinessVerificationStatus />
             
