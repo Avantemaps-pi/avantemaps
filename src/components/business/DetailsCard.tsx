@@ -41,7 +41,7 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
           <h2 className="text-lg font-semibold text-gray-800">{place.name}</h2>
         </div>
         
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-2 gap-[25px]">
           {/* Left Column - Trading Hours & Website */}
           <div className="space-y-4">
             {/* Trading Hours */}
