@@ -186,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // --- Cached session restoration & dev bypass handling (unchanged logic, kept safe) ---
   useEffect(() => {
-    if (shouldBypassAuth()) {
+    if (shouldBypassAuth() && DEV_CONFIG?.mockUser) {
       secureLog.info('Development mode: bypassing authentication');
       const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
       safeSetUser(mockUser);
@@ -342,7 +342,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // --- Login flow (fixed cleanup + ensure SDK ready) ---
   const login = useCallback(async (): Promise<void> => {
-    if (shouldBypassAuth()) {
+    if (shouldBypassAuth() && DEV_CONFIG?.mockUser) {
       const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
       safeSetUser(mockUser);
       try {
