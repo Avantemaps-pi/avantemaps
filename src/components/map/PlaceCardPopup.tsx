@@ -122,7 +122,7 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
                   Details
                 </div>
               </PopoverTrigger>
-              <PopoverContent className="p-0 w-[420px]" align="end">
+              <PopoverContent className="p-0 w-[480px]" align="end">
                 <DetailsCard place={location} />
               </PopoverContent>
             </Popover>
