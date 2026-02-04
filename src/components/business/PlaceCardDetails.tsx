@@ -27,7 +27,7 @@ const PlaceCardDetails: React.FC<PlaceCardDetailsProps> = ({
           Details
         </div>
       </PopoverTrigger>
-      <PopoverContent className="p-0 w-[300px] sm:w-[420px]" align="end">
+      <PopoverContent className="p-0 w-[480px]" align="end">
         <DetailsCard place={place} />
       </PopoverContent>
     </Popover>

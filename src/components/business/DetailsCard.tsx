@@ -35,13 +35,13 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
   const formattedHours = getFormattedHours();
 
   return (
-    <Card className="w-full max-w-md bg-white shadow-md rounded-xl overflow-hidden border border-gray-100">
+    <Card className="w-full max-w-lg bg-white shadow-md rounded-xl overflow-hidden border border-gray-100">
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
           <h2 className="text-lg font-semibold text-gray-800">{place.name}</h2>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-2 gap-5">
           {/* Left Column - Trading Hours */}
           <div className="flex items-start space-x-3">
             <Clock className="h-5 w-5 text-avante-blue flex-shrink-0 mt-0.5" />
