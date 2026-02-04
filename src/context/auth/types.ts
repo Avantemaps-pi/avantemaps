@@ -23,7 +23,7 @@ export interface AuthContextType {
   logout: () => void;
   authError: string | null;
   hasAccess: (requiredTier: SubscriptionTier) => boolean;
-  refreshUserData: () => Promise<void>;
+  refreshUserData: (silent?: boolean) => Promise<void>;
   setUser: (user: PiUser) => void;
   isAdmin: boolean;
 }
