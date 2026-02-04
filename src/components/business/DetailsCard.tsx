@@ -41,27 +41,28 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
           <h2 className="text-lg font-semibold text-gray-800">{place.name}</h2>
         </div>
         
-        <div className="grid grid-cols-1 gap-5">
-          <div className="space-y-4">
-            {/* Trading Hours */}
-            <div className="flex items-start space-x-3">
-              <Clock className="h-5 w-5 text-avante-blue flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Trading Hours</h3>
-                <div className="text-xs space-y-1 text-gray-600">
-                  {formattedHours ? (
-                    formattedHours.map(({ day, hours }) => (
-                      <p key={day}>
-                        <span className="font-medium">{day}:</span> {hours}
-                      </p>
-                    ))
-                  ) : (
-                    <p className="text-gray-400 italic">No hours specified</p>
-                  )}
-                </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {/* Left Column - Trading Hours */}
+          <div className="flex items-start space-x-3">
+            <Clock className="h-5 w-5 text-avante-blue flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Trading Hours</h3>
+              <div className="text-xs space-y-1 text-gray-600">
+                {formattedHours ? (
+                  formattedHours.map(({ day, hours }) => (
+                    <p key={day}>
+                      <span className="font-medium">{day}:</span> {hours}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-gray-400 italic">No hours specified</p>
+                )}
               </div>
             </div>
-            
+          </div>
+
+          {/* Right Column - Categories, Contact, Website */}
+          <div className="space-y-4">
             {/* Categories */}
             <div className="flex items-start space-x-3">
               <Tag className="h-5 w-5 text-avante-purple flex-shrink-0 mt-0.5" />
