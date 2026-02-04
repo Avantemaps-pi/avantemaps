@@ -42,11 +42,14 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
         </div>
         
         <div className="grid grid-cols-2 gap-5">
-          {/* Left Column - Trading Hours */}
-          <div className="flex items-start space-x-3">
-            <Clock className="h-5 w-5 text-avante-blue flex-shrink-0 mt-0.5" />
+          {/* Left Column - Trading Hours & Website */}
+          <div className="space-y-4">
+            {/* Trading Hours */}
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Trading Hours</h3>
+              <div className="flex items-center space-x-2 mb-2">
+                <Clock className="h-5 w-5 text-avante-blue flex-shrink-0" />
+                <h3 className="text-sm font-medium text-gray-700">Trading Hours</h3>
+              </div>
               <div className="text-xs space-y-1 text-gray-600">
                 {formattedHours ? (
                   formattedHours.map(({ day, hours }) => (
@@ -59,60 +62,60 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
                 )}
               </div>
             </div>
+            
+            {/* Website */}
+            {place.website && (
+              <div>
+                <div className="flex items-center space-x-2 mb-2">
+                  <Globe className="h-5 w-5 text-green-500 flex-shrink-0" />
+                  <h3 className="text-sm font-medium text-gray-700">Website</h3>
+                </div>
+                <a 
+                  href={place.website}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-avante-blue flex items-center text-xs hover:underline"
+                >
+                  {place.website.replace(/(^\w+:|^)\/\//, '')}
+                  <ExternalLink className="h-3 w-3 ml-1" />
+                </a>
+              </div>
+            )}
           </div>
 
-          {/* Right Column - Categories, Contact, Website */}
+          {/* Right Column - Categories & Contact Details */}
           <div className="space-y-4">
             {/* Categories */}
-            <div className="flex items-start space-x-3">
-              <Tag className="h-5 w-5 text-avante-purple flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Categories</h3>
-                <div className="text-xs space-y-1 text-gray-600">
-                  {categories.length > 0 ? (
-                    categories.map((category, index) => (
-                      <p key={index}>{category}</p>
-                    ))
-                  ) : (
-                    <p className="text-gray-400 italic">No categories specified</p>
-                  )}
-                </div>
+            <div>
+              <div className="flex items-center space-x-2 mb-2">
+                <Tag className="h-5 w-5 text-avante-purple flex-shrink-0" />
+                <h3 className="text-sm font-medium text-gray-700">Categories</h3>
+              </div>
+              <div className="text-xs space-y-1 text-gray-600">
+                {categories.length > 0 ? (
+                  categories.map((category, index) => (
+                    <p key={index}>{category}</p>
+                  ))
+                ) : (
+                  <p className="text-gray-400 italic">No categories specified</p>
+                )}
               </div>
             </div>
             
             {/* Contact Details */}
-            <div className="flex items-start space-x-3">
-              <Phone className="h-5 w-5 text-avante-teal flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Contact Details</h3>
-                <div className="text-xs space-y-1 text-gray-600">
-                  {place.phone ? (
-                    <p>Phone: {place.phone}</p>
-                  ) : (
-                    <p className="text-gray-400 italic">No phone number</p>
-                  )}
-                </div>
+            <div>
+              <div className="flex items-center space-x-2 mb-2">
+                <Phone className="h-5 w-5 text-avante-teal flex-shrink-0" />
+                <h3 className="text-sm font-medium text-gray-700">Contact Details</h3>
+              </div>
+              <div className="text-xs space-y-1 text-gray-600">
+                {place.phone ? (
+                  <p>Phone: {place.phone}</p>
+                ) : (
+                  <p className="text-gray-400 italic">No phone number</p>
+                )}
               </div>
             </div>
-            
-            {/* Website */}
-            {place.website && (
-              <div className="flex items-start space-x-3">
-                <Globe className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Website</h3>
-                  <a 
-                    href={place.website}
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-avante-blue flex items-center text-xs hover:underline"
-                  >
-                    {place.website.replace(/(^\w+:|^)\/\//, '')}
-                    <ExternalLink className="h-3 w-3 ml-1" />
-                  </a>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </CardContent>
