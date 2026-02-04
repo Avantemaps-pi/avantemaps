@@ -540,33 +540,105 @@ export function useChatState() {
       setMessages(prev => [...prev, selectionMessage]);
       
       // Check verification status
-      let statusMessage = "";
       if (business.is_verified || business.verification_status === 'verified') {
-        statusMessage = `"${business.business_name}" is already verified! ✓`;
-      } else if (business.verification_status === 'pending') {
-        statusMessage = `Your verification request for "${business.business_name}" is already being processed. Our team will review it and get back to you shortly.`;
-      } else {
-        // New verification request
-        statusMessage = `Verification process for "${business.business_name}" has just begun! Our team will review your business and contact you within 2-3 business days.`;
-        
-        // Update status to pending
-        await updateVerificationStatus(business.id, 'pending');
-        await logVerificationRequest(business.id, 'verification_requested');
-      }
-      
-      setTimeout(() => {
-        const responseMessage = {
+        const alreadyVerifiedMessage = {
           id: Date.now() + 1,
-          text: statusMessage,
+          text: `"${business.business_name}" is already verified! ✓`,
           sender: "support",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
-        setMessages(prev => [...prev, responseMessage]);
-      }, 500);
+        setMessages(prev => [...prev, alreadyVerifiedMessage]);
+        setAwaitingVerificationBusinessSelection(false);
+        return;
+      }
+      
+      if (business.verification_status === 'pending') {
+        const pendingMessage = {
+          id: Date.now() + 1,
+          text: `Your verification request for "${business.business_name}" is already being processed. Our team will review it and get back to you shortly.`,
+          sender: "support",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages(prev => [...prev, pendingMessage]);
+        setAwaitingVerificationBusinessSelection(false);
+        return;
+      }
+      
+      // New verification request - call the verify-business edge function
+      const processingMessage = {
+        id: Date.now() + 1,
+        text: `Processing verification request for "${business.business_name}"...`,
+        sender: "support",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => [...prev, processingMessage]);
+
+      try {
+        // Get current session for auth token
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+
+        if (!accessToken) {
+          throw new Error('Not authenticated. Please log in and try again.');
+        }
+
+        // Call the verify-business edge function
+        const response = await fetch(
+          'https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/verify-business',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              business_id: business.id,
+              verification_type: 'verification'
+            }),
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Verification request failed');
+        }
+
+        // Log the verification request
+        await logVerificationRequest(business.id, 'verification_requested');
+
+        const successMessage = {
+          id: Date.now() + 2,
+          text: `✓ Verification request for "${business.business_name}" has been submitted successfully! Our team will review your business and contact you within 2-3 business days.`,
+          sender: "support",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages(prev => [...prev, successMessage]);
+
+        toast({
+          title: "Verification Submitted",
+          description: `Verification request for "${business.business_name}" has been submitted.`,
+        });
+
+      } catch (error: any) {
+        console.error('Verification request error:', error);
+        
+        // Update local status to pending even if API call fails (for offline handling)
+        await updateVerificationStatus(business.id, 'pending');
+        await logVerificationRequest(business.id, 'verification_requested');
+        
+        const errorMessage = {
+          id: Date.now() + 2,
+          text: `Verification request for "${business.business_name}" has been queued. ${error.message || 'Our team will process it shortly.'}`,
+          sender: "support",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
       
       setAwaitingVerificationBusinessSelection(false);
     }
-  }, [awaitingVerificationBusinessSelection, updateVerificationStatus, logVerificationRequest]);
+  }, [awaitingVerificationBusinessSelection, updateVerificationStatus, logVerificationRequest, toast]);
 
   return {
     message,
