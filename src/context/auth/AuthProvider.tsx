@@ -550,7 +550,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         authError,
         hasAccess,
-        refreshUserData: () => refreshUserData(true),
+        refreshUserData: (silent = false) => refreshUserData(true, silent),
         setUser: safeSetUser,
         isAdmin,
       }}

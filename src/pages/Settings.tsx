@@ -61,7 +61,7 @@ const Settings = () => {
 
     // Only attempt refresh if needed and if we have a user
     if (user && shouldRefresh && !isLoading) {
-      refreshUserData();
+      refreshUserData(true); // silent refresh to avoid showing auth overlay
       localStorage.setItem('last_user_refresh', Date.now().toString());
     }
 
