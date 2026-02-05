@@ -45,7 +45,7 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
           {/* Left Column - Trading Hours & Website */}
           <div className="space-y-4">
             {/* Trading Hours */}
-            <div>
+            <div className="mr-[-10px]">
               <div className="flex items-center space-x-2 mb-2">
                 <Clock className="h-5 w-5 text-avante-blue flex-shrink-0" />
                 <h3 className="text-sm font-medium text-gray-700">Trading Hours</h3>
