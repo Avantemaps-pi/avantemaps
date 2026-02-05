@@ -266,8 +266,8 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
           sunday: { open: values.sundayOpen, close: values.sundayClose, closed: values.sundayClosed },
         },
         owner: {
-          first_name: values.firstName,
-          last_name: values.lastName,
+          first_name: user.username,
+          last_name: '',
         },
       };
 
