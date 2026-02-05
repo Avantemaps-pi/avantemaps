@@ -132,10 +132,32 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       // ✅ Validation of inappropriate content
       if (containsInappropriateContent(values.businessName)) {
         toast.error('Business name contains inappropriate content.');
+        setIsSubmitting(false);
         return;
       }
       if (values.businessDescription && containsInappropriateContent(values.businessDescription)) {
         toast.error('Business description contains inappropriate content.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // ✅ Check if business name is already taken
+      const { data: existingName, error: nameCheckError } = await supabase
+        .from('businesses')
+        .select('id, business_name')
+        .ilike('business_name', values.businessName.trim())
+        .limit(1)
+        .maybeSingle();
+
+      if (nameCheckError) {
+        console.error('Error checking business name:', nameCheckError);
+      }
+
+      if (existingName) {
+        toast.error('Business name unavailable', {
+          description: 'A business with this name already exists. Please choose a different name.',
+        });
+        setIsSubmitting(false);
         return;
       }
 
