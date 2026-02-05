@@ -48,22 +48,10 @@ const sanitizeInput = (value: string, fieldName: string) => {
 };
 
 export const formSchema = z.object({
-  firstName: z.string().min(1, { message: "First name is required" }).transform((val, ctx) => {
-    try {
-      return sanitizeInput(val, "First name");
-    } catch (e) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: (e as Error).message });
-      return z.NEVER;
-    }
-  }),
-  lastName: z.string().min(1, { message: "Last name is required" }).transform((val, ctx) => {
-    try {
-      return sanitizeInput(val, "Last name");
-    } catch (e) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: (e as Error).message });
-      return z.NEVER;
-    }
-  }),
+  // firstName and lastName are now optional - we use the Pi username instead
+  // Kept for backwards compatibility with existing data
+  firstName: z.string().optional().default(''),
+  lastName: z.string().optional().default(''),
   businessName: z.string().min(1, { message: "Business name is required" }).transform((val, ctx) => {
     try {
       return sanitizeInput(val, "Business name");
