@@ -84,7 +84,7 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
           </div>
 
           {/* Right Column - Categories & Contact Details */}
-          <div className="space-y-4">
+          <div className="space-y-4 ml-[-10px]">
             {/* Categories */}
             <div>
               <div className="flex items-center space-x-2 mb-2">
