@@ -609,27 +609,23 @@ export function useChatState() {
 
         const successMessage = {
           id: Date.now() + 2,
-          text: `✓ Verification request for "${business.business_name}" has been submitted successfully! Our team will review your business and contact you within 2-3 business days.`,
+          text: `✓ "${business.business_name}" has been verified successfully!`,
           sender: "support",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         setMessages(prev => [...prev, successMessage]);
 
         toast({
-          title: "Verification Submitted",
-          description: `Verification request for "${business.business_name}" has been submitted.`,
+          title: "Verified!",
+          description: `"${business.business_name}" is now verified.`,
         });
 
       } catch (error: any) {
         console.error('Verification request error:', error);
         
-        // Update local status to pending even if API call fails (for offline handling)
-        await updateVerificationStatus(business.id, 'pending');
-        await logVerificationRequest(business.id, 'verification_requested');
-        
         const errorMessage = {
           id: Date.now() + 2,
-          text: `Verification request for "${business.business_name}" has been queued. ${error.message || 'Our team will process it shortly.'}`,
+          text: `Verification failed for "${business.business_name}". ${error.message || 'Please try again.'}`,
           sender: "support",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
