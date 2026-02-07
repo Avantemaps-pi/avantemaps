@@ -607,18 +607,38 @@ export function useChatState() {
         // Log the verification request
         await logVerificationRequest(business.id, 'verification_requested');
 
-        const successMessage = {
-          id: Date.now() + 2,
-          text: `✓ "${business.business_name}" has been verified successfully!`,
-          sender: "support",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages(prev => [...prev, successMessage]);
+        // Handle blockchain verification results
+        const bizResult = result.results?.[0];
+        
+        if (bizResult?.verified) {
+          const successMessage = {
+            id: Date.now() + 2,
+            text: `✓ "${business.business_name}" has been verified successfully! Your Pi wallet meets the blockchain transaction requirements.`,
+            sender: "support",
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+          setMessages(prev => [...prev, successMessage]);
 
-        toast({
-          title: "Verified!",
-          description: `"${business.business_name}" is now verified.`,
-        });
+          toast({
+            title: "Verified!",
+            description: `"${business.business_name}" is now verified.`,
+          });
+        } else {
+          const reason = bizResult?.reason || 'Blockchain verification requirements not met.';
+          const failMessage = {
+            id: Date.now() + 2,
+            text: `✗ Verification for "${business.business_name}" was not approved. Reason: ${reason}`,
+            sender: "support",
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+          setMessages(prev => [...prev, failMessage]);
+
+          toast({
+            title: "Verification Not Approved",
+            description: reason,
+            variant: "destructive",
+          });
+        }
 
       } catch (error: any) {
         console.error('Verification request error:', error);
