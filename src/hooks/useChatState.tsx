@@ -552,17 +552,7 @@ export function useChatState() {
         return;
       }
       
-      if (business.verification_status === 'pending') {
-        const pendingMessage = {
-          id: Date.now() + 1,
-          text: `Your verification request for "${business.business_name}" is already being processed. Our team will review it and get back to you shortly.`,
-          sender: "support",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages(prev => [...prev, pendingMessage]);
-        setAwaitingVerificationBusinessSelection(false);
-        return;
-      }
+      // If pending from a previous attempt, allow re-triggering verification
       
       // New verification request - call the verify-business edge function
       const processingMessage = {
