@@ -6,10 +6,124 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+// Pi Network Horizon API (Stellar-based)
+const PI_HORIZON_URL = 'https://api.mainnet.minepi.com';
+
+// Verification thresholds
+const MIN_TRANSACTIONS = 100;
+const MIN_UNIQUE_WALLETS = 10;
+const MIN_CREDITED_TRANSACTIONS = 50;
+
 interface VerifyBusinessRequest {
   business_id?: number;
   business_ids?: number[];
   verification_type?: 'verification' | 'certification';
+}
+
+interface BlockchainVerificationResult {
+  meetsRequirements: boolean;
+  totalTransactions: number;
+  uniqueWallets: number;
+  creditedTransactions: number;
+  failureReasons: string[];
+}
+
+/**
+ * Query the Pi Horizon API to verify a wallet's transaction history.
+ * Uses the Stellar Horizon payments endpoint to count transactions,
+ * unique counterparties, and credited (received) payments.
+ */
+async function verifyWalletOnChain(
+  walletAddress: string,
+  traceId: string
+): Promise<BlockchainVerificationResult> {
+  const allPayments: any[] = [];
+  let cursor: string | undefined;
+  const limit = 200; // max per page
+
+  // Paginate through all payments for this account
+  try {
+    while (true) {
+      const url = new URL(`${PI_HORIZON_URL}/accounts/${walletAddress}/payments`);
+      url.searchParams.set('limit', String(limit));
+      url.searchParams.set('order', 'desc');
+      if (cursor) url.searchParams.set('cursor', cursor);
+
+      const res = await fetch(url.toString(), {
+        headers: { Accept: 'application/json' },
+      });
+
+      if (!res.ok) {
+        if (res.status === 404) {
+          console.warn(`[${traceId}] Wallet ${walletAddress} not found on Pi blockchain`);
+          return {
+            meetsRequirements: false,
+            totalTransactions: 0,
+            uniqueWallets: 0,
+            creditedTransactions: 0,
+            failureReasons: ['Wallet address not found on the Pi blockchain'],
+          };
+        }
+        throw new Error(`Horizon API returned ${res.status}: ${await res.text()}`);
+      }
+
+      const json = await res.json();
+      const records = json?._embedded?.records ?? [];
+
+      if (records.length === 0) break;
+
+      allPayments.push(...records);
+      cursor = records[records.length - 1].paging_token;
+
+      // Safety cap – avoid runaway pagination
+      if (allPayments.length >= 5000) break;
+
+      // If fewer results than limit, we've reached the end
+      if (records.length < limit) break;
+    }
+  } catch (err: any) {
+    console.error(`[${traceId}] Horizon API error for ${walletAddress}:`, err);
+    throw err;
+  }
+
+  console.log(`[${traceId}] Fetched ${allPayments.length} payment records for ${walletAddress}`);
+
+  // Analyse payments
+  const uniqueWalletSet = new Set<string>();
+  let creditedTransactions = 0;
+
+  for (const p of allPayments) {
+    // payment types: create_account, payment, path_payment_strict_receive, etc.
+    const from = p.from ?? p.source_account;
+    const to = p.to;
+
+    if (from && from !== walletAddress) uniqueWalletSet.add(from);
+    if (to && to !== walletAddress) uniqueWalletSet.add(to);
+
+    // Credited = money received by this wallet
+    if (to === walletAddress) creditedTransactions++;
+    // create_account where the wallet is the target is also credited
+    if (p.type === 'create_account' && p.account === walletAddress) creditedTransactions++;
+  }
+
+  const totalTransactions = allPayments.length;
+  const uniqueWallets = uniqueWalletSet.size;
+
+  const failureReasons: string[] = [];
+  if (totalTransactions < MIN_TRANSACTIONS)
+    failureReasons.push(`Only ${totalTransactions} transactions (need ${MIN_TRANSACTIONS}+)`);
+  if (uniqueWallets < MIN_UNIQUE_WALLETS)
+    failureReasons.push(`Only ${uniqueWallets} unique wallets (need ${MIN_UNIQUE_WALLETS}+)`);
+  if (creditedTransactions < MIN_CREDITED_TRANSACTIONS)
+    failureReasons.push(`Only ${creditedTransactions} credited transactions (need ${MIN_CREDITED_TRANSACTIONS}+)`);
+
+  return {
+    meetsRequirements: failureReasons.length === 0,
+    totalTransactions,
+    uniqueWallets,
+    creditedTransactions,
+    failureReasons,
+  };
 }
 
 Deno.serve(async (req: Request) => {
@@ -60,7 +174,7 @@ Deno.serve(async (req: Request) => {
     // Fetch businesses and validate ownership
     const { data: businesses, error: fetchError } = await supabaseAdmin
       .from('businesses')
-      .select('id, owner_id, business_name')
+      .select('id, owner_id, business_name, pi_wallet_address')
       .in('id', idsToVerify);
 
     if (fetchError) {
@@ -88,30 +202,75 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Directly verify the businesses (no external API call needed)
+    // Set status to pending while blockchain verification runs
+    await supabaseAdmin
+      .from('businesses')
+      .update({ verification_status: 'pending' })
+      .in('id', idsToVerify);
+
+    // Verify each business against the Pi blockchain
+    const results = [];
+    for (const biz of businesses) {
+      if (!biz.pi_wallet_address) {
+        console.warn(`[${traceId}] Business ${biz.id} (${biz.business_name}) has no Pi wallet address`);
+        results.push({
+          id: biz.id,
+          name: biz.business_name,
+          verified: false,
+          reason: 'No Pi wallet address registered for this business',
+        });
+        continue;
+      }
+
+      try {
+        console.log(`[${traceId}] Checking blockchain for wallet ${biz.pi_wallet_address}`);
+        const verification = await verifyWalletOnChain(biz.pi_wallet_address, traceId);
+
+        console.log(`[${traceId}] Business ${biz.id} blockchain result:`, JSON.stringify(verification));
+
+        results.push({
+          id: biz.id,
+          name: biz.business_name,
+          verified: verification.meetsRequirements,
+          reason: verification.meetsRequirements
+            ? null
+            : verification.failureReasons.join('; '),
+          totalTransactions: verification.totalTransactions,
+          uniqueWallets: verification.uniqueWallets,
+          creditedTransactions: verification.creditedTransactions,
+        });
+      } catch (err: any) {
+        console.error(`[${traceId}] Blockchain verification error for business ${biz.id}:`, err);
+        results.push({
+          id: biz.id,
+          name: biz.business_name,
+          verified: false,
+          reason: 'Blockchain verification service unavailable. Please try again later.',
+        });
+      }
+    }
+
+    // Update business records based on results
     const updateField = verification_type === 'certification' ? 'is_certified' : 'is_verified';
     const statusValue = verification_type === 'certification' ? 'certified' : 'verified';
 
-    const results = [];
-    for (const biz of businesses) {
-      const { error: updateError } = await supabaseAdmin
-        .from('businesses')
-        .update({
-          [updateField]: true,
-          verification_status: statusValue,
-        })
-        .eq('id', biz.id);
-
-      if (updateError) {
-        console.error(`[${traceId}] Failed to update business ${biz.id}:`, updateError);
-        results.push({ id: biz.id, name: biz.business_name, verified: false, reason: 'Database update failed' });
+    for (const result of results) {
+      if (result.verified) {
+        await supabaseAdmin
+          .from('businesses')
+          .update({ [updateField]: true, verification_status: statusValue })
+          .eq('id', result.id);
       } else {
-        console.log(`[${traceId}] Business ${biz.id} (${biz.business_name}) ${statusValue} successfully`);
-        results.push({ id: biz.id, name: biz.business_name, verified: true });
+        await supabaseAdmin
+          .from('businesses')
+          .update({ verification_status: null })
+          .eq('id', result.id);
       }
     }
 
     const allVerified = results.every(r => r.verified);
+
+    console.log(`[${traceId}] Verification complete: ${results.filter(r => r.verified).length}/${results.length} passed`);
 
     return new Response(
       JSON.stringify({
