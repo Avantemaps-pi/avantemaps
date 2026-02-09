@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { filterInappropriateContent, isSafeForAI } from '@/utils/contentFilter';
+import { VerificationMetrics } from '@/components/chat/VerificationResultCard';
 import { useToast } from '@/hooks/use-toast';
 import { ChatMode } from '@/components/chat/ChatInterface';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +16,7 @@ type ChatMessage = {
   sender: string;
   timestamp: string;
   businesses?: Array<{ id: number; business_name: string; verification_status?: string | null; is_verified?: boolean }>;
+  verificationMetrics?: VerificationMetrics;
 };
 
 const getDefaultMessages = (): ChatMessage[] => [
@@ -599,13 +601,25 @@ export function useChatState() {
 
         // Handle blockchain verification results
         const bizResult = result.results?.[0];
+        const hasContactInfo = !!(business.business_name); // business exists = contact info confirmed
         
+        const metrics: VerificationMetrics = {
+          contactInfoConfirmed: hasContactInfo,
+          totalTransactions: bizResult?.totalTransactions ?? 0,
+          creditedTransactions: bizResult?.creditedTransactions ?? 0,
+          uniqueWallets: bizResult?.uniqueWallets ?? 0,
+          verified: bizResult?.verified ?? false,
+          businessName: business.business_name,
+          walletMissing: !bizResult?.totalTransactions && !bizResult?.uniqueWallets && bizResult?.reason?.includes('wallet'),
+        };
+
         if (bizResult?.verified) {
           const successMessage = {
             id: Date.now() + 2,
-            text: `✓ "${business.business_name}" has been verified successfully! Your Pi wallet meets the blockchain transaction requirements.`,
+            text: `✓ "${business.business_name}" has been verified successfully!`,
             sender: "support",
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            verificationMetrics: metrics,
           };
           setMessages(prev => [...prev, successMessage]);
 
@@ -614,18 +628,18 @@ export function useChatState() {
             description: `"${business.business_name}" is now verified.`,
           });
         } else {
-          const reason = bizResult?.reason || 'Blockchain verification requirements not met.';
           const failMessage = {
             id: Date.now() + 2,
-            text: `✗ Verification for "${business.business_name}" was not approved. Reason: ${reason}`,
+            text: `Verification for "${business.business_name}" was not approved.`,
             sender: "support",
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            verificationMetrics: metrics,
           };
           setMessages(prev => [...prev, failMessage]);
 
           toast({
             title: "Verification Not Approved",
-            description: reason,
+            description: bizResult?.reason || 'Requirements not met.',
             variant: "destructive",
           });
         }

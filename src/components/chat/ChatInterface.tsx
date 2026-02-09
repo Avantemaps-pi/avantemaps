@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import ChatModeToggle from './ChatModeToggle';
 import ChatMessage from './ChatMessage';
 import BusinessSelectionButtons from './BusinessSelectionButtons';
+import VerificationResultCard, { VerificationMetrics } from './VerificationResultCard';
 import { Menu, X, Send, Image, Video } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -22,6 +23,7 @@ interface ChatInterfaceProps {
     sender: string;
     timestamp: string;
     businesses?: Array<{ id: number; business_name: string; verification_status?: string | null; is_verified?: boolean }>;
+    verificationMetrics?: VerificationMetrics;
   }>;
   message: string;
   setMessage: (message: string) => void;
@@ -165,6 +167,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     sender={msg.sender} 
                     timestamp={msg.timestamp} 
                   />
+                  {msg.verificationMetrics && (
+                    <div className="mt-2">
+                      <VerificationResultCard metrics={msg.verificationMetrics} />
+                    </div>
+                  )}
                   {renderAttachmentOptions(msg)}
                   {renderBusinessSelectionButtons(msg)}
                 </div>
