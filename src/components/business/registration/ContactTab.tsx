@@ -221,12 +221,63 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
     form.setValue("countryCode", value);
   };
 
+// Phone digit length expectations per country code
+  const getExpectedDigits = (code: string): { min: number; max: number } => {
+    const digitMap: Record<string, { min: number; max: number }> = {
+      '+1': { min: 10, max: 10 },     // US/Canada
+      '+44': { min: 10, max: 10 },     // UK
+      '+91': { min: 10, max: 10 },     // India
+      '+61': { min: 9, max: 9 },       // Australia
+      '+86': { min: 11, max: 11 },     // China
+      '+81': { min: 10, max: 10 },     // Japan
+      '+49': { min: 10, max: 11 },     // Germany
+      '+33': { min: 9, max: 9 },       // France
+      '+55': { min: 10, max: 11 },     // Brazil
+      '+52': { min: 10, max: 10 },     // Mexico
+      '+82': { min: 9, max: 10 },      // South Korea
+      '+39': { min: 9, max: 10 },      // Italy
+      '+34': { min: 9, max: 9 },       // Spain
+      '+7': { min: 10, max: 10 },      // Russia/Kazakhstan
+      '+63': { min: 10, max: 10 },     // Philippines
+      '+234': { min: 10, max: 10 },    // Nigeria
+      '+27': { min: 9, max: 9 },       // South Africa
+      '+62': { min: 9, max: 12 },      // Indonesia
+      '+60': { min: 9, max: 10 },      // Malaysia
+      '+65': { min: 8, max: 8 },       // Singapore
+      '+66': { min: 9, max: 9 },       // Thailand
+      '+84': { min: 9, max: 10 },      // Vietnam
+      '+20': { min: 10, max: 10 },     // Egypt
+      '+971': { min: 9, max: 9 },      // UAE
+      '+966': { min: 9, max: 9 },      // Saudi Arabia
+      '+90': { min: 10, max: 10 },     // Turkey
+      '+48': { min: 9, max: 9 },       // Poland
+      '+380': { min: 9, max: 9 },      // Ukraine
+      '+31': { min: 9, max: 9 },       // Netherlands
+      '+46': { min: 9, max: 9 },       // Sweden
+      '+47': { min: 8, max: 8 },       // Norway
+      '+41': { min: 9, max: 9 },       // Switzerland
+      '+351': { min: 9, max: 9 },      // Portugal
+      '+64': { min: 9, max: 10 },      // New Zealand
+      '+254': { min: 9, max: 9 },      // Kenya
+      '+92': { min: 10, max: 10 },     // Pakistan
+      '+880': { min: 10, max: 10 },    // Bangladesh
+    };
+    return digitMap[code] || { min: 6, max: 15 }; // Default fallback
+  };
+
+  const expectedDigits = getExpectedDigits(countryCode);
+  const currentPhone = form.watch('phone') || '';
+  const phoneLength = currentPhone.replace(/[^0-9]/g, '').length;
+  const isPhoneLengthValid = phoneLength === 0 || (phoneLength >= expectedDigits.min && phoneLength <= expectedDigits.max);
+
   // Handle phone input to only allow numbers
   const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Replace any non-numeric character with empty string
     const numericValue = value.replace(/[^0-9]/g, '');
-    form.setValue('phone', numericValue);
+    // Limit to max expected digits
+    const trimmed = numericValue.slice(0, expectedDigits.max);
+    form.setValue('phone', trimmed);
   };
 
   return (
@@ -279,6 +330,18 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
                 </FormControl>
               </div>
               <FormMessage />
+              {!isPhoneLengthValid && phoneLength > 0 && (
+                <p className="text-sm font-medium text-destructive">
+                  {expectedDigits.min === expectedDigits.max
+                    ? `Phone number must be ${expectedDigits.min} digits for this country code`
+                    : `Phone number must be ${expectedDigits.min}-${expectedDigits.max} digits for this country code`}
+                </p>
+              )}
+              {isPhoneLengthValid && phoneLength > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {phoneLength}/{expectedDigits.min === expectedDigits.max ? expectedDigits.min : `${expectedDigits.min}-${expectedDigits.max}`} digits
+                </p>
+              )}
             </FormItem>
           )}
         />
