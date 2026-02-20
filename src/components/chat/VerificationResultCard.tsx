@@ -113,13 +113,13 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
         },
         {
           passed: txPassed,
-          label: 'Required Transactions: 100+\n(50+ credited)',
-          detail: `Current Transactions: ${totalTransactions} total, ${creditedTransactions} credited`,
+          label: 'Current Transactions: 100+\n(50+ credited)',
+          detail: `Required Transactions: ${totalTransactions} total, ${creditedTransactions} credited`,
         },
         {
           passed: walletsPassed,
-          label: 'Required Wallets Transacted: 10+',
-          detail: `Current Wallets Transacted: ${uniqueWallets}`,
+          label: 'Current Wallets Transacted: 10+',
+          detail: `Required Wallets Transacted: ${uniqueWallets}`,
         },
       ];
 
