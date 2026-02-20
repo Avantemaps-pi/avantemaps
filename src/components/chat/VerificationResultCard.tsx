@@ -36,7 +36,11 @@ const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail })
             <XCircle size={18} className="text-destructive" />
           )}
         </div>
-        <span className="text-sm font-medium whitespace-nowrap flex-1">{label}</span>
+        <span className="text-sm font-medium flex-1">
+          {label.split('\n').map((line, i) => (
+            <span key={i} className={i > 0 ? 'block text-xs text-muted-foreground' : ''}>{line}</span>
+          ))}
+        </span>
         {hasDetail && !loading && (
           <CollapsibleTrigger asChild>
             <button className="flex-shrink-0 w-7 h-7 rounded-full bg-muted flex items-center justify-center transition-colors hover:bg-muted/80">
@@ -92,7 +96,7 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
     ? [
         {
           passed: contactInfoConfirmed,
-          label: 'Contact Information: confirmed',
+          label: `Contact Information: ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'}`,
           detail: undefined,
         },
         {
@@ -104,12 +108,12 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
     : [
         {
           passed: contactInfoConfirmed,
-          label: 'Contact Information: confirmed',
+          label: `Contact Information: ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'}`,
           detail: undefined,
         },
         {
           passed: txPassed,
-          label: 'Required Transactions: 100+ (50+ credited)',
+          label: 'Required Transactions: 100+\n(50+ credited)',
           detail: `Current Transactions: ${totalTransactions} total, ${creditedTransactions} credited`,
         },
         {
