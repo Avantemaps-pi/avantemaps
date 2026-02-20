@@ -25,7 +25,7 @@ async function sendOTPEmail(email: string, otp: string): Promise<boolean> {
       body: JSON.stringify({
         sender: {
           name: 'Avante Maps',
-          email: 'noreply@avantemaps.com',
+          email: 'support@avantemaps.com',
         },
         to: [{ email }],
         subject: 'Your Contact Verification Code',
