@@ -5,7 +5,6 @@ import ChatModeToggle from './ChatModeToggle';
 import ChatMessage from './ChatMessage';
 import BusinessSelectionButtons from './BusinessSelectionButtons';
 import VerificationResultCard, { VerificationMetrics } from './VerificationResultCard';
-import ContactOTPVerification from './ContactOTPVerification';
 import { Send, Image, Video } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -177,17 +176,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   />
                   {msg.verificationMetrics && (
                     <div className="mt-2">
-                      <VerificationResultCard metrics={msg.verificationMetrics} />
+                      <VerificationResultCard
+                        metrics={msg.verificationMetrics}
+                        contactEmail={msg.contactVerification?.email}
+                        contactBusinessId={msg.contactVerification?.businessId}
+                        onSendContactOTP={onSendContactOTP}
+                        onVerifyContactOTP={onVerifyContactOTP}
+                      />
                     </div>
-                  )}
-                  {msg.contactVerification && onSendContactOTP && onVerifyContactOTP && (
-                    <ContactOTPVerification
-                      email={msg.contactVerification.email}
-                      businessId={msg.contactVerification.businessId}
-                      onSendOTP={onSendContactOTP}
-                      onVerifyOTP={onVerifyContactOTP}
-                      onVerified={() => {}}
-                    />
                   )}
                   {renderAttachmentOptions(msg)}
                   {renderBusinessSelectionButtons(msg)}
