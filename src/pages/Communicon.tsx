@@ -30,7 +30,9 @@ const Communicon = () => {
     handleAttachmentOption,
     sendVerificationRequest,
     handleBusinessSelection,
-    triggerVerificationFlow
+    triggerVerificationFlow,
+    sendContactOTP,
+    verifyContactOTP,
   } = useChatState();
 
   useEffect(() => {
@@ -137,6 +139,8 @@ const Communicon = () => {
           handleAttachmentOption={handleAttachmentOptionWrapper}
           showAttachmentIcon={true}
           hasLiveChatAccess={hasPermission}
+          onSendContactOTP={sendContactOTP}
+          onVerifyContactOTP={verifyContactOTP}
         />
       </div>
 

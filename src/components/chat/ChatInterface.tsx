@@ -5,9 +5,9 @@ import ChatModeToggle from './ChatModeToggle';
 import ChatMessage from './ChatMessage';
 import BusinessSelectionButtons from './BusinessSelectionButtons';
 import VerificationResultCard, { VerificationMetrics } from './VerificationResultCard';
-import { Menu, X, Send, Image, Video } from 'lucide-react';
+import ContactOTPVerification from './ContactOTPVerification';
+import { Send, Image, Video } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { isSafeForAI } from '@/utils/contentFilter';
 import { toast } from 'sonner';
@@ -24,6 +24,10 @@ interface ChatInterfaceProps {
     timestamp: string;
     businesses?: Array<{ id: number; business_name: string; verification_status?: string | null; is_verified?: boolean }>;
     verificationMetrics?: VerificationMetrics;
+    contactVerification?: {
+      email: string;
+      businessId: number;
+    };
   }>;
   message: string;
   setMessage: (message: string) => void;
@@ -31,6 +35,8 @@ interface ChatInterfaceProps {
   handleAttachmentOption?: () => void;
   showAttachmentIcon?: boolean;
   hasLiveChatAccess?: boolean;
+  onSendContactOTP?: (email: string) => Promise<boolean>;
+  onVerifyContactOTP?: (email: string, otp: string, businessId: number) => Promise<boolean>;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -42,7 +48,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   handleSendMessage,
   handleAttachmentOption,
   showAttachmentIcon = false,
-  hasLiveChatAccess = false
+  hasLiveChatAccess = false,
+  onSendContactOTP,
+  onVerifyContactOTP,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -171,6 +179,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     <div className="mt-2">
                       <VerificationResultCard metrics={msg.verificationMetrics} />
                     </div>
+                  )}
+                  {msg.contactVerification && onSendContactOTP && onVerifyContactOTP && (
+                    <ContactOTPVerification
+                      email={msg.contactVerification.email}
+                      businessId={msg.contactVerification.businessId}
+                      onSendOTP={onSendContactOTP}
+                      onVerifyOTP={onVerifyContactOTP}
+                      onVerified={() => {}}
+                    />
                   )}
                   {renderAttachmentOptions(msg)}
                   {renderBusinessSelectionButtons(msg)}

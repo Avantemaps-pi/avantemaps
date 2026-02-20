@@ -312,6 +312,30 @@ export type Database = {
           },
         ]
       }
+      contact_otps: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          otp: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          otp: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          otp?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           created_at: string | null
