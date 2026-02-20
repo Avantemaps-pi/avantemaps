@@ -17,6 +17,7 @@ type ChatMessage = {
   timestamp: string;
   businesses?: Array<{ id: number; business_name: string; verification_status?: string | null; is_verified?: boolean }>;
   verificationMetrics?: VerificationMetrics;
+  contactVerification?: { email: string; businessId: number };
 };
 
 const getDefaultMessages = (): ChatMessage[] => [
@@ -603,8 +604,19 @@ export function useChatState() {
         const bizResult = result.results?.[0];
         const hasContactInfo = !!(business.business_name); // business exists = contact info confirmed
         
+        // Get business contact email for OTP flow
+        const { data: bizData } = await supabase
+          .from('businesses')
+          .select('contact_info')
+          .eq('id', business.id)
+          .single();
+        
+        const contactEmail = (bizData?.contact_info as any)?.email || sessionData?.session?.user?.email || '';
+        const emailVerified = (bizData?.contact_info as any)?.email_verified === true;
+        const contactInfoConfirmed = hasContactInfo && (emailVerified || !contactEmail);
+
         const metrics: VerificationMetrics = {
-          contactInfoConfirmed: hasContactInfo,
+          contactInfoConfirmed,
           totalTransactions: bizResult?.totalTransactions ?? 0,
           creditedTransactions: bizResult?.creditedTransactions ?? 0,
           uniqueWallets: bizResult?.uniqueWallets ?? 0,
@@ -614,7 +626,7 @@ export function useChatState() {
         };
 
         if (bizResult?.verified) {
-          const successMessage = {
+          const successMessage: ChatMessage = {
             id: Date.now() + 2,
             text: `✓ "${business.business_name}" has been verified successfully!`,
             sender: "support",
@@ -628,12 +640,16 @@ export function useChatState() {
             description: `"${business.business_name}" is now verified.`,
           });
         } else {
-          const failMessage = {
+          const failMessage: ChatMessage = {
             id: Date.now() + 2,
             text: `Verification for "${business.business_name}" was not approved.`,
             sender: "support",
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             verificationMetrics: metrics,
+            // Attach OTP prompt if contact info is not confirmed and we have an email
+            ...(!contactInfoConfirmed && contactEmail
+              ? { contactVerification: { email: contactEmail, businessId: business.id } }
+              : {}),
           };
           setMessages(prev => [...prev, failMessage]);
 
@@ -660,6 +676,61 @@ export function useChatState() {
     }
   }, [awaitingVerificationBusinessSelection, updateVerificationStatus, logVerificationRequest, toast]);
 
+  const sendContactOTP = useCallback(async (email: string): Promise<boolean> => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      const response = await fetch(
+        'https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/contact-otp',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
+          },
+          body: JSON.stringify({ action: 'send', email }),
+        }
+      );
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const verifyContactOTP = useCallback(async (email: string, otp: string, businessId: number): Promise<boolean> => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      const response = await fetch(
+        'https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/contact-otp',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
+          },
+          body: JSON.stringify({ action: 'verify', email, otp, business_id: businessId }),
+        }
+      );
+      if (response.ok) {
+        // Update the message to mark contact info as confirmed
+        setMessages(prev => prev.map(msg =>
+          msg.contactVerification?.email === email && msg.contactVerification?.businessId === businessId
+            ? {
+                ...msg,
+                verificationMetrics: msg.verificationMetrics
+                  ? { ...msg.verificationMetrics, contactInfoConfirmed: true }
+                  : msg.verificationMetrics,
+              }
+            : msg
+        ));
+      }
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
   return {
     message,
     setMessage,
@@ -672,6 +743,9 @@ export function useChatState() {
     handleAttachmentOption,
     sendVerificationRequest,
     handleBusinessSelection,
-    triggerVerificationFlow
+    triggerVerificationFlow,
+    sendContactOTP,
+    verifyContactOTP,
   };
 }
+
