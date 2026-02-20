@@ -85,7 +85,7 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
   onVerifyContactOTP,
 }) => {
   const {
-    contactInfoConfirmed,
+    contactInfoConfirmed: initialContactInfoConfirmed,
     totalTransactions,
     creditedTransactions,
     uniqueWallets,
@@ -94,8 +94,14 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
     walletMissing,
   } = metrics;
 
+  const [contactInfoConfirmed, setContactInfoConfirmed] = useState(initialContactInfoConfirmed);
   const [revealed, setRevealed] = useState<boolean[]>([false, false, false]);
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+
+  const handleVerified = () => {
+    setContactInfoConfirmed(true);
+    setOtpDialogOpen(false);
+  };
 
   useEffect(() => {
     const timers = REVEAL_DELAYS.map((delay, i) =>
@@ -118,7 +124,7 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
   const confirmButton = canShowOTP ? (
     <button
       onClick={() => setOtpDialogOpen(true)}
-      className="text-xs font-semibold px-3 py-1 rounded-md bg-green-600 hover:bg-green-700 text-white transition-colors"
+      className="text-xs font-semibold px-3 py-1 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
     >
       Confirm
     </button>
@@ -191,7 +197,7 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
               businessId={contactBusinessId}
               onSendOTP={onSendContactOTP}
               onVerifyOTP={onVerifyContactOTP}
-              onVerified={() => setOtpDialogOpen(false)}
+              onVerified={handleVerified}
             />
           </DialogContent>
         </Dialog>
