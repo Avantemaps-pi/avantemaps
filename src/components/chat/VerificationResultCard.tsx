@@ -97,7 +97,7 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
         {
           passed: contactInfoConfirmed,
           label: `Contact Information: ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'}`,
-          detail: undefined,
+          detail: `Contact information is ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'} via OTP email verification.`,
         },
         {
           passed: false,
@@ -109,7 +109,7 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
         {
           passed: contactInfoConfirmed,
           label: `Contact Information: ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'}`,
-          detail: undefined,
+          detail: `Contact information is ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'} via OTP email verification.`,
         },
         {
           passed: txPassed,
