@@ -97,7 +97,7 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
   const walletsPassed = uniqueWallets >= 10;
 
   const confirmButton = !contactInfoConfirmed ? (
-    <button className="text-xs font-semibold px-3 py-1 rounded-full bg-green-600 hover:bg-green-700 text-white transition-colors">
+    <button className="text-xs font-semibold px-3 py-1 rounded-md bg-green-600 hover:bg-green-700 text-white transition-colors">
       Confirm
     </button>
   ) : undefined;
