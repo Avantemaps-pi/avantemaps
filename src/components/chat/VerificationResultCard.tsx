@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle2, XCircle, Loader2, ChevronDown } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import ContactOTPVerification from './ContactOTPVerification';
 
 export interface VerificationMetrics {
   contactInfoConfirmed: boolean;
@@ -65,9 +67,23 @@ const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail, c
   );
 };
 
-const REVEAL_DELAYS = [300, 900, 1500]; // ms delay for each item
+const REVEAL_DELAYS = [300, 900, 1500];
 
-const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ metrics }) => {
+interface VerificationResultCardProps {
+  metrics: VerificationMetrics;
+  contactEmail?: string;
+  contactBusinessId?: number;
+  onSendContactOTP?: (email: string) => Promise<boolean>;
+  onVerifyContactOTP?: (email: string, otp: string, businessId: number) => Promise<boolean>;
+}
+
+const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
+  metrics,
+  contactEmail,
+  contactBusinessId,
+  onSendContactOTP,
+  onVerifyContactOTP,
+}) => {
   const {
     contactInfoConfirmed,
     totalTransactions,
@@ -79,6 +95,7 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
   } = metrics;
 
   const [revealed, setRevealed] = useState<boolean[]>([false, false, false]);
+  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
 
   useEffect(() => {
     const timers = REVEAL_DELAYS.map((delay, i) =>
@@ -96,8 +113,13 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
   const txPassed = totalTransactions >= 100 && creditedTransactions >= 50;
   const walletsPassed = uniqueWallets >= 10;
 
-  const confirmButton = !contactInfoConfirmed ? (
-    <button className="text-xs font-semibold px-3 py-1 rounded-md bg-green-600 hover:bg-green-700 text-white transition-colors">
+  const canShowOTP = !contactInfoConfirmed && contactEmail && contactBusinessId && onSendContactOTP && onVerifyContactOTP;
+
+  const confirmButton = canShowOTP ? (
+    <button
+      onClick={() => setOtpDialogOpen(true)}
+      className="text-xs font-semibold px-3 py-1 rounded-md bg-green-600 hover:bg-green-700 text-white transition-colors"
+    >
       Confirm
     </button>
   ) : undefined;
@@ -139,25 +161,42 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
       ];
 
   return (
-    <div className="bg-card border rounded-lg p-4 overflow-hidden">
-      <h4 className="font-bold text-lg mb-1">
-        {verified ? '✓ Verification Approved' : 'Verification Not Approved'}
-      </h4>
-      <p className="text-sm text-muted-foreground mb-3">{businessName}</p>
+    <>
+      <div className="bg-card border rounded-lg p-4 overflow-hidden">
+        <h4 className="font-bold text-lg mb-1">
+          {verified ? '✓ Verification Approved' : 'Verification Not Approved'}
+        </h4>
+        <p className="text-sm text-muted-foreground mb-3">{businessName}</p>
 
-      <div className="space-y-1">
-        {items.map((item, i) => (
-          <CheckItem
-            key={i}
-            passed={item.passed}
-            loading={!revealed[i]}
-            label={item.label}
-            detail={item.detail}
-            collapsibleContent={item.collapsibleContent}
-          />
-        ))}
+        <div className="space-y-1">
+          {items.map((item, i) => (
+            <CheckItem
+              key={i}
+              passed={item.passed}
+              loading={!revealed[i]}
+              label={item.label}
+              detail={item.detail}
+              collapsibleContent={item.collapsibleContent}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+
+      {canShowOTP && (
+        <Dialog open={otpDialogOpen} onOpenChange={setOtpDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogTitle className="sr-only">Verify Contact Information</DialogTitle>
+            <ContactOTPVerification
+              email={contactEmail}
+              businessId={contactBusinessId}
+              onSendOTP={onSendContactOTP}
+              onVerifyOTP={onVerifyContactOTP}
+              onVerified={() => setOtpDialogOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 };
 
