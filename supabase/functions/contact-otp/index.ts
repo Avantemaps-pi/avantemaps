@@ -5,14 +5,54 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// In-memory OTP store (keyed by email, value: { otp, expiresAt })
-// For production, use a DB table. This works for serverless since each invocation is short-lived,
-// but we'll use Supabase to persist OTPs.
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const brevoApiKey = Deno.env.get('BREVO_API_KEY')!;
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function sendOTPEmail(email: string, otp: string): Promise<boolean> {
+  try {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': brevoApiKey,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: {
+          name: 'Avante Maps',
+          email: 'noreply@avantemaps.com',
+        },
+        to: [{ email }],
+        subject: 'Your Contact Verification Code',
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+            <h2 style="color: #1a1a1a;">Verify Your Contact Information</h2>
+            <p style="color: #555;">Use the code below to verify your business contact email on Avante Maps. This code expires in <strong>10 minutes</strong>.</p>
+            <div style="background: #f4f4f4; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0;">
+              <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #1a1a1a;">${otp}</span>
+            </div>
+            <p style="color: #999; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
+          </div>
+        `,
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      console.error(`Brevo API error [${response.status}]:`, body);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error('sendOTPEmail error:', err);
+    return false;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -33,11 +73,9 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'send') {
-      // Generate and store OTP in a temporary table
       const code = generateOTP();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min expiry
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-      // Upsert OTP into contact_otps table
       const { error: upsertError } = await supabase
         .from('contact_otps')
         .upsert({ email, otp: code, expires_at: expiresAt, verified: false }, { onConflict: 'email' });
@@ -50,36 +88,12 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Send OTP via Supabase Auth email (magic link style) - we use the built-in email
-      // Since we can't send custom transactional emails without an SMTP configured, 
-      // we'll use Supabase's built-in OTP auth email flow
-      const { error: emailError } = await supabase.auth.admin.generateLink({
-        type: 'email',
-        email,
-        options: {
-          data: { otp_code: code },
-        },
-      });
-
-      // Fallback: even if generateLink fails, we can still proceed since OTP is stored
-      // The real email would require SMTP setup. For now, we'll log and return success
-      // In production, integrate with Resend/SendGrid here.
-      if (emailError) {
-        console.warn('Email send warning (OTP stored):', emailError.message);
-        // Still return success since OTP is stored — replace with real email service
-      }
-
-      // Try using Supabase Auth OTP directly (sends email automatically if SMTP configured)
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-          data: { verification_otp: code },
-        },
-      });
-
-      if (otpError) {
-        console.warn('Auth OTP warning:', otpError.message);
+      const sent = await sendOTPEmail(email, code);
+      if (!sent) {
+        return new Response(JSON.stringify({ error: 'Failed to send OTP email' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       return new Response(JSON.stringify({ success: true, message: 'OTP sent' }), {
@@ -95,7 +109,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Fetch stored OTP
       const { data: stored, error: fetchError } = await supabase
         .from('contact_otps')
         .select('*')
@@ -130,13 +143,11 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Mark OTP as verified
       await supabase
         .from('contact_otps')
         .update({ verified: true })
         .eq('email', email);
 
-      // Update business contact_info to mark email as verified
       const { data: biz } = await supabase
         .from('businesses')
         .select('contact_info')
