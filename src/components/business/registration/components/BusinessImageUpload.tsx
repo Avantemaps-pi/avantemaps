@@ -186,6 +186,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
       URL.revokeObjectURL(imageToCrop);
     }
     setImageToCrop(null);
+    setCropperOpen(false);
     onAddCroppedImage(croppedFile);
   };
 
