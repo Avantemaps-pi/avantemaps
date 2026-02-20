@@ -18,15 +18,15 @@ interface CheckItemProps {
   loading: boolean;
   label: string;
   detail?: string;
-  actionButton?: React.ReactNode;
+  collapsibleContent?: React.ReactNode;
 }
 
-const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail, actionButton }) => {
+const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail, collapsibleContent }) => {
   const [open, setOpen] = useState(false);
-  const hasDetail = !!detail;
+  const hasExpandable = !!detail || !!collapsibleContent;
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen} disabled={!hasDetail || loading}>
+    <Collapsible open={open} onOpenChange={setOpen} disabled={!hasExpandable || loading}>
       <div className="flex items-center gap-2 py-1">
         <div className="flex-shrink-0">
           {loading ? (
@@ -42,10 +42,7 @@ const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail, a
             <span key={i} className={i > 0 ? 'block text-xs text-muted-foreground' : ''}>{line}</span>
           ))}
         </span>
-        {actionButton && !loading && (
-          <div className="flex-shrink-0">{actionButton}</div>
-        )}
-        {hasDetail && !loading && (
+        {hasExpandable && !loading && (
           <CollapsibleTrigger asChild>
             <button className="flex-shrink-0 w-7 h-7 rounded-full bg-muted flex items-center justify-center transition-colors hover:bg-muted/80">
               <ChevronDown
@@ -56,11 +53,14 @@ const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail, a
           </CollapsibleTrigger>
         )}
       </div>
-      {hasDetail && (
-        <CollapsibleContent>
+      <CollapsibleContent>
+        {detail && (
           <p className="text-muted-foreground text-xs whitespace-nowrap pl-7 pb-1">{detail}</p>
-        </CollapsibleContent>
-      )}
+        )}
+        {collapsibleContent && (
+          <div className="pl-7 pb-2">{collapsibleContent}</div>
+        )}
+      </CollapsibleContent>
     </Collapsible>
   );
 };
@@ -108,13 +108,13 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
           passed: contactInfoConfirmed,
           label: `Contact Information: ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'}`,
           detail: undefined,
-          actionButton: confirmButton,
+          collapsibleContent: confirmButton,
         },
         {
           passed: false,
           label: 'Pi Wallet: not registered',
           detail: 'Please add a Pi wallet address to your business.',
-          actionButton: undefined,
+          collapsibleContent: undefined,
         },
       ]
     : [
@@ -122,19 +122,19 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
           passed: contactInfoConfirmed,
           label: `Contact Information: ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'}`,
           detail: undefined,
-          actionButton: confirmButton,
+          collapsibleContent: confirmButton,
         },
         {
           passed: txPassed,
           label: 'Current Transactions: 100+\n(50+ credited)',
           detail: `Required Transactions: ${totalTransactions} total, ${creditedTransactions} credited`,
-          actionButton: undefined,
+          collapsibleContent: undefined,
         },
         {
           passed: walletsPassed,
           label: 'Current Wallets Transacted: 10+',
           detail: `Required Wallets Transacted: ${uniqueWallets}`,
-          actionButton: undefined,
+          collapsibleContent: undefined,
         },
       ];
 
@@ -153,7 +153,7 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
             loading={!revealed[i]}
             label={item.label}
             detail={item.detail}
-            actionButton={item.actionButton}
+            collapsibleContent={item.collapsibleContent}
           />
         ))}
       </div>
