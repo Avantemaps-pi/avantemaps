@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 export interface VerificationMetrics {
   contactInfoConfirmed: boolean;
@@ -19,23 +20,42 @@ interface CheckItemProps {
   detail?: string;
 }
 
-const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail }) => (
-  <div className="flex items-start gap-2 py-1">
-    <div className="mt-0.5 flex-shrink-0">
-      {loading ? (
-        <Loader2 size={18} className="animate-spin text-muted-foreground" />
-      ) : passed ? (
-        <CheckCircle2 size={18} className="text-primary" />
-      ) : (
-        <XCircle size={18} className="text-destructive" />
+const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail }) => {
+  const [open, setOpen] = useState(false);
+  const hasDetail = !!detail;
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} disabled={!hasDetail || loading}>
+      <div className="flex items-center gap-2 py-1">
+        <div className="flex-shrink-0">
+          {loading ? (
+            <Loader2 size={18} className="animate-spin text-muted-foreground" />
+          ) : passed ? (
+            <CheckCircle2 size={18} className="text-primary" />
+          ) : (
+            <XCircle size={18} className="text-destructive" />
+          )}
+        </div>
+        <span className="text-sm font-medium whitespace-nowrap flex-1">{label}</span>
+        {hasDetail && !loading && (
+          <CollapsibleTrigger asChild>
+            <button className="flex-shrink-0 w-7 h-7 rounded-full bg-muted flex items-center justify-center transition-colors hover:bg-muted/80">
+              <ChevronDown
+                size={14}
+                className={`text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </CollapsibleTrigger>
+        )}
+      </div>
+      {hasDetail && (
+        <CollapsibleContent>
+          <p className="text-muted-foreground text-xs whitespace-nowrap pl-7 pb-1">{detail}</p>
+        </CollapsibleContent>
       )}
-    </div>
-    <div className="text-sm min-w-0">
-      <span className="font-medium whitespace-nowrap">{label}</span>
-      {detail && <p className="text-muted-foreground text-xs whitespace-nowrap">{detail}</p>}
-    </div>
-  </div>
-);
+    </Collapsible>
+  );
+};
 
 const REVEAL_DELAYS = [300, 900, 1500]; // ms delay for each item
 
