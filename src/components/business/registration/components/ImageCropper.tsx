@@ -128,8 +128,12 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
         lastModified: Date.now(),
       });
 
+      // Reset state before calling callbacks
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setRotation(0);
+
       onCropComplete(croppedFile);
-      onClose();
     } catch (error) {
       console.error('Error cropping image:', error);
     } finally {
