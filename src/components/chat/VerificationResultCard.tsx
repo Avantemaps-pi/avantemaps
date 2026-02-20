@@ -18,9 +18,10 @@ interface CheckItemProps {
   loading: boolean;
   label: string;
   detail?: string;
+  actionButton?: React.ReactNode;
 }
 
-const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail }) => {
+const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail, actionButton }) => {
   const [open, setOpen] = useState(false);
   const hasDetail = !!detail;
 
@@ -41,6 +42,9 @@ const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail })
             <span key={i} className={i > 0 ? 'block text-xs text-muted-foreground' : ''}>{line}</span>
           ))}
         </span>
+        {actionButton && !loading && (
+          <div className="flex-shrink-0">{actionButton}</div>
+        )}
         {hasDetail && !loading && (
           <CollapsibleTrigger asChild>
             <button className="flex-shrink-0 w-7 h-7 rounded-full bg-muted flex items-center justify-center transition-colors hover:bg-muted/80">
@@ -92,34 +96,45 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
   const txPassed = totalTransactions >= 100 && creditedTransactions >= 50;
   const walletsPassed = uniqueWallets >= 10;
 
+  const confirmButton = !contactInfoConfirmed ? (
+    <button className="text-xs font-semibold px-3 py-1 rounded-full bg-green-600 hover:bg-green-700 text-white transition-colors">
+      Confirm
+    </button>
+  ) : undefined;
+
   const items = walletMissing
     ? [
         {
           passed: contactInfoConfirmed,
           label: `Contact Information: ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'}`,
-          detail: `Contact information is ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'} via OTP email verification.`,
+          detail: undefined,
+          actionButton: confirmButton,
         },
         {
           passed: false,
           label: 'Pi Wallet: not registered',
           detail: 'Please add a Pi wallet address to your business.',
+          actionButton: undefined,
         },
       ]
     : [
         {
           passed: contactInfoConfirmed,
           label: `Contact Information: ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'}`,
-          detail: `Contact information is ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'} via OTP email verification.`,
+          detail: undefined,
+          actionButton: confirmButton,
         },
         {
           passed: txPassed,
           label: 'Current Transactions: 100+\n(50+ credited)',
           detail: `Required Transactions: ${totalTransactions} total, ${creditedTransactions} credited`,
+          actionButton: undefined,
         },
         {
           passed: walletsPassed,
           label: 'Current Wallets Transacted: 10+',
           detail: `Required Wallets Transacted: ${uniqueWallets}`,
+          actionButton: undefined,
         },
       ];
 
@@ -138,6 +153,7 @@ const VerificationResultCard: React.FC<{ metrics: VerificationMetrics }> = ({ me
             loading={!revealed[i]}
             label={item.label}
             detail={item.detail}
+            actionButton={item.actionButton}
           />
         ))}
       </div>
