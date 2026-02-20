@@ -61,7 +61,7 @@ export const formSchema = z.object({
     }
   }),
   countryCode: z.string().default('+1'),
-  phone: z.string().min(1, { message: "Phone number is required" }),
+  phone: z.string().min(1, { message: "Phone number is required" }).min(4, { message: "Phone number is too short" }).max(15, { message: "Phone number is too long" }),
   email: z.string().email({ message: "Invalid email address" }),
   website: z.string().optional().refine((val) => {
     if (!val) return true;
