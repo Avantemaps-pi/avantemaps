@@ -52,10 +52,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onVerifyContactOTP,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef(true);
 
   // Auto-scroll to latest message when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: isInitialMount.current ? 'instant' : 'smooth' });
+    isInitialMount.current = false;
   }, [messages]);
 
   const handleValidatedSendMessage = () => {
