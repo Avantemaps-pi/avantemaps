@@ -56,6 +56,7 @@ export interface Place {
   images?: string[];
   website?: string;
   phone?: string;
+  email?: string;
   hours?: {
     [key: string]: string;
   };

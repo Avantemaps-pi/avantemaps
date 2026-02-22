@@ -123,6 +123,7 @@ export const useBusinessData = () => {
             images: business.images || [],
             website: business.contact_info?.website || "",
             phone: business.contact_info?.phone || "",
+            email: business.contact_info?.email || "",
             hours: formatHours(business.hours) || {},
             isVerified: business.is_verified || false,
             isCertified: business.is_certified || false,
