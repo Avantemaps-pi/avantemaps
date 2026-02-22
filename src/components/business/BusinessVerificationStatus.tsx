@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Info, Shield, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface BusinessVerificationStatusProps {
   isCertification?: boolean;
@@ -60,14 +61,25 @@ const BusinessVerificationStatus = ({ isCertification = false }: BusinessVerific
               <Shield className="h-5 w-5 mr-2 text-blue-500" />
               <span className="text-sm font-medium">Certification Status</span>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-xs ml-2"
-              onClick={handleRequestClick}
-            >
-              Request
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs ml-2 opacity-50 cursor-not-allowed"
+                      disabled
+                    >
+                      Request
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Not available yet</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <div className="mt-1 pl-7">
             <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 flex items-center gap-1 self-start mb-1 w-32 justify-center">
