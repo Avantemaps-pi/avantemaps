@@ -156,7 +156,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             />
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            {chatMode === 'ai' ? "Connect with Avante Maps AI assistant" : "Connect with Avante Maps LIVE Intern"}
+            {chatMode === 'ai' ? "Connect with Avante Maps Bot assistant" : "Connect with Avante Maps LIVE Intern"}
           </p>
         </div>
   
