@@ -154,7 +154,7 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
         },
         {
           passed: txPassed,
-          label: `Current\nTransactions: ${totalTransactions}\n(${creditedTransactions} credited)`,
+          label: `Current\nTransactions: ${totalTransactions} (${creditedTransactions} credited)`,
           detail: `Required\nTransactions: 100+ total, 50+ credited`,
           collapsibleContent: undefined,
         },
