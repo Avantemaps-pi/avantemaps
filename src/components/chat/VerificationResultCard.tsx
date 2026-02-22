@@ -75,6 +75,7 @@ interface VerificationResultCardProps {
   contactBusinessId?: number;
   onSendContactOTP?: (email: string) => Promise<boolean>;
   onVerifyContactOTP?: (email: string, otp: string, businessId: number) => Promise<boolean>;
+  animate?: boolean;
 }
 
 const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
@@ -83,6 +84,7 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
   contactBusinessId,
   onSendContactOTP,
   onVerifyContactOTP,
+  animate = true,
 }) => {
   const {
     contactInfoConfirmed: initialContactInfoConfirmed,
@@ -95,7 +97,7 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
   } = metrics;
 
   const [contactInfoConfirmed, setContactInfoConfirmed] = useState(initialContactInfoConfirmed);
-  const [revealed, setRevealed] = useState<boolean[]>([false, false, false]);
+  const [revealed, setRevealed] = useState<boolean[]>(animate ? [false, false, false] : [true, true, true]);
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
 
   const handleVerified = () => {

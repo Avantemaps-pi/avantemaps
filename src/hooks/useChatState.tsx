@@ -18,6 +18,7 @@ type ChatMessage = {
   businesses?: Array<{ id: number; business_name: string; verification_status?: string | null; is_verified?: boolean }>;
   verificationMetrics?: VerificationMetrics;
   contactVerification?: { email: string; businessId: number };
+  animateVerification?: boolean;
 };
 
 const getDefaultMessages = (): ChatMessage[] => [
@@ -632,6 +633,7 @@ export function useChatState() {
             sender: "support",
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             verificationMetrics: metrics,
+            animateVerification: true,
           };
           setMessages(prev => [...prev, successMessage]);
 
@@ -646,6 +648,7 @@ export function useChatState() {
             sender: "support",
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             verificationMetrics: metrics,
+            animateVerification: true,
             // Attach OTP prompt if contact info is not confirmed and we have an email
             ...(!contactInfoConfirmed && contactEmail
               ? { contactVerification: { email: contactEmail, businessId: business.id } }
