@@ -100,16 +100,11 @@ export const performLogin = async (
         setPendingAuth(false);
         return;
       }
-      // Check if we're in Pi Browser (with robust fallback for trusted domains)
-      const uaPiBrowser = isPiBrowser();
+      // Check if we're in Pi Browser (isPiBrowser checks UA + SDK presence)
       const host = window.location.hostname;
       const hasPiSdk = typeof window.Pi !== 'undefined';
-      const isTrustedDomain =
-        host.includes('avantemaps.com') ||
-        host.endsWith('.pinet.com') ||
-        host.includes('pinet');
-
-      const inPiBrowser = uaPiBrowser || (isTrustedDomain && hasPiSdk);
+      const uaPiBrowser = isPiBrowser();
+      const inPiBrowser = uaPiBrowser;
       
       // Log detection results for debugging
       secureLog.info("🔍 Browser detection:", {
@@ -118,7 +113,7 @@ export const performLogin = async (
         inPiBrowser,
         hostname: host,
         hasPiSdk,
-        isTrustedDomain,
+        
       });
       
       // PRODUCTION: Require Pi Browser - no fallback to test mode (but allow robust detection)
