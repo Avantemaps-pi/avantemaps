@@ -63,27 +63,9 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
               </div>
             </div>
             
-            {/* Website */}
-            {place.website && (
-              <div>
-                <div className="flex items-center space-x-2 mb-2">
-                  <Globe className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <h3 className="text-sm font-medium text-gray-700">Website</h3>
-                </div>
-                <a 
-                  href={place.website}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-avante-blue flex items-center text-xs hover:underline"
-                >
-                  {place.website.replace(/(^\w+:|^)\/\//, '')}
-                  <ExternalLink className="h-3 w-3 ml-1" />
-                </a>
-              </div>
-            )}
           </div>
 
-          {/* Right Column - Categories & Contact Details */}
+          {/* Right Column - Categories & Contact Details & Website */}
           <div className="space-y-4 ml-[-10px]">
             {/* Categories */}
             <div>
@@ -116,6 +98,25 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
                 )}
               </div>
             </div>
+
+            {/* Website */}
+            {place.website && (
+              <div>
+                <div className="flex items-center space-x-2 mb-2">
+                  <Globe className="h-5 w-5 text-green-500 flex-shrink-0" />
+                  <h3 className="text-sm font-medium text-gray-700">Website</h3>
+                </div>
+                <a 
+                  href={place.website}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-avante-blue flex items-center text-xs hover:underline"
+                >
+                  {place.website.replace(/(^\w+:|^)\/\//, '')}
+                  <ExternalLink className="h-3 w-3 ml-1" />
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
