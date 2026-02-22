@@ -39,10 +39,8 @@ const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail, c
             <XCircle size={18} className="text-destructive" />
           )}
         </div>
-        <span className="text-sm font-medium flex-1">
-          {label.split('\n').map((line, i) => (
-            <span key={i} className={i > 0 ? 'block text-xs text-muted-foreground' : ''}>{line}</span>
-          ))}
+        <span className="text-sm font-medium flex-1 break-words">
+          {label}
         </span>
         {hasExpandable && !loading && (
           <CollapsibleTrigger asChild>
