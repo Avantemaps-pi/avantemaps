@@ -39,7 +39,7 @@ const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail, c
             <XCircle size={18} className="text-destructive" />
           )}
         </div>
-        <span className="text-sm font-medium flex-1 break-words">
+        <span className="text-sm font-medium flex-1 break-words whitespace-pre-line">
           {label}
         </span>
         {hasExpandable && !loading && (
@@ -154,13 +154,13 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
         },
         {
           passed: txPassed,
-          label: `Current Transactions: ${totalTransactions} (${creditedTransactions} credited)`,
+          label: `Current\nTransactions: ${totalTransactions}\n(${creditedTransactions} credited)`,
           detail: `Required Transactions: 100+ total, 50+ credited`,
           collapsibleContent: undefined,
         },
         {
           passed: walletsPassed,
-          label: `Current Wallets Transacted: ${uniqueWallets}`,
+          label: `Current\nWallets Transacted: ${uniqueWallets}`,
           detail: `Required Wallets Transacted: 10+`,
           collapsibleContent: undefined,
         },
