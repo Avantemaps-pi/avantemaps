@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { ExternalLink, Clock, Phone, Mail, Globe, Tag } from 'lucide-react';
+import { ExternalLink, Clock, Phone, Mail, Globe, Tag, AtSign } from 'lucide-react';
 import { Place } from '@/types/business';
 
 interface DetailsCardProps {
@@ -95,6 +95,9 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
                   <p>Phone: {place.phone}</p>
                 ) : (
                   <p className="text-gray-400 italic">No phone number</p>
+                )}
+                {place.email && (
+                  <p>Email: {place.email}</p>
                 )}
               </div>
             </div>
