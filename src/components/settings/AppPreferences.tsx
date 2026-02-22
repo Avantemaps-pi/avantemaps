@@ -55,8 +55,8 @@ const AppPreferences = ({
               <Label htmlFor="color-scheme">Color Scheme</Label>
               <p className="text-muted-foreground text-sm">Choose between light, dark, or system theme.</p>
             </div>
-            <Select value={colorScheme} onValueChange={onColorSchemeChange}>
-              <SelectTrigger className="w-full sm:w-[180px] mt-2 sm:mt-0">
+          <Select value={colorScheme} onValueChange={onColorSchemeChange} name="color-scheme">
+              <SelectTrigger id="color-scheme" className="w-full sm:w-[180px] mt-2 sm:mt-0">
                 <SelectValue placeholder="Select color scheme" />
               </SelectTrigger>
               <SelectContent>
