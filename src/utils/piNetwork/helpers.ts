@@ -28,14 +28,10 @@ export const isPiBrowser = (): boolean => {
     // Fallback: in production custom domains, treat a loaded Pi SDK as Pi Browser
     // This avoids blocking real users when UA strings change
     if (typeof window !== "undefined") {
-      const host = window.location?.hostname || "";
       const hasPiSdk = typeof (window as any).Pi !== "undefined";
-      const isTrustedDomain =
-        host.includes("avantemaps.com") ||
-        host.endsWith(".pinet.com") ||
-        host.includes("pinet");
 
-      if (hasPiSdk && isTrustedDomain) {
+      // Pi SDK only loads inside Pi Browser, so its presence is reliable
+      if (hasPiSdk) {
         return true;
       }
     }
