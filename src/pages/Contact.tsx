@@ -5,12 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
+
 const Contact = () => {
   return <AppLayout title="Contact Us">
       <div className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 animate-fade-in">
         <div className="space-y-4">
-          
           <p className="text-muted-foreground">Have questions or feedback? We'd love to hear from you.</p>
         </div>
 
@@ -115,25 +116,27 @@ const Contact = () => {
               Quick answers to common questions
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <h3 className="font-medium">What is Avante Maps?</h3>
-              <p className="text-sm text-muted-foreground">
-                Avante Maps is a platform that helps users find businesses that accept Pi cryptocurrency as payment.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-medium">How do I register my business?</h3>
-              <p className="text-sm text-muted-foreground">
-                You can register your business by clicking on the "Register Business" option in the navigation menu and following the steps.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-medium">Is Avante Maps affiliated with Pi Network?</h3>
-              <p className="text-sm text-muted-foreground">
-                Avante Maps is an independent platform created by  Pi Network enthusiast to support the Pi ecosystem.
-              </p>
-            </div>
+          <CardContent>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="item-1">
+                <AccordionTrigger>What is Avante Maps?</AccordionTrigger>
+                <AccordionContent>
+                  Avante Maps is a platform that helps users find businesses that accept Pi cryptocurrency as payment.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-2">
+                <AccordionTrigger>How do I register my business?</AccordionTrigger>
+                <AccordionContent>
+                  You can register your business by clicking on the "Register Business" option in the navigation menu and following the steps.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-3">
+                <AccordionTrigger>Is Avante Maps affiliated with Pi Network?</AccordionTrigger>
+                <AccordionContent>
+                  Avante Maps is an independent platform created by Pi Network enthusiast to support the Pi ecosystem.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </CardContent>
         </Card>
 
