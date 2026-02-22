@@ -57,9 +57,11 @@ const ProfileSettings = ({
           ) : (
             <Input
               id="username"
+              name="username"
               placeholder="username"
               value={user?.username || ''}
               readOnly
+              autoComplete="username"
               className="bg-gray-100 h-9"
             />
           )}
@@ -75,9 +77,11 @@ const ProfileSettings = ({
           ) : (
             <Input
               id="wallet"
+              name="wallet"
               placeholder="Not provided"
               value={user?.walletAddress || ''}
               readOnly
+              autoComplete="off"
               className="bg-gray-100 h-9"
             />
           )}
@@ -106,8 +110,8 @@ const ProfileSettings = ({
 
         <div className="space-y-1 sm:space-y-2">
           <Label htmlFor="language" className="text-sm">Language Preference</Label>
-          <Select value={language} onValueChange={setLanguage}>
-            <SelectTrigger className="h-9">
+          <Select value={language} onValueChange={setLanguage} name="language">
+            <SelectTrigger id="language" className="h-9">
               <SelectValue placeholder="Select language" />
             </SelectTrigger>
             <SelectContent>
