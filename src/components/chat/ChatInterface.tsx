@@ -27,6 +27,7 @@ interface ChatInterfaceProps {
       email: string;
       businessId: number;
     };
+    animateVerification?: boolean;
   }>;
   message: string;
   setMessage: (message: string) => void;
@@ -184,6 +185,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         contactBusinessId={msg.contactVerification?.businessId}
                         onSendContactOTP={onSendContactOTP}
                         onVerifyContactOTP={onVerifyContactOTP}
+                        animate={msg.animateVerification ?? false}
                       />
                     </div>
                   )}
