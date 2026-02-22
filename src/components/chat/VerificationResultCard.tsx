@@ -55,7 +55,7 @@ const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail, c
       </div>
       <CollapsibleContent>
         {detail && (
-          <p className="text-muted-foreground text-xs whitespace-nowrap pl-7 pb-1">{detail}</p>
+          <p className="text-muted-foreground text-xs whitespace-pre-line pl-7 pb-1">{detail}</p>
         )}
         {collapsibleContent && (
           <div className="pl-7 pb-2">{collapsibleContent}</div>
@@ -155,13 +155,13 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
         {
           passed: txPassed,
           label: `Current\nTransactions: ${totalTransactions}\n(${creditedTransactions} credited)`,
-          detail: `Required Transactions: 100+ total, 50+ credited`,
+          detail: `Required\nTransactions: 100+ total, 50+ credited`,
           collapsibleContent: undefined,
         },
         {
           passed: walletsPassed,
           label: `Current\nWallets Transacted: ${uniqueWallets}`,
-          detail: `Required Wallets Transacted: 10+`,
+          detail: `Required\nWallets Transacted: 10+`,
           collapsibleContent: undefined,
         },
       ];
