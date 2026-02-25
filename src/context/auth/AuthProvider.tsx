@@ -455,18 +455,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
+    // On reload/refresh, if we have a valid Supabase session, just refresh user data
+    // without re-triggering Pi.authenticate(). The Pi access token is intentionally
+    // NOT stored client-side, so we can't re-validate it — but the Supabase session
+    // is the authoritative session indicator.
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      secureLog.warn('No active Supabase session during refresh — user needs to re-login');
+      return;
+    }
+
     // Only show loading for user-initiated refreshes, not background ones
     if (!silent) {
       safeSetIsLoading(true);
     }
     try {
-      const stillValid = await isTokenValid(user?.accessToken ?? '');
-      if (!stillValid) {
-        secureLog.warn('Token expired — triggering re-login');
-        await login();
-        return;
-      }
-
       await refreshUserDataService(user, safeSetUser, silent ? () => {} : safeSetIsLoading);
       secureLog.info('User data refreshed');
       setLastRefresh(now);
@@ -477,7 +480,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         safeSetIsLoading(false);
       }
     }
-  }, [user, isSdkInitialized, lastRefresh, login, ensureSdkInitialized]);
+  }, [user, isSdkInitialized, lastRefresh, ensureSdkInitialized]);
 
   // silent refresh when appropriate (doesn't show loading indicator)
   useEffect(() => {
@@ -518,18 +521,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isAdmin = user?.roles?.includes('admin') ?? false;
 
-  // runtime token monitor
+  // runtime session monitor - check Supabase session validity periodically
+  // Does NOT re-trigger Pi.authenticate(); just verifies the session is still active
   useEffect(() => {
-    if (!user?.accessToken) return;
+    if (!user) return;
     const interval = setInterval(async () => {
-      const stillValid = await isTokenValid(user.accessToken);
-      if (!stillValid) {
-        secureLog.warn('Runtime token expired, reauthenticating');
-        await login();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        secureLog.warn('Supabase session expired, logging out');
+        logout();
       }
     }, 10 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [user, login]);
+  }, [user, logout]);
 
   // app-ready event
   useEffect(() => {
