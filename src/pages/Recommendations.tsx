@@ -25,7 +25,7 @@ const Recommendations = () => {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'name' | 'rating' | 'distance'>('name');
+  const [sortBy, setSortBy] = useState<'rating' | 'distance'>('rating');
   const { avanteTopChoice, recommendedForYou, isLoading } = useRecommendations();
   const recommendedForYouRef = useRef<HTMLElement>(null);
 
@@ -39,8 +39,6 @@ const Recommendations = () => {
   const sortBusinesses = (businesses: any[]) => {
     return [...businesses].sort((a, b) => {
       switch (sortBy) {
-        case 'name':
-          return (a.name || '').localeCompare(b.name || '');
         case 'rating':
           // Assuming businesses might have a rating field
           const ratingA = a.rating || 0;
@@ -83,7 +81,7 @@ const Recommendations = () => {
   }), [avanteTopChoice, recommendedForYou, searchTerm, selectedCategories, sortBy]);
 
   // Handle sort change and scroll to Recommended for You section
-  const handleSortChange = (newSort: 'name' | 'rating' | 'distance') => {
+  const handleSortChange = (newSort: 'rating' | 'distance') => {
     setSortBy(newSort);
     setTimeout(() => {
       recommendedForYouRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -200,20 +198,11 @@ const Recommendations = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="bg-background flex-1 sm:flex-initial text-sm">
                     <ArrowUpDown className="mr-2 h-4 w-4" />
-                    Sort: {sortBy === 'name' ? 'Alphabetical' : sortBy === 'rating' ? 'Rating' : 'Distance'}
+                    Sort: {sortBy === 'rating' ? 'Rating' : 'Distance'}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-48 bg-background z-50" align="start">
-                  <DropdownMenuItem
-                    onClick={() => handleSortChange('name')}
-                    className="cursor-pointer"
-                  >
-                    <div className="flex items-center w-full justify-between">
-                      <span>Alphabetical</span>
-                      {sortBy === 'name' && <Check className="h-4 w-4 text-primary" />}
-                    </div>
-                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleSortChange('rating')}
                     className="cursor-pointer"
