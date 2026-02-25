@@ -1,0 +1,1 @@
+CREATE INDEX idx_notification_ab_tests_template_id ON public.notification_ab_tests (template_id);
