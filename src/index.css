@@ -22,3 +22,27 @@ input:-webkit-autofill {
   animation-name: onAutoFillStart;
   animation-duration: 0.001s;
 }
+
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--primary) / 0.06),
+    transparent
+  );
+  animation: shimmer 1.8s infinite ease-in-out;
+}

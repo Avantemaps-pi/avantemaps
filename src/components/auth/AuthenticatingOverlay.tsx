@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/auth';
-import { Shield, Loader2 } from 'lucide-react';
 import { shouldBypassAuth } from '@/config/environment';
 
 const AuthenticatingOverlay: React.FC = () => {
   const { isLoading, appReady } = useAuth();
   const [progress, setProgress] = useState(0);
 
-  // Compute visibility first but do not early-return before hooks are declared
   const hideOverlay = shouldBypassAuth() || (appReady && !isLoading);
 
-  // Simulate progress for better UX
   useEffect(() => {
     if (isLoading) {
       setProgress(0);
@@ -26,25 +23,84 @@ const AuthenticatingOverlay: React.FC = () => {
   }
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center animate-fade-in"
-      style={{
-        backgroundColor: '#8000ff',
-      }}
-    >
-      <Shield className="h-16 w-16 text-white animate-pulse mb-6" />
-      <h2 className="text-2xl font-semibold text-white mb-4">
-        Authenticating...
-      </h2>
-      <div className="flex items-center gap-3">
-        <Loader2 className="h-5 w-5 animate-spin text-white" />
-        <p className="text-white/90">
-          {isLoading 
-            ? (progress < 30 ? 'Connecting to Pi Network...' : 
-               progress < 60 ? 'Verifying credentials...' : 
-               'Finalizing...')
-            : 'Preparing your map...'}
-        </p>
+    <div className="fixed inset-0 z-50 bg-background animate-fade-in">
+      {/* Top progress bar */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-muted overflow-hidden">
+        <div
+          className="h-full bg-primary transition-all duration-700 ease-out"
+          style={{ width: `${progress}%` }}
+        />
+        <div className="absolute inset-0 h-full w-1/3 bg-gradient-to-r from-transparent via-primary/40 to-transparent animate-[shimmer_1.5s_infinite]" />
+      </div>
+
+      {/* Skeleton layout mimicking the app */}
+      <div className="flex h-full">
+        {/* Sidebar skeleton - hidden on mobile */}
+        <div className="hidden md:flex flex-col w-64 border-r border-border p-4 gap-4">
+          {/* Logo area */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-9 w-9 rounded-lg bg-muted skeleton-shimmer" />
+            <div className="h-5 w-28 rounded bg-muted skeleton-shimmer" />
+          </div>
+          {/* Nav items */}
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="flex items-center gap-3 p-2">
+              <div className="h-5 w-5 rounded bg-muted skeleton-shimmer" />
+              <div className="h-4 rounded bg-muted skeleton-shimmer" style={{ width: `${60 + i * 10}%` }} />
+            </div>
+          ))}
+          {/* Spacer */}
+          <div className="flex-1" />
+          {/* Bottom nav items */}
+          {[1, 2].map(i => (
+            <div key={`b${i}`} className="flex items-center gap-3 p-2">
+              <div className="h-5 w-5 rounded bg-muted skeleton-shimmer" />
+              <div className="h-4 w-20 rounded bg-muted skeleton-shimmer" />
+            </div>
+          ))}
+        </div>
+
+        {/* Main content skeleton */}
+        <div className="flex-1 flex flex-col">
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between p-3 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded bg-muted skeleton-shimmer md:hidden" />
+              <div className="h-6 w-32 rounded bg-muted skeleton-shimmer" />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-muted skeleton-shimmer" />
+            </div>
+          </div>
+
+          {/* Search bar skeleton */}
+          <div className="p-3">
+            <div className="h-10 w-full rounded-lg bg-muted skeleton-shimmer" />
+          </div>
+
+          {/* Map area skeleton */}
+          <div className="flex-1 relative bg-muted/50 m-3 rounded-lg overflow-hidden">
+            {/* Fake map tiles pattern */}
+            <div className="absolute inset-0 skeleton-shimmer" />
+            <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-px opacity-20">
+              {Array.from({ length: 9 }).map((_, i) => (
+                <div key={i} className="bg-border" />
+              ))}
+            </div>
+
+            {/* Center loading indicator */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+              <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+              <p className="text-sm text-muted-foreground font-medium">
+                {progress < 30
+                  ? 'Connecting to Pi Network...'
+                  : progress < 60
+                  ? 'Verifying credentials...'
+                  : 'Preparing your map...'}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
