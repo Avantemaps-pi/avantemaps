@@ -1,0 +1,1 @@
+CREATE INDEX idx_notification_templates_created_by ON public.notification_templates (created_by);
