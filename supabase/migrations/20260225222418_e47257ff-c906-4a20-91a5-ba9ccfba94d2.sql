@@ -1,0 +1,1 @@
+CREATE INDEX idx_businesses_owner_id ON public.businesses (owner_id);
