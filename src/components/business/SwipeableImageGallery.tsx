@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useSwipeable } from 'react-swipeable';
 import PlaceCardImage from './PlaceCardImage';
 import PlaceCardActions from './PlaceCardActions';
@@ -14,6 +14,8 @@ interface SwipeableImageGalleryProps {
   previewMode?: boolean;
 }
 
+const STORY_DURATION = 3000; // 3 seconds per image
+
 const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
   images,
   name,
@@ -28,6 +30,51 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
   const [isAnimating, setIsAnimating] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const animationRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number>(0);
+  const pausedRef = useRef(false);
+  const remainingTimeRef = useRef(STORY_DURATION);
+
+  // Auto-advance timer with smooth progress
+  useEffect(() => {
+    if (images.length <= 1) return;
+
+    const animate = (timestamp: number) => {
+      if (!startTimeRef.current) startTimeRef.current = timestamp;
+      if (pausedRef.current) {
+        startTimeRef.current = timestamp - (STORY_DURATION - remainingTimeRef.current);
+        animationRef.current = requestAnimationFrame(animate);
+        return;
+      }
+      
+      const elapsed = timestamp - startTimeRef.current;
+      const newProgress = Math.min(elapsed / STORY_DURATION, 1);
+      setProgress(newProgress);
+
+      if (newProgress >= 1) {
+        // Move to next image or loop
+        setCurrentIndex(prev => {
+          if (prev < images.length - 1) return prev + 1;
+          return 0;
+        });
+        startTimeRef.current = 0;
+        remainingTimeRef.current = STORY_DURATION;
+        setProgress(0);
+      }
+      
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    startTimeRef.current = 0;
+    remainingTimeRef.current = STORY_DURATION;
+    setProgress(0);
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [currentIndex, images.length]);
 
   const goToNext = useCallback(() => {
     if (currentIndex < images.length - 1 && !isAnimating) {
@@ -167,13 +214,15 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
               aria-label={`View image ${index + 1} of ${images.length}`}
             >
               <div
-                className={`h-full rounded-full transition-all duration-300 ease-linear ${
-                  index < currentIndex
-                    ? 'w-full bg-white'
+                className="h-full rounded-full bg-white"
+                style={{
+                  width: index < currentIndex
+                    ? '100%'
                     : index === currentIndex
-                      ? 'w-full bg-white'
-                      : 'w-0 bg-white'
-                }`}
+                      ? `${progress * 100}%`
+                      : '0%',
+                  transition: index === currentIndex ? 'none' : 'width 0.3s ease',
+                }}
               />
             </button>
           ))}
