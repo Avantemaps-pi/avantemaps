@@ -107,7 +107,6 @@ export const useBusinessBookmarks = () => {
       
       // Update local state
       setBookmarks(prev => [...prev, businessId]);
-      toast.success('Business added to your bookmarks');
       return true;
     } catch (error) {
       console.error('❌ Error adding bookmark:', error);
@@ -139,7 +138,6 @@ export const useBusinessBookmarks = () => {
 
       // Update local state
       setBookmarks(prev => prev.filter(id => id !== businessId));
-      toast.success('Business removed from your bookmarks');
       return true;
     } catch (error) {
       console.error('Error removing bookmark:', error);
