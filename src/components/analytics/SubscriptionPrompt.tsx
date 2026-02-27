@@ -8,8 +8,8 @@ const SubscriptionPrompt: React.FC = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl flex flex-col items-center justify-center min-h-[60vh]">
-      <Card className="w-full text-center p-6">
+    <div className="px-4 py-8 max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh]">
+      <Card className="w-full text-center p-4">
         <CardContent className="pt-6 flex flex-col items-center space-y-6">
           <div className="bg-primary/10 p-4 rounded-full">
             <svg
