@@ -100,7 +100,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
         onBookmarkToggle={handleBookmarkToggle}
         onShare={handleShare}
         placeId={place.id}
-        onClick={previewMode ? undefined : handlePlaceClick}
+        onClick={previewMode || singleImageOnly ? undefined : handlePlaceClick}
         previewMode={previewMode}
       />
       
