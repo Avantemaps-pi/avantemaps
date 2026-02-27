@@ -1,24 +1,23 @@
 import React from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const RecommendationSkeleton = () => {
   return (
-    <Card className="w-80 flex-none">
-      <Skeleton className="h-48 w-full rounded-t-lg" />
-      <CardHeader className="pb-2">
-        <Skeleton className="h-6 w-3/4" />
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-2/3" />
-        <div className="flex justify-between pt-2">
-          <Skeleton className="h-5 w-20" />
-          <Skeleton className="h-5 w-16" />
+    <div className="w-80 flex-none rounded-xl border border-border bg-card p-4 space-y-4 animate-pulse">
+      <Skeleton className="h-44 w-full rounded-lg" />
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-5 w-2/5 rounded" />
+        <Skeleton className="h-4 w-16 rounded-full" />
+      </div>
+      <Skeleton className="h-4 w-3/5 rounded" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-20 rounded" />
+          <Skeleton className="h-6 w-24 rounded-full" />
         </div>
-      </CardContent>
-    </Card>
+        <Skeleton className="h-8 w-24 rounded-md" />
+      </div>
+    </div>
   );
 };
 
