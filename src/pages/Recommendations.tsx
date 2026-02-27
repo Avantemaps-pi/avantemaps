@@ -310,6 +310,7 @@ const Recommendations = () => {
                           place={place}
                           onPlaceClick={handlePlaceClick}
                           className="w-full h-full"
+                          singleImageOnly
                         />
                       </div>
                     ))

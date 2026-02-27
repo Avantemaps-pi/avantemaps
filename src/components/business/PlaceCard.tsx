@@ -23,6 +23,7 @@ interface PlaceCardProps {
   showDetails?: boolean;
   isBookmarked?: boolean;
   previewMode?: boolean;
+  singleImageOnly?: boolean;
 }
 
 const PlaceCard: React.FC<PlaceCardProps> = ({ 
@@ -32,7 +33,8 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   className,
   showDetails = false,
   isBookmarked: initialIsBookmarked = false,
-  previewMode = false
+  previewMode = false,
+  singleImageOnly = false
 }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -80,9 +82,11 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
     .slice(0, 2); // Limit to 2 categories
 
   // Use images array if available, otherwise fall back to single image
-  const images = place.images && place.images.length > 0 
+  // If singleImageOnly, only use the first image
+  const allImages = place.images && place.images.length > 0 
     ? place.images 
     : (place.image ? [place.image] : []);
+  const images = singleImageOnly ? allImages.slice(0, 1) : allImages;
 
   return (
     <Card 
