@@ -102,7 +102,6 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
         placeId={place.id}
         onClick={previewMode || singleImageOnly ? undefined : handlePlaceClick}
         previewMode={previewMode}
-        imageClassName={singleImageOnly ? 'aspect-[4/5]' : undefined}
       />
       
       <CardHeader className="pb-0 px-3 pt-3">
@@ -118,9 +117,11 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
       <CardContent className="pt-2 px-3 pb-3">
         <PlaceCardAddress address={place.address} onClick={previewMode ? undefined : handleAddressClick} />
 
-        <div className="relative max-h-16 mb-2 overflow-hidden">
-          <ExpandableDescription text={place.description} maxLines={3} />
-          <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+        <div className={singleImageOnly ? 'mb-2' : 'relative max-h-16 mb-2 overflow-hidden'}>
+          <ExpandableDescription text={place.description} maxLines={singleImageOnly ? undefined : 3} />
+          {!singleImageOnly && (
+            <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+          )}
         </div>
 
         <div className="flex flex-wrap justify-between items-start gap-2">

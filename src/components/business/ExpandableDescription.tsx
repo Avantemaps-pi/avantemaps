@@ -9,10 +9,10 @@ interface ExpandableDescriptionProps {
 
 const ExpandableDescription: React.FC<ExpandableDescriptionProps> = ({
   text,
-  maxLines = 4,
+  maxLines,
   className = ''
 }) => {
-  const lineClampClass = maxLines === 3 ? 'line-clamp-3' : maxLines === 4 ? 'line-clamp-4' : maxLines === 2 ? 'line-clamp-2' : 'line-clamp-4';
+  const lineClampClass = maxLines === undefined ? '' : maxLines === 3 ? 'line-clamp-3' : maxLines === 4 ? 'line-clamp-4' : maxLines === 2 ? 'line-clamp-2' : 'line-clamp-4';
 
   return (
     <p
