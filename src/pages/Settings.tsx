@@ -100,17 +100,14 @@ const Settings = () => {
           case '1':
             e.preventDefault();
             setActiveSection("profile");
-            toast.info('Profile Settings', { description: 'Use Ctrl+1 to navigate here' });
             break;
           case '2':
             e.preventDefault();
             setActiveSection("preferences");
-            toast.info('App Preferences', { description: 'Use Ctrl+2 to navigate here' });
             break;
           case '3':
             e.preventDefault();
             setActiveSection("danger");
-            toast.info('Danger Zone', { description: 'Use Ctrl+3 to navigate here' });
             break;
         }
       }
@@ -147,8 +144,6 @@ const Settings = () => {
         colorScheme
       });
       toast.success('Settings saved successfully!');
-    } else {
-      toast.info('No changes detected');
     }
   };
   const handleDeleteAccount = () => {
