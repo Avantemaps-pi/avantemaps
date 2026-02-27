@@ -156,20 +156,26 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
         ))}
       </div>
 
-      {/* Indicator bars */}
+      {/* Story-style indicator bars at top */}
       {images.length > 1 && (
-        <div className="absolute bottom-0 left-0 right-0 flex gap-1 px-2 pb-2">
+        <div className="absolute top-0 left-0 right-0 flex gap-1 px-2 pt-2 z-10">
           {images.map((_, index) => (
             <button
               key={index}
               onClick={(e) => handleIndicatorClick(index, e)}
-              className={`h-0.5 flex-1 rounded-full transition-all duration-200 ${
-                index === currentIndex 
-                  ? 'bg-white' 
-                  : 'bg-white/40 hover:bg-white/60'
-              }`}
+              className="h-[3px] flex-1 rounded-full bg-white/30 overflow-hidden"
               aria-label={`View image ${index + 1} of ${images.length}`}
-            />
+            >
+              <div
+                className={`h-full rounded-full transition-all duration-300 ease-linear ${
+                  index < currentIndex
+                    ? 'w-full bg-white'
+                    : index === currentIndex
+                      ? 'w-full bg-white'
+                      : 'w-0 bg-white'
+                }`}
+              />
+            </button>
           ))}
         </div>
       )}
