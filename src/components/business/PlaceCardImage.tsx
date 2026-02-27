@@ -7,17 +7,19 @@ interface PlaceCardImageProps {
   name: string;
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
   children?: React.ReactNode;
+  className?: string;
 }
 
 const PlaceCardImage: React.FC<PlaceCardImageProps> = ({ 
   image, 
   name, 
   onClick,
-  children
+  children,
+  className
 }) => {
   return (
     <div 
-      className="aspect-video overflow-hidden cursor-pointer relative"
+      className={`overflow-hidden cursor-pointer relative ${className || 'aspect-video'}`}
       onClick={onClick}
     >
       <ProgressiveImage

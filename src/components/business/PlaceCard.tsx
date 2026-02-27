@@ -102,6 +102,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
         placeId={place.id}
         onClick={previewMode || singleImageOnly ? undefined : handlePlaceClick}
         previewMode={previewMode}
+        imageClassName={singleImageOnly ? 'aspect-[4/5]' : undefined}
       />
       
       <CardHeader className="pb-0 px-3 pt-3">

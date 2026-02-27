@@ -12,6 +12,7 @@ interface SwipeableImageGalleryProps {
   placeId: string;
   onClick?: () => void;
   previewMode?: boolean;
+  imageClassName?: string;
 }
 
 const STORY_DURATION = 3000; // 3 seconds per image
@@ -25,6 +26,7 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
   placeId,
   onClick,
   previewMode = false,
+  imageClassName,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -163,6 +165,7 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
         image={undefined} 
         name={name} 
         onClick={previewMode ? undefined : onClick}
+        className={imageClassName}
       >
         {!previewMode && (
           <PlaceCardActions 
@@ -202,6 +205,7 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
               image={image} 
               name={`${name} - Image ${index + 1}`}
               onClick={previewMode ? undefined : handleClick}
+              className={imageClassName}
             >
               {index === currentIndex && !previewMode && (
                 <PlaceCardActions 

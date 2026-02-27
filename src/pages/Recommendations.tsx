@@ -7,7 +7,7 @@ import RecommendationsSEO from '@/components/seo/RecommendationsSEO';
 import { useRecommendations } from '@/hooks/useRecommendations';
 import RecommendationSkeleton from '@/components/recommendations/RecommendationSkeleton';
 import EmptyRecommendationSection from '@/components/recommendations/EmptyRecommendationSection';
-import { Award, Star, Search, X, ChevronDown, Check, ArrowUpDown } from 'lucide-react';
+import { Award, Star, Search, X, ChevronDown, Check } from 'lucide-react';
 import MetaTags from '@/components/seo/MetaTags';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -193,36 +193,6 @@ const Recommendations = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Sort Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="bg-background flex-1 sm:flex-initial text-sm">
-                    <ArrowUpDown className="mr-2 h-4 w-4" />
-                    Sort: {sortBy === 'rating' ? 'Rating' : 'Distance'}
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-48 bg-background z-50" align="start">
-                  <DropdownMenuItem
-                    onClick={() => handleSortChange('rating')}
-                    className="cursor-pointer"
-                  >
-                    <div className="flex items-center w-full justify-between">
-                      <span>Rating</span>
-                      {sortBy === 'rating' && <Check className="h-4 w-4 text-primary" />}
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleSortChange('distance')}
-                    className="cursor-pointer"
-                  >
-                    <div className="flex items-center w-full justify-between">
-                      <span>Distance</span>
-                      {sortBy === 'distance' && <Check className="h-4 w-4 text-primary" />}
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           </div>
 
