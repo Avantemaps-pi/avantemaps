@@ -15,15 +15,15 @@ export const useBookmark = ({ initialIsBookmarked, onRemove, id }: UseBookmarkPr
   const [isBookmarked, setIsBookmarked] = useState(initialIsBookmarked);
   const { isBookmarked: isPersistentBookmarked, toggleBookmark, isLoading } = useBusinessBookmarks();
   
-  // Sync the local state with the persistent state on mount
+  // Sync the local state with the persistent state on mount (only after loading completes)
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !isLoading) {
       const persistentState = isPersistentBookmarked(id);
-      if (persistentState !== initialIsBookmarked) {
+      if (persistentState !== isBookmarked) {
         setIsBookmarked(persistentState);
       }
     }
-  }, [id, initialIsBookmarked, isPersistentBookmarked, isAuthenticated]);
+  }, [id, isPersistentBookmarked, isAuthenticated, isLoading]);
 
   const handleBookmarkToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
