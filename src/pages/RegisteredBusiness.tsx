@@ -247,8 +247,27 @@ const RegisteredBusiness = () => {
             showButton={false}
           />
           <div className="space-y-6 mt-6">
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-48 w-full" />
+            {[1, 2].map((i) => (
+              <div key={i} className="rounded-xl border border-border bg-card p-4 space-y-4 animate-pulse">
+                {/* Image skeleton */}
+                <Skeleton className="h-44 w-full rounded-lg" />
+                {/* Title row */}
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-5 w-2/5 rounded" />
+                  <Skeleton className="h-4 w-16 rounded-full" />
+                </div>
+                {/* Address */}
+                <Skeleton className="h-4 w-3/5 rounded" />
+                {/* Rating + category row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-20 rounded" />
+                    <Skeleton className="h-6 w-24 rounded-full" />
+                  </div>
+                  <Skeleton className="h-8 w-24 rounded-md" />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </AppLayout>
