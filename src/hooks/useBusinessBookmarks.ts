@@ -62,7 +62,6 @@ export const useBusinessBookmarks = () => {
       
       // Check if already bookmarked
       if (bookmarks.includes(businessId)) {
-        toast.info('Business is already bookmarked');
         return true;
       }
       
