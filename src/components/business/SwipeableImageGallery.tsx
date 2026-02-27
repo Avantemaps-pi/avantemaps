@@ -92,6 +92,15 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
     }
   }, [currentIndex, isAnimating]);
 
+  const handlePause = useCallback(() => {
+    pausedRef.current = true;
+    remainingTimeRef.current = STORY_DURATION * (1 - progress);
+  }, [progress]);
+
+  const handleResume = useCallback(() => {
+    pausedRef.current = false;
+  }, []);
+
   const handlers = useSwipeable({
     onSwipedLeft: () => {
       setSwipeOffset(0);
@@ -103,15 +112,11 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
     },
     onSwiping: (eventData) => {
       setIsSwiping(true);
-      // Calculate offset with resistance at edges
       let offset = eventData.deltaX;
-      
-      // Add resistance when at edges
       if ((currentIndex === 0 && offset > 0) || 
           (currentIndex === images.length - 1 && offset < 0)) {
-        offset = offset * 0.3; // Reduce movement at edges
+        offset = offset * 0.3;
       }
-      
       setSwipeOffset(offset);
     },
     onTouchEndOrOnMouseUp: () => {
@@ -173,7 +178,16 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
   }
 
   return (
-    <div className="relative overflow-hidden" {...handlers} onClick={previewMode ? handleClick : undefined}>
+    <div 
+      className="relative overflow-hidden" 
+      {...handlers} 
+      onClick={previewMode ? handleClick : undefined}
+      onMouseDown={images.length > 1 ? handlePause : undefined}
+      onMouseUp={images.length > 1 ? handleResume : undefined}
+      onMouseLeave={images.length > 1 ? handleResume : undefined}
+      onTouchStart={images.length > 1 ? handlePause : undefined}
+      onTouchEnd={images.length > 1 ? handleResume : undefined}
+    >
       {/* Images container */}
       <div 
         className="flex transition-transform duration-300 ease-out"
