@@ -88,7 +88,7 @@ const Bookmarks = () => {
                   showDetails={false} 
                   isBookmarked={true}
                   className="w-full"
-                  singleImageOnly
+                  
                 />
               </div>
             ))}
