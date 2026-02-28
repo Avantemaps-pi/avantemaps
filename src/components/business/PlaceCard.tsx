@@ -14,6 +14,7 @@ import PlaceCardDetails from './PlaceCardDetails';
 import { useBookmark } from '@/hooks/useBookmark';
 import { useSharePlace } from '@/hooks/useSharePlace';
 import SwipeableImageGallery from './SwipeableImageGallery';
+import BookmarkButton from '@/components/map/buttons/BookmarkButton';
 
 interface PlaceCardProps {
   place: Place;
@@ -93,6 +94,24 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
       key={place.id} 
       className={`material-card ${previewMode ? '' : 'card-hover'} w-full ${className || ''} place-card-container ${previewMode ? 'pointer-events-none select-none' : ''}`}
     >
+      {/* Title + Bookmark above image (matching homepage popup) */}
+      <CardHeader className="pb-2 px-3 pt-3">
+        <div className="flex items-start justify-between">
+          <PlaceCardTitle 
+            name={place.name} 
+            onClick={previewMode ? undefined : handlePlaceClick} 
+            isVerified={place.isVerified} 
+            isCertified={place.isCertified}
+            verificationStatus={place.verificationStatus}
+          />
+          <BookmarkButton 
+            isBookmarked={isBookmarked} 
+            onToggle={handleBookmarkToggle}
+          />
+        </div>
+      </CardHeader>
+
+      {/* Image gallery without overlay actions */}
       <SwipeableImageGallery
         images={images}
         name={place.name}
@@ -101,18 +120,8 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
         onShare={handleShare}
         placeId={place.id}
         onClick={previewMode || singleImageOnly ? undefined : handlePlaceClick}
-        previewMode={previewMode}
+        previewMode={true}
       />
-      
-      <CardHeader className="pb-0 px-3 pt-3">
-        <PlaceCardTitle 
-          name={place.name} 
-          onClick={previewMode ? undefined : handlePlaceClick} 
-          isVerified={place.isVerified} 
-          isCertified={place.isCertified}
-          verificationStatus={place.verificationStatus}
-        />
-      </CardHeader>
       
       <CardContent className="pt-2 px-3 pb-3">
         <PlaceCardAddress address={place.address} onClick={previewMode ? undefined : handleAddressClick} />
@@ -137,13 +146,11 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
           <div className="flex flex-col gap-2 items-end">
             <PlaceCardWebsiteButton url={place.website} disabled={previewMode} />
             
-            <div className={previewMode ? 'pointer-events-auto' : ''}>
-              <PlaceCardDetails 
-                place={place} 
-                showDetails={showDetails} 
-                isRecommendationsPage={isRecommendationsPage} 
-              />
-            </div>
+            <PlaceCardDetails 
+              place={place} 
+              showDetails={showDetails} 
+              isRecommendationsPage={isRecommendationsPage} 
+            />
           </div>
         </div>
       </CardContent>
