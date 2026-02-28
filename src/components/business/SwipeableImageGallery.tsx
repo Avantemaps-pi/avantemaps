@@ -13,6 +13,7 @@ interface SwipeableImageGalleryProps {
   onClick?: () => void;
   previewMode?: boolean;
   imageClassName?: string;
+  hideIndicators?: boolean;
 }
 
 const STORY_DURATION = 3000; // 3 seconds per image
@@ -27,6 +28,7 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
   onClick,
   previewMode = false,
   imageClassName,
+  hideIndicators = false,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -222,7 +224,7 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
       </div>
 
       {/* Story-style indicator bars at top */}
-      {images.length > 1 && (
+      {images.length > 1 && !hideIndicators && (
         <div className="absolute top-0 left-0 right-0 flex gap-1 px-2 pt-2 z-10">
           {images.map((_, index) => (
             <button

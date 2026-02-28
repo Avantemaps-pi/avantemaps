@@ -25,6 +25,7 @@ interface PlaceCardProps {
   isBookmarked?: boolean;
   previewMode?: boolean;
   singleImageOnly?: boolean;
+  hideGalleryIndicators?: boolean;
 }
 
 const PlaceCard: React.FC<PlaceCardProps> = ({ 
@@ -35,7 +36,8 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   showDetails = false,
   isBookmarked: initialIsBookmarked = false,
   previewMode = false,
-  singleImageOnly = false
+  singleImageOnly = false,
+  hideGalleryIndicators = false
 }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -121,6 +123,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
         placeId={place.id}
         onClick={previewMode || singleImageOnly ? undefined : handlePlaceClick}
         previewMode={true}
+        hideIndicators={hideGalleryIndicators}
       />
       
       <CardContent className="pt-2 px-3 pb-3">

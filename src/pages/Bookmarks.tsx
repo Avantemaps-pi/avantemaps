@@ -88,7 +88,7 @@ const Bookmarks = () => {
                   showDetails={true} 
                   isBookmarked={true}
                   className="w-full"
-                  
+                  hideGalleryIndicators
                 />
               </div>
             ))}

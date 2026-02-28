@@ -281,7 +281,7 @@ const Recommendations = () => {
                           onPlaceClick={handlePlaceClick}
                           className="w-full h-full"
                           showDetails={true}
-                          
+                          hideGalleryIndicators
                         />
                       </div>
                     ))
