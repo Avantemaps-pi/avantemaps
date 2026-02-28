@@ -85,7 +85,7 @@ const Bookmarks = () => {
                   place={place} 
                   onPlaceClick={handlePlaceClick} 
                   onRemove={handleRemoveBookmark} 
-                  showDetails={false} 
+                  showDetails={true} 
                   isBookmarked={true}
                   className="w-full"
                   

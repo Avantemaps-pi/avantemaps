@@ -280,6 +280,7 @@ const Recommendations = () => {
                           place={place}
                           onPlaceClick={handlePlaceClick}
                           className="w-full h-full"
+                          showDetails={true}
                           
                         />
                       </div>

@@ -15,7 +15,7 @@ const PlaceCardDetails: React.FC<PlaceCardDetailsProps> = ({
   showDetails, 
   isRecommendationsPage 
 }) => {
-  if (!showDetails || isRecommendationsPage) {
+  if (!showDetails) {
     return null;
   }
 
