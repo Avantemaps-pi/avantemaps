@@ -53,14 +53,7 @@ const PlaceCardTitle: React.FC<PlaceCardTitleProps> = ({
       );
     }
     // Not verified (never requested, rejected, or null)
-    return (
-      <div className="flex items-center gap-1 flex-shrink-0">
-        <XCircle className="h-4 w-4 text-muted-foreground" />
-        <Badge variant="outline" className="text-xs border-muted text-muted-foreground bg-muted/50">
-          Not Verified
-        </Badge>
-      </div>
-    );
+    return null;
   };
 
   return (
