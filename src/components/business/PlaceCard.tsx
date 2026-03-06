@@ -126,27 +126,21 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
         hideIndicators={hideGalleryIndicators}
       />
       
-      <CardContent className="pt-2 px-3 pb-3">
+      <CardContent className="pt-3 px-3 space-y-3">
         <PlaceCardAddress address={place.address} onClick={previewMode ? undefined : handleAddressClick} />
 
-        <div className="relative max-h-16 mb-2 overflow-hidden">
-          <ExpandableDescription text={place.description} maxLines={3} />
-          <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+        <div className="relative h-20 overflow-hidden">
+          <ExpandableDescription text={place.description} maxLines={4} />
+          <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
         </div>
 
-        <div className="flex flex-wrap justify-between items-start gap-2">
+        <div className="flex justify-between items-start gap-2">
           <div className="flex flex-col items-start gap-2">
             <PlaceCardRating rating={place.rating} onClick={previewMode ? undefined : handleRatingClick} />
-            
-            {/* Display up to 2 categories vertically */}
-            <div className="flex flex-col gap-1.5">
-              {categories.map((category, index) => (
-                <CategoryBadge key={index} category={category} />
-              ))}
-            </div>
+            <CategoryBadge category={categories[0] || ''} />
           </div>
           
-          <div className="flex flex-col gap-2 items-end">
+          <div className="flex flex-col gap-2 items-end flex-shrink-0">
             <PlaceCardWebsiteButton url={place.website} disabled={previewMode} />
             
             <PlaceCardDetails 
