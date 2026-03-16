@@ -54,10 +54,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             />
           )}
           
-          <main className="flex-1 w-full overflow-auto">
+          <main className={`flex-1 w-full overflow-auto animate-fade-in ${isMobile ? 'pb-16' : ''}`}>
             {children}
           </main>
           
+          <BottomNavBar />
           <Toaster />
         </div>
       </div>

@@ -94,7 +94,7 @@ const DesktopSidebar = ({
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-sidebar-border text-xs text-muted-foreground">
-        <p>© 2025 Avante Maps</p>
+        <p>© 2026 Avante Maps</p>
         <p>By Avante Maps Pty Ltd</p>
         <div className="mt-2 flex items-center">
           
