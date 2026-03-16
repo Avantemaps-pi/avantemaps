@@ -85,12 +85,18 @@ export const useBusinessBookmarks = () => {
         return false;
       }
 
-      console.log('📌 Adding bookmark:', { userId: user.uid, businessId: businessIdInt });
+      const sessionUserId = await getSessionUserId();
+      if (!sessionUserId) {
+        toast.error('Session expired. Please sign in again.');
+        return false;
+      }
+
+      console.log('📌 Adding bookmark:', { userId: sessionUserId, businessId: businessIdInt });
       
       const { data, error } = await supabase
         .from('bookmarks')
         .insert({
-          user_id: user.uid,
+          user_id: sessionUserId,
           business_id: businessIdInt,
         })
         .select();
