@@ -16,7 +16,8 @@ const PlaceCardImage: React.FC<PlaceCardImageProps> = ({
   name, 
   onClick,
   children,
-  className
+  className,
+  loading = 'lazy'
 }) => {
   return (
     <div 
@@ -27,6 +28,7 @@ const PlaceCardImage: React.FC<PlaceCardImageProps> = ({
         src={image}
         alt={name}
         className="w-full h-full object-cover hover:opacity-90 transition-opacity"
+        loading={loading}
         onError={(e) => {
           e.currentTarget.src = '/placeholder.svg';
           e.currentTarget.alt = 'Business Image';
