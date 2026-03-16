@@ -17,6 +17,7 @@ const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
   className,
   onClick,
   onError,
+  loading = 'lazy',
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
