@@ -74,19 +74,6 @@ export const useBusinessBookmarks = () => {
 
       console.log('📌 Adding bookmark:', { userId: user.uid, businessId: businessIdInt });
       
-      // First verify the business exists
-      const { data: businessCheck, error: businessError } = await supabase
-        .from('businesses')
-        .select('id')
-        .eq('id', businessIdInt)
-        .single();
-
-      if (businessError || !businessCheck) {
-        console.error('Business not found:', businessError);
-        toast.error('Business not found');
-        return false;
-      }
-      
       const { data, error } = await supabase
         .from('bookmarks')
         .insert({
