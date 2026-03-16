@@ -131,10 +131,16 @@ export const useBusinessBookmarks = () => {
     try {
       setIsLoading(true);
       
+      const sessionUserId = await getSessionUserId();
+      if (!sessionUserId) {
+        toast.error('Session expired. Please sign in again.');
+        return false;
+      }
+
       const { error } = await supabase
         .from('bookmarks')
         .delete()
-        .eq('user_id', user.uid)
+        .eq('user_id', sessionUserId)
         .eq('business_id', parseInt(businessId));
 
       if (error) {
