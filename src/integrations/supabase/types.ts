@@ -1287,6 +1287,33 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
+      get_bookmarked_businesses: {
+        Args: { p_user_id: string }
+        Returns: {
+          business_types: string[]
+          category: string
+          city: string
+          contact_info: Json
+          coordinates: string
+          country: string
+          created_at: string
+          description: string
+          hours: Json
+          id: number
+          images: string[]
+          is_certified: boolean
+          is_verified: boolean
+          keywords: string[]
+          latitude: number
+          location: string
+          longitude: number
+          name: string
+          postal_code: string
+          state: string
+          street_address: string
+          verification_status: string
+        }[]
+      }
       get_business_analytics: {
         Args: { p_business_id: number; p_days?: number }
         Returns: {
