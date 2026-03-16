@@ -23,7 +23,7 @@ const NotificationCategoryTabs: React.FC<NotificationCategoryTabsProps> = ({
           <TabsTrigger 
             key={category} 
             value={category}
-            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            className="flex items-center gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
             <span>{categoryConfig[category].label}</span>
             {categoryCounts[category] > 0 && (

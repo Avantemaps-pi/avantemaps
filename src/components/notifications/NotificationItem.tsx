@@ -38,27 +38,27 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   const getIcon = () => {
     switch (type) {
       case 'message':
-        return <MessageSquare className="h-5 w-5" />;
+        return <MessageSquare className="h-4 w-4" />;
       case 'review':
-        return <Star className="h-5 w-5" />;
+        return <Star className="h-4 w-4" />;
       case 'business':
-        return <Store className="h-5 w-5" />;
+        return <Store className="h-4 w-4" />;
       case 'follower':
-        return <Users className="h-5 w-5" />;
+        return <Users className="h-4 w-4" />;
       case 'like':
-        return <ThumbsUp className="h-5 w-5" />;
+        return <ThumbsUp className="h-4 w-4" />;
       case 'verification':
-        return <ShieldCheck className="h-5 w-5" />;
+        return <ShieldCheck className="h-4 w-4" />;
       case 'certification':
-        return <Shield className="h-5 w-5" />;
+        return <Shield className="h-4 w-4" />;
       case 'payment':
-        return <Coins className="h-5 w-5" />;
+        return <Coins className="h-4 w-4" />;
       case 'bookmark':
-        return <Bookmark className="h-5 w-5" />;
+        return <Bookmark className="h-4 w-4" />;
       case 'system':
-        return <AlertCircle className="h-5 w-5" />;
+        return <AlertCircle className="h-4 w-4" />;
       default:
-        return <Bell className="h-5 w-5" />;
+        return <Bell className="h-4 w-4" />;
     }
   };
 
