@@ -120,7 +120,7 @@ export const useBusinessBookmarks = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAuthenticated, bookmarks]);
+  }, [user, isAuthenticated, bookmarks, getSessionUserId]);
 
   // Remove a bookmark
   const removeBookmark = useCallback(async (businessId: string) => {
