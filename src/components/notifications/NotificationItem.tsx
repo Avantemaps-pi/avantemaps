@@ -183,7 +183,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           </div>
         )}
         
-        <div className={`p-2 rounded-full mr-4 ${getIconColor()}`}>
+      <div className={`p-1.5 rounded-full mr-3 ${getIconColor()}`}>
           {getIcon()}
         </div>
         
