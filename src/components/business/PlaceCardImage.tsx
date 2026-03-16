@@ -8,6 +8,7 @@ interface PlaceCardImageProps {
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
   children?: React.ReactNode;
   className?: string;
+  loading?: 'eager' | 'lazy';
 }
 
 const PlaceCardImage: React.FC<PlaceCardImageProps> = ({ 
