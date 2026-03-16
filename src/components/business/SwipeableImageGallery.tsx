@@ -204,10 +204,11 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
         {images.map((image, index) => (
           <div key={index} className="w-full flex-shrink-0">
             <PlaceCardImage 
-              image={image} 
+              image={Math.abs(index - currentIndex) <= 1 ? image : undefined} 
               name={`${name} - Image ${index + 1}`}
               onClick={previewMode ? undefined : handleClick}
               className={imageClassName}
+              loading={index === 0 ? 'eager' : 'lazy'}
             >
               {index === currentIndex && !previewMode && (
                 <PlaceCardActions 

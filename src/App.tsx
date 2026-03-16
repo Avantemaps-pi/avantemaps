@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,33 +14,47 @@ import AuthenticatingOverlay from "@/components/auth/AuthenticatingOverlay";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import 'leaflet/dist/leaflet.css';
 import Index from "./pages/Index";
-import Recommendations from "./pages/Recommendations";
-import Bookmarks from "./pages/Bookmarks";
-import Contact from "./pages/Contact";
-import About from "./pages/About";
-import Settings from "./pages/Settings";
-import TermsOfService from "./pages/TermsOfService";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import CookiePolicy from "./pages/CookiePolicy";
-import Registration from "./pages/Registration";
-import UpdateRegistration from "./pages/UpdateRegistration";
-import NotFound from "./pages/NotFound";
-import Communicon from "./pages/Communicon";
-import Notifications from "./pages/Notifications";
-import RegisteredBusiness from "./pages/RegisteredBusiness";
-import VerificationInfo from "./pages/VerificationInfo";
-import Review from "./pages/Review";
-import Pricing from "./pages/Pricing";
-import Analytics from "./pages/Analytics";
-import NotificationTemplates from "./pages/NotificationTemplates";
-import BulkNotifications from "./pages/BulkNotifications";
-import CronSetup from "./pages/CronSetup";
-import ABTestingDashboard from "./pages/ABTestingDashboard";
-import FrequencyCaps from "./pages/FrequencyCaps";
 import { initializePiNetwork } from "./utils/piNetwork";
-// Removed incomplete payments check - handled automatically by Pi Network flow
+
+// Lazy-loaded pages for code splitting
+const Recommendations = lazy(() => import("./pages/Recommendations"));
+const Bookmarks = lazy(() => import("./pages/Bookmarks"));
+const Contact = lazy(() => import("./pages/Contact"));
+const About = lazy(() => import("./pages/About"));
+const Settings = lazy(() => import("./pages/Settings"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
+const Registration = lazy(() => import("./pages/Registration"));
+const UpdateRegistration = lazy(() => import("./pages/UpdateRegistration"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Communicon = lazy(() => import("./pages/Communicon"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const RegisteredBusiness = lazy(() => import("./pages/RegisteredBusiness"));
+const VerificationInfo = lazy(() => import("./pages/VerificationInfo"));
+const Review = lazy(() => import("./pages/Review"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const NotificationTemplates = lazy(() => import("./pages/NotificationTemplates"));
+const BulkNotifications = lazy(() => import("./pages/BulkNotifications"));
+const CronSetup = lazy(() => import("./pages/CronSetup"));
+const ABTestingDashboard = lazy(() => import("./pages/ABTestingDashboard"));
+const FrequencyCaps = lazy(() => import("./pages/FrequencyCaps"));
 
 const queryClient = new QueryClient();
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="animate-pulse flex flex-col items-center gap-3">
+      <img
+        src="/lovable-uploads/Avante Maps ICON (2).png"
+        alt="Loading..."
+        className="w-16 h-16"
+      />
+      <p className="text-sm text-muted-foreground">Loading...</p>
+    </div>
+  </div>
+);
 
 /**
  * SessionRestoration handles visibility/network changes.
@@ -152,33 +166,35 @@ const App = () => {
                   <SessionManager />
                   <Toaster />
                   <Sonner />
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/recommendations" element={<Recommendations />} />
-                    <Route path="/recommendations/:placeId" element={<Recommendations />} />
-                    <Route path="/bookmarks" element={<Bookmarks />} />
-                    <Route path="/communicon" element={<Communicon />} />
-                    <Route path="/notifications" element={<Notifications />} />
-                    <Route path="/registered-business" element={<RegisteredBusiness />} />
-                    <Route path="/verification-info" element={<VerificationInfo />} />
-                    <Route path="/review/:businessId?" element={<Review />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/terms" element={<TermsOfService />} />
-                    <Route path="/privacy" element={<PrivacyPolicy />} />
-                    <Route path="/cookies" element={<CookiePolicy />} />
-                    <Route path="/registration" element={<Registration />} />
-                    <Route path="/update-registration/:businessId?" element={<UpdateRegistration />} />
-                    <Route path="/pricing" element={<Pricing />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/notification-templates" element={<NotificationTemplates />} />
-              <Route path="/bulk-notifications" element={<BulkNotifications />} />
-              <Route path="/cron-setup" element={<CronSetup />} />
-              <Route path="/ab-testing" element={<ABTestingDashboard />} />
-              <Route path="/frequency-caps" element={<FrequencyCaps />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/recommendations" element={<Recommendations />} />
+                      <Route path="/recommendations/:placeId" element={<Recommendations />} />
+                      <Route path="/bookmarks" element={<Bookmarks />} />
+                      <Route path="/communicon" element={<Communicon />} />
+                      <Route path="/notifications" element={<Notifications />} />
+                      <Route path="/registered-business" element={<RegisteredBusiness />} />
+                      <Route path="/verification-info" element={<VerificationInfo />} />
+                      <Route path="/review/:businessId?" element={<Review />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/terms" element={<TermsOfService />} />
+                      <Route path="/privacy" element={<PrivacyPolicy />} />
+                      <Route path="/cookies" element={<CookiePolicy />} />
+                      <Route path="/registration" element={<Registration />} />
+                      <Route path="/update-registration/:businessId?" element={<UpdateRegistration />} />
+                      <Route path="/pricing" element={<Pricing />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/notification-templates" element={<NotificationTemplates />} />
+                      <Route path="/bulk-notifications" element={<BulkNotifications />} />
+                      <Route path="/cron-setup" element={<CronSetup />} />
+                      <Route path="/ab-testing" element={<ABTestingDashboard />} />
+                      <Route path="/frequency-caps" element={<FrequencyCaps />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
                 </SidebarProvider>
               </AuthProvider>
             </ErrorBoundary>

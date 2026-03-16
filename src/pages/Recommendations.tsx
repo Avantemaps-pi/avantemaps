@@ -35,50 +35,39 @@ const Recommendations = () => {
     'Beauty', 'Entertainment', 'Services', 'Education', 'Finance'
   ];
 
-  // Sort function
-  const sortBusinesses = (businesses: any[]) => {
-    return [...businesses].sort((a, b) => {
-      switch (sortBy) {
-        case 'rating':
-          // Assuming businesses might have a rating field
-          const ratingA = a.rating || 0;
-          const ratingB = b.rating || 0;
-          return ratingB - ratingA;
-        case 'distance':
-          // Assuming businesses might have a distance field
-          const distA = a.distance || 0;
-          const distB = b.distance || 0;
-          return distA - distB;
-        default:
-          return 0;
-      }
-    });
-  };
+  // Filtered and sorted data - memoized with proper dependencies
+  const filteredData = useMemo(() => {
+    const filterBusinesses = (businesses: any[]) => {
+      return businesses.filter(business => {
+        const matchesSearch = searchTerm === '' || 
+          business.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          business.description?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesCategory = selectedCategories.length === 0 ||
+          selectedCategories.some(cat => 
+            business.category?.toLowerCase().includes(cat.toLowerCase()) ||
+            business.business_types?.some((type: string) => 
+              type.toLowerCase().includes(cat.toLowerCase())
+            )
+          );
+        
+        return matchesSearch && matchesCategory;
+      });
+    };
 
-  // Filter function for businesses (without sorting)
-  const filterBusinesses = (businesses: any[]) => {
-    return businesses.filter(business => {
-      const matchesSearch = searchTerm === '' || 
-        business.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        business.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesCategory = selectedCategories.length === 0 ||
-        selectedCategories.some(cat => 
-          business.category?.toLowerCase().includes(cat.toLowerCase()) ||
-          business.business_types?.some((type: string) => 
-            type.toLowerCase().includes(cat.toLowerCase())
-          )
-        );
-      
-      return matchesSearch && matchesCategory;
-    });
-  };
+    const sortBusinesses = (businesses: any[]) => {
+      return [...businesses].sort((a, b) => {
+        if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+        if (sortBy === 'distance') return (a.distance || 0) - (b.distance || 0);
+        return 0;
+      });
+    };
 
-  // Filtered data - sorting only applies to recommendedForYou
-  const filteredData = useMemo(() => ({
-    avanteTopChoice: filterBusinesses(avanteTopChoice || []),
-    recommendedForYou: sortBusinesses(filterBusinesses(recommendedForYou || []))
-  }), [avanteTopChoice, recommendedForYou, searchTerm, selectedCategories, sortBy]);
+    return {
+      avanteTopChoice: filterBusinesses(avanteTopChoice || []),
+      recommendedForYou: sortBusinesses(filterBusinesses(recommendedForYou || []))
+    };
+  }, [avanteTopChoice, recommendedForYou, searchTerm, selectedCategories, sortBy]);
 
   // Handle sort change and scroll to Recommended for You section
   const handleSortChange = (newSort: 'rating' | 'distance') => {

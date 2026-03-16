@@ -8,6 +8,7 @@ interface ProgressiveImageProps {
   className?: string;
   onClick?: () => void;
   onError?: (e: React.SyntheticEvent<HTMLImageElement>) => void;
+  loading?: 'eager' | 'lazy';
 }
 
 const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
@@ -16,6 +17,7 @@ const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
   className,
   onClick,
   onError,
+  loading = 'lazy',
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -41,7 +43,7 @@ const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
         <img
           src={src}
           alt={alt}
-          loading="lazy"
+          loading={loading}
           className={cn(
             'transition-opacity duration-300',
             isLoaded ? 'opacity-100' : 'opacity-0',
