@@ -9,19 +9,32 @@ export const useBusinessBookmarks = () => {
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  const getSessionUserId = useCallback(async (): Promise<string | null> => {
+    const { data: { user: sessionUser }, error } = await supabase.auth.getUser();
+
+    if (error || !sessionUser) {
+      console.error('No valid Supabase session for bookmarks:', error);
+      return null;
+    }
+
+    return sessionUser.id;
+  }, []);
+
   // Fetch user's bookmarks
   const fetchBookmarks = useCallback(async () => {
-    if (!user || !isAuthenticated) {
+    if (!isAuthenticated) {
       return;
     }
 
     try {
       setIsLoading(true);
-      
+      const sessionUserId = await getSessionUserId();
+      if (!sessionUserId) return;
+
       const { data, error } = await supabase
         .from('bookmarks')
         .select('business_id')
-        .eq('user_id', user.uid);
+        .eq('user_id', sessionUserId);
 
       if (error) {
         throw error;
@@ -38,7 +51,7 @@ export const useBusinessBookmarks = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAuthenticated]);
+  }, [isAuthenticated, getSessionUserId]);
 
   // Load bookmarks when user changes
   useEffect(() => {
@@ -72,12 +85,18 @@ export const useBusinessBookmarks = () => {
         return false;
       }
 
-      console.log('📌 Adding bookmark:', { userId: user.uid, businessId: businessIdInt });
+      const sessionUserId = await getSessionUserId();
+      if (!sessionUserId) {
+        toast.error('Session expired. Please sign in again.');
+        return false;
+      }
+
+      console.log('📌 Adding bookmark:', { userId: sessionUserId, businessId: businessIdInt });
       
       const { data, error } = await supabase
         .from('bookmarks')
         .insert({
-          user_id: user.uid,
+          user_id: sessionUserId,
           business_id: businessIdInt,
         })
         .select();
@@ -101,7 +120,7 @@ export const useBusinessBookmarks = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAuthenticated, bookmarks]);
+  }, [user, isAuthenticated, bookmarks, getSessionUserId]);
 
   // Remove a bookmark
   const removeBookmark = useCallback(async (businessId: string) => {
@@ -112,10 +131,16 @@ export const useBusinessBookmarks = () => {
     try {
       setIsLoading(true);
       
+      const sessionUserId = await getSessionUserId();
+      if (!sessionUserId) {
+        toast.error('Session expired. Please sign in again.');
+        return false;
+      }
+
       const { error } = await supabase
         .from('bookmarks')
         .delete()
-        .eq('user_id', user.uid)
+        .eq('user_id', sessionUserId)
         .eq('business_id', parseInt(businessId));
 
       if (error) {
@@ -132,7 +157,7 @@ export const useBusinessBookmarks = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, getSessionUserId]);
 
   // Toggle bookmark status
   const toggleBookmark = useCallback(async (businessId: string) => {
