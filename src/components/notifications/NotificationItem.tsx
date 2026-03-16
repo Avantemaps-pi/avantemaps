@@ -172,7 +172,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           transition: isSwiping ? 'none' : 'transform 0.2s ease-out'
         }}
         className={cn(
-          "p-4 flex items-start cursor-pointer hover:bg-accent/50 transition-colors bg-background",
+          "p-3 flex items-start cursor-pointer hover:bg-accent/50 transition-colors bg-background",
           read ? "" : "bg-accent/30"
         )}
         onClick={handleClick}
