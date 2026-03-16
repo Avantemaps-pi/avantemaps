@@ -48,11 +48,13 @@ const DesktopSidebar = ({
   };
   return <Sidebar className={cn("hidden md:flex", className)}>
       <SidebarHeader>
-        <Link to="/" className="flex items-center gap-2">
-          
+        <Link to="/" className="flex items-center gap-2 px-2 py-1">
+          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-sm">A</span>
+          </div>
           <div className="flex flex-col">
-            
-            
+            <span className="font-semibold text-sm leading-tight">Avante Maps</span>
+            <span className="text-[10px] text-muted-foreground leading-tight">Pi Network Directory</span>
           </div>
         </Link>
       </SidebarHeader>
