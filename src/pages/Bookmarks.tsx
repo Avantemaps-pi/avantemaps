@@ -39,19 +39,24 @@ const Bookmarks = () => {
         {isLoading ? (
           <div className="flex flex-col gap-4 max-w-lg mx-auto">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-xl border border-border bg-card p-4 space-y-4 animate-pulse">
-                <Skeleton className="h-44 w-full rounded-lg" />
-                <div className="flex items-center gap-3">
+              <div key={i} className="rounded-xl border border-border bg-card p-4 space-y-3 animate-pulse">
+                <div className="flex items-center justify-between">
                   <Skeleton className="h-5 w-2/5 rounded" />
-                  <Skeleton className="h-4 w-16 rounded-full" />
+                  <Skeleton className="h-8 w-8 rounded-full" />
                 </div>
-                <Skeleton className="h-4 w-3/5 rounded" />
+                <Skeleton className="h-44 w-full rounded-lg" />
+                <Skeleton className="h-4 w-3/4 rounded" />
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-full rounded" />
+                  <Skeleton className="h-3 w-5/6 rounded" />
+                  <Skeleton className="h-3 w-2/3 rounded" />
+                </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Skeleton className="h-4 w-20 rounded" />
-                    <Skeleton className="h-6 w-24 rounded-full" />
+                    <Skeleton className="h-4 w-16 rounded" />
+                    <Skeleton className="h-6 w-20 rounded-full" />
                   </div>
-                  <Skeleton className="h-8 w-24 rounded-md" />
+                  <Skeleton className="h-8 w-20 rounded-md" />
                 </div>
               </div>
             ))}
