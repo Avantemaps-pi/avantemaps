@@ -34,6 +34,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   backButton = false,
   onBackClick
 }) => {
+  const isMobile = useIsMobile();
   const contentClasses = `flex flex-col ${fullHeight ? 'h-screen' : 'min-h-screen'} ${fullWidth ? 'w-full' : 'max-w-7xl mx-auto'} ${className}`;
   
   return (
