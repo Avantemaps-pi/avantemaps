@@ -9,19 +9,32 @@ export const useBusinessBookmarks = () => {
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  const getSessionUserId = useCallback(async (): Promise<string | null> => {
+    const { data: { user: sessionUser }, error } = await supabase.auth.getUser();
+
+    if (error || !sessionUser) {
+      console.error('No valid Supabase session for bookmarks:', error);
+      return null;
+    }
+
+    return sessionUser.id;
+  }, []);
+
   // Fetch user's bookmarks
   const fetchBookmarks = useCallback(async () => {
-    if (!user || !isAuthenticated) {
+    if (!isAuthenticated) {
       return;
     }
 
     try {
       setIsLoading(true);
-      
+      const sessionUserId = await getSessionUserId();
+      if (!sessionUserId) return;
+
       const { data, error } = await supabase
         .from('bookmarks')
         .select('business_id')
-        .eq('user_id', user.uid);
+        .eq('user_id', sessionUserId);
 
       if (error) {
         throw error;
@@ -38,7 +51,7 @@ export const useBusinessBookmarks = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAuthenticated]);
+  }, [isAuthenticated, getSessionUserId]);
 
   // Load bookmarks when user changes
   useEffect(() => {
