@@ -38,27 +38,27 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   const getIcon = () => {
     switch (type) {
       case 'message':
-        return <MessageSquare className="h-5 w-5" />;
+        return <MessageSquare className="h-4 w-4" />;
       case 'review':
-        return <Star className="h-5 w-5" />;
+        return <Star className="h-4 w-4" />;
       case 'business':
-        return <Store className="h-5 w-5" />;
+        return <Store className="h-4 w-4" />;
       case 'follower':
-        return <Users className="h-5 w-5" />;
+        return <Users className="h-4 w-4" />;
       case 'like':
-        return <ThumbsUp className="h-5 w-5" />;
+        return <ThumbsUp className="h-4 w-4" />;
       case 'verification':
-        return <ShieldCheck className="h-5 w-5" />;
+        return <ShieldCheck className="h-4 w-4" />;
       case 'certification':
-        return <Shield className="h-5 w-5" />;
+        return <Shield className="h-4 w-4" />;
       case 'payment':
-        return <Coins className="h-5 w-5" />;
+        return <Coins className="h-4 w-4" />;
       case 'bookmark':
-        return <Bookmark className="h-5 w-5" />;
+        return <Bookmark className="h-4 w-4" />;
       case 'system':
-        return <AlertCircle className="h-5 w-5" />;
+        return <AlertCircle className="h-4 w-4" />;
       default:
-        return <Bell className="h-5 w-5" />;
+        return <Bell className="h-4 w-4" />;
     }
   };
 
@@ -172,7 +172,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           transition: isSwiping ? 'none' : 'transform 0.2s ease-out'
         }}
         className={cn(
-          "p-4 flex items-start cursor-pointer hover:bg-accent/50 transition-colors bg-background",
+          "p-3 flex items-start cursor-pointer hover:bg-accent/50 transition-colors bg-background",
           read ? "" : "bg-accent/30"
         )}
         onClick={handleClick}
@@ -183,16 +183,16 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           </div>
         )}
         
-        <div className={`p-2 rounded-full mr-4 ${getIconColor()}`}>
+      <div className={`p-1.5 rounded-full mr-3 ${getIconColor()}`}>
           {getIcon()}
         </div>
         
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <p className={`${read ? 'text-muted-foreground' : 'font-medium text-foreground'}`}>{content}</p>
+            <p className={`text-sm ${read ? 'text-muted-foreground' : 'font-medium text-foreground'}`}>{content}</p>
             <PriorityIndicator priority={notification.priority} variant="dot" />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">{time}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{time}</p>
         </div>
         
         {!read && !selectionMode && (
