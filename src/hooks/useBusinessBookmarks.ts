@@ -157,7 +157,7 @@ export const useBusinessBookmarks = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, getSessionUserId]);
 
   // Toggle bookmark status
   const toggleBookmark = useCallback(async (businessId: string) => {
