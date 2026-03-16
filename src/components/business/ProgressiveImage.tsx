@@ -43,7 +43,7 @@ const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
         <img
           src={src}
           alt={alt}
-          loading="lazy"
+          loading={loading}
           className={cn(
             'transition-opacity duration-300',
             isLoaded ? 'opacity-100' : 'opacity-0',
