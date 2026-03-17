@@ -148,43 +148,6 @@ const Recommendations = () => {
             )}
           </div>
 
-          {/* Filter and Sort Controls */}
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-            <div className="flex flex-row gap-2 items-center">
-              {/* Category Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="bg-background text-sm">
-                    Categories
-                    {selectedCategories.length > 0 && (
-                      <Badge variant="secondary" className="ml-2 px-1.5 py-0 text-xs">
-                        {selectedCategories.length}
-                      </Badge>
-                    )}
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-background z-50" align="start">
-                  {categories.map(category => (
-                    <DropdownMenuItem
-                      key={category}
-                      onClick={() => toggleCategory(category)}
-                      className="cursor-pointer"
-                    >
-                      <div className="flex items-center w-full justify-between">
-                        <span>{category}</span>
-                        {selectedCategories.includes(category) && (
-                          <Check className="h-4 w-4 text-primary" />
-                        )}
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-            </div>
-          </div>
-
           {/* Active Filters Summary */}
           {(searchTerm || selectedCategories.length > 0) && (
             <div className="text-sm text-muted-foreground flex flex-wrap gap-2 items-center">
