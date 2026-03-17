@@ -150,11 +150,11 @@ const Recommendations = () => {
 
           {/* Filter and Sort Controls */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-            <div className="flex flex-row gap-2 items-center w-full sm:w-auto">
+            <div className="flex flex-row gap-2 items-center">
               {/* Category Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="bg-background flex-1 sm:flex-initial text-sm">
+                  <Button variant="outline" className="bg-background text-sm">
                     Categories
                     {selectedCategories.length > 0 && (
                       <Badge variant="secondary" className="ml-2 px-1.5 py-0 text-xs">
