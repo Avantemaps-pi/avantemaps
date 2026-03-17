@@ -69,7 +69,7 @@ const Bookmarks = () => {
               </div>
               <h3 className="text-lg font-medium">No Bookmarks Yet</h3>
               <p className="text-muted-foreground max-w-md">You don't have any bookmarked places yet. Explore the map to find and save businesses.</p>
-              <Button className="mt-4" onClick={() => navigate('/recommendations')}>
+              <Button className="mt-4" onClick={() => navigate('/')}>
                 Explore Map
               </Button>
             </CardContent>
