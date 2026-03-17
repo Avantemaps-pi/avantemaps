@@ -125,9 +125,9 @@ const Recommendations = () => {
         }}
       />
       
-      <div className="w-full mx-auto mt-2 pb-6 overflow-y-auto overflow-x-hidden px-0">
+      <div className="w-full mx-auto mt-0 pb-6 overflow-y-auto overflow-x-hidden px-0">
         {/* Search and Filter Section */}
-        <div className="px-4 md:px-[15px] mb-4 space-y-3 lg:ml-[15px] sticky top-16 z-[5] bg-background pb-2 pt-1">
+        <div className="px-4 md:px-[15px] mb-2 space-y-2 lg:ml-[15px] sticky top-16 z-[5] bg-background pb-2">
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
