@@ -78,13 +78,6 @@ const SessionRestoration = () => {
 
 const App = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Quick loading screen - just enough for initial render
-    const timer = setTimeout(() => setIsLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     const initPiSdk = async () => {
