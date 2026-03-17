@@ -44,14 +44,25 @@ const FrequencyCaps = lazy(() => import("./pages/FrequencyCaps"));
 const queryClient = new QueryClient();
 
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen bg-background">
-    <div className="animate-pulse flex flex-col items-center gap-3">
-      <img
-        src="/lovable-uploads/Avante Maps ICON (2).png"
-        alt="Loading..."
-        className="w-16 h-16"
-      />
-      <p className="text-sm text-muted-foreground">Loading...</p>
+  <div className="flex flex-col min-h-screen bg-background">
+    {/* Header skeleton */}
+    <div className="h-14 border-b border-border px-4 flex items-center gap-3">
+      <div className="h-8 w-8 rounded-md bg-muted animate-pulse" />
+      <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+    </div>
+    {/* Content skeleton */}
+    <div className="flex-1 p-4 space-y-4">
+      <div className="h-5 w-48 rounded bg-muted animate-pulse" />
+      <div className="space-y-3">
+        <div className="h-40 w-full rounded-lg bg-muted animate-pulse" />
+        <div className="h-4 w-3/4 rounded bg-muted animate-pulse" />
+        <div className="h-4 w-1/2 rounded bg-muted animate-pulse" />
+      </div>
+      <div className="space-y-3 pt-2">
+        <div className="h-40 w-full rounded-lg bg-muted animate-pulse" />
+        <div className="h-4 w-2/3 rounded bg-muted animate-pulse" />
+        <div className="h-4 w-1/3 rounded bg-muted animate-pulse" />
+      </div>
     </div>
   </div>
 );
@@ -67,13 +78,6 @@ const SessionRestoration = () => {
 
 const App = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Quick loading screen - just enough for initial render
-    const timer = setTimeout(() => setIsLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     const initPiSdk = async () => {
@@ -113,45 +117,6 @@ const App = () => {
     }
   }, []);
 
-  if (isLoading) {
-    return (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        backgroundColor: '#8000ff',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 9999,
-      }}>
-        <img
-          src="/lovable-uploads/Avante Maps ICON (2).png"
-          alt="Loading..."
-          style={{
-            width: '150px',
-            height: '150px',
-            animation: 'pulse 2s infinite ease-in-out',
-          }}
-        />
-        <p style={{ color: 'white', fontSize: '1.2rem', marginTop: '20px' }}>
-          Avante Maps...
-        </p>
-        <style>
-          {`
-            @keyframes pulse {
-              0% { transform: scale(1); opacity: 1; }
-              50% { transform: scale(1.1); opacity: 0.9; }
-              100% { transform: scale(1); opacity: 1; }
-            }
-          `}
-        </style>
-      </div>
-    );
-  }
 
   return (
     <QueryClientProvider client={queryClient}>
