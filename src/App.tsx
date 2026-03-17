@@ -117,45 +117,6 @@ const App = () => {
     }
   }, []);
 
-  if (isLoading) {
-    return (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        backgroundColor: '#8000ff',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 9999,
-      }}>
-        <img
-          src="/lovable-uploads/Avante Maps ICON (2).png"
-          alt="Loading..."
-          style={{
-            width: '150px',
-            height: '150px',
-            animation: 'pulse 2s infinite ease-in-out',
-          }}
-        />
-        <p style={{ color: 'white', fontSize: '1.2rem', marginTop: '20px' }}>
-          Avante Maps...
-        </p>
-        <style>
-          {`
-            @keyframes pulse {
-              0% { transform: scale(1); opacity: 1; }
-              50% { transform: scale(1.1); opacity: 0.9; }
-              100% { transform: scale(1); opacity: 1; }
-            }
-          `}
-        </style>
-      </div>
-    );
-  }
 
   return (
     <QueryClientProvider client={queryClient}>
