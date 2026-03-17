@@ -196,10 +196,43 @@ const Recommendations = () => {
               onTouchStart={() => handleMouseEnter(key)}
               className="relative w-full overflow-x-hidden"
             >
-              <h2 className="text-xl font-semibold mb-4 flex items-center px-4 md:px-[15px]">
-                <span className="bg-primary h-4 w-1 rounded-full mr-2"></span>
-                {title}
-              </h2>
+              <div className="flex items-center justify-between mb-4 px-4 md:px-[15px]">
+                <h2 className="text-xl font-semibold flex items-center">
+                  <span className="bg-primary h-4 w-1 rounded-full mr-2"></span>
+                  {title}
+                </h2>
+                {key === 'avanteTopChoice' && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="bg-background text-sm">
+                        Categories
+                        {selectedCategories.length > 0 && (
+                          <Badge variant="secondary" className="ml-2 px-1.5 py-0 text-xs">
+                            {selectedCategories.length}
+                          </Badge>
+                        )}
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 bg-background z-50" align="end">
+                      {categories.map(category => (
+                        <DropdownMenuItem
+                          key={category}
+                          onClick={() => toggleCategory(category)}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex items-center w-full justify-between">
+                            <span>{category}</span>
+                            {selectedCategories.includes(category) && (
+                              <Check className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
               
               {/* Horizontal Scroll Snap Slider for Place Cards Only */}
               <div className="relative overflow-x-hidden">
