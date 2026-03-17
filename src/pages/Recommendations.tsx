@@ -232,6 +232,30 @@ const Recommendations = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
+                {key === 'recommendedForYou' && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="bg-background text-sm">
+                        {sortBy === 'rating' ? 'Rating' : 'Distance'}
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-background z-50" align="end">
+                      <DropdownMenuItem onClick={() => handleSortChange('rating')} className="cursor-pointer">
+                        <div className="flex items-center w-full justify-between">
+                          <span>Rating</span>
+                          {sortBy === 'rating' && <Check className="h-4 w-4 text-primary" />}
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleSortChange('distance')} className="cursor-pointer">
+                        <div className="flex items-center w-full justify-between">
+                          <span>Distance</span>
+                          {sortBy === 'distance' && <Check className="h-4 w-4 text-primary" />}
+                        </div>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
               
               {/* Horizontal Scroll Snap Slider for Place Cards Only */}
