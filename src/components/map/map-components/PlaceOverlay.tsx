@@ -77,8 +77,8 @@ const PlaceOverlayContent: React.FC<{ place: Place; detailCardRef?: React.RefObj
       {/* Title row */}
       <div className="flex items-start justify-between pt-2">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          {place.isCertified && <Shield className="h-5 w-5 text-blue-500 flex-shrink-0" />}
-          {place.isVerified && <CircleCheck className="h-5 w-5 text-green-500 flex-shrink-0" />}
+          {place.isCertified && <Shield className="h-5 w-5 text-primary flex-shrink-0" />}
+          {place.isVerified && <CircleCheck className="h-5 w-5 text-accent-foreground flex-shrink-0" />}
           <h3 
             className="text-base font-bold truncate cursor-pointer hover:text-primary transition-colors"
             onClick={handlePlaceClick}
