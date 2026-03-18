@@ -1,31 +1,39 @@
 
 
-## Plan: Replace Map Homepage PlaceCard with Bottom Sheet
+# Streamline Business Verification to Complete Instantly
 
-**Scope**: Only the map page (`/`) — when a marker is tapped, show a draggable bottom sheet instead of the current centered popup overlay. No changes to PlaceCard usage on Bookmarks or Recommendations pages.
+## Problem
+Currently, the `verify-business` edge function calls an **external** verification API (`ulsrprpsgiatqmakluby.supabase.co`), which adds latency and external dependency. The user confirms the verifier is actually within the same Supabase project, so the verification can be done directly in the edge function itself.
 
-### Files to Change
+## Solution
+Simplify the `verify-business` edge function to perform verification **locally** -- validate the business ownership, update the `businesses` table directly, and return a success response. No external API call needed. This will complete in under a second.
 
-**1. `src/components/map/map-components/PlaceOverlay.tsx`** — Full rewrite
-- Replace the fixed overlay + centered popup with a `Drawer` (vaul) component
-- Use `open={showPopover}`, `onOpenChange` to dismiss
-- Snap points `[0.4, 1]` for peek (40%) and full expand
-- Drawer content: inline the place card content (image gallery, title, rating, address, description, category, details, website button)
+## Changes
 
-**2. `src/components/map/PlaceCardPopup.tsx`** — No changes (keep as-is for potential reuse elsewhere)
+### 1. Update `supabase/functions/verify-business/index.ts`
+- Remove the external API calls to `ulsrprpsgiatqmakluby.supabase.co`
+- Remove the `VERIFICATION_API_KEY` dependency
+- After validating ownership, directly update the business record:
+  - Set `verification_status` to `'verified'` (or `'certified'`)
+  - Set `is_verified` (or `is_certified`) to `true`
+- Return success immediately
 
-**3. `src/styles/map.css`** — Remove `.place-popup` rules (no longer needed on map page)
+### 2. Update `src/hooks/useChatState.tsx`
+- Update the success message to reflect instant verification (remove "2-3 business days" language)
+- After successful verification, show a confirmation like: "Your business has been verified successfully!"
+- Remove the fallback that sets status to `'pending'` on error -- since verification is now local, it either succeeds or fails
 
-### Bottom Sheet Layout
-- Drag handle bar at top
-- `SwipeableImageGallery` full-width
-- Title row with verified/certified icons + bookmark button
-- Address, description (with fade), rating, category badge
-- Website + Details buttons
-- Scrollable when fully expanded
+### 3. No changes needed to `supabase/config.toml`
+- The existing configuration for `verify-business` (verify_jwt = false) is already correct since the function handles auth internally.
 
-### What Stays the Same
-- `LeafletMap.tsx` — no changes, already passes correct props to `PlaceOverlay`
-- `PlaceCardPopup.tsx` — untouched, still used if referenced elsewhere
-- Bookmark/Recommendations pages — unaffected
+## Technical Details
+
+The simplified edge function flow:
+1. Validate auth token
+2. Parse request body (business_id, verification_type)
+3. Verify the user owns the business (query `businesses` table)
+4. Update the business record directly (`is_verified = true`, `verification_status = 'verified'`)
+5. Return success response
+
+This eliminates the external HTTP call entirely, making verification near-instant.
 

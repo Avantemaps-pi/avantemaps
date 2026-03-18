@@ -40,15 +40,6 @@
   display: none !important;
 }
 
-/* Map overlay and popups - responsive for all screen sizes */
-.place-popup {
-  max-width: 90%;
-  width: 350px;
-  z-index: 1000;
-  min-height: 200px;
-  display: block;
-}
-
 /* Override z-indexes for better stacking */
 .leaflet-pane {
   z-index: 10;
@@ -80,37 +71,4 @@
 /* Increase z-index for details popover */
 [data-radix-popper-content-wrapper] {
   z-index: 1200 !important;
-}
-
-/* Responsive adjustments for all screen sizes */
-@media (max-width: 640px) {
-  .place-popup {
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-}
-
-/* Medium screens (tablets) */
-@media (min-width: 641px) and (max-width: 1024px) {
-  .place-popup {
-    width: 400px;
-    max-width: 85%;
-  }
-}
-
-/* Large screens */
-@media (min-width: 1025px) {
-  .place-popup {
-    width: 450px;
-    max-width: 80%;
-  }
-}
-
-/* Extra large screens */
-@media (min-width: 1400px) {
-  .place-popup {
-    width: 500px;
-    max-width: 75%;
-  }
 }
