@@ -125,7 +125,7 @@ const PlaceOverlayContent: React.FC<{ place: Place; detailCardRef?: React.RefObj
           <WebsiteButton url={place.website} />
           <Popover>
             <PopoverTrigger asChild>
-              <div className="text-blue-500 font-medium text-sm cursor-pointer flex items-center whitespace-nowrap">
+              <div className="text-primary font-medium text-sm cursor-pointer flex items-center whitespace-nowrap">
                 <Info className="h-3 w-3 mr-1" />
                 Details
               </div>
