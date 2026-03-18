@@ -40,15 +40,6 @@
   display: none !important;
 }
 
-/* Map overlay and popups - responsive for all screen sizes */
-.place-popup {
-  max-width: 90%;
-  width: 350px;
-  z-index: 1000;
-  min-height: 200px;
-  display: block;
-}
-
 /* Override z-indexes for better stacking */
 .leaflet-pane {
   z-index: 10;
