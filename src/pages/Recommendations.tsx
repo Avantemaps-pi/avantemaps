@@ -56,11 +56,7 @@ const Recommendations = () => {
     };
 
     const sortBusinesses = (businesses: any[]) => {
-      return [...businesses].sort((a, b) => {
-        if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-        if (sortBy === 'distance') return (a.distance || 0) - (b.distance || 0);
-        return 0;
-      });
+      return [...businesses].sort((a, b) => (b.rating || 0) - (a.rating || 0));
     };
 
     return {
