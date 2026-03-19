@@ -9,6 +9,7 @@ import { useAuth } from '@/context/auth';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { User, Settings as SettingsIcon, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Accordion,
   AccordionContent,
@@ -34,10 +35,30 @@ const Settings = () => {
     if (savedScheme === 'light') return false;
     return false;
   });
-  const [isAccountDeleted, setIsAccountDeleted] = useState(() => {
-    return localStorage.getItem('accountDeleted') === 'true';
-  });
+  const [isAccountDeleted, setIsAccountDeleted] = useState(false);
+  const [deletionDate, setDeletionDate] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>("profile");
+
+  // Check if account has a scheduled deletion
+  useEffect(() => {
+    const checkDeletionStatus = async () => {
+      if (!user?.uid) return;
+      const { data, error } = await supabase
+        .from('users')
+        .select('scheduled_deletion_at')
+        .eq('id', user.uid)
+        .single();
+
+      if (!error && data?.scheduled_deletion_at) {
+        setIsAccountDeleted(true);
+        setDeletionDate(data.scheduled_deletion_at);
+      } else {
+        setIsAccountDeleted(false);
+        setDeletionDate(null);
+      }
+    };
+    checkDeletionStatus();
+  }, [user?.uid]);
 
   // Only refresh user data on first render if stale
   useEffect(() => {
@@ -85,20 +106,67 @@ const Settings = () => {
     }
   };
 
-  const handleDeleteAccount = () => {
-    setIsAccountDeleted(true);
-    localStorage.setItem('accountDeleted', 'true');
-    toast.error('Account scheduled for deletion', {
-      description: 'Your account will be permanently deleted after 15 days. You can reinstate it before then.'
-    });
+  const handleDeleteAccount = async () => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) {
+        toast.error('You must be logged in to delete your account.');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        body: { action: 'schedule' },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (error) throw error;
+
+      setIsAccountDeleted(true);
+      setDeletionDate(data.scheduled_deletion_at);
+      // Clean up old localStorage flag
+      localStorage.removeItem('accountDeleted');
+      toast.error('Account scheduled for deletion', {
+        description: 'Your account will be permanently deleted after 15 days. You can reinstate it before then.',
+      });
+    } catch (err) {
+      console.error('Error scheduling deletion:', err);
+      toast.error('Failed to schedule account deletion. Please try again.');
+    }
   };
 
-  const handleReinstateAccount = () => {
-    setIsAccountDeleted(false);
-    localStorage.removeItem('accountDeleted');
-    toast.success('Account has been reinstated', {
-      description: 'Your account has been successfully reactivated.'
-    });
+  const handleReinstateAccount = async () => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) {
+        toast.error('You must be logged in to reinstate your account.');
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke('delete-account', {
+        body: { action: 'reinstate' },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (error) throw error;
+
+      setIsAccountDeleted(false);
+      setDeletionDate(null);
+      localStorage.removeItem('accountDeleted');
+      toast.success('Account has been reinstated', {
+        description: 'Your account has been successfully reactivated.',
+      });
+    } catch (err) {
+      console.error('Error reinstating account:', err);
+      toast.error('Failed to reinstate account. Please try again.');
+    }
   };
 
   return (
@@ -166,7 +234,8 @@ const Settings = () => {
               <DangerZone 
                 onDeleteAccount={handleDeleteAccount} 
                 onReinstateAccount={handleReinstateAccount} 
-                isAccountDeleted={isAccountDeleted} 
+                isAccountDeleted={isAccountDeleted}
+                deletionDate={deletionDate}
               />
             </AccordionContent>
           </AccordionItem>
