@@ -37,7 +37,7 @@ const PlaceOverlay: React.FC<PlaceOverlayProps> = ({
       open={showPopover} 
       onOpenChange={(open) => { if (!open) onOverlayClick(); }}
       snapPoints={[0.45, 1]}
-      activeSnapPoint={0.45}
+      activeSnapPoint={1}
       modal={false}
     >
       <DrawerContent className="z-50 max-h-[96vh] focus:outline-none">
