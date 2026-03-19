@@ -7,9 +7,8 @@ import RecommendationsSEO from '@/components/seo/RecommendationsSEO';
 import { useRecommendations } from '@/hooks/useRecommendations';
 import RecommendationSkeleton from '@/components/recommendations/RecommendationSkeleton';
 import EmptyRecommendationSection from '@/components/recommendations/EmptyRecommendationSection';
-import { Award, Star, Search, X, ChevronDown, Check } from 'lucide-react';
+import { Award, Star, ChevronDown, Check } from 'lucide-react';
 import MetaTags from '@/components/seo/MetaTags';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -18,40 +17,41 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { useBusinessData } from '@/hooks/useBusinessData';
 
 const Recommendations = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'rating'>('rating');
   const { avanteTopChoice, recommendedForYou, isLoading } = useRecommendations();
+  const { places } = useBusinessData();
   const recommendedForYouRef = useRef<HTMLElement>(null);
 
-  // Common business categories
-  const categories = [
-    'Restaurant', 'Cafe', 'Retail', 'Technology', 'Health', 
-    'Beauty', 'Entertainment', 'Services', 'Education', 'Finance'
-  ];
+  // Derive categories dynamically from actual business data
+  const categories = useMemo(() => {
+    if (!places || places.length === 0) return [];
+    const categorySet = new Set<string>();
+    places.forEach(place => {
+      if (place.category) categorySet.add(place.category);
+    });
+    return Array.from(categorySet).sort();
+  }, [places]);
 
-  // Filtered and sorted data - memoized with proper dependencies
+  // Filtered and sorted data
   const filteredData = useMemo(() => {
     const filterBusinesses = (businesses: any[]) => {
       return businesses.filter(business => {
-        const matchesSearch = searchTerm === '' || 
-          business.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          business.description?.toLowerCase().includes(searchTerm.toLowerCase());
-        
         const matchesCategory = selectedCategories.length === 0 ||
-          selectedCategories.some(cat => 
+          selectedCategories.some(cat =>
             business.category?.toLowerCase().includes(cat.toLowerCase()) ||
-            business.business_types?.some((type: string) => 
+            business.business_types?.some((type: string) =>
               type.toLowerCase().includes(cat.toLowerCase())
             )
           );
-        
-        return matchesSearch && matchesCategory;
+
+        return matchesCategory;
       });
     };
 
@@ -63,8 +63,7 @@ const Recommendations = () => {
       avanteTopChoice: filterBusinesses(avanteTopChoice || []),
       recommendedForYou: sortBusinesses(filterBusinesses(recommendedForYou || []))
     };
-  }, [avanteTopChoice, recommendedForYou, searchTerm, selectedCategories, sortBy]);
-
+  }, [avanteTopChoice, recommendedForYou, selectedCategories, sortBy]);
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev =>
@@ -113,48 +112,21 @@ const Recommendations = () => {
           description: 'Discover top-rated local businesses'
         }}
       />
-      
-      <div className="w-full mx-auto pb-6 overflow-y-auto overflow-x-hidden px-0">
-        {/* Search and Filter Section */}
-        <div className="px-4 md:px-[15px] mb-2 space-y-2 lg:ml-[15px] sticky top-0 z-[5] bg-background pb-1">
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search businesses by name or description..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-10"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
 
-          {/* Active Filters Summary */}
-          {(searchTerm || selectedCategories.length > 0) && (
-            <div className="text-sm text-muted-foreground flex flex-wrap gap-2 items-center">
-              {searchTerm && <span>Searching for: "{searchTerm}"</span>}
-              {searchTerm && selectedCategories.length > 0 && <span>•</span>}
-              {selectedCategories.length > 0 && (
-                <div className="flex flex-wrap gap-1 items-center">
-                  <span>Categories:</span>
-                  {selectedCategories.map(cat => (
-                    <Badge key={cat} variant="secondary" className="text-xs">
-                      {cat}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+      <div className="w-full mx-auto pb-6 overflow-y-auto overflow-x-hidden px-0">
+        {/* Active Filters Summary */}
+        {selectedCategories.length > 0 && (
+          <div className="px-4 md:px-[15px] mb-2 lg:ml-[15px]">
+            <div className="text-sm text-muted-foreground flex flex-wrap gap-1 items-center">
+              <span>Categories:</span>
+              {selectedCategories.map(cat => (
+                <Badge key={cat} variant="secondary" className="text-xs">
+                  {cat}
+                </Badge>
+              ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="space-y-6 pb-1 px-0 overflow-x-hidden lg:ml-[15px]">
           {[
@@ -163,8 +135,8 @@ const Recommendations = () => {
               data: filteredData.avanteTopChoice,
               key: 'avanteTopChoice',
               icon: Award,
-              emptyMessage: (searchTerm || selectedCategories.length > 0) 
-                ? 'No businesses match your search criteria.'
+              emptyMessage: selectedCategories.length > 0
+                ? 'No businesses match your selected categories.'
                 : 'No verified and certified businesses yet. Check back soon!'
             },
             {
@@ -172,8 +144,8 @@ const Recommendations = () => {
               data: filteredData.recommendedForYou,
               key: 'recommendedForYou',
               icon: Star,
-              emptyMessage: (searchTerm || selectedCategories.length > 0)
-                ? 'No businesses match your search criteria.'
+              emptyMessage: selectedCategories.length > 0
+                ? 'No businesses match your selected categories.'
                 : 'No recommendations available yet.'
             }
           ].map(({ title, data, key, icon, emptyMessage }) => (
@@ -190,7 +162,7 @@ const Recommendations = () => {
                   <span className="bg-primary h-4 w-1 rounded-full mr-2"></span>
                   {title}
                 </h2>
-                {key === 'avanteTopChoice' && (
+                {key === 'avanteTopChoice' && categories.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="bg-background text-sm">
@@ -222,7 +194,7 @@ const Recommendations = () => {
                   </DropdownMenu>
                 )}
               </div>
-              
+
               {/* Horizontal Scroll Snap Slider for Place Cards Only */}
               <div className="relative overflow-x-hidden">
                 <div
@@ -233,21 +205,18 @@ const Recommendations = () => {
                   className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide px-0 mx-[15px]"
                 >
                   {isLoading ? (
-                    // Show loading skeletons
                     <>
                       <RecommendationSkeleton />
                       <RecommendationSkeleton />
                       <RecommendationSkeleton />
                     </>
                   ) : data.length === 0 ? (
-                    // Show empty state
-                    <EmptyRecommendationSection 
+                    <EmptyRecommendationSection
                       title={title}
                       message={emptyMessage}
                       icon={icon}
                     />
                   ) : (
-                    // Show actual data
                     data.map(place => (
                       <div key={place.id} className="flex-none w-80 snap-start">
                         <PlaceCard
