@@ -65,13 +65,6 @@ const Recommendations = () => {
     };
   }, [avanteTopChoice, recommendedForYou, searchTerm, selectedCategories, sortBy]);
 
-  // Handle sort change and scroll to Recommended for You section
-  const handleSortChange = (newSort: 'rating' | 'distance') => {
-    setSortBy(newSort);
-    setTimeout(() => {
-      recommendedForYouRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  };
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev =>
