@@ -25,7 +25,7 @@ const Recommendations = () => {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'rating' | 'distance'>('rating');
+  const [sortBy, setSortBy] = useState<'rating'>('rating');
   const { avanteTopChoice, recommendedForYou, isLoading } = useRecommendations();
   const recommendedForYouRef = useRef<HTMLElement>(null);
 
@@ -56,11 +56,7 @@ const Recommendations = () => {
     };
 
     const sortBusinesses = (businesses: any[]) => {
-      return [...businesses].sort((a, b) => {
-        if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-        if (sortBy === 'distance') return (a.distance || 0) - (b.distance || 0);
-        return 0;
-      });
+      return [...businesses].sort((a, b) => (b.rating || 0) - (a.rating || 0));
     };
 
     return {
@@ -69,13 +65,6 @@ const Recommendations = () => {
     };
   }, [avanteTopChoice, recommendedForYou, searchTerm, selectedCategories, sortBy]);
 
-  // Handle sort change and scroll to Recommended for You section
-  const handleSortChange = (newSort: 'rating' | 'distance') => {
-    setSortBy(newSort);
-    setTimeout(() => {
-      recommendedForYouRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  };
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev =>
@@ -229,30 +218,6 @@ const Recommendations = () => {
                           </div>
                         </DropdownMenuItem>
                       ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-                {key === 'recommendedForYou' && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="bg-background text-sm">
-                        {sortBy === 'rating' ? 'Rating' : 'Distance'}
-                        <ChevronDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-background z-50" align="end">
-                      <DropdownMenuItem onClick={() => handleSortChange('rating')} className="cursor-pointer">
-                        <div className="flex items-center w-full justify-between">
-                          <span>Rating</span>
-                          {sortBy === 'rating' && <Check className="h-4 w-4 text-primary" />}
-                        </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleSortChange('distance')} className="cursor-pointer">
-                        <div className="flex items-center w-full justify-between">
-                          <span>Distance</span>
-                          {sortBy === 'distance' && <Check className="h-4 w-4 text-primary" />}
-                        </div>
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
