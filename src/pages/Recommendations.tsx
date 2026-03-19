@@ -25,7 +25,7 @@ const Recommendations = () => {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'rating' | 'distance'>('rating');
+  const [sortBy, setSortBy] = useState<'rating'>('rating');
   const { avanteTopChoice, recommendedForYou, isLoading } = useRecommendations();
   const recommendedForYouRef = useRef<HTMLElement>(null);
 
