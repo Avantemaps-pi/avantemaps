@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { toast } from 'sonner';
 import ProfileSettings from '@/components/settings/ProfileSettings';
 import AppPreferences from '@/components/settings/AppPreferences';
 import DangerZone from '@/components/settings/DangerZone';
@@ -9,6 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/auth';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { User, Settings as SettingsIcon, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Accordion,
   AccordionContent,
@@ -24,12 +24,7 @@ const Settings = () => {
     isLoading
   } = useAuth();
   useSessionTimeout();
-  const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('language') || 'english';
-  });
-  const [notifications, setNotifications] = useState(() => {
-    return localStorage.getItem('notifications') === 'false' ? false : true;
-  });
+
   const [colorScheme, setColorScheme] = useState<'system' | 'light' | 'dark'>(() => {
     return localStorage.getItem('colorScheme') as 'system' | 'light' | 'dark' || 'system';
   });
@@ -44,34 +39,18 @@ const Settings = () => {
   });
   const [activeSection, setActiveSection] = useState<string>("profile");
 
-  // Track initial values to compare for changes
-  const [initialValues, setInitialValues] = useState({
-    language: language,
-    notifications: notifications,
-    colorScheme: colorScheme
-  });
-
-  // Only refresh user data on first render if we don't have user data
-  // This prevents unnecessary API calls when navigating to Settings repeatedly
+  // Only refresh user data on first render if stale
   useEffect(() => {
-    // Check for last refresh timestamp in localStorage
     const lastUserRefresh = localStorage.getItem('last_user_refresh');
-    const refreshThreshold = 30 * 60 * 1000; // 30 minutes
+    const refreshThreshold = 30 * 60 * 1000;
     const shouldRefresh = !lastUserRefresh || Date.now() - parseInt(lastUserRefresh, 10) > refreshThreshold;
 
-    // Only attempt refresh if needed and if we have a user
     if (user && shouldRefresh && !isLoading) {
-      refreshUserData(true); // silent refresh to avoid showing auth overlay
+      refreshUserData(true);
       localStorage.setItem('last_user_refresh', Date.now().toString());
     }
-
-    // Save the current values to compare against later
-    setInitialValues({
-      language,
-      notifications,
-      colorScheme
-    });
   }, []);
+
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -79,6 +58,7 @@ const Settings = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
   useEffect(() => {
     if (colorScheme === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -92,31 +72,6 @@ const Settings = () => {
     }
   }, [colorScheme]);
 
-  // Keyboard shortcuts for navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
-        switch(e.key) {
-          case '1':
-            e.preventDefault();
-            setActiveSection("profile");
-            break;
-          case '2':
-            e.preventDefault();
-            setActiveSection("preferences");
-            break;
-          case '3':
-            e.preventDefault();
-            setActiveSection("danger");
-            break;
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   const handleColorSchemeChange = (scheme: 'system' | 'light' | 'dark') => {
     setColorScheme(scheme);
     localStorage.setItem('colorScheme', scheme);
@@ -125,27 +80,11 @@ const Settings = () => {
     } else if (scheme === 'light') {
       setIsDarkMode(false);
     } else {
-      // For system theme, check the media query
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       setIsDarkMode(prefersDark);
     }
   };
-  const handleSaveSettings = () => {
-    // Check if any values have actually changed before saving
-    const hasChanges = initialValues.language !== language || initialValues.notifications !== notifications || initialValues.colorScheme !== colorScheme;
-    if (hasChanges) {
-      localStorage.setItem('language', language);
-      localStorage.setItem('notifications', String(notifications));
 
-      // Update the initial values to the new ones
-      setInitialValues({
-        language,
-        notifications,
-        colorScheme
-      });
-      toast.success('Settings saved successfully!');
-    }
-  };
   const handleDeleteAccount = () => {
     setIsAccountDeleted(true);
     localStorage.setItem('accountDeleted', 'true');
@@ -153,6 +92,7 @@ const Settings = () => {
       description: 'Your account will be permanently deleted after 15 days. You can reinstate it before then.'
     });
   };
+
   const handleReinstateAccount = () => {
     setIsAccountDeleted(false);
     localStorage.removeItem('accountDeleted');
@@ -160,19 +100,12 @@ const Settings = () => {
       description: 'Your account has been successfully reactivated.'
     });
   };
+
   return (
     <AppLayout title="" fullWidth={true} className="overflow-x-hidden">
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6 overflow-hidden">
         <div>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Manage your account preferences.</p>
-          <p className="hidden lg:flex text-xs text-muted-foreground mt-1 items-center gap-1">
-            <span className="inline-flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Ctrl+1</kbd>
-              <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Ctrl+2</kbd>
-              <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Ctrl+3</kbd>
-            </span>
-            <span>for quick navigation</span>
-          </p>
         </div>
 
         <Accordion 
@@ -187,15 +120,13 @@ const Settings = () => {
               <div className="flex items-start gap-3 text-left">
                 <User className="h-5 w-5 mt-0.5 flex-shrink-0 text-primary" />
                 <div className="flex flex-col items-start">
-                  <span className="font-semibold text-base sm:text-lg">Profile Settings</span>
-                  <span className="text-xs sm:text-sm text-muted-foreground">Manage your personal information</span>
+                  <span className="font-semibold text-base sm:text-lg">Profile</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">Your personal information</span>
                 </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-4 sm:px-6 pt-2 pb-4">
               <ProfileSettings 
-                language={language} 
-                setLanguage={setLanguage} 
                 isMobile={isMobile} 
                 user={user} 
                 isLoading={isLoading} 
@@ -208,19 +139,15 @@ const Settings = () => {
               <div className="flex items-start gap-3 text-left">
                 <SettingsIcon className="h-5 w-5 mt-0.5 flex-shrink-0 text-primary" />
                 <div className="flex flex-col items-start">
-                  <span className="font-semibold text-base sm:text-lg">App Preferences</span>
-                  <span className="text-xs sm:text-sm text-muted-foreground">Customize your experience</span>
+                  <span className="font-semibold text-base sm:text-lg">Appearance</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">Theme and display settings</span>
                 </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-4 sm:px-6 pt-2 pb-4">
               <AppPreferences 
-                notifications={notifications} 
-                setNotifications={setNotifications} 
-                isDarkMode={isDarkMode} 
                 colorScheme={colorScheme} 
                 onColorSchemeChange={handleColorSchemeChange} 
-                onSaveSettings={handleSaveSettings} 
               />
             </AccordionContent>
           </AccordionItem>

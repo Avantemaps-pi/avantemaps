@@ -1,39 +1,24 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import { PiUser } from '@/context/AuthContext';
 
 interface ProfileSettingsProps {
-  language: string;
-  setLanguage: (value: string) => void;
   isMobile?: boolean;
   user: PiUser | null;
   isLoading: boolean;
 }
 
 const ProfileSettings = ({
-  language,
-  setLanguage,
   isMobile,
   user,
   isLoading
 }: ProfileSettingsProps) => {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    console.log(`Language changed to: ${language}`);
-  }, [language]);
 
   const formatSubscriptionTier = (tier: string = 'individual') => {
     return tier.charAt(0).toUpperCase() + tier.slice(1).replace('-', ' ');
@@ -47,7 +32,7 @@ const ProfileSettings = ({
     <Card className="overflow-hidden">
       <CardHeader className="p-4 sm:p-6">
         <CardTitle className="text-lg sm:text-xl">Profile Settings</CardTitle>
-        <CardDescription className="text-xs sm:text-sm">Manage your personal information and preferences.</CardDescription>
+        <CardDescription className="text-xs sm:text-sm">Manage your personal information.</CardDescription>
       </CardHeader>
       <CardContent className="p-4 sm:p-6 pt-0 space-y-4 sm:space-y-6">
         <div className="space-y-1 sm:space-y-2">
@@ -62,7 +47,7 @@ const ProfileSettings = ({
               value={user?.username || ''}
               readOnly
               autoComplete="username"
-              className="bg-gray-100 h-9"
+              className="bg-muted h-9"
             />
           )}
           <p className="text-xs text-muted-foreground mt-1">
@@ -82,7 +67,7 @@ const ProfileSettings = ({
               value={user?.walletAddress || ''}
               readOnly
               autoComplete="off"
-              className="bg-gray-100 h-9"
+              className="bg-muted h-9"
             />
           )}
           <p className="text-xs text-muted-foreground mt-1">
@@ -100,27 +85,12 @@ const ProfileSettings = ({
               placeholder="Individual"
               value={formatSubscriptionTier(user?.subscriptionTier)}
               readOnly
-              className="bg-gray-100 h-9 cursor-pointer hover:ring-2 hover:ring-blue-400 transition"
+              className="bg-muted h-9 cursor-pointer hover:ring-2 hover:ring-primary/40 transition"
               onClick={handleTierClick}
               tabIndex={0}
               aria-label="Change subscription tier"
             />
           )}
-        </div>
-
-        <div className="space-y-1 sm:space-y-2">
-          <Label htmlFor="language" className="text-sm">Language Preference</Label>
-          <Select value={language} onValueChange={setLanguage} name="language">
-            <SelectTrigger id="language" className="h-9">
-              <SelectValue placeholder="Select language" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="english">English</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground mt-1">
-            This will translate the app interface into your preferred language.
-          </p>
         </div>
       </CardContent>
     </Card>
