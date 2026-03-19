@@ -1,5 +1,18 @@
 import { supabase } from '@/integrations/supabase/client';
-import { AddressSuggestion } from '../components/AddressSuggestions';
+
+export interface AddressSuggestion {
+  display_name: string;
+  lat: number;
+  lon: number;
+  address: {
+    house_number: string;
+    road: string;
+    city: string;
+    state: string;
+    postcode: string;
+    country: string;
+  };
+}
 
 /**
  * Fetches address suggestions from the supabase edge function
