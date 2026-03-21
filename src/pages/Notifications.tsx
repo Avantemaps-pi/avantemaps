@@ -18,11 +18,7 @@ import NotificationItem from '@/components/notifications/NotificationItem';
 import EmptyNotifications from '@/components/notifications/EmptyNotifications';
 import NotificationCategoryTabs from '@/components/notifications/NotificationCategoryTabs';
 import BulkActionsBar from '@/components/notifications/BulkActionsBar';
-import DateRangeFilter, { DateRange } from '@/components/notifications/DateRangeFilter';
-import PriorityFilter, { PriorityFilterValue } from '@/components/notifications/PriorityFilter';
 import { NotificationCategory, getNotificationsByCategory, getAllCategoryCounts } from '@/utils/notificationCategories';
-import { filterNotificationsByDateRange } from '@/utils/dateRangeFilter';
-import { filterNotificationsByPriority } from '@/utils/priorityFilter';
 import { CheckSquare, RefreshCw } from 'lucide-react';
 
 const Notifications = () => {
