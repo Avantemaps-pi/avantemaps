@@ -166,9 +166,7 @@ const Notifications = () => {
     toast.success('Notifications refreshed');
   };
 
-  const categoryFilteredNotifications = getNotificationsByCategory(notifications, activeCategory);
-  const dateFilteredNotifications = filterNotificationsByDateRange(categoryFilteredNotifications, activeDateRange);
-  const filteredNotifications = filterNotificationsByPriority(dateFilteredNotifications, activePriority);
+  const filteredNotifications = getNotificationsByCategory(notifications, activeCategory);
   const categoryCounts = getAllCategoryCounts(notifications);
   const unreadCount = filteredNotifications.filter(notification => !notification.read).length;
   return (
