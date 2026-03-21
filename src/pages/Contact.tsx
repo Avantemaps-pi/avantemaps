@@ -15,46 +15,36 @@ const Contact = () => {
           <p className="text-muted-foreground">Have questions or feedback? We'd love to hear from you.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="material-card">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium flex items-center gap-2">
+        <Card className="material-card overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center gap-2 mb-2">
                 <Mail className="h-5 w-5 text-primary" />
-                Email
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+                <h3 className="text-lg font-medium">Email</h3>
+              </div>
               <p className="text-sm break-all">inquiries@avantemaps.com</p>
               <p className="text-xs text-muted-foreground mt-1">For general inquiries</p>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card className="material-card">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium flex items-center gap-2">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center gap-2 mb-2">
                 <Phone className="h-5 w-5 text-primary" />
-                Phone
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+                <h3 className="text-lg font-medium">Phone</h3>
+              </div>
               <p className="text-sm">+27 (68) 342-2444</p>
               <p className="text-xs text-muted-foreground mt-1">+27 (62) 476-7535</p>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card className="material-card">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium flex items-center gap-2">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center gap-2 mb-2">
                 <MapPin className="h-5 w-5 text-primary" />
-                Address
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+                <h3 className="text-lg font-medium">Address</h3>
+              </div>
               <p className="text-sm">113 Jabu Ndlovu</p>
               <p className="text-xs text-muted-foreground mt-1">Pietermaritzburg, KZN 3201</p>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </div>
+        </Card>
 
         <Card className="material-card">
           <CardHeader>
