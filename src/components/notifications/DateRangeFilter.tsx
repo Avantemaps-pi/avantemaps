@@ -21,24 +21,19 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   ];
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-        <Calendar className="h-4 w-4" />
-        <span>Filter:</span>
-      </div>
-      <div className="flex gap-1">
-        {ranges.map(range => (
-          <Button
-            key={range.value}
-            variant={activeRange === range.value ? "default" : "ghost"}
-            size="sm"
-            onClick={() => onRangeChange(range.value)}
-            className="text-xs"
-          >
-            {range.label}
-          </Button>
-        ))}
-      </div>
+    <div className="flex items-center gap-1">
+      <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      {ranges.map(range => (
+        <Button
+          key={range.value}
+          variant={activeRange === range.value ? "default" : "ghost"}
+          size="sm"
+          onClick={() => onRangeChange(range.value)}
+          className="text-[11px] h-6 px-1.5"
+        >
+          {range.label}
+        </Button>
+      ))}
     </div>
   );
 };

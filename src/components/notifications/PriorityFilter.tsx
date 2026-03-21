@@ -22,26 +22,21 @@ const PriorityFilter: React.FC<PriorityFilterProps> = ({
   ];
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-        <AlertCircle className="h-4 w-4" />
-        <span>Priority:</span>
-      </div>
-      <div className="flex gap-1">
-        {priorities.map(priority => (
-          <Button
-            key={priority.value}
-            variant={activePriority === priority.value ? "default" : "ghost"}
-            size="sm"
-            onClick={() => onPriorityChange(priority.value)}
-            className="text-xs"
-          >
-            <span className={activePriority !== priority.value ? priority.color : ''}>
-              {priority.label}
-            </span>
-          </Button>
-        ))}
-      </div>
+    <div className="flex items-center gap-1">
+      <AlertCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      {priorities.map(priority => (
+        <Button
+          key={priority.value}
+          variant={activePriority === priority.value ? "default" : "ghost"}
+          size="sm"
+          onClick={() => onPriorityChange(priority.value)}
+          className="text-[11px] h-6 px-1.5"
+        >
+          <span className={activePriority !== priority.value ? priority.color : ''}>
+            {priority.label}
+          </span>
+        </Button>
+      ))}
     </div>
   );
 };
