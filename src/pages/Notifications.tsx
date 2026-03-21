@@ -181,38 +181,27 @@ const Notifications = () => {
           />
         </div>
 
-        {/* Compact filters & actions row */}
+        {/* Actions row */}
         {notifications.length > 0 && (
-          <div className="px-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <DateRangeFilter
-              activeRange={activeDateRange}
-              onRangeChange={setActiveDateRange}
-            />
-            <div className="h-4 w-px bg-border hidden sm:block" />
-            <PriorityFilter
-              activePriority={activePriority}
-              onPriorityChange={setActivePriority}
-            />
-            <div className="ml-auto flex gap-1.5">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={markAllAsRead} 
-                disabled={unreadCount === 0}
-                className="text-xs h-7 px-2"
-              >
-                Mark all read
-              </Button>
-              <Button
-                variant={selectionMode ? "default" : "ghost"}
-                size="sm"
-                onClick={toggleSelectionMode}
-                className="gap-1 text-xs h-7 px-2"
-              >
-                <CheckSquare className="h-3.5 w-3.5" />
-                {selectionMode ? 'Cancel' : 'Select'}
-              </Button>
-            </div>
+          <div className="px-3 flex items-center gap-1.5">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={markAllAsRead} 
+              disabled={unreadCount === 0}
+              className="text-xs h-7 px-2"
+            >
+              Mark all read
+            </Button>
+            <Button
+              variant={selectionMode ? "default" : "ghost"}
+              size="sm"
+              onClick={toggleSelectionMode}
+              className="gap-1 text-xs h-7 px-2"
+            >
+              <CheckSquare className="h-3.5 w-3.5" />
+              {selectionMode ? 'Cancel' : 'Select'}
+            </Button>
           </div>
         )}
         
