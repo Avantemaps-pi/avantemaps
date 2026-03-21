@@ -24,8 +24,6 @@ import { CheckSquare, RefreshCw } from 'lucide-react';
 const Notifications = () => {
   const [notifications, setNotifications] = useState<NotificationProps[]>([]);
   const [activeCategory, setActiveCategory] = useState<NotificationCategory>('all');
-  const [activeDateRange, setActiveDateRange] = useState<DateRange>('all');
-  const [activePriority, setActivePriority] = useState<PriorityFilterValue>('all');
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [newNotificationIds, setNewNotificationIds] = useState<Set<string>>(new Set());
