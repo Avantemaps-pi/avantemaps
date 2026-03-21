@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Place } from '@/types/business';
-import { CircleCheck, Info, Shield } from 'lucide-react';
+import { CircleCheck, Info, Shield, X } from 'lucide-react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import CategoryBadge from '@/components/business/CategoryBadge';
 import ExpandableDescription from '@/components/business/ExpandableDescription';
@@ -9,7 +9,6 @@ import BookmarkButton from '../buttons/BookmarkButton';
 import WebsiteButton from '../buttons/WebsiteButton';
 import PlaceRating from '../place/PlaceRating';
 import PlaceAddress from '../place/PlaceAddress';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import DetailsCard from '@/components/business/DetailsCard';
 import SwipeableImageGallery from '@/components/business/SwipeableImageGallery';
 import { useSharePlace } from '@/hooks/useSharePlace';
@@ -54,6 +53,7 @@ const PlaceOverlay: React.FC<PlaceOverlayProps> = ({
 
 const PlaceOverlayContent: React.FC<{ place: Place; detailCardRef?: React.RefObject<HTMLDivElement> }> = ({ place, detailCardRef }) => {
   const navigate = useNavigate();
+  const [showDetails, setShowDetails] = useState(false);
   const { isBookmarked, handleBookmarkToggle, isLoading } = useBookmark({
     initialIsBookmarked: false,
     id: place.id
@@ -95,17 +95,32 @@ const PlaceOverlayContent: React.FC<{ place: Place; detailCardRef?: React.RefObj
         />
       </div>
 
-      {/* Image gallery */}
-      <SwipeableImageGallery
-        images={images}
-        name={place.name}
-        isBookmarked={isBookmarked}
-        onBookmarkToggle={handleBookmarkToggle}
-        onShare={handleShare}
-        placeId={place.id}
-        onClick={handlePlaceClick}
-        previewMode={true}
-      />
+      {/* Image gallery with details overlay */}
+      <div className="relative">
+        <SwipeableImageGallery
+          images={images}
+          name={place.name}
+          isBookmarked={isBookmarked}
+          onBookmarkToggle={handleBookmarkToggle}
+          onShare={handleShare}
+          placeId={place.id}
+          onClick={handlePlaceClick}
+          previewMode={true}
+        />
+        
+        {/* Details overlay on top of images */}
+        {showDetails && (
+          <div className="absolute inset-0 z-20 bg-background/95 backdrop-blur-sm rounded-lg overflow-y-auto">
+            <button
+              onClick={() => setShowDetails(false)}
+              className="absolute top-2 right-2 z-30 p-1 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+            >
+              <X className="h-4 w-4 text-foreground" />
+            </button>
+            <DetailsCard place={place} />
+          </div>
+        )}
+      </div>
 
       {/* Address */}
       <PlaceAddress address={place.address} onClick={handlePlaceClick} />
@@ -125,17 +140,13 @@ const PlaceOverlayContent: React.FC<{ place: Place; detailCardRef?: React.RefObj
 
         <div className="flex flex-col gap-2 items-end flex-shrink-0">
           <WebsiteButton url={place.website} />
-          <Popover>
-            <PopoverTrigger asChild>
-              <div className="text-primary font-medium text-sm cursor-pointer flex items-center whitespace-nowrap">
-                <Info className="h-3 w-3 mr-1" />
-                Details
-              </div>
-            </PopoverTrigger>
-            <PopoverContent className="p-0 w-[480px]" align="end">
-              <DetailsCard place={place} />
-            </PopoverContent>
-          </Popover>
+          <div 
+            className="text-primary font-medium text-sm cursor-pointer flex items-center whitespace-nowrap"
+            onClick={() => setShowDetails(!showDetails)}
+          >
+            <Info className="h-3 w-3 mr-1" />
+            Details
+          </div>
         </div>
       </div>
     </div>
