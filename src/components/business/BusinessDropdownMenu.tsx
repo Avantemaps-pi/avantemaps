@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import DeleteBusinessDialog from './DeleteBusinessDialog';
+import ShareDialog from './ShareDialog';
 
 interface BusinessDropdownMenuProps {
   businessId?: number;
@@ -26,10 +27,13 @@ interface BusinessDropdownMenuProps {
 const BusinessDropdownMenu = ({ businessId, businessName, onDeleted }: BusinessDropdownMenuProps) => {
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   const handleNavigateToAnalytics = () => {
     navigate('/analytics', { state: { businessId } });
   };
+
+  const shareUrl = `${window.location.origin}?place=${businessId}`;
 
   return (
     <>
@@ -44,7 +48,7 @@ const BusinessDropdownMenu = ({ businessId, businessName, onDeleted }: BusinessD
             <BarChart className="mr-2 h-4 w-4" />
             <span>Analytics</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer">
+          <DropdownMenuItem className="cursor-pointer" onClick={() => setShowShareDialog(true)}>
             <Share className="mr-2 h-4 w-4" />
             <span>Share</span>
           </DropdownMenuItem>
@@ -65,6 +69,13 @@ const BusinessDropdownMenu = ({ businessId, businessName, onDeleted }: BusinessD
         businessId={businessId}
         businessName={businessName}
         onDeleted={onDeleted}
+      />
+
+      <ShareDialog
+        isOpen={showShareDialog}
+        onClose={() => setShowShareDialog(false)}
+        placeName={businessName || 'Business'}
+        shareUrl={shareUrl}
       />
     </>
   );
