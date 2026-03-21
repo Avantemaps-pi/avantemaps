@@ -39,7 +39,7 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
           <h2 className="text-base font-semibold text-gray-800 truncate">{place.name}</h2>
         </div>
         
-        <div className="grid grid-cols-2 gap-3 overflow-hidden">
+        <div className="grid grid-cols-2 gap-1 overflow-hidden">
           {/* Left Column - Trading Hours */}
           <div className="min-w-0">
             <div className="flex items-center space-x-1.5 mb-1.5">
