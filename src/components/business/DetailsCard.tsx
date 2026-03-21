@@ -60,7 +60,7 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
           </div>
 
           {/* Right Column - Categories & Contact & Website */}
-          <div className="space-y-3 min-w-0 overflow-hidden">
+          <div className="space-y-1.5 min-w-0 overflow-hidden">
             {/* Categories */}
             <div>
               <div className="flex items-center space-x-1.5 mb-1.5">
