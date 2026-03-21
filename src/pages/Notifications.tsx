@@ -179,9 +179,9 @@ const Notifications = () => {
   const unreadCount = filteredNotifications.filter(notification => !notification.read).length;
   return (
     <AppLayout title="Avante Maps">
-      <div className="max-w-3xl mx-auto mt-4 space-y-4">
+      <div className="max-w-3xl mx-auto mt-2 space-y-2">
         {/* Category Tabs */}
-        <div className="px-4">
+        <div className="px-3">
           <NotificationCategoryTabs
             activeCategory={activeCategory}
             onCategoryChange={setActiveCategory}
@@ -189,47 +189,38 @@ const Notifications = () => {
           />
         </div>
 
-        {/* Date Range Filter */}
+        {/* Compact filters & actions row */}
         {notifications.length > 0 && (
-          <div className="px-4">
+          <div className="px-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <DateRangeFilter
               activeRange={activeDateRange}
               onRangeChange={setActiveDateRange}
             />
-          </div>
-        )}
-
-        {/* Priority Filter */}
-        {notifications.length > 0 && (
-          <div className="px-4">
+            <div className="h-4 w-px bg-border hidden sm:block" />
             <PriorityFilter
               activePriority={activePriority}
               onPriorityChange={setActivePriority}
             />
-          </div>
-        )}
-
-        {/* Action buttons */}
-        {notifications.length > 0 && (
-          <div className="px-4 flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={markAllAsRead} 
-              disabled={unreadCount === 0}
-            >
-              Mark all as read
-            </Button>
-            
-            <Button
-              variant={selectionMode ? "default" : "outline"}
-              size="sm"
-              onClick={toggleSelectionMode}
-              className="gap-2"
-            >
-              <CheckSquare className="h-4 w-4" />
-              {selectionMode ? 'Cancel selection' : 'Select'}
-            </Button>
+            <div className="ml-auto flex gap-1.5">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={markAllAsRead} 
+                disabled={unreadCount === 0}
+                className="text-xs h-7 px-2"
+              >
+                Mark all read
+              </Button>
+              <Button
+                variant={selectionMode ? "default" : "ghost"}
+                size="sm"
+                onClick={toggleSelectionMode}
+                className="gap-1 text-xs h-7 px-2"
+              >
+                <CheckSquare className="h-3.5 w-3.5" />
+                {selectionMode ? 'Cancel' : 'Select'}
+              </Button>
+            </div>
           </div>
         )}
         
