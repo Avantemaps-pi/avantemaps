@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { ExternalLink, Clock, Phone, Mail, Globe, Tag, AtSign } from 'lucide-react';
+import { ExternalLink, Clock, Phone, Mail, Globe, Tag } from 'lucide-react';
 import { Place } from '@/types/business';
 
 interface DetailsCardProps {
@@ -10,16 +10,14 @@ interface DetailsCardProps {
 const DAYS_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 const formatDayName = (day: string): string => {
-  return day.charAt(0).toUpperCase() + day.slice(1);
+  return day.charAt(0).toUpperCase() + day.slice(1, 3);
 };
 
 const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
-  // Get categories from the category string (comma-separated)
   const categories = place.category
     ? place.category.split(',').map(cat => cat.trim()).filter(Boolean)
     : [];
 
-  // Format hours for display
   const getFormattedHours = () => {
     if (!place.hours) return null;
     
@@ -27,7 +25,7 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
       const hours = place.hours?.[day];
       return {
         day: formatDayName(day),
-        hours: hours || 'Not specified'
+        hours: hours || 'N/A'
       };
     });
   };
@@ -36,68 +34,64 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
 
   return (
     <Card className="w-full max-w-lg bg-white shadow-md rounded-xl overflow-hidden border border-gray-100">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
-          <h2 className="text-lg font-semibold text-gray-800">{place.name}</h2>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+          <h2 className="text-base font-semibold text-gray-800 truncate">{place.name}</h2>
         </div>
         
-        <div className="grid grid-cols-2 gap-0">
-          {/* Left Column - Trading Hours & Website */}
-          <div className="space-y-4">
-            {/* Trading Hours */}
-            <div className="mr-[-10px]">
-              <div className="flex items-center space-x-2 mb-2">
-                <Clock className="h-5 w-5 text-avante-blue flex-shrink-0" />
-                <h3 className="text-sm font-medium text-gray-700">Trading Hours</h3>
-              </div>
-              <div className="text-xs space-y-1 text-gray-600">
-                {formattedHours ? (
-                  formattedHours.map(({ day, hours }) => (
-                    <p key={day}>
-                      <span className="font-medium">{day}:</span> {hours}
-                    </p>
-                  ))
-                ) : (
-                  <p className="text-gray-400 italic">No hours specified</p>
-                )}
-              </div>
+        <div className="grid grid-cols-2 gap-3 overflow-hidden">
+          {/* Left Column - Trading Hours */}
+          <div className="min-w-0">
+            <div className="flex items-center space-x-1.5 mb-1.5">
+              <Clock className="h-4 w-4 text-avante-blue flex-shrink-0" />
+              <h3 className="text-xs font-medium text-gray-700">Trading Hours</h3>
             </div>
-            
+            <div className="text-[11px] space-y-0.5 text-gray-600">
+              {formattedHours ? (
+                formattedHours.map(({ day, hours }) => (
+                  <p key={day} className="truncate">
+                    <span className="font-medium">{day}:</span> {hours}
+                  </p>
+                ))
+              ) : (
+                <p className="text-gray-400 italic">No hours</p>
+              )}
+            </div>
           </div>
 
-          {/* Right Column - Categories & Contact Details & Website */}
-          <div className="space-y-4 ml-[-10px]">
+          {/* Right Column - Categories & Contact & Website */}
+          <div className="space-y-3 min-w-0 overflow-hidden">
             {/* Categories */}
             <div>
-              <div className="flex items-center space-x-2 mb-2">
-                <Tag className="h-5 w-5 text-avante-purple flex-shrink-0" />
-                <h3 className="text-sm font-medium text-gray-700">Categories</h3>
+              <div className="flex items-center space-x-1.5 mb-1.5">
+                <Tag className="h-4 w-4 text-avante-purple flex-shrink-0" />
+                <h3 className="text-xs font-medium text-gray-700">Categories</h3>
               </div>
-              <div className="text-xs space-y-1 text-gray-600">
+              <div className="text-[11px] space-y-0.5 text-gray-600">
                 {categories.length > 0 ? (
                   categories.map((category, index) => (
-                    <p key={index}>{category}</p>
+                    <p key={index} className="truncate">{category}</p>
                   ))
                 ) : (
-                  <p className="text-gray-400 italic">No categories specified</p>
+                  <p className="text-gray-400 italic">None</p>
                 )}
               </div>
             </div>
             
             {/* Contact Details */}
             <div>
-              <div className="flex items-center space-x-2 mb-2">
-                <Phone className="h-5 w-5 text-avante-teal flex-shrink-0" />
-                <h3 className="text-sm font-medium text-gray-700">Contact Details</h3>
+              <div className="flex items-center space-x-1.5 mb-1.5">
+                <Phone className="h-4 w-4 text-avante-teal flex-shrink-0" />
+                <h3 className="text-xs font-medium text-gray-700">Contact</h3>
               </div>
-              <div className="text-xs space-y-1 text-gray-600">
+              <div className="text-[11px] space-y-0.5 text-gray-600 overflow-hidden">
                 {place.phone ? (
-                  <p>Phone: {place.phone}</p>
+                  <p className="truncate">{place.phone}</p>
                 ) : (
-                  <p className="text-gray-400 italic">No phone number</p>
+                  <p className="text-gray-400 italic">No phone</p>
                 )}
                 {place.email && (
-                  <p>Email: {place.email}</p>
+                  <p className="truncate">{place.email}</p>
                 )}
               </div>
             </div>
@@ -105,18 +99,18 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
             {/* Website */}
             {place.website && (
               <div>
-                <div className="flex items-center space-x-2 mb-2">
-                  <Globe className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <h3 className="text-sm font-medium text-gray-700">Website</h3>
+                <div className="flex items-center space-x-1.5 mb-1.5">
+                  <Globe className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <h3 className="text-xs font-medium text-gray-700">Website</h3>
                 </div>
                 <a 
                   href={place.website}
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-avante-blue flex items-center text-xs hover:underline"
+                  className="text-avante-blue flex items-center text-[11px] hover:underline truncate"
                 >
-                  {place.website.replace(/(^\w+:|^)\/\//, '')}
-                  <ExternalLink className="h-3 w-3 ml-1" />
+                  <span className="truncate">{place.website.replace(/(^\w+:|^)\/\//, '')}</span>
+                  <ExternalLink className="h-3 w-3 ml-1 flex-shrink-0" />
                 </a>
               </div>
             )}
