@@ -1,4 +1,5 @@
 import React from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -15,6 +16,16 @@ export class ErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error) {
     console.error("App crashed:", error);
+    // Log to server via edge function
+    supabase.functions.invoke('log-error', {
+      body: {
+        message: error.message,
+        stack_trace: error.stack,
+        user_agent: navigator.userAgent,
+      },
+    }).catch(() => {
+      // Silently fail - don't crash the error boundary
+    });
   }
 
   render() {
