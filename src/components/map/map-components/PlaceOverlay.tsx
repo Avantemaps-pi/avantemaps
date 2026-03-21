@@ -39,6 +39,8 @@ const PlaceOverlay: React.FC<PlaceOverlayProps> = ({
       snapPoints={[0.45, 1]}
       activeSnapPoint={1}
       modal={true}
+      dismissible={true}
+      fadeFromIndex={0}
     >
       <DrawerContent className="z-50 max-h-[96vh] focus:outline-none">
         <PlaceOverlayContent 
