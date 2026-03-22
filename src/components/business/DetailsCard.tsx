@@ -5,6 +5,7 @@ import { Place } from '@/types/business';
 
 interface DetailsCardProps {
   place: Place;
+  className?: string;
 }
 
 const DAYS_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -13,7 +14,7 @@ const formatDayName = (day: string): string => {
   return day.charAt(0).toUpperCase() + day.slice(1, 3);
 };
 
-const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
+const DetailsCard: React.FC<DetailsCardProps> = ({ place, className }) => {
   const categories = place.category
     ? place.category.split(',').map(cat => cat.trim()).filter(Boolean)
     : [];
@@ -33,8 +34,8 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
   const formattedHours = getFormattedHours();
 
   return (
-    <Card className="w-full max-w-lg bg-white shadow-md rounded-xl overflow-hidden border border-gray-100">
-      <CardContent className="p-4">
+    <Card className={`w-full max-w-lg bg-white shadow-md rounded-xl overflow-hidden border border-gray-100 ${className || ''}`}>
+      <CardContent className="p-3">
         
         <div className="grid grid-cols-2 gap-1 overflow-hidden">
           {/* Left Column - Trading Hours */}
