@@ -5,6 +5,7 @@ import { Place } from '@/types/business';
 
 interface DetailsCardProps {
   place: Place;
+  className?: string;
 }
 
 const DAYS_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
