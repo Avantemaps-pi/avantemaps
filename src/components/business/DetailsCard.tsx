@@ -14,7 +14,7 @@ const formatDayName = (day: string): string => {
   return day.charAt(0).toUpperCase() + day.slice(1, 3);
 };
 
-const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
+const DetailsCard: React.FC<DetailsCardProps> = ({ place, className }) => {
   const categories = place.category
     ? place.category.split(',').map(cat => cat.trim()).filter(Boolean)
     : [];
