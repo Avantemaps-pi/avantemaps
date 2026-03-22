@@ -35,9 +35,6 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place }) => {
   return (
     <Card className="w-full max-w-lg bg-white shadow-md rounded-xl overflow-hidden border border-gray-100">
       <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
-          <h2 className="text-base font-semibold text-gray-800 truncate">{place.name}</h2>
-        </div>
         
         <div className="grid grid-cols-2 gap-1 overflow-hidden">
           {/* Left Column - Trading Hours */}
