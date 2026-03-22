@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/context/auth';
 import { verifyPiAuthentication, VerifyPiAuthResult } from '@/utils/verifyPiAuthentication';
 import { supabase } from '@/integrations/supabase/client';
+import { authenticate as piCoreAuthenticate } from '@/utils/piNetwork/core';
 import { toast } from 'sonner';
 
 interface UsePiAuthReturn {
@@ -20,15 +21,13 @@ export function usePiAuth(): UsePiAuthReturn {
       setLoading(true);
       setError(undefined);
 
-      // 1️⃣ Trigger Pi login
-      const pi = (window as any).Pi;
-      if (!pi) throw new Error('Pi SDK not loaded');
+      // 1️⃣ Trigger Pi login using core authenticate (caches result for payments)
+      const piAuthResult = await piCoreAuthenticate(['username', 'payments', 'wallet_address']);
 
-      const authResponse = await pi.authenticate({
-        scopes: ['username', 'wallet_address'],
-      });
+      const uid = piAuthResult.user.uid;
+      const username = piAuthResult.user.username;
+      const accessToken = piAuthResult.accessToken;
 
-      const { uid, username, accessToken } = authResponse;
       if (!uid || !username || !accessToken) {
         throw new Error('Pi authentication failed or incomplete');
       }
