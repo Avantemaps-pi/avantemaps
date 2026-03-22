@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/context/auth';
 import { verifyPiAuthentication, VerifyPiAuthResult } from '@/utils/verifyPiAuthentication';
 import { supabase } from '@/integrations/supabase/client';
+import { authenticate as piCoreAuthenticate } from '@/utils/piNetwork/core';
 import { toast } from 'sonner';
 
 interface UsePiAuthReturn {
