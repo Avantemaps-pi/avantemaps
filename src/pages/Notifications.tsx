@@ -181,29 +181,6 @@ const Notifications = () => {
           />
         </div>
 
-        {/* Actions row */}
-        {notifications.length > 0 && (
-          <div className="px-3 flex items-center gap-1.5">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={markAllAsRead} 
-              disabled={unreadCount === 0}
-              className="text-xs h-7 px-2"
-            >
-              Mark all read
-            </Button>
-            <Button
-              variant={selectionMode ? "default" : "ghost"}
-              size="sm"
-              onClick={toggleSelectionMode}
-              className="gap-1 text-xs h-7 px-2"
-            >
-              <CheckSquare className="h-3.5 w-3.5" />
-              {selectionMode ? 'Cancel' : 'Select'}
-            </Button>
-          </div>
-        )}
         
         {/* Notifications list with pull-to-refresh */}
         <PullToRefresh
