@@ -17,6 +17,7 @@ import type {
 } from '../piNetwork/types';
 
 import { approvePayment, completePayment } from '@/api/payments';
+import { supabase } from '@/integrations/supabase/client';
 
 // State tracking
 let paymentInProgress = false;
@@ -87,12 +88,21 @@ export async function executeSubscriptionPayment(
       };
     }
 
+    // Get Supabase UUID (not Pi UID) for edge function calls
+    const { data: { session } } = await supabase.auth.getSession();
+    const supabaseUserId = session?.user?.id;
+    if (!supabaseUserId) {
+      return {
+        success: false,
+        message: 'Please log in to your account first'
+      };
+    }
+
+    const normalizedFrequency = frequency === 'yearly' ? 'annual' : frequency;
     const memo = `${tier} subscription (${frequency})`;
     const metadata = {
-      tier,
-      frequency,
-      userId: authResult.user.uid,
-      timestamp: Date.now()
+      subscriptionTier: tier,
+      frequency: normalizedFrequency,
     };
 
     return new Promise<PaymentResult>((resolve) => {
@@ -102,7 +112,7 @@ export async function executeSubscriptionPayment(
           try {
             const approvalResult = await approvePayment({
               paymentId,
-              userId: authResult.user.uid,
+              userId: supabaseUserId,
               amount,
               memo,
               metadata
@@ -121,7 +131,7 @@ export async function executeSubscriptionPayment(
           try {
             const completionResult = await completePayment({
               paymentId,
-              userId: authResult.user.uid,
+              userId: supabaseUserId,
               amount,
               memo,
               metadata,
