@@ -1,39 +1,53 @@
 
 
-# Streamline Business Verification to Complete Instantly
+## Plan: Fix Pi Network Subscription Payments
 
-## Problem
-Currently, the `verify-business` edge function calls an **external** verification API (`ulsrprpsgiatqmakluby.supabase.co`), which adds latency and external dependency. The user confirms the verifier is actually within the same Supabase project, so the verification can be done directly in the edge function itself.
+### Problem Summary
 
-## Solution
-Simplify the `verify-business` edge function to perform verification **locally** -- validate the business ownership, update the `businesses` table directly, and return a success response. No external API call needed. This will complete in under a second.
+Users can't upgrade their plan because of **three metadata mismatches** between the frontend payment code and the edge function validation schemas:
 
-## Changes
+1. **Metadata key mismatch**: Frontend sends `{ tier, frequency, userId, timestamp }` but the edge function Zod schema expects `{ subscriptionTier, frequency }` with `.strict()` validation -- meaning extra keys like `userId` and `timestamp` cause instant rejection.
 
-### 1. Update `supabase/functions/verify-business/index.ts`
-- Remove the external API calls to `ulsrprpsgiatqmakluby.supabase.co`
-- Remove the `VERIFICATION_API_KEY` dependency
-- After validating ownership, directly update the business record:
-  - Set `verification_status` to `'verified'` (or `'certified'`)
-  - Set `is_verified` (or `is_certified`) to `true`
-- Return success immediately
+2. **Frequency value mismatch**: Frontend sends `"yearly"` but edge function validates against `z.enum(['monthly', 'annual'])` -- `"yearly"` is not `"annual"`, so validation fails.
 
-### 2. Update `src/hooks/useChatState.tsx`
-- Update the success message to reflect instant verification (remove "2-3 business days" language)
-- After successful verification, show a confirmation like: "Your business has been verified successfully!"
-- Remove the fallback that sets status to `'pending'` on error -- since verification is now local, it either succeeds or fails
+3. **Auth result UID vs Supabase UUID**: The `userId` sent to `approvePayment` is `authResult.user.uid` (the Pi Network UID), but the edge function validates it as `z.string().uuid()` and uses it to query the `users` table by `id` (Supabase UUID). This means the payment record gets created with the wrong user ID, and the subscription update query finds no matching user.
 
-### 3. No changes needed to `supabase/config.toml`
-- The existing configuration for `verify-business` (verify_jwt = false) is already correct since the function handles auth internally.
+### Changes
 
-## Technical Details
+#### 1. Fix `src/utils/piPayment/payments.ts` (frontend payment metadata)
+- Rename `tier` to `subscriptionTier` in the metadata object
+- Change `frequency` value from `"yearly"` to `"annual"` when applicable
+- Remove `userId` and `timestamp` from metadata (rejected by `.strict()`)
+- Use the Supabase user ID (from auth context or session) instead of `authResult.user.uid` (Pi UID) for the `userId` field sent to the edge functions
 
-The simplified edge function flow:
-1. Validate auth token
-2. Parse request body (business_id, verification_type)
-3. Verify the user owns the business (query `businesses` table)
-4. Update the business record directly (`is_verified = true`, `verification_status = 'verified'`)
-5. Return success response
+#### 2. Fix `src/utils/piPayment/payments.ts` (userId resolution)
+- Before calling `approvePayment` / `completePayment`, retrieve the current Supabase session to get the actual Supabase UUID
+- Pass that UUID as `userId` instead of the Pi Network UID
 
-This eliminates the external HTTP call entirely, making verification near-instant.
+#### 3. Fix `src/utils/piPayment/pricing.ts` (frequency mapping)
+- Add a helper to normalize `"yearly"` to `"annual"` for API calls, or update the edge function schema to accept both
+
+### Technical Details
+
+The root cause is in `executeSubscriptionPayment()` around line 90-96:
+```typescript
+// CURRENT (broken)
+const metadata = {
+  tier,           // edge function expects "subscriptionTier"
+  frequency,      // sends "yearly", edge function expects "annual"
+  userId: authResult.user.uid,  // Pi UID, not Supabase UUID
+  timestamp: Date.now()         // rejected by .strict()
+};
+```
+
+Will be fixed to:
+```typescript
+// FIXED
+const metadata = {
+  subscriptionTier: tier,
+  frequency: frequency === 'yearly' ? 'annual' : frequency,
+};
+```
+
+And the `userId` passed to `approvePayment`/`completePayment` will be sourced from the Supabase session (`supabase.auth.getSession()`) rather than `authResult.user.uid`.
 
