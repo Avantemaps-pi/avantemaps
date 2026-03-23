@@ -17,6 +17,7 @@ import type {
 } from '../piNetwork/types';
 
 import { approvePayment, completePayment } from '@/api/payments';
+import { supabase } from '@/integrations/supabase/client';
 
 // State tracking
 let paymentInProgress = false;
