@@ -131,7 +131,7 @@ export async function executeSubscriptionPayment(
           try {
             const completionResult = await completePayment({
               paymentId,
-              userId: authResult.user.uid,
+              userId: supabaseUserId,
               amount,
               memo,
               metadata,
