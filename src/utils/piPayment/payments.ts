@@ -80,12 +80,18 @@ export async function executeSubscriptionPayment(
     // Ensure SDK is ready
     await initPiForPayments();
     
-    const authResult = getPiAuthResult();
+    // Try cached auth first; if missing, re-authenticate with Pi SDK
+    let authResult = getPiAuthResult();
     if (!authResult) {
-      return {
-        success: false,
-        message: 'Please authenticate with Pi Network first'
-      };
+      try {
+        const { authenticate } = await import('../piNetwork/core');
+        authResult = await authenticate(['username', 'payments', 'wallet_address']);
+      } catch (authError: any) {
+        return {
+          success: false,
+          message: authError.message || 'Please authenticate with Pi Network first'
+        };
+      }
     }
 
     // Get Supabase UUID (not Pi UID) for edge function calls
