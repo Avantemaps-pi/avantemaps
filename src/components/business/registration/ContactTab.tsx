@@ -7,8 +7,13 @@ import { Button } from '@/components/ui/button';
 import { useFormContext } from 'react-hook-form';
 import { FormValues } from './formSchema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CheckCircle2, XCircle } from 'lucide-react';
+import {
+  getExpectedLengthForCountry,
+  validatePhoneNumber,
+} from './utils/phoneValidation';
 
-// Extended country codes list
+// Country codes for the dropdown
 const countryCodes = [
   { code: '+93', country: 'Afghanistan' },
   { code: '+355', country: 'Albania' },
@@ -183,11 +188,10 @@ const countryCodes = [
   { code: '+263', country: 'Zimbabwe' },
 ];
 
-// Map country names to country codes
 const getCountryCodeFromCountry = (country: string): string => {
   const normalized = country.toLowerCase().trim();
   const match = countryCodes.find(c => c.country.toLowerCase() === normalized);
-  return match?.code || '+1'; // Default to +1 if not found
+  return match?.code || '+1';
 };
 
 interface ContactTabProps {
@@ -198,84 +202,36 @@ interface ContactTabProps {
 
 const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled }) => {
   const form = useFormContext<FormValues>();
-  
-  // Initialize countryCode based on the country from address section
+
   const [countryCode, setCountryCode] = React.useState(() => {
     const formCountryCode = form.getValues("countryCode");
     if (formCountryCode) return formCountryCode;
-    
-    // Get country from address section and map to country code
     const addressCountry = form.getValues("country");
     if (addressCountry) {
       const mappedCode = getCountryCodeFromCountry(addressCountry);
       form.setValue("countryCode", mappedCode);
       return mappedCode;
     }
-    
     return "+1";
   });
 
-  // Update countryCode in the form when it changes
   const handleCountryCodeChange = (value: string) => {
     setCountryCode(value);
     form.setValue("countryCode", value);
   };
 
-// Phone digit length expectations per country code
-  const getExpectedDigits = (code: string): { min: number; max: number } => {
-    const digitMap: Record<string, { min: number; max: number }> = {
-      '+1': { min: 10, max: 10 },     // US/Canada
-      '+44': { min: 10, max: 10 },     // UK
-      '+91': { min: 10, max: 10 },     // India
-      '+61': { min: 9, max: 9 },       // Australia
-      '+86': { min: 11, max: 11 },     // China
-      '+81': { min: 10, max: 10 },     // Japan
-      '+49': { min: 10, max: 11 },     // Germany
-      '+33': { min: 9, max: 9 },       // France
-      '+55': { min: 10, max: 11 },     // Brazil
-      '+52': { min: 10, max: 10 },     // Mexico
-      '+82': { min: 9, max: 10 },      // South Korea
-      '+39': { min: 9, max: 10 },      // Italy
-      '+34': { min: 9, max: 9 },       // Spain
-      '+7': { min: 10, max: 10 },      // Russia/Kazakhstan
-      '+63': { min: 10, max: 10 },     // Philippines
-      '+234': { min: 10, max: 10 },    // Nigeria
-      '+27': { min: 9, max: 9 },       // South Africa
-      '+62': { min: 9, max: 12 },      // Indonesia
-      '+60': { min: 9, max: 10 },      // Malaysia
-      '+65': { min: 8, max: 8 },       // Singapore
-      '+66': { min: 9, max: 9 },       // Thailand
-      '+84': { min: 9, max: 10 },      // Vietnam
-      '+20': { min: 10, max: 10 },     // Egypt
-      '+971': { min: 9, max: 9 },      // UAE
-      '+966': { min: 9, max: 9 },      // Saudi Arabia
-      '+90': { min: 10, max: 10 },     // Turkey
-      '+48': { min: 9, max: 9 },       // Poland
-      '+380': { min: 9, max: 9 },      // Ukraine
-      '+31': { min: 9, max: 9 },       // Netherlands
-      '+46': { min: 9, max: 9 },       // Sweden
-      '+47': { min: 8, max: 8 },       // Norway
-      '+41': { min: 9, max: 9 },       // Switzerland
-      '+351': { min: 9, max: 9 },      // Portugal
-      '+64': { min: 9, max: 10 },      // New Zealand
-      '+254': { min: 9, max: 9 },      // Kenya
-      '+92': { min: 10, max: 10 },     // Pakistan
-      '+880': { min: 10, max: 10 },    // Bangladesh
-    };
-    return digitMap[code] || { min: 6, max: 15 }; // Default fallback
-  };
-
-  const expectedDigits = getExpectedDigits(countryCode);
+  const expectedDigits = getExpectedLengthForCountry(countryCode);
   const currentPhone = form.watch('phone') || '';
-  const phoneLength = currentPhone.replace(/[^0-9]/g, '').length;
-  const isPhoneLengthValid = phoneLength === 0 || (phoneLength >= expectedDigits.min && phoneLength <= expectedDigits.max);
+  const digitsOnly = currentPhone.replace(/\D/g, '');
+  const phoneLength = digitsOnly.length;
 
-  // Handle phone input to only allow numbers
+  const { isValid, isPossible } = React.useMemo(
+    () => validatePhoneNumber(digitsOnly, countryCode),
+    [digitsOnly, countryCode]
+  );
+
   const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Replace any non-numeric character with empty string
-    const numericValue = value.replace(/[^0-9]/g, '');
-    // Limit to max expected digits
+    const numericValue = e.target.value.replace(/\D/g, '');
     const trimmed = numericValue.slice(0, expectedDigits.max);
     form.setValue('phone', trimmed);
   };
@@ -283,127 +239,125 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
   return (
     <div className="w-full">
       <Card className="border shadow-sm">
-      <CardHeader className="pb-4 space-y-2">
-        <CardTitle className="text-2xl sm:text-xl">Contact Details</CardTitle>
-        <CardDescription className="text-base sm:text-sm">
-          How customers can reach your business.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-base mb-1.5">Contact Number *</FormLabel>
-              <div className="flex space-x-2">
-                <Select
-                  value={countryCode}
-                  onValueChange={handleCountryCodeChange}
-                  disabled={disabled}
-                >
-                  <SelectTrigger className="w-[70px] flex-shrink-0">
-                    <SelectValue placeholder="+1" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto bg-background z-50">
-                    {countryCodes.map((country) => (
-                      <SelectItem key={`${country.code}-${country.country}`} value={country.code}>
-                        {country.code} {country.country}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        <CardHeader className="pb-4 space-y-2">
+          <CardTitle className="text-2xl sm:text-xl">Contact Details</CardTitle>
+          <CardDescription className="text-base sm:text-sm">
+            How customers can reach your business.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-base mb-1.5">Contact Number *</FormLabel>
+                <div className="flex space-x-2">
+                  <Select
+                    value={countryCode}
+                    onValueChange={handleCountryCodeChange}
+                    disabled={disabled}
+                  >
+                    <SelectTrigger className="w-[70px] flex-shrink-0">
+                      <SelectValue placeholder="+1" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 overflow-y-auto bg-background z-50">
+                      {countryCodes.map((country) => (
+                        <SelectItem key={`${country.code}-${country.country}`} value={country.code}>
+                          {country.code} {country.country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormControl>
+                    <Input
+                      id="phone"
+                      placeholder="555-123-4567"
+                      {...field}
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="tel"
+                      onChange={handlePhoneInput}
+                      disabled={disabled}
+                    />
+                  </FormControl>
+                </div>
+                <FormMessage />
+                {phoneLength > 0 && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    {isValid ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-destructive" />
+                    )}
+                    <span className={`text-xs font-medium ${isValid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                      {isValid ? 'Valid' : isPossible ? 'Incomplete' : 'Invalid'} — {phoneLength} digit{phoneLength !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-base mb-1.5">Email Address *</FormLabel>
                 <FormControl>
-                  <Input 
-                    id="phone"
-                    placeholder="555-123-4567"
+                  <Input
+                    id="email"
+                    placeholder="contact@business.com"
+                    type="email"
+                    autoComplete="email"
                     {...field}
-                    type="tel"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    autoComplete="tel"
-                    onChange={(e) => {
-                      handlePhoneInput(e);
-                    }}
                     disabled={disabled}
                   />
                 </FormControl>
-              </div>
-              <FormMessage />
-              {!isPhoneLengthValid && phoneLength > 0 && (
-                <p className="text-sm font-medium text-destructive">
-                  {expectedDigits.min === expectedDigits.max
-                    ? `Phone number must be ${expectedDigits.min} digits for this country code`
-                    : `Phone number must be ${expectedDigits.min}-${expectedDigits.max} digits for this country code`}
-                </p>
-              )}
-              {isPhoneLengthValid && phoneLength > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {phoneLength}/{expectedDigits.min === expectedDigits.max ? expectedDigits.min : `${expectedDigits.min}-${expectedDigits.max}`} digits
-                </p>
-              )}
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-base mb-1.5">Email Address *</FormLabel>
-              <FormControl>
-                <Input 
-                  id="email"
-                  placeholder="contact@business.com" 
-                  type="email"
-                  autoComplete="email"
-                  {...field} 
-                  disabled={disabled}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="website"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-base mb-1.5">Pi Network Website URL (Optional)</FormLabel>
-              <FormControl>
-                <Input 
-                  id="website"
-                  placeholder="https://example.pinet.com" 
-                  type="url"
-                  autoComplete="url"
-                  {...field} 
-                  disabled={disabled}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </CardContent>
-      <CardFooter className="flex justify-between pt-2">
-        <Button 
-          type="button" 
-          variant="outline" 
-          onClick={onPrevious}
-          disabled={disabled}
-        >
-          Back
-        </Button>
-        <Button 
-          type="button" 
-          className="bg-avante-blue hover:bg-avante-blue/90"
-          onClick={onNext}
-          disabled={disabled}
-        >
-          Next
-        </Button>
-      </CardFooter>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="website"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-base mb-1.5">Pi Network Website URL (Optional)</FormLabel>
+                <FormControl>
+                  <Input
+                    id="website"
+                    placeholder="https://example.pinet.com"
+                    type="url"
+                    autoComplete="url"
+                    {...field}
+                    disabled={disabled}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </CardContent>
+        <CardFooter className="flex justify-between pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onPrevious}
+            disabled={disabled}
+          >
+            Back
+          </Button>
+          <Button
+            type="button"
+            className="bg-avante-blue hover:bg-avante-blue/90"
+            onClick={onNext}
+            disabled={disabled}
+          >
+            Next
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );
