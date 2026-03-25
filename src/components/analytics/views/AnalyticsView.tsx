@@ -14,7 +14,7 @@ interface AnalyticsViewProps {
 const AnalyticsView: React.FC<AnalyticsViewProps> = ({ handleExport }) => {
   const navigate = useNavigate();
   const { hasPermission, isLoading } = useFeatureAccess(
-    SubscriptionTier.ORGANIZATION,
+    SubscriptionTier.SMALL_BUSINESS,
     { redirectTo: '' } // We'll handle redirection within the component
   );
   
