@@ -54,6 +54,7 @@
     "embla-carousel-react": "^8.3.0",
     "input-otp": "^1.2.4",
     "leaflet": "^1.9.4",
+    "libphonenumber-js": "^1.12.40",
     "lodash": "^4.17.21",
     "lucide-react": "^0.486.0",
     "next-themes": "^0.3.0",
