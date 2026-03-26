@@ -24,6 +24,9 @@ interface AnalyticsHeaderProps {
 
 const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
   businessName,
+  businesses,
+  selectedBusinessId,
+  onBusinessChange,
   dateRange,
   onDateRangeChange,
   onExport,
@@ -35,7 +38,25 @@ const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{businessName} <span className="text-muted-foreground font-normal">Analytics</span></h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {businesses.length > 1 && onBusinessChange ? (
+            <Select value={selectedBusinessId?.toString()} onValueChange={(v) => onBusinessChange(parseInt(v))}>
+              <SelectTrigger className="inline-flex w-auto border-none shadow-none p-0 h-auto text-2xl font-bold gap-1 [&>svg]:h-5 [&>svg]:w-5">
+                <SelectValue placeholder={businessName} />
+              </SelectTrigger>
+              <SelectContent>
+                {businesses.map(b => (
+                  <SelectItem key={b.id} value={b.id.toString()}>
+                    {b.business_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <span>{businessName}</span>
+          )}
+          {' '}<span className="text-muted-foreground font-normal">Analytics</span>
+        </h1>
         <p className="text-muted-foreground mt-1">
           Track your business performance and engagement metrics
         </p>
