@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Maximize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LineChartComponent from './charts/LineChartComponent';
@@ -19,14 +20,17 @@ interface EngagementChartProps {
   data: ChartData[];
   title: string;
   description?: string;
+  dateRange?: string;
+  onDateRangeChange?: (value: string) => void;
+  hasAnnualSubscription?: boolean;
+  hasRenewedAnnualSubscription?: boolean;
 }
 
-const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, title, description }) => {
+const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, title, description, dateRange = 'week', onDateRangeChange, hasAnnualSubscription = false, hasRenewedAnnualSubscription = false }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [activeTab, setActiveTab] = useState<'line' | 'bar'>('line');
   const [xScale, setXScale] = useState(100);
   const [yScale, setYScale] = useState(100);
-  const [timelineFilter, setTimelineFilter] = useState('week'); // Default to week
   
   const toggleFullScreen = () => {
     setIsFullScreen(!isFullScreen);
@@ -83,6 +87,14 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
     </div>
   ), [data, chartWidth, chartHeight, containerStyle, xScale, yScale]);
   
+  const timelineOptions = [
+    { value: "day", label: "Day" },
+    { value: "week", label: "Week" },
+    { value: "month", label: "Month" },
+    ...(hasAnnualSubscription ? [{ value: "quarter", label: "Quarter" }] : []),
+    ...(hasRenewedAnnualSubscription ? [{ value: "year", label: "Year" }] : []),
+  ];
+
   return (
     <>
       <Card className="w-full h-full">
@@ -100,6 +112,26 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
             </Button>
           </div>
           
+          <div className="mt-2 overflow-x-auto">
+            <ToggleGroup 
+              type="single" 
+              value={dateRange} 
+              onValueChange={(value) => value && onDateRangeChange?.(value)}
+              className="justify-start bg-muted/20 p-1 rounded-lg"
+            >
+              {timelineOptions.map((option) => (
+                <ToggleGroupItem
+                  key={option.value}
+                  value={option.value}
+                  aria-label={`Filter by ${option.label}`}
+                  className="data-[state=on]:bg-background data-[state=on]:text-foreground px-3 py-1 text-sm"
+                >
+                  {option.label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+
           <div className="flex items-center justify-between mt-2">
             <Tabs value={activeTab} onValueChange={handleTabChange}>
               <TabsList>
@@ -136,8 +168,10 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
         setXScale={setXScale}
         yScale={yScale}
         setYScale={setYScale}
-        timelineFilter={timelineFilter}
-        setTimelineFilter={setTimelineFilter}
+        timelineFilter={dateRange}
+        setTimelineFilter={(v) => onDateRangeChange?.(v)}
+        hasAnnualSubscription={hasAnnualSubscription}
+        hasRenewedAnnualSubscription={hasRenewedAnnualSubscription}
       />
     </>
   );

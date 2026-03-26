@@ -183,6 +183,10 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
             <EngagementChart 
               data={engagementData}
               title="Views Over Time"
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+              hasAnnualSubscription={annualSubCount >= 1}
+              hasRenewedAnnualSubscription={annualSubCount >= 2}
             />
           </div>
 
