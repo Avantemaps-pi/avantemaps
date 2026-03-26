@@ -10,6 +10,8 @@ interface AnalyticsHeaderProps {
   dateRange: string;
   onDateRangeChange: (value: string) => void;
   onExport: (format: 'csv' | 'pdf') => void;
+  hasAnnualSubscription?: boolean;
+  hasRenewedAnnualSubscription?: boolean;
 }
 
 const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
