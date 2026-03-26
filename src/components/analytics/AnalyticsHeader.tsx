@@ -10,13 +10,17 @@ interface AnalyticsHeaderProps {
   dateRange: string;
   onDateRangeChange: (value: string) => void;
   onExport: (format: 'csv' | 'pdf') => void;
+  hasAnnualSubscription?: boolean;
+  hasRenewedAnnualSubscription?: boolean;
 }
 
 const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
   businessName,
   dateRange,
   onDateRangeChange,
-  onExport
+  onExport,
+  hasAnnualSubscription = false,
+  hasRenewedAnnualSubscription = false,
 }) => {
   const navigate = useNavigate();
   
@@ -35,10 +39,16 @@ const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
             <CalendarIcon className="mr-2 h-4 w-4" />
             <SelectValue placeholder="Day, Week, Month, Quarter, Year" />
           </SelectTrigger>
-          <SelectContent>
+           <SelectContent>
             <SelectItem value="day">Day</SelectItem>
             <SelectItem value="week">Week</SelectItem>
             <SelectItem value="month">Month</SelectItem>
+            {hasAnnualSubscription && (
+              <SelectItem value="quarter">Quarter</SelectItem>
+            )}
+            {hasRenewedAnnualSubscription && (
+              <SelectItem value="year">Year</SelectItem>
+            )}
           </SelectContent>
         </Select>
         

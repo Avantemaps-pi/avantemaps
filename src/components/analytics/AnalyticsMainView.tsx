@@ -24,16 +24,18 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
   const [userBusinesses, setUserBusinesses] = useState<UserBusiness[]>([]);
   const [selectedBusinessId, setSelectedBusinessId] = useState<number | undefined>();
   const [loadingBusinesses, setLoadingBusinesses] = useState(true);
+  const [annualSubCount, setAnnualSubCount] = useState(0);
 
-  // Fetch user's businesses
+  // Fetch user's businesses and subscription info
   useEffect(() => {
-    const fetchUserBusinesses = async () => {
+    const fetchUserData = async () => {
       if (!user?.uid) {
         setLoadingBusinesses(false);
         return;
       }
 
       try {
+        // Fetch businesses
         const { data, error } = await supabase
           .from('businesses')
           .select('id, business_name')
@@ -45,6 +47,17 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
           setUserBusinesses(data);
           setSelectedBusinessId(data[0].id);
         }
+
+        // Fetch annual subscription count
+        const { data: subData, error: subError } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', user.uid)
+          .eq('plan', 'annual');
+
+        if (!subError && subData) {
+          setAnnualSubCount(subData.length);
+        }
       } catch (err) {
         console.error('Error:', err);
       } finally {
@@ -52,7 +65,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
       }
     };
 
-    fetchUserBusinesses();
+    fetchUserData();
   }, [user?.uid]);
 
   const { dateRange, setDateRange, engagementData, metrics, isLoading, error } = useAnalyticsData(selectedBusinessId);
@@ -126,6 +139,8 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
         dateRange={dateRange}
         onDateRangeChange={setDateRange}
         onExport={handleExport}
+        hasAnnualSubscription={annualSubCount >= 1}
+        hasRenewedAnnualSubscription={annualSubCount >= 2}
       />
       
       {isLoading ? (
