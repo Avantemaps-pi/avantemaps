@@ -86,6 +86,14 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
     </div>
   ), [data, chartWidth, chartHeight, containerStyle, xScale, yScale]);
   
+  const timelineOptions = [
+    { value: "day", label: "Day" },
+    { value: "week", label: "Week" },
+    { value: "month", label: "Month" },
+    ...(hasAnnualSubscription ? [{ value: "quarter", label: "Quarter" }] : []),
+    ...(hasRenewedAnnualSubscription ? [{ value: "year", label: "Year" }] : []),
+  ];
+
   return (
     <>
       <Card className="w-full h-full">
@@ -103,6 +111,26 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
             </Button>
           </div>
           
+          <div className="mt-2 overflow-x-auto">
+            <ToggleGroup 
+              type="single" 
+              value={dateRange} 
+              onValueChange={(value) => value && onDateRangeChange?.(value)}
+              className="justify-start bg-muted/20 p-1 rounded-lg"
+            >
+              {timelineOptions.map((option) => (
+                <ToggleGroupItem
+                  key={option.value}
+                  value={option.value}
+                  aria-label={`Filter by ${option.label}`}
+                  className="data-[state=on]:bg-background data-[state=on]:text-foreground px-3 py-1 text-sm"
+                >
+                  {option.label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+
           <div className="flex items-center justify-between mt-2">
             <Tabs value={activeTab} onValueChange={handleTabChange}>
               <TabsList>
