@@ -23,7 +23,7 @@ const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{businessName} Analytics</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{businessName} <span className="text-muted-foreground font-normal">Analytics</span></h1>
         <p className="text-muted-foreground mt-1">
           Track your business performance and engagement metrics
         </p>
@@ -39,8 +39,6 @@ const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
             <SelectItem value="day">Day</SelectItem>
             <SelectItem value="week">Week</SelectItem>
             <SelectItem value="month">Month</SelectItem>
-            <SelectItem value="quarter">Quarter</SelectItem>
-            <SelectItem value="year">Year</SelectItem>
           </SelectContent>
         </Select>
         
