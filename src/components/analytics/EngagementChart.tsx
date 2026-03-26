@@ -19,14 +19,17 @@ interface EngagementChartProps {
   data: ChartData[];
   title: string;
   description?: string;
+  dateRange?: string;
+  onDateRangeChange?: (value: string) => void;
+  hasAnnualSubscription?: boolean;
+  hasRenewedAnnualSubscription?: boolean;
 }
 
-const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, title, description }) => {
+const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, title, description, dateRange = 'week', onDateRangeChange, hasAnnualSubscription = false, hasRenewedAnnualSubscription = false }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [activeTab, setActiveTab] = useState<'line' | 'bar'>('line');
   const [xScale, setXScale] = useState(100);
   const [yScale, setYScale] = useState(100);
-  const [timelineFilter, setTimelineFilter] = useState('week'); // Default to week
   
   const toggleFullScreen = () => {
     setIsFullScreen(!isFullScreen);
