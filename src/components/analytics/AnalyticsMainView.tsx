@@ -139,6 +139,8 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
         dateRange={dateRange}
         onDateRangeChange={setDateRange}
         onExport={handleExport}
+        hasAnnualSubscription={annualSubCount >= 1}
+        hasRenewedAnnualSubscription={annualSubCount >= 2}
       />
       
       {isLoading ? (
