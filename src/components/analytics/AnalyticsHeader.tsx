@@ -5,8 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarIcon, Download } from 'lucide-react';
 
+interface BusinessOption {
+  id: number;
+  business_name: string;
+}
+
 interface AnalyticsHeaderProps {
   businessName: string;
+  businesses: BusinessOption[];
+  selectedBusinessId?: number;
+  onBusinessChange?: (id: number) => void;
   dateRange: string;
   onDateRangeChange: (value: string) => void;
   onExport: (format: 'csv' | 'pdf') => void;
