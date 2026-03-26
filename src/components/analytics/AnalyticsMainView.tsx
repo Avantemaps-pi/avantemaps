@@ -24,6 +24,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
   const [userBusinesses, setUserBusinesses] = useState<UserBusiness[]>([]);
   const [selectedBusinessId, setSelectedBusinessId] = useState<number | undefined>();
   const [loadingBusinesses, setLoadingBusinesses] = useState(true);
+  const [annualSubCount, setAnnualSubCount] = useState(0);
 
   // Fetch user's businesses
   useEffect(() => {
