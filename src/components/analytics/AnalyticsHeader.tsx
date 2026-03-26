@@ -18,7 +18,9 @@ const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
   businessName,
   dateRange,
   onDateRangeChange,
-  onExport
+  onExport,
+  hasAnnualSubscription = false,
+  hasRenewedAnnualSubscription = false,
 }) => {
   const navigate = useNavigate();
   
