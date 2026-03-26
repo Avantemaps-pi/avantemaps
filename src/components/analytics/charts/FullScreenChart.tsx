@@ -30,16 +30,9 @@ interface FullScreenChartProps {
   setYScale: (value: number) => void;
   timelineFilter: string;
   setTimelineFilter: (value: string) => void;
+  hasAnnualSubscription?: boolean;
+  hasRenewedAnnualSubscription?: boolean;
 }
-
-// Updated timeline options to match the new requirements
-const timelineOptions = [
-  { value: "day", label: "Day" },
-  { value: "week", label: "Week" },
-  { value: "month", label: "Month" },
-  { value: "quarter", label: "Quarter" },
-  { value: "year", label: "Year" }
-];
 
 const FullScreenChart: React.FC<FullScreenChartProps> = React.memo(({
   isFullScreen,
@@ -54,9 +47,19 @@ const FullScreenChart: React.FC<FullScreenChartProps> = React.memo(({
   yScale,
   setYScale,
   timelineFilter,
-  setTimelineFilter
+  setTimelineFilter,
+  hasAnnualSubscription = false,
+  hasRenewedAnnualSubscription = false,
 }) => {
   const isMobile = useIsMobile();
+
+  const timelineOptions = [
+    { value: "day", label: "Day" },
+    { value: "week", label: "Week" },
+    { value: "month", label: "Month" },
+    ...(hasAnnualSubscription ? [{ value: "quarter", label: "Quarter" }] : []),
+    ...(hasRenewedAnnualSubscription ? [{ value: "year", label: "Year" }] : []),
+  ];
   
   // Use useMemo to calculate chart dimensions to avoid recalculations
   const { chartWidth, chartHeight, containerStyle } = useMemo(() => {

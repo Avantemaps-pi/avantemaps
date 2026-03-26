@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Maximize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LineChartComponent from './charts/LineChartComponent';
