@@ -113,29 +113,11 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl">
-      {/* Business selector if multiple businesses */}
-      {userBusinesses.length > 1 && (
-        <div className="mb-4">
-          <Select 
-            value={selectedBusinessId?.toString()} 
-            onValueChange={(v) => setSelectedBusinessId(parseInt(v))}
-          >
-            <SelectTrigger className="w-full max-w-xs">
-              <SelectValue placeholder="Select a business" />
-            </SelectTrigger>
-            <SelectContent>
-              {userBusinesses.map(b => (
-                <SelectItem key={b.id} value={b.id.toString()}>
-                  {b.business_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
       <AnalyticsHeader 
         businessName={selectedBusiness?.business_name || 'My Business'}
+        businesses={userBusinesses}
+        selectedBusinessId={selectedBusinessId}
+        onBusinessChange={setSelectedBusinessId}
         dateRange={dateRange}
         onDateRangeChange={setDateRange}
         onExport={handleExport}
