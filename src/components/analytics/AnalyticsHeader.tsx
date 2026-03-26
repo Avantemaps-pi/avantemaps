@@ -39,8 +39,6 @@ const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
             <SelectItem value="day">Day</SelectItem>
             <SelectItem value="week">Week</SelectItem>
             <SelectItem value="month">Month</SelectItem>
-            <SelectItem value="quarter">Quarter</SelectItem>
-            <SelectItem value="year">Year</SelectItem>
           </SelectContent>
         </Select>
         
