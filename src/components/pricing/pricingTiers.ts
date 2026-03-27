@@ -46,7 +46,6 @@ export const TIERS: PricingTier[] = [
       "Up to 5 business listings", 
       "All Small Business features",
       "Advanced analytics",
-      "Live Support Team Chat",
       "Discord Special Access",
     ],
     cta: "Upgrade to Organization",
