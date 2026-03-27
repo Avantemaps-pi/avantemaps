@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Label } from 'recharts';
+import { AreaChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface ChartData {
   name: string;
@@ -23,6 +23,20 @@ interface LineChartComponentProps {
   onYScaleChange?: (scale: number) => void;
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg">
+      <p className="text-xs text-muted-foreground mb-1">Day {label}</p>
+      {payload.map((entry: any) => (
+        <p key={entry.dataKey} className="text-xs font-medium" style={{ color: entry.color }}>
+          {entry.dataKey}: {entry.value}
+        </p>
+      ))}
+    </div>
+  );
+};
+
 const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({ 
   data, 
   chartWidth, 
@@ -36,102 +50,102 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   const [localXScale, setLocalXScale] = useState(xScale);
   const [localYScale, setLocalYScale] = useState(yScale);
 
-  // Format the data to show only numbers without "Day" prefix
   const formattedData = useMemo(() => {
     return data.map(item => {
-      // Extract only the number from the name (e.g., "Day 1" -> "1")
       const dayNumber = item.name.replace(/\D/g, '');
-      return {
-        ...item,
-        dayNumber,
-        displayName: dayNumber // Use just the number for display
-      };
+      return { ...item, dayNumber, displayName: dayNumber };
     });
   }, [data]);
 
-  // Calculate scale factors - memoized to prevent recalculation on each render
   const { xScaleFactor, yScaleFactor, maxValue } = useMemo(() => {
-    // Calculate scale factors
     const xScaleFactor = localXScale / 100;
     const yScaleFactor = localYScale / 100;
-    
-    // Find the maximum values for the Y axis
     const maxValue = Math.max(
       ...data.map(item => Math.max(item.views, item.clicks, item.bookmarks))
     );
-
     return { xScaleFactor, yScaleFactor, maxValue };
   }, [localXScale, localYScale, data]);
   
   const handleWheel = (e: React.WheelEvent) => {
-    // Ctrl key for zooming
     if (e.ctrlKey) {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -10 : 10;
-      
       const newXScale = Math.max(50, Math.min(300, localXScale + delta));
       const newYScale = Math.max(50, Math.min(300, localYScale + delta));
-      
       setLocalXScale(newXScale);
       setLocalYScale(newYScale);
-      
       onXScaleChange?.(newXScale);
       onYScaleChange?.(newYScale);
     }
   };
   
   return (
-    <div 
-      className="w-full h-full overflow-auto" 
-      onWheel={handleWheel}
-    >
+    <div className="w-full h-full overflow-auto" onWheel={handleWheel}>
       <ResponsiveContainer width={chartWidth} height={chartHeight || 400} style={containerStyle}>
-        <LineChart 
+        <AreaChart 
           data={formattedData} 
-          margin={{ top: 15, right: 30, left: 0, bottom: 25 }}
+          margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <defs>
+            <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
+              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="clicksGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.1} />
+              <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="bookmarksGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
+              <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+            </linearGradient>
+          </defs>
           <XAxis 
             dataKey="displayName" 
-            tick={{ fontSize: 12 }} 
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
+            axisLine={false}
+            tickLine={false}
             scale={xScaleFactor > 1 ? 'band' : 'auto'}
             interval={xScaleFactor < 1 ? Math.round(1 / xScaleFactor) - 1 : 0}
             padding={{ left: 10, right: 10 }}
-          >
-            <Label value="Days" position="bottom" offset={5} />
-          </XAxis>
-          <YAxis 
-            tick={{ fontSize: 12 }} 
-            domain={[0, maxValue * (1 / yScaleFactor)]}
-            padding={{ top: 20, bottom: 20 }}
           />
-          <Tooltip />
-          <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 15 }} />
-          <Line 
+          <YAxis 
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
+            axisLine={false}
+            tickLine={false}
+            domain={[0, maxValue * (1 / yScaleFactor)]}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Area 
             type="natural" 
             dataKey="views" 
             stroke="#3b82f6" 
             strokeWidth={2} 
+            fill="url(#viewsGradient)"
             dot={false} 
-            activeDot={{ r: 4, strokeWidth: 0 }} 
+            activeDot={{ r: 4, strokeWidth: 0, fill: '#3b82f6' }} 
           />
-          <Line 
+          <Area 
             type="natural" 
             dataKey="clicks" 
             stroke="#8b5cf6" 
-            strokeWidth={2} 
+            strokeWidth={1.5} 
+            strokeOpacity={0.6}
+            fill="url(#clicksGradient)"
             dot={false} 
-            activeDot={{ r: 4, strokeWidth: 0 }} 
+            activeDot={{ r: 3, strokeWidth: 0, fill: '#8b5cf6' }} 
           />
-          <Line 
+          <Area 
             type="natural" 
             dataKey="bookmarks" 
             stroke="#10b981" 
-            strokeWidth={2} 
+            strokeWidth={1.5} 
+            strokeOpacity={0.6}
+            fill="url(#bookmarksGradient)"
             dot={false} 
-            activeDot={{ r: 4, strokeWidth: 0 }} 
+            activeDot={{ r: 3, strokeWidth: 0, fill: '#10b981' }} 
           />
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );
