@@ -141,8 +141,8 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
             </Tabs>
           </div>
         </CardHeader>
-        <CardContent className="pl-0 pt-2 h-[300px] w-full overflow-hidden flex items-center justify-center">
-          <div className="w-full h-[250px] pb-6"> {/* Increased padding bottom to create more space below x-axis labels */}
+        <CardContent className="pl-0 pt-2 h-[280px] w-full overflow-hidden flex items-center justify-center">
+          <div className="w-full h-[250px]">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
               <TabsContent value="line" className="flex-1 h-full">
                 {lineChartComponent}
