@@ -65,20 +65,6 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
     </div>
   ), [data, chartWidth, chartHeight, containerStyle, xScale, yScale]);
 
-  const barChartComponent = useMemo(() => (
-    <div className="h-full w-full">
-      <BarChartComponent 
-        data={data}
-        chartWidth={chartWidth}
-        chartHeight={chartHeight}
-        containerStyle={containerStyle}
-        xScale={xScale}
-        yScale={yScale}
-        onXScaleChange={setXScale}
-        onYScaleChange={setYScale}
-      />
-    </div>
-  ), [data, chartWidth, chartHeight, containerStyle, xScale, yScale]);
   
   const timelineOptions = [
     { value: "day", label: "Day" },
