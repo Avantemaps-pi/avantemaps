@@ -122,8 +122,6 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
       <FullScreenChart 
         isFullScreen={isFullScreen}
         setIsFullScreen={setIsFullScreen}
-        activeTab={activeTab}
-        handleTabChange={handleTabChange}
         title={title}
         description={description}
         data={data}
