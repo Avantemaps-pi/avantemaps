@@ -108,28 +108,28 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
           <Tooltip />
           <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 15 }} />
           <Line 
-            type="monotone" 
+            type="natural" 
             dataKey="views" 
             stroke="#3b82f6" 
             strokeWidth={2} 
-            dot={{ r: 4 }} 
-            activeDot={{ r: 6 }} 
+            dot={false} 
+            activeDot={{ r: 4, strokeWidth: 0 }} 
           />
           <Line 
-            type="monotone" 
+            type="natural" 
             dataKey="clicks" 
             stroke="#8b5cf6" 
             strokeWidth={2} 
-            dot={{ r: 4 }} 
-            activeDot={{ r: 6 }} 
+            dot={false} 
+            activeDot={{ r: 4, strokeWidth: 0 }} 
           />
           <Line 
-            type="monotone" 
+            type="natural" 
             dataKey="bookmarks" 
             stroke="#10b981" 
             strokeWidth={2} 
-            dot={{ r: 4 }} 
-            activeDot={{ r: 6 }} 
+            dot={false} 
+            activeDot={{ r: 4, strokeWidth: 0 }} 
           />
         </LineChart>
       </ResponsiveContainer>
