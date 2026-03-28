@@ -44,7 +44,7 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
     
     // Adjust chart dimensions to fit properly within container
     const chartWidth = '100%';
-    const chartHeight = 230; // Reduced height to add more space at the bottom
+    const chartHeight = 350;
     
     return { containerStyle, chartWidth, chartHeight };
   }, []);
@@ -76,7 +76,7 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
 
   return (
     <>
-      <Card className="w-full h-full">
+      <Card className="w-full h-[60vh] min-h-[450px] flex flex-col">
         <CardHeader className="pb-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg sm:text-xl">{title}</CardTitle>
@@ -112,8 +112,8 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
           </div>
 
         </CardHeader>
-        <CardContent className="pl-0 pt-2 h-[280px] w-full overflow-hidden flex items-center justify-center">
-          <div className="w-full h-[250px]">
+        <CardContent className="pl-0 pt-2 flex-1 w-full overflow-hidden flex items-center justify-center min-h-[300px] sm:min-h-[400px]">
+          <div className="w-full h-full">
             {lineChartComponent}
           </div>
         </CardContent>
