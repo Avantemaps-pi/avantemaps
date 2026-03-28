@@ -112,8 +112,8 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
           </div>
 
         </CardHeader>
-        <CardContent className="pl-0 pt-2 h-[280px] w-full overflow-hidden flex items-center justify-center">
-          <div className="w-full h-[250px]">
+        <CardContent className="pl-0 pt-2 flex-1 w-full overflow-hidden flex items-center justify-center min-h-[300px] sm:min-h-[400px]">
+          <div className="w-full h-full">
             {lineChartComponent}
           </div>
         </CardContent>
