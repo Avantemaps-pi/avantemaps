@@ -125,10 +125,10 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
         title={title}
         description={description}
         data={data}
-        xScale={xScale}
-        setXScale={setXScale}
-        yScale={yScale}
-        setYScale={setYScale}
+        xScale={100}
+        setXScale={() => {}}
+        yScale={100}
+        setYScale={() => {}}
         timelineFilter={dateRange}
         setTimelineFilter={(v) => onDateRangeChange?.(v)}
         hasAnnualSubscription={hasAnnualSubscription}
