@@ -1,49 +1,33 @@
 
 
-## Plan: Restyle Analytics Chart to Match CoinMarketCap Reference
+## Plan: Make Chart X-Axis Labels Scrollable Instead of Bundled
 
-### What Changes
+### Problem
+On mobile, all date labels (1-28) are crammed together on the x-axis, making them overlap and unreadable. The chart tries to display every label at once.
 
-Restyle the `LineChartComponent` to produce a clean, modern chart similar to the CoinMarketCap reference image. No structural changes needed — purely visual/cosmetic Recharts prop adjustments.
+### Solution
+Give the chart a fixed minimum width per data point so labels are spaced out, and wrap it in a horizontally scrollable container. Users scroll left/right to see different dates.
 
-### Changes to `src/components/analytics/charts/LineChartComponent.tsx`
+### Changes
 
-1. **Remove CartesianGrid** — Delete the `<CartesianGrid>` element entirely for a clean background
-2. **Add gradient fill** — Switch from `<Line>` to `<Area>` (from recharts) for the primary "views" line, with a linear gradient fill fading from the line color to transparent (like the red-to-transparent fill in the reference)
-3. **Keep clicks/bookmarks as thin lines** — Secondary metrics stay as `<Line>` but with reduced opacity/thinner stroke so the primary metric dominates
-4. **Clean up axes** — Hide axis lines and ticks (`axisLine={false}`, `tickLine={false}`), use subtle gray tick text
-5. **Remove the "Days" label** — Delete the `<Label value="Days">` from the XAxis
-6. **Simplify legend** — Move legend styling to be more compact, or hide it and rely on color-coded labels below the chart
-7. **Reduce margins** — Tighten the chart margins (`margin={{ top: 5, right: 10, left: -10, bottom: 5 }}`) so the chart fills more of the card
-8. **Improve tooltip** — Add a custom tooltip with a cleaner design matching the overall aesthetic
+**`src/components/analytics/charts/LineChartComponent.tsx`**
+- Calculate a minimum chart width based on the number of data points (e.g., `data.length * 50px`, minimum 100% of container)
+- Set the `ResponsiveContainer` or inner `AreaChart` width to this calculated pixel width instead of percentage-based `chartWidth`
+- Ensure the outer `div` has `overflow-x: auto` and `overflow-y: hidden` so users can scroll horizontally
+- Set XAxis `interval={0}` so every label is shown (since they now have room)
 
-### Changes to `src/components/analytics/EngagementChart.tsx`
+**`src/components/analytics/EngagementChart.tsx`**
+- Update the `CardContent` container to allow horizontal overflow (`overflow-x-auto`) instead of `overflow-hidden`
 
-9. **Adjust container height** — Remove excessive padding (`pb-6`) and let the chart breathe more naturally within the card
-
-### Changes to `src/components/analytics/charts/FullScreenChart.tsx`
-
-10. **Apply same styling** — Ensure full-screen mode uses the same clean chart style
+**`src/components/analytics/charts/FullScreenChart.tsx`**
+- Same scrollable treatment for the full-screen view container
 
 ### Technical Detail
-
-The key Recharts change is adding an `<Area>` component with `<defs>` for the SVG gradient:
-
+The key change is replacing percentage-based width with a pixel-based minimum:
 ```tsx
-<defs>
-  <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-  </linearGradient>
-</defs>
-<Area type="natural" dataKey="views" stroke="#3b82f6" fill="url(#viewsGradient)" />
+const minWidth = Math.max(data.length * 50, containerWidth);
+// Render AreaChart with width={minWidth} inside a scrollable div
 ```
 
-This replaces `recharts`' `Line` with `Area` + `AreaChart` for the primary view, giving the gradient-filled look from the reference.
-
-### Files Modified
-
-- `src/components/analytics/charts/LineChartComponent.tsx` — Main visual overhaul
-- `src/components/analytics/EngagementChart.tsx` — Container spacing fix
-- `src/components/analytics/charts/FullScreenChart.tsx` — Consistent styling
+This ensures labels are always spaced ~50px apart. When there are many data points, the chart extends beyond the viewport and becomes scrollable.
 
