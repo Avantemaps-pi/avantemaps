@@ -76,7 +76,7 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
 
   return (
     <>
-      <Card className="w-full h-full">
+      <Card className="w-full h-[60vh] min-h-[450px] flex flex-col">
         <CardHeader className="pb-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg sm:text-xl">{title}</CardTitle>
