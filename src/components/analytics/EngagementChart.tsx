@@ -1,7 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Maximize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LineChartComponent from './charts/LineChartComponent';
@@ -27,10 +26,6 @@ interface EngagementChartProps {
 const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, title, description, dateRange = 'week', onDateRangeChange, hasAnnualSubscription = false, hasRenewedAnnualSubscription = false }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   
-  const toggleFullScreen = () => {
-    setIsFullScreen(!isFullScreen);
-  };
-  
   const chartHeight = 350;
 
   const lineChartComponent = useMemo(() => (
@@ -44,57 +39,66 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
     </div>
   ), [data, chartHeight]);
 
-  
   const timelineOptions = [
-    { value: "day", label: "Day" },
-    { value: "week", label: "Week" },
-    { value: "month", label: "Month" },
-    ...(hasAnnualSubscription ? [{ value: "quarter", label: "Quarter" }] : []),
-    ...(hasRenewedAnnualSubscription ? [{ value: "year", label: "Year" }] : []),
+    { value: "day", label: "24h" },
+    { value: "week", label: "1W" },
+    { value: "month", label: "1M" },
+    ...(hasAnnualSubscription ? [{ value: "quarter", label: "1Q" }] : []),
+    ...(hasRenewedAnnualSubscription ? [{ value: "year", label: "1Y" }] : []),
   ];
 
   return (
     <>
-      <Card className="w-full h-[60vh] min-h-[450px] flex flex-col">
+      <Card className="w-full h-[60vh] min-h-[450px] flex flex-col border-border/50">
         <CardHeader className="pb-0">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg sm:text-xl">{title}</CardTitle>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={toggleFullScreen} 
-              title="Full Screen"
-              className="mr-0"
-            >
-              <Maximize className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          <div className="mt-2 overflow-x-auto">
-            <ToggleGroup 
-              type="single" 
-              value={dateRange} 
-              onValueChange={(value) => value && onDateRangeChange?.(value)}
-              className="justify-start bg-muted/20 p-1 rounded-lg"
-            >
-              {timelineOptions.map((option) => (
-                <ToggleGroupItem
-                  key={option.value}
-                  value={option.value}
-                  aria-label={`Filter by ${option.label}`}
-                  className="data-[state=on]:bg-background data-[state=on]:text-foreground px-3 py-1 text-sm"
-                >
-                  {option.label}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
+            <CardTitle className="text-lg sm:text-xl font-semibold">{title}</CardTitle>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5">
+                {timelineOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => onDateRangeChange?.(option.value)}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                      dateRange === option.value
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsFullScreen(true)} 
+                title="Full Screen"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              >
+                <Maximize className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
-        </CardHeader>
-        <CardContent className="pl-0 pt-2 flex-1 w-full overflow-x-auto overflow-y-hidden flex items-center justify-center min-h-[300px] sm:min-h-[400px]">
-          <div className="w-full h-full">
-            {lineChartComponent}
+          {/* Legend */}
+          <div className="flex items-center gap-4 mt-3">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-[2px] rounded-full bg-[#3b82f6]" />
+              <span className="text-[11px] text-muted-foreground">Views</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-[2px] rounded-full bg-[#8b5cf6]" />
+              <span className="text-[11px] text-muted-foreground">Clicks</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-[2px] rounded-full bg-[#10b981]" />
+              <span className="text-[11px] text-muted-foreground">Bookmarks</span>
+            </div>
           </div>
+        </CardHeader>
+        <CardContent className="px-0 pt-2 flex-1 w-full overflow-x-auto overflow-y-hidden min-h-[300px] sm:min-h-[400px]">
+          {lineChartComponent}
         </CardContent>
       </Card>
 
