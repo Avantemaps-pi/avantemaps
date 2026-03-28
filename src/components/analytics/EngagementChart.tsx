@@ -26,44 +26,23 @@ interface EngagementChartProps {
 
 const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, title, description, dateRange = 'week', onDateRangeChange, hasAnnualSubscription = false, hasRenewedAnnualSubscription = false }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [xScale, setXScale] = useState(100);
-  const [yScale, setYScale] = useState(100);
   
   const toggleFullScreen = () => {
     setIsFullScreen(!isFullScreen);
   };
   
-  // Memoize these values to prevent recalculation on each render
-  const { containerStyle, chartWidth, chartHeight } = useMemo(() => {
-    // Fixed style prop with valid CSS properties
-    const containerStyle = {
-      overflowX: "auto" as const,
-      overflowY: "hidden" as const,
-      maxWidth: "100%" as const // Ensure container doesn't exceed parent width
-    };
-    
-    // Adjust chart dimensions to fit properly within container
-    const chartWidth = '100%';
-    const chartHeight = 350;
-    
-    return { containerStyle, chartWidth, chartHeight };
-  }, []);
-  
-  // Memoize chart components to prevent unnecessary re-renders
+  const chartHeight = 350;
+
   const lineChartComponent = useMemo(() => (
     <div className="h-full w-full">
       <LineChartComponent 
         data={data}
-        chartWidth={chartWidth}
+        chartWidth="100%"
         chartHeight={chartHeight}
-        containerStyle={containerStyle}
-        xScale={xScale}
-        yScale={yScale}
-        onXScaleChange={setXScale}
-        onYScaleChange={setYScale}
+        containerStyle={{ overflowX: "auto" as const, overflowY: "hidden" as const }}
       />
     </div>
-  ), [data, chartWidth, chartHeight, containerStyle, xScale, yScale]);
+  ), [data, chartHeight]);
 
   
   const timelineOptions = [
@@ -112,7 +91,7 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
           </div>
 
         </CardHeader>
-        <CardContent className="pl-0 pt-2 flex-1 w-full overflow-hidden flex items-center justify-center min-h-[300px] sm:min-h-[400px]">
+        <CardContent className="pl-0 pt-2 flex-1 w-full overflow-x-auto overflow-y-hidden flex items-center justify-center min-h-[300px] sm:min-h-[400px]">
           <div className="w-full h-full">
             {lineChartComponent}
           </div>
@@ -125,10 +104,10 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
         title={title}
         description={description}
         data={data}
-        xScale={xScale}
-        setXScale={setXScale}
-        yScale={yScale}
-        setYScale={setYScale}
+        xScale={100}
+        setXScale={() => {}}
+        yScale={100}
+        setYScale={() => {}}
         timelineFilter={dateRange}
         setTimelineFilter={(v) => onDateRangeChange?.(v)}
         hasAnnualSubscription={hasAnnualSubscription}

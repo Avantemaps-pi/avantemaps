@@ -103,16 +103,12 @@ const FullScreenChart: React.FC<FullScreenChartProps> = React.memo(({
           </ToggleGroup>
         </div>
         
-        <div className="flex-1 w-full overflow-hidden pb-4">
+        <div className="flex-1 w-full overflow-x-auto overflow-y-hidden pb-4">
           <LineChartComponent 
             data={data} 
-            chartWidth={chartWidth} 
+            chartWidth="100%" 
             chartHeight={chartHeight} 
-            containerStyle={containerStyle} 
-            xScale={xScale}
-            yScale={yScale}
-            onXScaleChange={setXScale}
-            onYScaleChange={setYScale}
+            containerStyle={{ overflowX: "auto", overflowY: "hidden" }} 
           />
         </div>
       </DialogContent>
