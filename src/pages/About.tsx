@@ -90,7 +90,7 @@ const About = () => {
               Avante Maps was founded by a group of Pi Network enthusiasts who recognized the need for a dedicated platform to connect Pi users with businesses accepting the currency.
             </p>
             <p>
-              What started as a simple directory has evolved into a comprehensive mapping service, designed to make Pi cryptocurrency more accessible and useful in everyday transactions.
+              We're starting as a simple directory with the intent of evolving into a comprehensive social experience platform, designed to make Pi cryptocurrency more accessible and useful in everyday transactions.
             </p>
             <p>
               We're constantly working to improve our platform and expand our database of Pi-accepting businesses worldwide.
