@@ -1,6 +1,6 @@
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 interface ChartData {
   name: string;
@@ -26,14 +26,32 @@ interface LineChartComponentProps {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg">
-      <p className="text-xs text-muted-foreground mb-1">Day {label}</p>
+    <div className="bg-popover/95 backdrop-blur-sm border border-border/50 rounded-lg px-3 py-2 shadow-xl">
+      <p className="text-[10px] text-muted-foreground mb-1 font-medium tracking-wide uppercase">Day {label}</p>
       {payload.map((entry: any) => (
-        <p key={entry.dataKey} className="text-xs font-medium" style={{ color: entry.color }}>
-          {entry.dataKey}: {entry.value}
-        </p>
+        <div key={entry.dataKey} className="flex items-center gap-2 py-0.5">
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+          <span className="text-xs text-muted-foreground capitalize">{entry.dataKey}</span>
+          <span className="text-xs font-semibold text-foreground ml-auto">{entry.value?.toLocaleString()}</span>
+        </div>
       ))}
     </div>
+  );
+};
+
+const CustomCursor = ({ points, height }: any) => {
+  if (!points?.[0]) return null;
+  return (
+    <line
+      x1={points[0].x}
+      y1={0}
+      x2={points[0].x}
+      y2={height}
+      stroke="hsl(var(--muted-foreground))"
+      strokeWidth={1}
+      strokeDasharray="4 4"
+      strokeOpacity={0.4}
+    />
   );
 };
 
@@ -77,22 +95,29 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart 
             data={formattedData} 
-            margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
+            margin={{ top: 10, right: 50, left: 0, bottom: 5 }}
           >
             <defs>
               <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.15} />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.01} />
               </linearGradient>
               <linearGradient id="clicksGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.1} />
-                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.08} />
+                <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="bookmarksGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                <stop offset="0%" stopColor="#10b981" stopOpacity={0.08} />
+                <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
               </linearGradient>
             </defs>
+            <CartesianGrid 
+              horizontal={true}
+              vertical={false}
+              stroke="hsl(var(--border))"
+              strokeOpacity={0.4}
+              strokeDasharray="none"
+            />
             <XAxis 
               dataKey="displayName" 
               tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
@@ -100,42 +125,50 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
               tickLine={false}
               interval={0}
               padding={{ left: 10, right: 10 }}
+              dy={8}
             />
             <YAxis 
+              orientation="right"
               tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
               axisLine={false}
               tickLine={false}
-              domain={[0, maxValue]}
+              domain={[0, (max: number) => Math.ceil(max * 1.1)]}
+              tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(1)}K` : value}
+              dx={5}
+              width={45}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip 
+              content={<CustomTooltip />} 
+              cursor={<CustomCursor />}
+            />
             <Area 
-              type="natural" 
+              type="monotone" 
               dataKey="views" 
               stroke="#3b82f6" 
               strokeWidth={2} 
               fill="url(#viewsGradient)"
               dot={false} 
-              activeDot={{ r: 4, strokeWidth: 0, fill: '#3b82f6' }} 
+              activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff', fill: '#3b82f6' }} 
             />
             <Area 
-              type="natural" 
+              type="monotone" 
               dataKey="clicks" 
               stroke="#8b5cf6" 
               strokeWidth={1.5} 
-              strokeOpacity={0.6}
+              strokeOpacity={0.7}
               fill="url(#clicksGradient)"
               dot={false} 
-              activeDot={{ r: 3, strokeWidth: 0, fill: '#8b5cf6' }} 
+              activeDot={{ r: 3, strokeWidth: 2, stroke: '#fff', fill: '#8b5cf6' }} 
             />
             <Area 
-              type="natural" 
+              type="monotone" 
               dataKey="bookmarks" 
               stroke="#10b981" 
               strokeWidth={1.5} 
-              strokeOpacity={0.6}
+              strokeOpacity={0.7}
               fill="url(#bookmarksGradient)"
               dot={false} 
-              activeDot={{ r: 3, strokeWidth: 0, fill: '#10b981' }} 
+              activeDot={{ r: 3, strokeWidth: 2, stroke: '#fff', fill: '#10b981' }} 
             />
           </AreaChart>
         </ResponsiveContainer>
