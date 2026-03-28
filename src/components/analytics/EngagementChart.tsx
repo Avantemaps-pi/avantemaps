@@ -26,8 +26,6 @@ interface EngagementChartProps {
 
 const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, title, description, dateRange = 'week', onDateRangeChange, hasAnnualSubscription = false, hasRenewedAnnualSubscription = false }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [xScale, setXScale] = useState(100);
-  const [yScale, setYScale] = useState(100);
   
   const toggleFullScreen = () => {
     setIsFullScreen(!isFullScreen);
