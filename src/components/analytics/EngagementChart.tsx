@@ -44,7 +44,7 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
     
     // Adjust chart dimensions to fit properly within container
     const chartWidth = '100%';
-    const chartHeight = 230; // Reduced height to add more space at the bottom
+    const chartHeight = 350;
     
     return { containerStyle, chartWidth, chartHeight };
   }, []);
