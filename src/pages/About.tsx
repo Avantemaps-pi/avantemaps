@@ -87,7 +87,7 @@ const About = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <p>
-              Avante Maps was founded by a group of Pi Network enthusiasts who recognized the need for a dedicated platform to connect Pi users with businesses accepting the currency.
+              Avante Maps was founded by a Solo Aspiring Developer who recognized the need for a dedicated platform to connect Pi users with businesses accepting the currency.
             </p>
             <p>
               We're starting as a simple directory with the intent of evolving into a comprehensive social experience platform, designed to make Pi cryptocurrency more accessible and useful in everyday transactions.
