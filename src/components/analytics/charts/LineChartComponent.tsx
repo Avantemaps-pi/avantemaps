@@ -129,7 +129,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
               tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
               axisLine={false}
               tickLine={false}
-              interval={0}
+              interval={labelInterval}
               padding={{ left: 10, right: 10 }}
               dy={8}
             />
