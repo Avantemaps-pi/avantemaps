@@ -55,7 +55,7 @@ const CustomCursor = ({ points, height }: any) => {
   );
 };
 
-const MIN_PX_PER_POINT = 12;
+const MIN_PX_PER_POINT = 45;
 
 const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({ 
   data, 
@@ -83,11 +83,17 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     });
   }, [data]);
 
-  const maxValue = useMemo(() => {
-    return Math.max(...data.map(item => Math.max(item.views, item.clicks, item.bookmarks)), 1);
-  }, [data]);
-
-  const chartPixelWidth = Math.min(Math.max(data.length * MIN_PX_PER_POINT, containerWidth), containerWidth * 2);
+  // Calculate how many labels to skip so they don't cluster
+  const chartPixelWidth = Math.max(data.length * MIN_PX_PER_POINT, containerWidth);
+  
+  const labelInterval = useMemo(() => {
+    if (data.length <= 7) return 0; // show all for week view
+    // Show ~6-8 labels visible at a time in the viewport
+    const pointsVisibleInViewport = Math.floor(containerWidth / MIN_PX_PER_POINT);
+    const desiredLabels = Math.min(pointsVisibleInViewport, 7);
+    if (desiredLabels <= 0) return 0;
+    return Math.max(Math.floor(data.length / desiredLabels) - 1, 0);
+  }, [data.length, containerWidth]);
 
   return (
     <div ref={containerRef} className="w-full h-full overflow-x-auto overflow-y-hidden touch-pan-x">
