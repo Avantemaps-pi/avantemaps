@@ -55,7 +55,7 @@ const CustomCursor = ({ points, height }: any) => {
   );
 };
 
-const MIN_PX_PER_POINT = 50;
+const MIN_PX_PER_POINT = 12;
 
 const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({ 
   data, 
