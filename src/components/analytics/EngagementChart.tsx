@@ -49,7 +49,7 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
 
   return (
     <>
-      <Card className="w-full h-[60vh] min-h-[450px] flex flex-col border-border/50">
+      <Card className="w-full h-[50vh] sm:h-[60vh] min-h-[350px] sm:min-h-[450px] flex flex-col border-border/50">
         <CardHeader className="pb-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg sm:text-xl font-semibold">{title}</CardTitle>
@@ -97,7 +97,7 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
             </div>
           </div>
         </CardHeader>
-        <CardContent className="px-0 pt-2 flex-1 w-full overflow-x-auto overflow-y-hidden min-h-[300px] sm:min-h-[400px]">
+        <CardContent className="px-0 pt-2 flex-1 w-full overflow-x-auto overflow-y-hidden min-h-[200px] sm:min-h-[400px] touch-pan-x">
           {lineChartComponent}
         </CardContent>
       </Card>
