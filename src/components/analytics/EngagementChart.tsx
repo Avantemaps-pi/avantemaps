@@ -49,7 +49,7 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
 
   return (
     <>
-      <Card className="w-full h-[60vh] min-h-[450px] flex flex-col border-border/50">
+      <Card className="w-full h-[50vh] sm:h-[60vh] min-h-[350px] sm:min-h-[450px] flex flex-col border-border/50">
         <CardHeader className="pb-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg sm:text-xl font-semibold">{title}</CardTitle>
