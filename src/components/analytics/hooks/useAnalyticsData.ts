@@ -48,7 +48,10 @@ export const useAnalyticsData = (businessId?: number) => {
         return;
       }
 
-      setIsLoading(true);
+      // Only show full loading on initial load, not on dateRange changes
+      if (!stats) {
+        setIsLoading(true);
+      }
       setError(null);
 
       try {
