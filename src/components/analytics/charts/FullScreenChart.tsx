@@ -100,7 +100,7 @@ const FullScreenChart: React.FC<FullScreenChartProps> = React.memo(({
           </div>
         </div>
         
-        <div className="flex-1 w-full overflow-x-auto overflow-y-hidden pt-2 pb-4">
+        <div className="flex-1 w-full overflow-x-auto overflow-y-hidden pt-2 pb-4 touch-pan-x">
           <LineChartComponent 
             data={data} 
             chartWidth="100%" 
