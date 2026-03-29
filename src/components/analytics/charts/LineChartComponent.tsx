@@ -55,7 +55,7 @@ const CustomCursor = ({ points, height }: any) => {
   );
 };
 
-const MIN_PX_PER_POINT = 50;
+const MIN_PX_PER_POINT = 12;
 
 const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({ 
   data, 
@@ -87,7 +87,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     return Math.max(...data.map(item => Math.max(item.views, item.clicks, item.bookmarks)), 1);
   }, [data]);
 
-  const chartPixelWidth = Math.max(data.length * MIN_PX_PER_POINT, containerWidth);
+  const chartPixelWidth = Math.min(Math.max(data.length * MIN_PX_PER_POINT, containerWidth), containerWidth * 2);
 
   return (
     <div ref={containerRef} className="w-full h-full overflow-x-auto overflow-y-hidden touch-pan-x">
