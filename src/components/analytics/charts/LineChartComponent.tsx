@@ -83,9 +83,10 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   }, []);
 
   // In fitContainer mode, always use the container width (no horizontal scroll)
-  const chartPixelWidth = fitContainer 
+  const naturalWidth = data.length * MIN_PX_PER_POINT;
+  const chartPixelWidth = fitContainer
     ? containerWidth || 600
-    : Math.max(data.length * MIN_PX_PER_POINT, containerWidth);
+    : Math.max(naturalWidth, containerWidth);
   
   const labelInterval = useMemo(() => {
     if (data.length <= 7) return 0;
