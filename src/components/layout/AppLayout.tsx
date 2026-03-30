@@ -35,11 +35,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   onBackClick
 }) => {
   const isMobile = useIsMobile();
-  const contentClasses = `flex flex-col ${fullHeight ? 'h-screen' : 'min-h-screen'} ${fullWidth ? 'w-full' : 'max-w-7xl mx-auto'} ${className}`;
+  const contentClasses = `flex min-w-0 flex-col ${fullHeight ? 'h-screen' : 'min-h-screen'} ${fullWidth ? 'w-full' : 'max-w-7xl mx-auto w-full'} ${className}`;
   
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full min-w-0 overflow-x-hidden">
         {!hideSidebar && <AppSidebar />}
         
         <div className={contentClasses}>
@@ -54,7 +54,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             />
           )}
           
-          <main className={`flex-1 w-full overflow-auto animate-fade-in ${isMobile ? 'pb-16' : ''}`}>
+          <main className={`flex-1 w-full min-w-0 overflow-x-hidden overflow-y-auto animate-fade-in ${isMobile ? 'pb-16' : ''}`}>
             {children}
           </main>
           
