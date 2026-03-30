@@ -21,6 +21,7 @@ interface LineChartComponentProps {
   yScale?: number;
   onXScaleChange?: (scale: number) => void;
   onYScaleChange?: (scale: number) => void;
+  fitContainer?: boolean;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -63,7 +64,8 @@ const MIN_PX_PER_POINT = 45;
 
 const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({ 
   data, 
-  chartHeight, 
+  chartHeight,
+  fitContainer = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -80,8 +82,10 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     return () => obs.disconnect();
   }, []);
 
-  // Calculate how many labels to skip so they don't cluster
-  const chartPixelWidth = Math.max(data.length * MIN_PX_PER_POINT, containerWidth);
+  // In fitContainer mode, always use the container width (no horizontal scroll)
+  const chartPixelWidth = fitContainer 
+    ? containerWidth || 600
+    : Math.max(data.length * MIN_PX_PER_POINT, containerWidth);
   
   const labelInterval = useMemo(() => {
     if (data.length <= 7) return 0;
