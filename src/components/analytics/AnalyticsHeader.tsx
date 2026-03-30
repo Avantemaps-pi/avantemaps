@@ -36,8 +36,8 @@ const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
   const navigate = useNavigate();
   
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-      <div>
+    <div className="flex min-w-0 flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+      <div className="min-w-0 max-w-full">
         <h1 className="text-2xl font-bold tracking-tight">
           {businesses.length > 1 && onBusinessChange ? (
             <Select value={selectedBusinessId?.toString()} onValueChange={(v) => onBusinessChange(parseInt(v))}>
@@ -62,7 +62,7 @@ const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
         </p>
       </div>
       
-      <div className="flex items-center space-x-2 self-end sm:self-auto">
+      <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2 self-end sm:self-auto sm:flex-nowrap">
         <Select value={dateRange} onValueChange={onDateRangeChange}>
           <SelectTrigger className="w-[140px]">
             <CalendarIcon className="mr-2 h-4 w-4" />
