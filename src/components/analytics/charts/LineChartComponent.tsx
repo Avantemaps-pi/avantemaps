@@ -26,13 +26,17 @@ interface LineChartComponentProps {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-popover/95 backdrop-blur-sm border border-border/50 rounded-lg px-3 py-2 shadow-xl">
-      <p className="text-[10px] text-muted-foreground mb-1 font-medium tracking-wide uppercase">Day {label}</p>
+    <div className="bg-card/95 backdrop-blur-md border border-border/40 rounded-xl px-4 py-3 shadow-2xl">
+      <p className="text-[11px] text-muted-foreground mb-2 font-semibold tracking-wider uppercase border-b border-border/30 pb-1.5">
+        {label}
+      </p>
       {payload.map((entry: any) => (
-        <div key={entry.dataKey} className="flex items-center gap-2 py-0.5">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-          <span className="text-xs text-muted-foreground capitalize">{entry.dataKey}</span>
-          <span className="text-xs font-semibold text-foreground ml-auto">{entry.value?.toLocaleString()}</span>
+        <div key={entry.dataKey} className="flex items-center justify-between gap-6 py-1">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full ring-2 ring-offset-1 ring-offset-card" style={{ backgroundColor: entry.color, boxShadow: `0 0 6px ${entry.color}40` }} />
+            <span className="text-xs text-muted-foreground capitalize font-medium">{entry.dataKey}</span>
+          </div>
+          <span className="text-sm font-bold text-foreground tabular-nums">{entry.value?.toLocaleString()}</span>
         </div>
       ))}
     </div>
@@ -50,7 +54,7 @@ const CustomCursor = ({ points, height }: any) => {
       stroke="hsl(var(--muted-foreground))"
       strokeWidth={1}
       strokeDasharray="4 4"
-      strokeOpacity={0.4}
+      strokeOpacity={0.3}
     />
   );
 };
@@ -76,19 +80,11 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     return () => obs.disconnect();
   }, []);
 
-  const formattedData = useMemo(() => {
-    return data.map(item => {
-      const dayNumber = item.name.replace(/\D/g, '');
-      return { ...item, dayNumber, displayName: dayNumber };
-    });
-  }, [data]);
-
   // Calculate how many labels to skip so they don't cluster
   const chartPixelWidth = Math.max(data.length * MIN_PX_PER_POINT, containerWidth);
   
   const labelInterval = useMemo(() => {
-    if (data.length <= 7) return 0; // show all for week view
-    // Show ~6-8 labels visible at a time in the viewport
+    if (data.length <= 7) return 0;
     const pointsVisibleInViewport = Math.floor(containerWidth / MIN_PX_PER_POINT);
     const desiredLabels = Math.min(pointsVisibleInViewport, 7);
     if (desiredLabels <= 0) return 0;
@@ -100,20 +96,20 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
       <div style={{ width: chartPixelWidth, height: chartHeight || 400 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart 
-            data={formattedData} 
+            data={data} 
             margin={{ top: 10, right: 50, left: 0, bottom: 5 }}
           >
             <defs>
               <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.15} />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.01} />
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.01} />
               </linearGradient>
               <linearGradient id="clicksGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.08} />
+                <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.1} />
                 <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="bookmarksGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity={0.08} />
+                <stop offset="0%" stopColor="#10b981" stopOpacity={0.1} />
                 <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
               </linearGradient>
             </defs>
@@ -121,11 +117,11 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
               horizontal={true}
               vertical={false}
               stroke="hsl(var(--border))"
-              strokeOpacity={0.4}
+              strokeOpacity={0.3}
               strokeDasharray="none"
             />
             <XAxis 
-              dataKey="displayName" 
+              dataKey="name" 
               tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
               axisLine={false}
               tickLine={false}
@@ -138,7 +134,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
               tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
               axisLine={false}
               tickLine={false}
-              domain={[0, (max: number) => Math.ceil(max * 1.1)]}
+              domain={[0, (max: number) => Math.ceil(max * 1.15) || 10]}
               tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(1)}K` : value}
               dx={5}
               width={45}
@@ -146,35 +142,42 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
             <Tooltip 
               content={<CustomTooltip />} 
               cursor={<CustomCursor />}
+              animationDuration={150}
             />
             <Area 
               type="monotone" 
               dataKey="views" 
-              stroke="#3b82f6" 
-              strokeWidth={2} 
+              stroke="hsl(var(--primary))" 
+              strokeWidth={2.5} 
               fill="url(#viewsGradient)"
               dot={false} 
-              activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff', fill: '#3b82f6' }} 
+              activeDot={{ r: 5, strokeWidth: 2.5, stroke: 'hsl(var(--background))', fill: 'hsl(var(--primary))', className: 'drop-shadow-md' }} 
+              animationDuration={600}
+              animationEasing="ease-out"
             />
             <Area 
               type="monotone" 
               dataKey="clicks" 
               stroke="#8b5cf6" 
               strokeWidth={1.5} 
-              strokeOpacity={0.7}
+              strokeOpacity={0.8}
               fill="url(#clicksGradient)"
               dot={false} 
-              activeDot={{ r: 3, strokeWidth: 2, stroke: '#fff', fill: '#8b5cf6' }} 
+              activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--background))', fill: '#8b5cf6' }} 
+              animationDuration={600}
+              animationEasing="ease-out"
             />
             <Area 
               type="monotone" 
               dataKey="bookmarks" 
               stroke="#10b981" 
               strokeWidth={1.5} 
-              strokeOpacity={0.7}
+              strokeOpacity={0.8}
               fill="url(#bookmarksGradient)"
               dot={false} 
-              activeDot={{ r: 3, strokeWidth: 2, stroke: '#fff', fill: '#10b981' }} 
+              activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--background))', fill: '#10b981' }} 
+              animationDuration={600}
+              animationEasing="ease-out"
             />
           </AreaChart>
         </ResponsiveContainer>

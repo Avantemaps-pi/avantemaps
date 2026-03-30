@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Maximize } from 'lucide-react';
+import { Maximize, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LineChartComponent from './charts/LineChartComponent';
 import FullScreenChart from './charts/FullScreenChart';
@@ -27,6 +27,26 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
   const [isFullScreen, setIsFullScreen] = useState(false);
   
   const chartHeight = 350;
+
+  // Calculate summary stats from chart data
+  const summaryStats = useMemo(() => {
+    const totalViews = data.reduce((sum, d) => sum + d.views, 0);
+    const totalClicks = data.reduce((sum, d) => sum + d.clicks, 0);
+    const totalBookmarks = data.reduce((sum, d) => sum + d.bookmarks, 0);
+    
+    // Simple trend: compare second half to first half
+    const mid = Math.floor(data.length / 2);
+    const firstHalfViews = data.slice(0, mid).reduce((s, d) => s + d.views, 0);
+    const secondHalfViews = data.slice(mid).reduce((s, d) => s + d.views, 0);
+    const viewsTrend = firstHalfViews > 0 
+      ? Math.round(((secondHalfViews - firstHalfViews) / firstHalfViews) * 100) 
+      : secondHalfViews > 0 ? 100 : 0;
+
+    return { totalViews, totalClicks, totalBookmarks, viewsTrend };
+  }, [data]);
+
+  const TrendIcon = summaryStats.viewsTrend > 0 ? TrendingUp : summaryStats.viewsTrend < 0 ? TrendingDown : Minus;
+  const trendColor = summaryStats.viewsTrend > 0 ? 'text-emerald-500' : summaryStats.viewsTrend < 0 ? 'text-red-500' : 'text-muted-foreground';
 
   const lineChartComponent = useMemo(() => (
     <div className="h-full w-full">
@@ -54,12 +74,12 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg sm:text-xl font-semibold">{title}</CardTitle>
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5">
+              <div className="flex items-center gap-0.5 bg-muted/30 rounded-lg p-0.5">
                 {timelineOptions.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => onDateRangeChange?.(option.value)}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                    className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-medium rounded-md transition-all duration-200 ${
                       dateRange === option.value
                         ? 'bg-background text-foreground shadow-sm'
                         : 'text-muted-foreground hover:text-foreground'
@@ -81,10 +101,42 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
             </div>
           </div>
 
+          {/* Summary Stats Row */}
+          <div className="flex items-center gap-4 sm:gap-6 mt-3 pb-1">
+            <div className="flex flex-col">
+              <span className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">
+                {summaryStats.totalViews.toLocaleString()}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-muted-foreground">Views</span>
+                {summaryStats.viewsTrend !== 0 && (
+                  <span className={`flex items-center gap-0.5 text-[10px] font-medium ${trendColor}`}>
+                    <TrendIcon className="h-3 w-3" />
+                    {Math.abs(summaryStats.viewsTrend)}%
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="w-px h-8 bg-border/50" />
+            <div className="flex flex-col">
+              <span className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">
+                {summaryStats.totalClicks.toLocaleString()}
+              </span>
+              <span className="text-[11px] text-muted-foreground">Clicks</span>
+            </div>
+            <div className="w-px h-8 bg-border/50" />
+            <div className="flex flex-col">
+              <span className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">
+                {summaryStats.totalBookmarks.toLocaleString()}
+              </span>
+              <span className="text-[11px] text-muted-foreground">Bookmarks</span>
+            </div>
+          </div>
+
           {/* Legend */}
-          <div className="flex items-center gap-4 mt-3">
+          <div className="flex items-center gap-4 mt-1">
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-[2px] rounded-full bg-[#3b82f6]" />
+              <span className="w-3 h-[2px] rounded-full bg-primary" />
               <span className="text-[11px] text-muted-foreground">Views</span>
             </div>
             <div className="flex items-center gap-1.5">
