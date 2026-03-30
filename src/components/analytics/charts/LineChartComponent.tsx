@@ -83,9 +83,10 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   }, []);
 
   // In fitContainer mode, always use the container width (no horizontal scroll)
-  const chartPixelWidth = fitContainer 
+  const naturalWidth = data.length * MIN_PX_PER_POINT;
+  const chartPixelWidth = fitContainer
     ? containerWidth || 600
-    : Math.max(data.length * MIN_PX_PER_POINT, containerWidth);
+    : Math.max(naturalWidth, containerWidth);
   
   const labelInterval = useMemo(() => {
     if (data.length <= 7) return 0;
@@ -96,8 +97,8 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   }, [data.length, containerWidth]);
 
   return (
-    <div ref={containerRef} className="w-full h-full overflow-x-auto overflow-y-hidden touch-pan-x">
-      <div style={{ width: chartPixelWidth, height: chartHeight || 400 }}>
+    <div ref={containerRef} className="w-full h-full overflow-x-auto overflow-y-hidden touch-pan-x" style={{ maxWidth: '100%' }}>
+      <div style={{ width: chartPixelWidth, minWidth: chartPixelWidth, height: chartHeight || 400 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart 
             data={data} 
