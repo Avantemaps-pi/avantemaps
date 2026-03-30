@@ -105,7 +105,8 @@ const FullScreenChart: React.FC<FullScreenChartProps> = React.memo(({
             data={data} 
             chartWidth="100%" 
             chartHeight={chartHeight} 
-            containerStyle={{ overflowX: "auto", overflowY: "hidden" }} 
+            containerStyle={{ overflowX: "auto", overflowY: "hidden" }}
+            fitContainer 
           />
         </div>
       </DialogContent>
