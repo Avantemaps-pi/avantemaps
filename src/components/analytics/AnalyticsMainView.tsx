@@ -75,7 +75,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
   // Loading state
   if (loadingBusinesses) {
     return (
-      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl">
+      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl min-w-0 overflow-x-hidden">
         <Skeleton className="h-12 w-64 mb-6" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4">
           {[1, 2, 3, 4].map(i => (
@@ -90,7 +90,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
   // No businesses state
   if (userBusinesses.length === 0) {
     return (
-      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl">
+      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl min-w-0 overflow-x-hidden">
         <Card className="text-center py-12">
           <CardHeader>
             <CardTitle>No Businesses Found</CardTitle>
@@ -112,7 +112,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
   }
 
   return (
-    <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl">
+    <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl min-w-0 overflow-x-hidden">
       <AnalyticsHeader 
         businessName={selectedBusiness?.business_name || 'My Business'}
         businesses={userBusinesses}
@@ -179,7 +179,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
             />
           </div>
           
-          <div className="w-full mb-4 sm:mb-8 h-[400px] sm:h-[500px] md:h-[600px]">
+          <div className="w-full max-w-full min-w-0 overflow-hidden mb-4 sm:mb-8 h-[400px] sm:h-[500px] md:h-[600px]">
             <EngagementChart 
               data={engagementData}
               title="Views Over Time"

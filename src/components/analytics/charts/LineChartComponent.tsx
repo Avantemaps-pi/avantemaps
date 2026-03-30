@@ -97,8 +97,19 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   }, [data.length, containerWidth]);
 
   return (
-    <div ref={containerRef} className="w-full h-full overflow-x-auto overflow-y-hidden touch-pan-x" style={{ maxWidth: '100%' }}>
-      <div style={{ width: chartPixelWidth, minWidth: chartPixelWidth, height: chartHeight || 400 }}>
+    <div
+      ref={containerRef}
+      className="w-full max-w-full min-w-0 h-full overflow-x-auto overflow-y-hidden touch-pan-x"
+      style={{ maxWidth: '100%' }}
+    >
+      <div
+        className="max-w-full min-w-0"
+        style={{
+          width: fitContainer ? '100%' : chartPixelWidth,
+          minWidth: fitContainer ? 0 : chartPixelWidth,
+          height: chartHeight || 400,
+        }}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart 
             data={data} 
