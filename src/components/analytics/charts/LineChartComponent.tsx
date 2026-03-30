@@ -64,7 +64,8 @@ const MIN_PX_PER_POINT = 45;
 
 const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({ 
   data, 
-  chartHeight, 
+  chartHeight,
+  fitContainer = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
