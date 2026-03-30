@@ -21,6 +21,7 @@ interface LineChartComponentProps {
   yScale?: number;
   onXScaleChange?: (scale: number) => void;
   onYScaleChange?: (scale: number) => void;
+  fitContainer?: boolean;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
