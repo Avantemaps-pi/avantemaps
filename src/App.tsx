@@ -12,7 +12,7 @@ import { useSessionRestoration } from "@/hooks/useSessionRestoration";
 import { SessionManager } from "@/components/session/SessionManager";
 import AuthenticatingOverlay from "@/components/auth/AuthenticatingOverlay";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-const Index = lazy(() => import("./pages/Index"));
+import Index from "./pages/Index";
 import { initializePiNetwork } from "./utils/piNetwork";
 
 // Lazy-loaded pages for code splitting
