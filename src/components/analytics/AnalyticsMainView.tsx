@@ -26,6 +26,9 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
   const [loadingBusinesses, setLoadingBusinesses] = useState(true);
   const [annualSubCount, setAnnualSubCount] = useState(0);
 
+  // Enable demo mode when no auth or no businesses (for preview testing)
+  const isDemoMode = !user?.uid || userBusinesses.length === 0;
+
   // Fetch user's businesses and subscription info
   useEffect(() => {
     const fetchUserData = async () => {
@@ -68,12 +71,17 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
     fetchUserData();
   }, [user?.uid]);
 
-  const { dateRange, setDateRange, engagementData, metrics, isLoading, error } = useAnalyticsData(selectedBusinessId);
+  const { dateRange, setDateRange, engagementData, metrics, isLoading, error } = useAnalyticsData(
+    isDemoMode ? undefined : selectedBusinessId,
+    isDemoMode
+  );
 
   const selectedBusiness = userBusinesses.find(b => b.id === selectedBusinessId);
+  const displayBusinessName = isDemoMode ? 'Demo Business' : (selectedBusiness?.business_name || 'My Business');
+  const displayBusinesses = isDemoMode ? [{ id: 0, business_name: 'Demo Business' }] : userBusinesses;
   
-  // Loading state
-  if (loadingBusinesses) {
+  // Loading state (skip if demo mode)
+  if (loadingBusinesses && !isDemoMode) {
     return (
       <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl min-w-0 overflow-x-hidden">
         <Skeleton className="h-12 w-64 mb-6" />
@@ -83,30 +91,6 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
           ))}
         </div>
         <Skeleton className="h-[400px]" />
-      </div>
-    );
-  }
-
-  // No businesses state
-  if (userBusinesses.length === 0) {
-    return (
-      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl min-w-0 overflow-x-hidden">
-        <Card className="text-center py-12">
-          <CardHeader>
-            <CardTitle>No Businesses Found</CardTitle>
-            <CardDescription>
-              Register a business to start tracking analytics
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Once you register a business, you'll be able to see real-time analytics including views, bookmarks, and engagement metrics.
-            </p>
-            <a href="/registration" className="text-primary hover:underline">
-              Register a Business →
-            </a>
-          </CardContent>
-        </Card>
       </div>
     );
   }
