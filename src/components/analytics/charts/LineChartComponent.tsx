@@ -1,6 +1,6 @@
 
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, ReferenceDot } from 'recharts';
 
 interface ChartData {
   name: string;
@@ -202,6 +202,20 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     return [0, Math.ceil(max * 1.15) || 10] as [number, number];
   }, [data, scrollLeft, containerWidth, pxPerPoint, fitContainer]);
 
+  // Compute center data point index for crosshair tracker
+  const centerIndex = useMemo(() => {
+    if (fitContainer || !data.length || !containerWidth) return -1;
+    const centerScroll = scrollLeft + containerWidth / 2;
+    const chartMarginLeft = 0; // left margin
+    const chartPaddingLeft = 10; // XAxis padding.left
+    const usableWidth = chartPixelWidth - chartMarginLeft - 50; // minus right margin
+    const pointSpacing = usableWidth / Math.max(data.length - 1, 1);
+    const idx = Math.round((centerScroll - chartMarginLeft - chartPaddingLeft) / pointSpacing);
+    return Math.max(0, Math.min(data.length - 1, idx));
+  }, [scrollLeft, containerWidth, data.length, chartPixelWidth, fitContainer]);
+
+  const centerDataPoint = centerIndex >= 0 ? data[centerIndex] : null;
+
   const labelInterval = useMemo(() => {
     if (data.length <= 7) return 0;
     const pointsVisibleInViewport = Math.floor(containerWidth / pxPerPoint);
@@ -213,7 +227,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   return (
     <div
       ref={containerRef}
-      className="w-full max-w-full min-w-0 h-full overflow-x-auto overflow-y-hidden select-none"
+      className="relative w-full max-w-full min-w-0 h-full overflow-x-auto overflow-y-hidden select-none"
       style={{ maxWidth: '100%', cursor: 'grab' }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -313,9 +327,72 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
               animationDuration={600}
               animationEasing="ease-out"
             />
+            {/* Crosshair tracker dots at viewport center */}
+            {centerDataPoint && !fitContainer && (
+              <>
+                <ReferenceLine
+                  x={centerDataPoint.name}
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeWidth={1}
+                  strokeDasharray="4 4"
+                  strokeOpacity={0.4}
+                />
+                <ReferenceDot
+                  x={centerDataPoint.name}
+                  y={centerDataPoint.views}
+                  r={6}
+                  fill="hsl(var(--primary))"
+                  stroke="hsl(var(--background))"
+                  strokeWidth={2.5}
+                  isFront
+                />
+                <ReferenceDot
+                  x={centerDataPoint.name}
+                  y={centerDataPoint.clicks}
+                  r={5}
+                  fill="#8b5cf6"
+                  stroke="hsl(var(--background))"
+                  strokeWidth={2}
+                  isFront
+                />
+                <ReferenceDot
+                  x={centerDataPoint.name}
+                  y={centerDataPoint.bookmarks}
+                  r={5}
+                  fill="#10b981"
+                  stroke="hsl(var(--background))"
+                  strokeWidth={2}
+                  isFront
+                />
+              </>
+            )}
           </AreaChart>
         </ResponsiveContainer>
       </div>
+      {/* Floating center value badge */}
+      {centerDataPoint && !fitContainer && (
+        <div className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2 z-10">
+          <div className="bg-card/90 backdrop-blur-md border border-border/40 rounded-lg px-3 py-1.5 shadow-lg">
+            <p className="text-[10px] text-muted-foreground font-semibold tracking-wider uppercase mb-1">
+              {centerDataPoint.name}
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(var(--primary))' }} />
+                <span className="text-xs font-bold text-foreground tabular-nums">{centerDataPoint.views.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#8b5cf6' }} />
+                <span className="text-xs font-bold text-foreground tabular-nums">{centerDataPoint.clicks.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }} />
+                <span className="text-xs font-bold text-foreground tabular-nums">{centerDataPoint.bookmarks.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
