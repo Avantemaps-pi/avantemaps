@@ -153,6 +153,36 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     ? containerWidth || 600
     : Math.max(naturalWidth, containerWidth || 0);
   
+  // Track scroll position for dynamic Y-axis
+  const onScroll = useCallback(() => {
+    const el = containerRef.current;
+    if (el) setScrollLeft(el.scrollLeft);
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [onScroll]);
+
+  // Compute visible data range for dynamic Y-axis
+  const visibleYDomain = useMemo(() => {
+    if (fitContainer || !containerWidth || !data.length) return undefined;
+    const startIdx = Math.max(0, Math.floor(scrollLeft / pxPerPoint) - 1);
+    const endIdx = Math.min(data.length, Math.ceil((scrollLeft + containerWidth) / pxPerPoint) + 1);
+    const visibleSlice = data.slice(startIdx, endIdx);
+    if (!visibleSlice.length) return undefined;
+
+    let max = 0;
+    for (const d of visibleSlice) {
+      if (d.views > max) max = d.views;
+      if (d.clicks > max) max = d.clicks;
+      if (d.bookmarks > max) max = d.bookmarks;
+    }
+    return [0, Math.ceil(max * 1.15) || 10] as [number, number];
+  }, [data, scrollLeft, containerWidth, pxPerPoint, fitContainer]);
+
   const labelInterval = useMemo(() => {
     if (data.length <= 7) return 0;
     const pointsVisibleInViewport = Math.floor(containerWidth / pxPerPoint);
