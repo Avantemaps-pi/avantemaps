@@ -86,7 +86,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   const naturalWidth = data.length * MIN_PX_PER_POINT;
   const chartPixelWidth = fitContainer
     ? containerWidth || 600
-    : Math.max(naturalWidth, containerWidth);
+    : naturalWidth;
   
   const labelInterval = useMemo(() => {
     if (data.length <= 7) return 0;
