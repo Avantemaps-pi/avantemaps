@@ -1,5 +1,5 @@
 
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 interface ChartData {
@@ -69,6 +69,8 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
 
   useEffect(() => {
     const el = containerRef.current;
@@ -80,6 +82,31 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     });
     obs.observe(el);
     return () => obs.disconnect();
+  }, []);
+
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    const el = containerRef.current;
+    if (!el) return;
+    isDragging.current = true;
+    dragStart.current = { x: e.clientX, y: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
+    el.setPointerCapture(e.pointerId);
+    el.style.cursor = 'grabbing';
+  }, []);
+
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging.current) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    el.scrollLeft = dragStart.current.scrollLeft - dx;
+    el.scrollTop = dragStart.current.scrollTop - dy;
+  }, []);
+
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
+    isDragging.current = false;
+    const el = containerRef.current;
+    if (el) el.style.cursor = 'grab';
   }, []);
 
   // In fitContainer mode, always use the container width (no horizontal scroll)
@@ -99,8 +126,12 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   return (
     <div
       ref={containerRef}
-      className="w-full max-w-full min-w-0 h-full overflow-x-auto overflow-y-auto touch-pan-x touch-pan-y"
-      style={{ maxWidth: '100%' }}
+      className="w-full max-w-full min-w-0 h-full overflow-x-auto overflow-y-auto scrollbar-none select-none"
+      style={{ maxWidth: '100%', cursor: 'grab' }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerLeave={onPointerUp}
     >
       <div
         className="max-w-full min-w-0"
