@@ -72,9 +72,6 @@ const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
             <SelectItem value="day">Day</SelectItem>
             <SelectItem value="week">Week</SelectItem>
             <SelectItem value="month">Month</SelectItem>
-            {hasAnnualSubscription && (
-              <SelectItem value="quarter">Quarter</SelectItem>
-            )}
             {hasRenewedAnnualSubscription && (
               <SelectItem value="year">Year</SelectItem>
             )}
