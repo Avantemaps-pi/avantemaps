@@ -88,15 +88,27 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     return () => obs.disconnect();
   }, []);
 
+  const snapToNearestPoint = useCallback(() => {
+    const el = containerRef.current;
+    if (!el || fitContainer) return;
+    const currentScroll = el.scrollLeft;
+    const nearestPoint = Math.round(currentScroll / pxPerPoint) * pxPerPoint;
+    el.style.scrollBehavior = 'smooth';
+    el.scrollLeft = nearestPoint;
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        if (el) el.style.scrollBehavior = '';
+      }, 300);
+    });
+  }, [pxPerPoint, fitContainer]);
+
   // Scroll-to-zoom: pinch/wheel zooms in/out
   const onWheel = useCallback((e: WheelEvent) => {
-    // Only zoom on ctrl/meta (pinch gesture) or shift+scroll
     if (!e.ctrlKey && !e.metaKey) return;
     e.preventDefault();
     const el = containerRef.current;
     if (!el) return;
 
-    // Calculate scroll ratio to maintain zoom center
     const scrollRatio = el.scrollWidth > el.clientWidth
       ? (el.scrollLeft + e.offsetX) / el.scrollWidth
       : 0.5;
@@ -105,12 +117,10 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
       const delta = e.deltaY > 0 ? -5 : 5;
       const next = Math.min(MAX_PX_PER_POINT, Math.max(MIN_PX_PER_POINT, prev + delta));
       
-      // Restore scroll position after zoom, then snap
       requestAnimationFrame(() => {
         if (!el) return;
         const newScrollLeft = scrollRatio * el.scrollWidth - e.offsetX;
         el.scrollLeft = Math.max(0, newScrollLeft);
-        // Snap after zoom settles
         setTimeout(() => snapToNearestPoint(), 150);
       });
 
@@ -143,21 +153,6 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     el.scrollLeft = dragStart.current.scrollLeft - dx;
     el.scrollTop = dragStart.current.scrollTop - dy;
   }, []);
-
-  const snapToNearestPoint = useCallback(() => {
-    const el = containerRef.current;
-    if (!el || fitContainer) return;
-    const currentScroll = el.scrollLeft;
-    const nearestPoint = Math.round(currentScroll / pxPerPoint) * pxPerPoint;
-    el.style.scrollBehavior = 'smooth';
-    el.scrollLeft = nearestPoint;
-    // Reset after smooth scroll completes
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        if (el) el.style.scrollBehavior = '';
-      }, 300);
-    });
-  }, [pxPerPoint, fitContainer]);
 
   const onPointerUp = useCallback((e: React.PointerEvent) => {
     isDragging.current = false;
