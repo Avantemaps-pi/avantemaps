@@ -154,11 +154,11 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   
   const labelInterval = useMemo(() => {
     if (data.length <= 7) return 0;
-    const pointsVisibleInViewport = Math.floor(containerWidth / MIN_PX_PER_POINT);
+    const pointsVisibleInViewport = Math.floor(containerWidth / pxPerPoint);
     const desiredLabels = Math.min(pointsVisibleInViewport, 7);
     if (desiredLabels <= 0) return 0;
     return Math.max(Math.floor(data.length / desiredLabels) - 1, 0);
-  }, [data.length, containerWidth]);
+  }, [data.length, containerWidth, pxPerPoint]);
 
   return (
     <div
