@@ -48,6 +48,26 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
   const TrendIcon = summaryStats.viewsTrend > 0 ? TrendingUp : summaryStats.viewsTrend < 0 ? TrendingDown : Minus;
   const trendColor = summaryStats.viewsTrend > 0 ? 'text-emerald-500' : summaryStats.viewsTrend < 0 ? 'text-red-500' : 'text-muted-foreground';
 
+  const timelineValues = useMemo(() => timelineOptions.map(o => o.value), [timelineOptions]);
+
+  const wheelCooldown = useRef(false);
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (!onDateRangeChange || wheelCooldown.current) return;
+    // Only respond to significant scroll
+    if (Math.abs(e.deltaY) < 10 && Math.abs(e.deltaX) < 10) return;
+    
+    e.preventDefault();
+    wheelCooldown.current = true;
+    setTimeout(() => { wheelCooldown.current = false; }, 400);
+
+    const currentIdx = timelineValues.indexOf(dateRange);
+    const delta = (e.deltaY || e.deltaX) > 0 ? 1 : -1;
+    const nextIdx = Math.max(0, Math.min(timelineValues.length - 1, currentIdx + delta));
+    if (nextIdx !== currentIdx) {
+      onDateRangeChange(timelineValues[nextIdx]);
+    }
+  }, [dateRange, timelineValues, onDateRangeChange]);
+
   const lineChartComponent = useMemo(() => (
     <div className="h-full w-full min-w-0 max-w-full">
       <LineChartComponent 
@@ -55,6 +75,7 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
         chartWidth="100%"
         chartHeight={chartHeight}
         containerStyle={{ overflowX: "auto" as const, overflowY: "hidden" as const }}
+        fitContainer={true}
       />
     </div>
   ), [data, chartHeight]);
