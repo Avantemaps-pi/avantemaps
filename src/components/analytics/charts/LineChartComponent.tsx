@@ -73,6 +73,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   const [containerWidth, setContainerWidth] = useState(0);
   const [pxPerPoint, setPxPerPoint] = useState(DEFAULT_PX_PER_POINT);
   const [scrollLeft, setScrollLeft] = useState(0);
+  const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
 
