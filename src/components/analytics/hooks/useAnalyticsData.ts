@@ -79,9 +79,10 @@ export const useAnalyticsData = (businessId?: number, demoMode = false) => {
   // Handle demo mode
   useEffect(() => {
     if (demoMode) {
+      const isHourly = dateRange === 'day';
       const days = getDaysForRange(dateRange);
       setStats(MOCK_STATS);
-      setDailyData(generateMockData(days));
+      setDailyData(generateMockData(days, isHourly));
       setIsLoading(false);
       return;
     }
