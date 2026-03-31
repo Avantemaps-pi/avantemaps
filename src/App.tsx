@@ -12,8 +12,7 @@ import { useSessionRestoration } from "@/hooks/useSessionRestoration";
 import { SessionManager } from "@/components/session/SessionManager";
 import AuthenticatingOverlay from "@/components/auth/AuthenticatingOverlay";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import 'leaflet/dist/leaflet.css';
-import Index from "./pages/Index";
+const Index = lazy(() => import("./pages/Index"));
 import { initializePiNetwork } from "./utils/piNetwork";
 
 // Lazy-loaded pages for code splitting

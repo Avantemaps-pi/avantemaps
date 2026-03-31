@@ -1,9 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
-import LeafletMap from '@/components/map/LeafletMap';
 import { useBusinessData } from '@/hooks/useBusinessData';
-import AddBusinessButton from '@/components/map/buttons/AddBusinessButton';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SearchBar from '@/components/map/SearchBar';
@@ -15,6 +13,9 @@ import MetaTags from '@/components/seo/MetaTags';
 import { BusinessSuggestion } from '@/hooks/useBusinessAutocomplete';
 import { useSearchTracking } from '@/hooks/useSearchTracking';
 import '../styles/map.css';
+
+const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
+const AddBusinessButton = lazy(() => import('@/components/map/buttons/AddBusinessButton'));
 
 const Index = () => {
   const location = useLocation();
