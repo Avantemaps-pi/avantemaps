@@ -69,6 +69,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [yScaleMultiplier, setYScaleMultiplier] = useState(1);
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
 
@@ -82,6 +83,21 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     });
     obs.observe(el);
     return () => obs.disconnect();
+  }, []);
+
+  // Vertical scroll adjusts Y-axis scale
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      setYScaleMultiplier(prev => {
+        const delta = e.deltaY > 0 ? 1.1 : 0.9;
+        return Math.min(5, Math.max(0.5, prev * delta));
+      });
+    };
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
   }, []);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
@@ -98,9 +114,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     const el = containerRef.current;
     if (!el) return;
     const dx = e.clientX - dragStart.current.x;
-    const dy = e.clientY - dragStart.current.y;
     el.scrollLeft = dragStart.current.scrollLeft - dx;
-    el.scrollTop = dragStart.current.scrollTop - dy;
   }, []);
 
   const onPointerUp = useCallback((e: React.PointerEvent) => {
