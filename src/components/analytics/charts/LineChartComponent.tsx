@@ -142,11 +142,27 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     el.scrollTop = dragStart.current.scrollTop - dy;
   }, []);
 
+  const snapToNearestPoint = useCallback(() => {
+    const el = containerRef.current;
+    if (!el || fitContainer) return;
+    const currentScroll = el.scrollLeft;
+    const nearestPoint = Math.round(currentScroll / pxPerPoint) * pxPerPoint;
+    el.style.scrollBehavior = 'smooth';
+    el.scrollLeft = nearestPoint;
+    // Reset after smooth scroll completes
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        if (el) el.style.scrollBehavior = '';
+      }, 300);
+    });
+  }, [pxPerPoint, fitContainer]);
+
   const onPointerUp = useCallback((e: React.PointerEvent) => {
     isDragging.current = false;
     const el = containerRef.current;
     if (el) el.style.cursor = 'grab';
-  }, []);
+    snapToNearestPoint();
+  }, [snapToNearestPoint]);
 
   const naturalWidth = data.length * pxPerPoint;
   const chartPixelWidth = fitContainer
