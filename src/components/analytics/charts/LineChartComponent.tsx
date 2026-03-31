@@ -171,7 +171,12 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   const onScroll = useCallback(() => {
     const el = containerRef.current;
     if (el) setScrollLeft(el.scrollLeft);
-  }, []);
+    // Snap after scroll ends (debounced) — only when not dragging
+    if (!isDragging.current) {
+      if (scrollEndTimer.current) clearTimeout(scrollEndTimer.current);
+      scrollEndTimer.current = setTimeout(() => snapToNearestPoint(), 200);
+    }
+  }, [snapToNearestPoint]);
 
   useEffect(() => {
     const el = containerRef.current;
