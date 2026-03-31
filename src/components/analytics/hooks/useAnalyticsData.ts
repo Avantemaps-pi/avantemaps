@@ -22,17 +22,29 @@ interface EngagementDataPoint {
 }
 
 // Generate mock data for demo/preview mode
-const generateMockData = (days: number): DailyViewData[] => {
+const generateMockData = (days: number, isHourly = false): DailyViewData[] => {
   const data: DailyViewData[] = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    const base = 3 + Math.floor(Math.random() * 8);
-    const spike = Math.random() > 0.8 ? Math.floor(Math.random() * 10) : 0;
-    data.push({
-      view_date: date.toISOString().split('T')[0],
-      view_count: base + spike,
-    });
+  if (isHourly) {
+    for (let i = 23; i >= 0; i--) {
+      const date = new Date();
+      date.setHours(date.getHours() - i, 0, 0, 0);
+      const base = 1 + Math.floor(Math.random() * 5);
+      data.push({
+        view_date: date.toISOString(),
+        view_count: base,
+      });
+    }
+  } else {
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const base = 3 + Math.floor(Math.random() * 8);
+      const spike = Math.random() > 0.8 ? Math.floor(Math.random() * 10) : 0;
+      data.push({
+        view_date: date.toISOString().split('T')[0],
+        view_count: base + spike,
+      });
+    }
   }
   return data;
 };
