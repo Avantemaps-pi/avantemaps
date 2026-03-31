@@ -61,7 +61,7 @@
         "react-leaflet": "^4.2.1",
         "react-leaflet-cluster": "^2.1.0",
         "react-resizable-panels": "^2.1.3",
-        "react-router-dom": "^6.26.2",
+        "react-router-dom": "6.30.0",
         "react-simple-pull-to-refresh": "^1.3.3",
         "react-swipeable": "^7.0.2",
         "recharts": "^2.12.7",
@@ -330,7 +330,7 @@
 
     "@react-leaflet/core": ["@react-leaflet/core@2.1.0", "", { "peerDependencies": { "leaflet": "^1.9.0", "react": "^18.0.0", "react-dom": "^18.0.0" } }, "sha512-Qk7Pfu8BSarKGqILj4x7bCSZ1pjuAPZ+qmRwH5S7mDS91VSbVVsJSrW4qA+GPrro8t69gFYVMWb1Zc4yFmPiVg=="],
 
-    "@remix-run/router": ["@remix-run/router@1.20.0", "", {}, "sha512-mUnk8rPJBI9loFDZ+YzPGdeniYK+FTmRD1TMCz7ev2SNIozyKKpnGgsxO34u6Z4z/t0ITuu7voi/AshfsGsgFg=="],
+    "@remix-run/router": ["@remix-run/router@1.23.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@remix-run/router/-/router-1.23.0.tgz", {}, "sha512-O3rHJzAQKamUz1fvE0Qaw0xSFqsA/yafi2iqeE0pvdFtCO1viYx8QL6f3Ln/aCCTLxs68SLf0KPM9eSeM8yBnA=="],
 
     "@rollup/rollup-android-arm-eabi": ["@rollup/rollup-android-arm-eabi@4.24.0", "", { "os": "android", "cpu": "arm" }, "sha512-Q6HJd7Y6xdB48x8ZNVDOqsbh2uByBhgK8PiQgPhwkIw/HC/YX5Ghq2mQY5sRMZWHb3VsFkWooUVOZHKr7DmDIA=="],
 
@@ -832,9 +832,9 @@
 
     "react-resizable-panels": ["react-resizable-panels@2.1.5", "", { "peerDependencies": { "react": "^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react-dom": "^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc" } }, "sha512-JMSe18rYupmx+dzYcdfWYZ93ZdxqQmLum3xWDVSUMI0UVwl9bB9gUaFmPbxYoO4G+m5sqgdXQCYQxnOysytfnw=="],
 
-    "react-router": ["react-router@6.27.0", "", { "dependencies": { "@remix-run/router": "1.20.0" }, "peerDependencies": { "react": ">=16.8" } }, "sha512-YA+HGZXz4jaAkVoYBE98VQl+nVzI+cVI2Oj/06F5ZM+0u3TgedN9Y9kmMRo2mnkSK2nCpNQn0DVob4HCsY/WLw=="],
+    "react-router": ["react-router@6.30.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/react-router/-/react-router-6.30.0.tgz", { "dependencies": { "@remix-run/router": "1.23.0" }, "peerDependencies": { "react": ">=16.8" } }, "sha512-D3X8FyH9nBcTSHGdEKurK7r8OYE1kKFn3d/CF+CoxbSHkxU7o37+Uh7eAHRXr6k2tSExXYO++07PeXJtA/dEhQ=="],
 
-    "react-router-dom": ["react-router-dom@6.27.0", "", { "dependencies": { "@remix-run/router": "1.20.0", "react-router": "6.27.0" }, "peerDependencies": { "react": ">=16.8", "react-dom": ">=16.8" } }, "sha512-+bvtFWMC0DgAFrfKXKG9Fc+BcXWRUO1aJIihbB79xaeq0v5UzfvnM5houGUm1Y461WVRcgAQ+Clh5rdb1eCx4g=="],
+    "react-router-dom": ["react-router-dom@6.30.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/react-router-dom/-/react-router-dom-6.30.0.tgz", { "dependencies": { "@remix-run/router": "1.23.0", "react-router": "6.30.0" }, "peerDependencies": { "react": ">=16.8", "react-dom": ">=16.8" } }, "sha512-x30B78HV5tFk8ex0ITwzC9TTZMua4jGyA9IUlH1JLQYQTFyxr/ZxwOJq7evg1JX1qGVUcvhsmQSKdPncQrjTgA=="],
 
     "react-simple-pull-to-refresh": ["react-simple-pull-to-refresh@1.3.3", "", { "peerDependencies": { "react": "^16.10.2 || ^17.0.0 || ^18.0.0", "react-dom": "^16.10.2 || ^17.0.0 || ^18.0.0" } }, "sha512-6qXsa5RtNVmKJhLWvDLIX8UK51HFtCEGjdqQGf+M1Qjrcc4qH4fki97sgVpGEFBRwbY7DiVDA5N5p97kF16DTw=="],
 
