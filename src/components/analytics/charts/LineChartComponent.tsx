@@ -105,11 +105,13 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
       const delta = e.deltaY > 0 ? -5 : 5;
       const next = Math.min(MAX_PX_PER_POINT, Math.max(MIN_PX_PER_POINT, prev + delta));
       
-      // Restore scroll position after zoom
+      // Restore scroll position after zoom, then snap
       requestAnimationFrame(() => {
         if (!el) return;
         const newScrollLeft = scrollRatio * el.scrollWidth - e.offsetX;
         el.scrollLeft = Math.max(0, newScrollLeft);
+        // Snap after zoom settles
+        setTimeout(() => snapToNearestPoint(), 150);
       });
 
       return next;
