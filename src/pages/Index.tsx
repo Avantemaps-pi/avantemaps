@@ -188,7 +188,9 @@ const Index = () => {
         </div>
       </div>
       
-      <AddBusinessButton selectedPlace={selectedPlace} />
+      <Suspense fallback={null}>
+        <AddBusinessButton selectedPlace={selectedPlace} />
+      </Suspense>
     </div>
   );
 };
