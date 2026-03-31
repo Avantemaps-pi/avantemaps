@@ -60,7 +60,9 @@ const CustomCursor = ({ points, height }: any) => {
   );
 };
 
-const MIN_PX_PER_POINT = 45;
+const DEFAULT_PX_PER_POINT = 45;
+const MIN_PX_PER_POINT = 20;
+const MAX_PX_PER_POINT = 120;
 
 const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({ 
   data, 
@@ -69,6 +71,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [pxPerPoint, setPxPerPoint] = useState(DEFAULT_PX_PER_POINT);
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
 
@@ -83,6 +86,41 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+
+  // Scroll-to-zoom: pinch/wheel zooms in/out
+  const onWheel = useCallback((e: WheelEvent) => {
+    // Only zoom on ctrl/meta (pinch gesture) or shift+scroll
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    const el = containerRef.current;
+    if (!el) return;
+
+    // Calculate scroll ratio to maintain zoom center
+    const scrollRatio = el.scrollWidth > el.clientWidth
+      ? (el.scrollLeft + e.offsetX) / el.scrollWidth
+      : 0.5;
+
+    setPxPerPoint(prev => {
+      const delta = e.deltaY > 0 ? -5 : 5;
+      const next = Math.min(MAX_PX_PER_POINT, Math.max(MIN_PX_PER_POINT, prev + delta));
+      
+      // Restore scroll position after zoom
+      requestAnimationFrame(() => {
+        if (!el) return;
+        const newScrollLeft = scrollRatio * el.scrollWidth - e.offsetX;
+        el.scrollLeft = Math.max(0, newScrollLeft);
+      });
+
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [onWheel]);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     const el = containerRef.current;
@@ -109,19 +147,18 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     if (el) el.style.cursor = 'grab';
   }, []);
 
-  // In fitContainer mode, always use the container width (no horizontal scroll)
-  const naturalWidth = data.length * MIN_PX_PER_POINT;
+  const naturalWidth = data.length * pxPerPoint;
   const chartPixelWidth = fitContainer
     ? containerWidth || 600
-    : naturalWidth;
+    : Math.max(naturalWidth, containerWidth || 0);
   
   const labelInterval = useMemo(() => {
     if (data.length <= 7) return 0;
-    const pointsVisibleInViewport = Math.floor(containerWidth / MIN_PX_PER_POINT);
+    const pointsVisibleInViewport = Math.floor(containerWidth / pxPerPoint);
     const desiredLabels = Math.min(pointsVisibleInViewport, 7);
     if (desiredLabels <= 0) return 0;
     return Math.max(Math.floor(data.length / desiredLabels) - 1, 0);
-  }, [data.length, containerWidth]);
+  }, [data.length, containerWidth, pxPerPoint]);
 
   return (
     <div
