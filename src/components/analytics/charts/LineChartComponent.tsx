@@ -126,8 +126,12 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   return (
     <div
       ref={containerRef}
-      className="w-full max-w-full min-w-0 h-full overflow-x-auto overflow-y-auto touch-pan-x touch-pan-y"
-      style={{ maxWidth: '100%' }}
+      className="w-full max-w-full min-w-0 h-full overflow-x-auto overflow-y-auto scrollbar-none select-none"
+      style={{ maxWidth: '100%', cursor: 'grab' }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerLeave={onPointerUp}
     >
       <div
         className="max-w-full min-w-0"
