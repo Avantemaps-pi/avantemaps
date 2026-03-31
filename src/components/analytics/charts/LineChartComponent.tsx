@@ -227,7 +227,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   return (
     <div
       ref={containerRef}
-      className="w-full max-w-full min-w-0 h-full overflow-x-auto overflow-y-hidden select-none"
+      className="relative w-full max-w-full min-w-0 h-full overflow-x-auto overflow-y-hidden select-none"
       style={{ maxWidth: '100%', cursor: 'grab' }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
