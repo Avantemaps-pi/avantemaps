@@ -134,7 +134,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
       onPointerLeave={onPointerUp}
     >
       <div
-        className="max-w-full min-w-0"
+        className="min-w-0"
         style={{
           width: fitContainer ? '100%' : chartPixelWidth,
           minWidth: fitContainer ? 0 : chartPixelWidth,
