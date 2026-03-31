@@ -87,13 +87,6 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
     </div>
   ), [data, chartHeight]);
 
-  const timelineOptions = [
-    { value: "day", label: "24h" },
-    { value: "week", label: "1W" },
-    { value: "month", label: "1M" },
-    
-    ...(hasRenewedAnnualSubscription ? [{ value: "year", label: "1Y" }] : []),
-  ];
 
   return (
     <>
