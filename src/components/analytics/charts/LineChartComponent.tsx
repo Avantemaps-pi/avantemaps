@@ -195,7 +195,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
               tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
               axisLine={false}
               tickLine={false}
-              domain={[0, (max: number) => Math.ceil(max * 1.15) || 10]}
+              domain={[0, (max: number) => Math.ceil((max * 1.15) * yScaleMultiplier) || 10]}
               tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(1)}K` : value}
               dx={5}
               width={45}
