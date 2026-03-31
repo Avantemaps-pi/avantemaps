@@ -21,7 +21,31 @@ interface EngagementDataPoint {
   bookmarks: number;
 }
 
-export const useAnalyticsData = (businessId?: number) => {
+// Generate mock data for demo/preview mode
+const generateMockData = (days: number): DailyViewData[] => {
+  const data: DailyViewData[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const base = 3 + Math.floor(Math.random() * 8);
+    const spike = Math.random() > 0.8 ? Math.floor(Math.random() * 10) : 0;
+    data.push({
+      view_date: date.toISOString().split('T')[0],
+      view_count: base + spike,
+    });
+  }
+  return data;
+};
+
+const MOCK_STATS: BusinessStats = {
+  total_views: 140,
+  total_bookmarks: 12,
+  total_comments: 5,
+  views_this_week: 38,
+  views_last_week: 27,
+};
+
+export const useAnalyticsData = (businessId?: number, demoMode = false) => {
   const [dateRange, setDateRange] = useState('week');
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<BusinessStats | null>(null);
@@ -40,8 +64,21 @@ export const useAnalyticsData = (businessId?: number) => {
     }
   };
 
+  // Handle demo mode
+  useEffect(() => {
+    if (demoMode) {
+      const days = getDaysForRange(dateRange);
+      setStats(MOCK_STATS);
+      setDailyData(generateMockData(days));
+      setIsLoading(false);
+      return;
+    }
+  }, [demoMode, dateRange]);
+
   // Fetch real analytics data
   useEffect(() => {
+    if (demoMode) return;
+
     const fetchAnalytics = async () => {
       if (!businessId) {
         setIsLoading(false);
