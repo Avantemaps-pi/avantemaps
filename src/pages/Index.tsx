@@ -138,12 +138,14 @@ const Index = () => {
 
       {/* Map container with consistent sizing across all screens */}
       <div className="absolute inset-0 w-full h-full">
-        <LeafletMap
-          places={filteredPlaces.length > 0 ? filteredPlaces : places}
-          selectedPlaceId={selectedPlace}
-          onMarkerClick={handlePlaceClick}
-          isLoading={isLoading}
-        />
+        <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
+          <LeafletMap
+            places={filteredPlaces.length > 0 ? filteredPlaces : places}
+            selectedPlaceId={selectedPlace}
+            onMarkerClick={handlePlaceClick}
+            isLoading={isLoading}
+          />
+        </Suspense>
       </div>
       
       {/* Floating UI - responsive positioning with proper spacing for sidebar */}
