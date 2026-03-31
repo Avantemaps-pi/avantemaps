@@ -116,7 +116,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
 
       return next;
     });
-  }, []);
+  }, [snapToNearestPoint]);
 
   useEffect(() => {
     const el = containerRef.current;
