@@ -1,9 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
-import LeafletMap from '@/components/map/LeafletMap';
 import { useBusinessData } from '@/hooks/useBusinessData';
-import AddBusinessButton from '@/components/map/buttons/AddBusinessButton';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SearchBar from '@/components/map/SearchBar';
@@ -15,6 +13,9 @@ import MetaTags from '@/components/seo/MetaTags';
 import { BusinessSuggestion } from '@/hooks/useBusinessAutocomplete';
 import { useSearchTracking } from '@/hooks/useSearchTracking';
 import '../styles/map.css';
+
+const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
+const AddBusinessButton = lazy(() => import('@/components/map/buttons/AddBusinessButton'));
 
 const Index = () => {
   const location = useLocation();
@@ -137,12 +138,14 @@ const Index = () => {
 
       {/* Map container with consistent sizing across all screens */}
       <div className="absolute inset-0 w-full h-full">
-        <LeafletMap
-          places={filteredPlaces.length > 0 ? filteredPlaces : places}
-          selectedPlaceId={selectedPlace}
-          onMarkerClick={handlePlaceClick}
-          isLoading={isLoading}
-        />
+        <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
+          <LeafletMap
+            places={filteredPlaces.length > 0 ? filteredPlaces : places}
+            selectedPlaceId={selectedPlace}
+            onMarkerClick={handlePlaceClick}
+            isLoading={isLoading}
+          />
+        </Suspense>
       </div>
       
       {/* Floating UI - responsive positioning with proper spacing for sidebar */}
@@ -185,7 +188,9 @@ const Index = () => {
         </div>
       </div>
       
-      <AddBusinessButton selectedPlace={selectedPlace} />
+      <Suspense fallback={null}>
+        <AddBusinessButton selectedPlace={selectedPlace} />
+      </Suspense>
     </div>
   );
 };

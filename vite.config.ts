@@ -29,9 +29,11 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: {
-          // 🧠 Split heavy deps into separate chunks (helps load time)
           react: ["react", "react-dom"],
           supabase: ["@supabase/supabase-js"],
+          leaflet: ["leaflet"],
+          recharts: ["recharts"],
+          icons: ["lucide-react"],
         },
       },
     },
