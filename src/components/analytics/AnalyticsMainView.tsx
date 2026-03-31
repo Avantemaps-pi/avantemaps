@@ -174,8 +174,8 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
               title="Views Over Time"
               dateRange={dateRange}
               onDateRangeChange={setDateRange}
-              hasAnnualSubscription={annualSubCount >= 1}
-              hasRenewedAnnualSubscription={annualSubCount >= 2}
+              hasAnnualSubscription={isDemoMode || annualSubCount >= 1}
+              hasRenewedAnnualSubscription={isDemoMode || annualSubCount >= 2}
             />
           </div>
 
