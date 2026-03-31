@@ -48,6 +48,13 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
   const TrendIcon = summaryStats.viewsTrend > 0 ? TrendingUp : summaryStats.viewsTrend < 0 ? TrendingDown : Minus;
   const trendColor = summaryStats.viewsTrend > 0 ? 'text-emerald-500' : summaryStats.viewsTrend < 0 ? 'text-red-500' : 'text-muted-foreground';
 
+  const timelineOptions = [
+    { value: "day", label: "24h" },
+    { value: "week", label: "1W" },
+    { value: "month", label: "1M" },
+    ...(hasRenewedAnnualSubscription ? [{ value: "year", label: "1Y" }] : []),
+  ];
+
   const timelineValues = useMemo(() => timelineOptions.map(o => o.value), [timelineOptions]);
 
   const wheelCooldown = useRef(false);
