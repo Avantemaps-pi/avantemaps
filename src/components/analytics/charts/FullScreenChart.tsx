@@ -45,7 +45,7 @@ const FullScreenChart: React.FC<FullScreenChartProps> = React.memo(({
     { value: "day", label: "24h" },
     { value: "week", label: "1W" },
     { value: "month", label: "1M" },
-    ...(hasAnnualSubscription ? [{ value: "quarter", label: "1Q" }] : []),
+    
     ...(hasRenewedAnnualSubscription ? [{ value: "year", label: "1Y" }] : []),
   ];
   
