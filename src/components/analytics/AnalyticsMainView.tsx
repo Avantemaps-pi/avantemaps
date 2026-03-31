@@ -97,16 +97,21 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl min-w-0 overflow-x-hidden">
+      {isDemoMode && (
+        <div className="mb-3 px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 text-xs rounded-lg text-center">
+          Demo Mode — showing sample data for preview testing
+        </div>
+      )}
       <AnalyticsHeader 
-        businessName={selectedBusiness?.business_name || 'My Business'}
-        businesses={userBusinesses}
-        selectedBusinessId={selectedBusinessId}
-        onBusinessChange={setSelectedBusinessId}
+        businessName={displayBusinessName}
+        businesses={displayBusinesses}
+        selectedBusinessId={isDemoMode ? 0 : selectedBusinessId}
+        onBusinessChange={isDemoMode ? () => {} : setSelectedBusinessId}
         dateRange={dateRange}
         onDateRangeChange={setDateRange}
         onExport={handleExport}
-        hasAnnualSubscription={annualSubCount >= 1}
-        hasRenewedAnnualSubscription={annualSubCount >= 2}
+        hasAnnualSubscription={isDemoMode || annualSubCount >= 1}
+        hasRenewedAnnualSubscription={isDemoMode || annualSubCount >= 2}
       />
       
       {isLoading ? (
