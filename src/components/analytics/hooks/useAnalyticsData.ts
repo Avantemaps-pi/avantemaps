@@ -143,26 +143,47 @@ export const useAnalyticsData = (businessId?: number, demoMode = false) => {
   // Transform daily data into engagement chart format
   const engagementData = useMemo((): EngagementDataPoint[] => {
     const days = getDaysForRange(dateRange);
+    const isHourly = dateRange === 'day';
     const data: EngagementDataPoint[] = [];
     
-    // Create date range
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      
-      // Find matching data for this date
-      const dayData = dailyData.find(d => d.view_date === dateStr);
-      
-      data.push({
-        name: date.toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric' 
-        }),
-        views: dayData?.view_count || 0,
-        clicks: 0, // We don't track clicks yet
-        bookmarks: 0, // Per-day bookmarks not tracked yet
-      });
+    if (isHourly) {
+      // Generate 24 hourly data points
+      for (let i = 23; i >= 0; i--) {
+        const date = new Date();
+        date.setHours(date.getHours() - i, 0, 0, 0);
+        const hourStr = date.toISOString().slice(0, 13); // match by hour
+        
+        const hourData = dailyData.find(d => d.view_date.slice(0, 13) === hourStr);
+        
+        data.push({
+          name: date.toLocaleTimeString('en-US', { 
+            hour: 'numeric',
+            hour12: true,
+          }),
+          views: hourData?.view_count || 0,
+          clicks: 0,
+          bookmarks: 0,
+        });
+      }
+    } else {
+      const days = getDaysForRange(dateRange);
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const dayData = dailyData.find(d => d.view_date === dateStr);
+        
+        data.push({
+          name: date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric' 
+          }),
+          views: dayData?.view_count || 0,
+          clicks: 0,
+          bookmarks: 0,
+        });
+      }
     }
     
     return data;
