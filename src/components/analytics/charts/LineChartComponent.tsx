@@ -99,7 +99,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   return (
     <div
       ref={containerRef}
-      className="w-full max-w-full min-w-0 h-full overflow-x-auto overflow-y-hidden touch-pan-x"
+      className="w-full max-w-full min-w-0 h-full overflow-x-auto overflow-y-auto touch-pan-x touch-pan-y"
       style={{ maxWidth: '100%' }}
     >
       <div
