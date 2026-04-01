@@ -78,10 +78,11 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Gesture state
-  const gestureMode = useRef<'idle' | 'pending' | 'panning' | 'tracking'>('idle');
+  const gestureMode = useRef<'idle' | 'pending' | 'panning' | 'tracking' | 'axis-x' | 'axis-y'>('idle');
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+  const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0, pxPerPoint: DEFAULT_PX_PER_POINT });
   const [trackingIndex, setTrackingIndex] = useState<number | null>(null);
+  const [yScaleMultiplier, setYScaleMultiplier] = useState(1); // 0.25 – 4x range
 
   useEffect(() => {
     const el = containerRef.current;
