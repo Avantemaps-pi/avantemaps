@@ -283,7 +283,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     return () => el.removeEventListener('scroll', onScroll);
   }, [onScroll]);
 
-  // Compute visible data range for dynamic Y-axis
+  // Compute visible data range for dynamic Y-axis (incorporates yScaleMultiplier)
   const visibleYDomain = useMemo(() => {
     if (fitContainer || !containerWidth || !data.length) return undefined;
     const startIdx = Math.max(0, Math.floor(scrollLeft / pxPerPoint) - 1);
@@ -297,8 +297,9 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
       if (d.clicks > max) max = d.clicks;
       if (d.bookmarks > max) max = d.bookmarks;
     }
-    return [0, Math.ceil(max * 1.15) || 10] as [number, number];
-  }, [data, scrollLeft, containerWidth, pxPerPoint, fitContainer]);
+    const scaledMax = Math.ceil((max * 1.15) * yScaleMultiplier) || 10;
+    return [0, scaledMax] as [number, number];
+  }, [data, scrollLeft, containerWidth, pxPerPoint, fitContainer, yScaleMultiplier]);
 
   const trackingDataPoint = trackingIndex !== null && trackingIndex < data.length ? data[trackingIndex] : null;
 
