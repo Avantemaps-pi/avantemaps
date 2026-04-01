@@ -63,6 +63,8 @@ const CustomCursor = ({ points, height }: any) => {
 const DEFAULT_PX_PER_POINT = 45;
 const MIN_PX_PER_POINT = 20;
 const MAX_PX_PER_POINT = 120;
+const TRACKING_HOLD_DELAY = 150;
+const DRAG_THRESHOLD = 5;
 
 const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({ 
   data, 
@@ -74,10 +76,12 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   const [pxPerPoint, setPxPerPoint] = useState(DEFAULT_PX_PER_POINT);
   const [scrollLeft, setScrollLeft] = useState(0);
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isDragging = useRef(false);
-  const hasDragged = useRef(false);
+
+  // Gesture state
+  const gestureMode = useRef<'idle' | 'pending' | 'panning' | 'tracking'>('idle');
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
-  const [pinnedIndex, setPinnedIndex] = useState<number | null>(null);
+  const [trackingIndex, setTrackingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -138,63 +142,89 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     return () => el.removeEventListener('wheel', onWheel);
   }, [onWheel]);
 
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    const el = containerRef.current;
-    if (!el) return;
-    isDragging.current = true;
-    hasDragged.current = false;
-    dragStart.current = { x: e.clientX, y: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
-    el.setPointerCapture(e.pointerId);
-    el.style.cursor = 'grabbing';
-  }, []);
-
-  const DRAG_THRESHOLD = 5;
-
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging.current) return;
-    const el = containerRef.current;
-    if (!el) return;
-    const dx = e.clientX - dragStart.current.x;
-    const dy = e.clientY - dragStart.current.y;
-    if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
-      hasDragged.current = true;
-    }
-    el.scrollLeft = dragStart.current.scrollLeft - dx;
-    el.scrollTop = dragStart.current.scrollTop - dy;
-  }, []);
-
   const naturalWidth = data.length * pxPerPoint;
   const chartPixelWidth = fitContainer
     ? containerWidth || 600
     : Math.max(naturalWidth, containerWidth || 0);
 
-  const onPointerUp = useCallback((e: React.PointerEvent) => {
-    const wasDrag = hasDragged.current;
-    isDragging.current = false;
-    hasDragged.current = false;
+  // Calculate index from pointer X position
+  const getIndexFromPointerX = useCallback((clientX: number) => {
+    const el = containerRef.current;
+    if (!el) return 0;
+    const rect = el.getBoundingClientRect();
+    const tapX = clientX - rect.left + el.scrollLeft;
+    const chartPaddingLeft = 10;
+    const usableWidth = chartPixelWidth - 50;
+    const pointSpacing = usableWidth / Math.max(data.length - 1, 1);
+    const idx = Math.round((tapX - chartPaddingLeft) / pointSpacing);
+    return Math.max(0, Math.min(data.length - 1, idx));
+  }, [chartPixelWidth, data.length]);
+
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    dragStart.current = { x: e.clientX, y: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
+    gestureMode.current = 'pending';
+    el.setPointerCapture(e.pointerId);
+
+    // Start hold timer — if finger stays ~still for TRACKING_HOLD_DELAY, enter tracking mode
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = setTimeout(() => {
+      if (gestureMode.current === 'pending') {
+        gestureMode.current = 'tracking';
+        el.style.cursor = 'crosshair';
+        // Immediately show tracking at current position
+        const idx = getIndexFromPointerX(dragStart.current.x);
+        setTrackingIndex(idx);
+      }
+    }, TRACKING_HOLD_DELAY);
+  }, [getIndexFromPointerX]);
+
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+
+    if (gestureMode.current === 'pending') {
+      // If moved beyond threshold before hold timer, it's a pan
+      if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+        if (holdTimer.current) { clearTimeout(holdTimer.current); holdTimer.current = null; }
+        gestureMode.current = 'panning';
+        el.style.cursor = 'grabbing';
+      }
+      return;
+    }
+
+    if (gestureMode.current === 'panning') {
+      el.scrollLeft = dragStart.current.scrollLeft - dx;
+      el.scrollTop = dragStart.current.scrollTop - dy;
+      return;
+    }
+
+    if (gestureMode.current === 'tracking') {
+      // Update tracking index from finger position — no scrolling
+      const idx = getIndexFromPointerX(e.clientX);
+      setTrackingIndex(idx);
+    }
+  }, [getIndexFromPointerX]);
+
+  const onPointerUp = useCallback(() => {
+    if (holdTimer.current) { clearTimeout(holdTimer.current); holdTimer.current = null; }
+    const wasPanning = gestureMode.current === 'panning';
+    gestureMode.current = 'idle';
+    setTrackingIndex(null);
     const el = containerRef.current;
     if (el) el.style.cursor = 'grab';
-
-    if (!wasDrag && el) {
-      const rect = el.getBoundingClientRect();
-      const tapX = e.clientX - rect.left + el.scrollLeft;
-      const chartPaddingLeft = 10;
-      const usableWidth = chartPixelWidth - 50;
-      const pointSpacing = usableWidth / Math.max(data.length - 1, 1);
-      const idx = Math.round((tapX - chartPaddingLeft) / pointSpacing);
-      const clampedIdx = Math.max(0, Math.min(data.length - 1, idx));
-      setPinnedIndex(prev => prev === clampedIdx ? null : clampedIdx);
-    } else {
-      snapToNearestPoint();
-    }
-  }, [snapToNearestPoint, chartPixelWidth, data.length]);
+    if (wasPanning) snapToNearestPoint();
+  }, [snapToNearestPoint]);
   
   // Track scroll position for dynamic Y-axis
   const onScroll = useCallback(() => {
     const el = containerRef.current;
     if (el) setScrollLeft(el.scrollLeft);
-    // Snap after scroll ends (debounced) — only when not dragging
-    if (!isDragging.current) {
+    if (gestureMode.current !== 'panning') {
       if (scrollEndTimer.current) clearTimeout(scrollEndTimer.current);
       scrollEndTimer.current = setTimeout(() => snapToNearestPoint(), 200);
     }
@@ -224,7 +254,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     return [0, Math.ceil(max * 1.15) || 10] as [number, number];
   }, [data, scrollLeft, containerWidth, pxPerPoint, fitContainer]);
 
-  const pinnedDataPoint = pinnedIndex !== null && pinnedIndex < data.length ? data[pinnedIndex] : null;
+  const trackingDataPoint = trackingIndex !== null && trackingIndex < data.length ? data[trackingIndex] : null;
 
   const labelInterval = useMemo(() => {
     if (data.length <= 7) return 0;
@@ -238,7 +268,11 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     <div
       ref={containerRef}
       className="relative w-full max-w-full min-w-0 h-full overflow-x-auto overflow-y-hidden select-none"
-      style={{ maxWidth: '100%', cursor: 'grab' }}
+      style={{ 
+        maxWidth: '100%', 
+        cursor: 'grab',
+        touchAction: gestureMode.current === 'tracking' ? 'none' : 'pan-x pan-y',
+      }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -297,9 +331,10 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
               dx={5}
               width={45}
             />
+            {/* Hide default tooltip when tracking is active */}
             <Tooltip 
-              content={<CustomTooltip />} 
-              cursor={<CustomCursor />}
+              content={trackingDataPoint ? () => null : <CustomTooltip />} 
+              cursor={trackingDataPoint ? false : <CustomCursor />}
               animationDuration={150}
             />
             <Area 
@@ -309,7 +344,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
               strokeWidth={2.5} 
               fill="url(#viewsGradient)"
               dot={false} 
-              activeDot={{ r: 5, strokeWidth: 2.5, stroke: 'hsl(var(--background))', fill: 'hsl(var(--primary))', className: 'drop-shadow-md' }} 
+              activeDot={trackingDataPoint ? false : { r: 5, strokeWidth: 2.5, stroke: 'hsl(var(--background))', fill: 'hsl(var(--primary))', className: 'drop-shadow-md' }} 
               animationDuration={600}
               animationEasing="ease-out"
             />
@@ -321,7 +356,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
               strokeOpacity={0.8}
               fill="url(#clicksGradient)"
               dot={false} 
-              activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--background))', fill: '#8b5cf6' }} 
+              activeDot={trackingDataPoint ? false : { r: 4, strokeWidth: 2, stroke: 'hsl(var(--background))', fill: '#8b5cf6' }} 
               animationDuration={600}
               animationEasing="ease-out"
             />
@@ -333,23 +368,23 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
               strokeOpacity={0.8}
               fill="url(#bookmarksGradient)"
               dot={false} 
-              activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--background))', fill: '#10b981' }} 
+              activeDot={trackingDataPoint ? false : { r: 4, strokeWidth: 2, stroke: 'hsl(var(--background))', fill: '#10b981' }} 
               animationDuration={600}
               animationEasing="ease-out"
             />
-            {/* Crosshair tracker dots at viewport center */}
-            {pinnedDataPoint && !fitContainer && (
+            {/* Crosshair tracking dots — visible while finger is held down */}
+            {trackingDataPoint && !fitContainer && (
               <>
                 <ReferenceLine
-                  x={pinnedDataPoint.name}
+                  x={trackingDataPoint.name}
                   stroke="hsl(var(--muted-foreground))"
                   strokeWidth={1}
                   strokeDasharray="4 4"
                   strokeOpacity={0.4}
                 />
                 <ReferenceDot
-                  x={pinnedDataPoint.name}
-                  y={pinnedDataPoint.views}
+                  x={trackingDataPoint.name}
+                  y={trackingDataPoint.views}
                   r={6}
                   fill="hsl(var(--primary))"
                   stroke="hsl(var(--background))"
@@ -357,8 +392,8 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
                   isFront
                 />
                 <ReferenceDot
-                  x={pinnedDataPoint.name}
-                  y={pinnedDataPoint.clicks}
+                  x={trackingDataPoint.name}
+                  y={trackingDataPoint.clicks}
                   r={5}
                   fill="#8b5cf6"
                   stroke="hsl(var(--background))"
@@ -366,8 +401,8 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
                   isFront
                 />
                 <ReferenceDot
-                  x={pinnedDataPoint.name}
-                  y={pinnedDataPoint.bookmarks}
+                  x={trackingDataPoint.name}
+                  y={trackingDataPoint.bookmarks}
                   r={5}
                   fill="#10b981"
                   stroke="hsl(var(--background))"
@@ -379,25 +414,25 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      {/* Floating center value badge */}
-      {pinnedDataPoint && !fitContainer && (
+      {/* Floating value badge — visible while tracking */}
+      {trackingDataPoint && !fitContainer && (
         <div className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2 z-10">
           <div className="bg-card/90 backdrop-blur-md border border-border/40 rounded-lg px-3 py-1.5 shadow-lg">
             <p className="text-[10px] text-muted-foreground font-semibold tracking-wider uppercase mb-1">
-              {pinnedDataPoint.name}
+              {trackingDataPoint.name}
             </p>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(var(--primary))' }} />
-                <span className="text-xs font-bold text-foreground tabular-nums">{pinnedDataPoint.views.toLocaleString()}</span>
+                <span className="text-xs font-bold text-foreground tabular-nums">{trackingDataPoint.views.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#8b5cf6' }} />
-                <span className="text-xs font-bold text-foreground tabular-nums">{pinnedDataPoint.clicks.toLocaleString()}</span>
+                <span className="text-xs font-bold text-foreground tabular-nums">{trackingDataPoint.clicks.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }} />
-                <span className="text-xs font-bold text-foreground tabular-nums">{pinnedDataPoint.bookmarks.toLocaleString()}</span>
+                <span className="text-xs font-bold text-foreground tabular-nums">{trackingDataPoint.bookmarks.toLocaleString()}</span>
               </div>
             </div>
           </div>
