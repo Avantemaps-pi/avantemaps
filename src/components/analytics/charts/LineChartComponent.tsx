@@ -187,7 +187,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   }, [snapToNearestPoint, chartPixelWidth, data.length]);
 
   const naturalWidth = data.length * pxPerPoint;
-  const chartPixelWidth = fitContainer
+  const chartPixelWidth_ = fitContainer
     ? containerWidth || 600
     : Math.max(naturalWidth, containerWidth || 0);
   
