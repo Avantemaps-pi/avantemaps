@@ -163,6 +163,11 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     el.scrollTop = dragStart.current.scrollTop - dy;
   }, []);
 
+  const naturalWidth = data.length * pxPerPoint;
+  const chartPixelWidth = fitContainer
+    ? containerWidth || 600
+    : Math.max(naturalWidth, containerWidth || 0);
+
   const onPointerUp = useCallback((e: React.PointerEvent) => {
     const wasDrag = hasDragged.current;
     isDragging.current = false;
@@ -171,7 +176,6 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     if (el) el.style.cursor = 'grab';
 
     if (!wasDrag && el) {
-      // Tap — compute which data point was tapped
       const rect = el.getBoundingClientRect();
       const tapX = e.clientX - rect.left + el.scrollLeft;
       const chartPaddingLeft = 10;
@@ -179,17 +183,11 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
       const pointSpacing = usableWidth / Math.max(data.length - 1, 1);
       const idx = Math.round((tapX - chartPaddingLeft) / pointSpacing);
       const clampedIdx = Math.max(0, Math.min(data.length - 1, idx));
-      // Toggle: tap same point to unpin
       setPinnedIndex(prev => prev === clampedIdx ? null : clampedIdx);
     } else {
       snapToNearestPoint();
     }
   }, [snapToNearestPoint, chartPixelWidth, data.length]);
-
-  const naturalWidth = data.length * pxPerPoint;
-  const chartPixelWidth_ = fitContainer
-    ? containerWidth || 600
-    : Math.max(naturalWidth, containerWidth || 0);
   
   // Track scroll position for dynamic Y-axis
   const onScroll = useCallback(() => {
