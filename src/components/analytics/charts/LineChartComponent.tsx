@@ -142,10 +142,13 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     const el = containerRef.current;
     if (!el) return;
     isDragging.current = true;
+    hasDragged.current = false;
     dragStart.current = { x: e.clientX, y: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
     el.setPointerCapture(e.pointerId);
     el.style.cursor = 'grabbing';
   }, []);
+
+  const DRAG_THRESHOLD = 5;
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDragging.current) return;
@@ -153,16 +156,35 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     if (!el) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
+    if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+      hasDragged.current = true;
+    }
     el.scrollLeft = dragStart.current.scrollLeft - dx;
     el.scrollTop = dragStart.current.scrollTop - dy;
   }, []);
 
   const onPointerUp = useCallback((e: React.PointerEvent) => {
+    const wasDrag = hasDragged.current;
     isDragging.current = false;
+    hasDragged.current = false;
     const el = containerRef.current;
     if (el) el.style.cursor = 'grab';
-    snapToNearestPoint();
-  }, [snapToNearestPoint]);
+
+    if (!wasDrag && el) {
+      // Tap — compute which data point was tapped
+      const rect = el.getBoundingClientRect();
+      const tapX = e.clientX - rect.left + el.scrollLeft;
+      const chartPaddingLeft = 10;
+      const usableWidth = chartPixelWidth - 50;
+      const pointSpacing = usableWidth / Math.max(data.length - 1, 1);
+      const idx = Math.round((tapX - chartPaddingLeft) / pointSpacing);
+      const clampedIdx = Math.max(0, Math.min(data.length - 1, idx));
+      // Toggle: tap same point to unpin
+      setPinnedIndex(prev => prev === clampedIdx ? null : clampedIdx);
+    } else {
+      snapToNearestPoint();
+    }
+  }, [snapToNearestPoint, chartPixelWidth, data.length]);
 
   const naturalWidth = data.length * pxPerPoint;
   const chartPixelWidth = fitContainer
