@@ -75,7 +75,9 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   const [scrollLeft, setScrollLeft] = useState(0);
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDragging = useRef(false);
+  const hasDragged = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+  const [pinnedIndex, setPinnedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -140,10 +142,13 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     const el = containerRef.current;
     if (!el) return;
     isDragging.current = true;
+    hasDragged.current = false;
     dragStart.current = { x: e.clientX, y: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
     el.setPointerCapture(e.pointerId);
     el.style.cursor = 'grabbing';
   }, []);
+
+  const DRAG_THRESHOLD = 5;
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDragging.current) return;
@@ -151,21 +156,38 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     if (!el) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
+    if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+      hasDragged.current = true;
+    }
     el.scrollLeft = dragStart.current.scrollLeft - dx;
     el.scrollTop = dragStart.current.scrollTop - dy;
   }, []);
-
-  const onPointerUp = useCallback((e: React.PointerEvent) => {
-    isDragging.current = false;
-    const el = containerRef.current;
-    if (el) el.style.cursor = 'grab';
-    snapToNearestPoint();
-  }, [snapToNearestPoint]);
 
   const naturalWidth = data.length * pxPerPoint;
   const chartPixelWidth = fitContainer
     ? containerWidth || 600
     : Math.max(naturalWidth, containerWidth || 0);
+
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
+    const wasDrag = hasDragged.current;
+    isDragging.current = false;
+    hasDragged.current = false;
+    const el = containerRef.current;
+    if (el) el.style.cursor = 'grab';
+
+    if (!wasDrag && el) {
+      const rect = el.getBoundingClientRect();
+      const tapX = e.clientX - rect.left + el.scrollLeft;
+      const chartPaddingLeft = 10;
+      const usableWidth = chartPixelWidth - 50;
+      const pointSpacing = usableWidth / Math.max(data.length - 1, 1);
+      const idx = Math.round((tapX - chartPaddingLeft) / pointSpacing);
+      const clampedIdx = Math.max(0, Math.min(data.length - 1, idx));
+      setPinnedIndex(prev => prev === clampedIdx ? null : clampedIdx);
+    } else {
+      snapToNearestPoint();
+    }
+  }, [snapToNearestPoint, chartPixelWidth, data.length]);
   
   // Track scroll position for dynamic Y-axis
   const onScroll = useCallback(() => {
@@ -202,19 +224,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     return [0, Math.ceil(max * 1.15) || 10] as [number, number];
   }, [data, scrollLeft, containerWidth, pxPerPoint, fitContainer]);
 
-  // Compute center data point index for crosshair tracker
-  const centerIndex = useMemo(() => {
-    if (fitContainer || !data.length || !containerWidth) return -1;
-    const centerScroll = scrollLeft + containerWidth / 2;
-    const chartMarginLeft = 0; // left margin
-    const chartPaddingLeft = 10; // XAxis padding.left
-    const usableWidth = chartPixelWidth - chartMarginLeft - 50; // minus right margin
-    const pointSpacing = usableWidth / Math.max(data.length - 1, 1);
-    const idx = Math.round((centerScroll - chartMarginLeft - chartPaddingLeft) / pointSpacing);
-    return Math.max(0, Math.min(data.length - 1, idx));
-  }, [scrollLeft, containerWidth, data.length, chartPixelWidth, fitContainer]);
-
-  const centerDataPoint = centerIndex >= 0 ? data[centerIndex] : null;
+  const pinnedDataPoint = pinnedIndex !== null && pinnedIndex < data.length ? data[pinnedIndex] : null;
 
   const labelInterval = useMemo(() => {
     if (data.length <= 7) return 0;
@@ -328,18 +338,18 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
               animationEasing="ease-out"
             />
             {/* Crosshair tracker dots at viewport center */}
-            {centerDataPoint && !fitContainer && (
+            {pinnedDataPoint && !fitContainer && (
               <>
                 <ReferenceLine
-                  x={centerDataPoint.name}
+                  x={pinnedDataPoint.name}
                   stroke="hsl(var(--muted-foreground))"
                   strokeWidth={1}
                   strokeDasharray="4 4"
                   strokeOpacity={0.4}
                 />
                 <ReferenceDot
-                  x={centerDataPoint.name}
-                  y={centerDataPoint.views}
+                  x={pinnedDataPoint.name}
+                  y={pinnedDataPoint.views}
                   r={6}
                   fill="hsl(var(--primary))"
                   stroke="hsl(var(--background))"
@@ -347,8 +357,8 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
                   isFront
                 />
                 <ReferenceDot
-                  x={centerDataPoint.name}
-                  y={centerDataPoint.clicks}
+                  x={pinnedDataPoint.name}
+                  y={pinnedDataPoint.clicks}
                   r={5}
                   fill="#8b5cf6"
                   stroke="hsl(var(--background))"
@@ -356,8 +366,8 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
                   isFront
                 />
                 <ReferenceDot
-                  x={centerDataPoint.name}
-                  y={centerDataPoint.bookmarks}
+                  x={pinnedDataPoint.name}
+                  y={pinnedDataPoint.bookmarks}
                   r={5}
                   fill="#10b981"
                   stroke="hsl(var(--background))"
@@ -370,24 +380,24 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
         </ResponsiveContainer>
       </div>
       {/* Floating center value badge */}
-      {centerDataPoint && !fitContainer && (
+      {pinnedDataPoint && !fitContainer && (
         <div className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2 z-10">
           <div className="bg-card/90 backdrop-blur-md border border-border/40 rounded-lg px-3 py-1.5 shadow-lg">
             <p className="text-[10px] text-muted-foreground font-semibold tracking-wider uppercase mb-1">
-              {centerDataPoint.name}
+              {pinnedDataPoint.name}
             </p>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(var(--primary))' }} />
-                <span className="text-xs font-bold text-foreground tabular-nums">{centerDataPoint.views.toLocaleString()}</span>
+                <span className="text-xs font-bold text-foreground tabular-nums">{pinnedDataPoint.views.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#8b5cf6' }} />
-                <span className="text-xs font-bold text-foreground tabular-nums">{centerDataPoint.clicks.toLocaleString()}</span>
+                <span className="text-xs font-bold text-foreground tabular-nums">{pinnedDataPoint.clicks.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }} />
-                <span className="text-xs font-bold text-foreground tabular-nums">{centerDataPoint.bookmarks.toLocaleString()}</span>
+                <span className="text-xs font-bold text-foreground tabular-nums">{pinnedDataPoint.bookmarks.toLocaleString()}</span>
               </div>
             </div>
           </div>
