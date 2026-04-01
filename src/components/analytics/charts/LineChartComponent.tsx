@@ -318,7 +318,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
       style={{ 
         maxWidth: '100%', 
         cursor: 'grab',
-        touchAction: gestureMode.current === 'tracking' ? 'none' : 'pan-x pan-y',
+        touchAction: ['tracking', 'axis-x', 'axis-y'].includes(gestureMode.current) ? 'none' : 'pan-x pan-y',
       }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
