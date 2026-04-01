@@ -224,19 +224,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     return [0, Math.ceil(max * 1.15) || 10] as [number, number];
   }, [data, scrollLeft, containerWidth, pxPerPoint, fitContainer]);
 
-  // Compute center data point index for crosshair tracker
-  const centerIndex = useMemo(() => {
-    if (fitContainer || !data.length || !containerWidth) return -1;
-    const centerScroll = scrollLeft + containerWidth / 2;
-    const chartMarginLeft = 0; // left margin
-    const chartPaddingLeft = 10; // XAxis padding.left
-    const usableWidth = chartPixelWidth - chartMarginLeft - 50; // minus right margin
-    const pointSpacing = usableWidth / Math.max(data.length - 1, 1);
-    const idx = Math.round((centerScroll - chartMarginLeft - chartPaddingLeft) / pointSpacing);
-    return Math.max(0, Math.min(data.length - 1, idx));
-  }, [scrollLeft, containerWidth, data.length, chartPixelWidth, fitContainer]);
-
-  const centerDataPoint = centerIndex >= 0 ? data[centerIndex] : null;
+  const pinnedDataPoint = pinnedIndex !== null && pinnedIndex < data.length ? data[pinnedIndex] : null;
 
   const labelInterval = useMemo(() => {
     if (data.length <= 7) return 0;
