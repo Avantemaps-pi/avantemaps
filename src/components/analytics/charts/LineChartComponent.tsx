@@ -75,7 +75,9 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
   const [scrollLeft, setScrollLeft] = useState(0);
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDragging = useRef(false);
+  const hasDragged = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+  const [pinnedIndex, setPinnedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
