@@ -161,26 +161,57 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     return Math.max(0, Math.min(data.length - 1, idx));
   }, [chartPixelWidth, data.length]);
 
+  // Detect which zone the pointer is in: 'x-axis' (bottom 35px), 'y-axis' (right 50px), or 'chart'
+  const getPointerZone = useCallback((e: React.PointerEvent): 'x-axis' | 'y-axis' | 'chart' => {
+    const el = containerRef.current;
+    if (!el) return 'chart';
+    const rect = el.getBoundingClientRect();
+    const relY = e.clientY - rect.top;
+    const relX = e.clientX - rect.left;
+    const height = chartHeight || 400;
+    const X_AXIS_ZONE = 35; // bottom area for x-axis labels
+    const Y_AXIS_ZONE = 50; // right area for y-axis labels
+
+    if (relY > height - X_AXIS_ZONE) return 'x-axis';
+    if (relX > rect.width - Y_AXIS_ZONE) return 'y-axis';
+    return 'chart';
+  }, [chartHeight]);
+
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     const el = containerRef.current;
     if (!el) return;
 
-    dragStart.current = { x: e.clientX, y: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
-    gestureMode.current = 'pending';
+    const zone = getPointerZone(e);
+    dragStart.current = { x: e.clientX, y: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop, pxPerPoint };
     el.setPointerCapture(e.pointerId);
 
-    // Start hold timer — if finger stays ~still for TRACKING_HOLD_DELAY, enter tracking mode
+    if (zone === 'x-axis') {
+      // X-axis drag: horizontal zoom (change pxPerPoint)
+      gestureMode.current = 'axis-x';
+      el.style.cursor = 'ew-resize';
+      return;
+    }
+
+    if (zone === 'y-axis') {
+      // Y-axis drag: vertical scale
+      gestureMode.current = 'axis-y';
+      el.style.cursor = 'ns-resize';
+      return;
+    }
+
+    // Chart area: existing pending → pan/track logic
+    gestureMode.current = 'pending';
+
     if (holdTimer.current) clearTimeout(holdTimer.current);
     holdTimer.current = setTimeout(() => {
       if (gestureMode.current === 'pending') {
         gestureMode.current = 'tracking';
         el.style.cursor = 'crosshair';
-        // Immediately show tracking at current position
         const idx = getIndexFromPointerX(dragStart.current.x);
         setTrackingIndex(idx);
       }
     }, TRACKING_HOLD_DELAY);
-  }, [getIndexFromPointerX]);
+  }, [getIndexFromPointerX, getPointerZone, pxPerPoint]);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     const el = containerRef.current;
@@ -188,8 +219,23 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
 
+    if (gestureMode.current === 'axis-x') {
+      // Dragging right = zoom in (more px per point), left = zoom out
+      const sensitivity = 0.5;
+      const newPxPerPoint = Math.min(MAX_PX_PER_POINT, Math.max(MIN_PX_PER_POINT, dragStart.current.pxPerPoint + dx * sensitivity));
+      setPxPerPoint(newPxPerPoint);
+      return;
+    }
+
+    if (gestureMode.current === 'axis-y') {
+      // Dragging up = zoom in (smaller multiplier = tighter range), down = zoom out
+      const sensitivity = 0.005;
+      const newScale = Math.min(4, Math.max(0.25, 1 - dy * sensitivity));
+      setYScaleMultiplier(newScale);
+      return;
+    }
+
     if (gestureMode.current === 'pending') {
-      // If moved beyond threshold before hold timer, it's a pan
       if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
         if (holdTimer.current) { clearTimeout(holdTimer.current); holdTimer.current = null; }
         gestureMode.current = 'panning';
@@ -205,7 +251,6 @@ const LineChartComponent: React.FC<LineChartComponentProps> = React.memo(({
     }
 
     if (gestureMode.current === 'tracking') {
-      // Update tracking index from finger position — no scrolling
       const idx = getIndexFromPointerX(e.clientX);
       setTrackingIndex(idx);
     }
