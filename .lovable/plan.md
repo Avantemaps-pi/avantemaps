@@ -1,33 +1,45 @@
 
 
-## Plan: Make Chart X-Axis Labels Scrollable Instead of Bundled
+## Summary
 
-### Problem
-On mobile, all date labels (1-28) are crammed together on the x-axis, making them overlap and unreadable. The chart tries to display every label at once.
+The video shows a **drag-to-track** crosshair UX (like CoinMarketCap/TradingView mobile), where:
+- Touch-and-hold on the chart activates a crosshair
+- Dragging horizontally snaps the tracking dot to each data point under the finger
+- Lifting the finger dismisses the crosshair
+- During tracking, the chart does NOT scroll — finger movement controls which point is highlighted
 
-### Solution
-Give the chart a fixed minimum width per data point so labels are spaced out, and wrap it in a horizontally scrollable container. Users scroll left/right to see different dates.
+This differs from the current tap-to-pin implementation. The key UX distinction: **the crosshair follows the finger in real-time during a drag gesture, rather than being placed by a tap.**
 
-### Changes
+## Plan
 
-**`src/components/analytics/charts/LineChartComponent.tsx`**
-- Calculate a minimum chart width based on the number of data points (e.g., `data.length * 50px`, minimum 100% of container)
-- Set the `ResponsiveContainer` or inner `AreaChart` width to this calculated pixel width instead of percentage-based `chartWidth`
-- Ensure the outer `div` has `overflow-x: auto` and `overflow-y: hidden` so users can scroll horizontally
-- Set XAxis `interval={0}` so every label is shown (since they now have room)
+### 1. Replace tap-to-pin with drag-to-track mode
+**File: `src/components/analytics/charts/LineChartComponent.tsx`**
 
-**`src/components/analytics/EngagementChart.tsx`**
-- Update the `CardContent` container to allow horizontal overflow (`overflow-x-auto`) instead of `overflow-hidden`
+- Replace `pinnedIndex` state with `trackingIndex` (active only while finger is down)
+- On `pointerdown`: record start position, set a short delay (~150ms) to distinguish scroll vs track
+- On `pointermove`: if tracking is active, calculate the nearest data point index from the finger's X position and update `trackingIndex` in real-time. Prevent chart scrolling during tracking.
+- On `pointerup`/`pointerleave`: clear `trackingIndex` (crosshair disappears)
 
-**`src/components/analytics/charts/FullScreenChart.tsx`**
-- Same scrollable treatment for the full-screen view container
+### 2. Distinguish scroll vs track gestures
+- If the user moves quickly (momentum scroll), treat it as a pan/scroll
+- If the user holds for ~150ms before moving, activate tracking mode and prevent scrolling
+- This ensures normal drag-to-pan still works for navigation
 
-### Technical Detail
-The key change is replacing percentage-based width with a pixel-based minimum:
-```tsx
-const minWidth = Math.max(data.length * 50, containerWidth);
-// Render AreaChart with width={minWidth} inside a scrollable div
+### 3. Fix build errors
+- Replace any remaining `centerDataPoint` references with the correct variable name (the build errors suggest stale references exist in the deployed version)
+
+### Technical Details
+
+```text
+Gesture flow:
+  pointerdown → start 150ms timer
+    ├─ finger moves > threshold before timer → pan mode (existing behavior)
+    └─ timer fires while finger still down → tracking mode
+        ├─ pointermove → update trackingIndex from X position
+        └─ pointerup → clear trackingIndex, crosshair disappears
 ```
 
-This ensures labels are always spaced ~50px apart. When there are many data points, the chart extends beyond the viewport and becomes scrollable.
+- During tracking mode: `e.preventDefault()` on scroll, `pointer-events` managed to block chart's native tooltip
+- `trackingIndex` maps finger X → nearest data point using same `pointSpacing` math as current tap logic
+- ReferenceLine + ReferenceDots + floating badge render identically to current pinned UI, but only while `trackingIndex !== null`
 
