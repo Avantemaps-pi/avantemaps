@@ -26,7 +26,7 @@ interface EngagementChartProps {
 const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, title, description, dateRange = 'week', onDateRangeChange, hasAnnualSubscription = false, hasRenewedAnnualSubscription = false }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   
-  const chartHeight = 350;
+  const chartHeight = isMobile ? 280 : 400;
 
   // Calculate summary stats from chart data
   const summaryStats = useMemo(() => {
