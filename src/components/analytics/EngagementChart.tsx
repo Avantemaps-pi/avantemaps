@@ -1,11 +1,9 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Maximize, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import LineChartComponent from './charts/LineChartComponent';
-import FullScreenChart from './charts/FullScreenChart';
 
 interface ChartData {
   name: string;
@@ -25,7 +23,7 @@ interface EngagementChartProps {
 }
 
 const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, title, description, dateRange = 'week', onDateRangeChange, hasAnnualSubscription = false, hasRenewedAnnualSubscription = false }) => {
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  
   const isMobile = useIsMobile();
   
   const chartHeight = isMobile ? 280 : 400;
@@ -91,15 +89,6 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
                   </button>
                 ))}
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setIsFullScreen(true)} 
-                title="Full Screen"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              >
-                <Maximize className="h-4 w-4" />
-              </Button>
             </div>
           </div>
 
@@ -155,22 +144,6 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
           {lineChartComponent}
         </CardContent>
       </Card>
-
-      <FullScreenChart 
-        isFullScreen={isFullScreen}
-        setIsFullScreen={setIsFullScreen}
-        title={title}
-        description={description}
-        data={data}
-        xScale={100}
-        setXScale={() => {}}
-        yScale={100}
-        setYScale={() => {}}
-        timelineFilter={dateRange}
-        setTimelineFilter={(v) => onDateRangeChange?.(v)}
-        hasAnnualSubscription={hasAnnualSubscription}
-        hasRenewedAnnualSubscription={hasRenewedAnnualSubscription}
-      />
     </>
   );
 });
