@@ -89,16 +89,6 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
                   </button>
                 ))}
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setIsFullScreen(true)} 
-                title="Full Screen"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              >
-                <Maximize className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
 
           {/* Summary Stats Row */}
