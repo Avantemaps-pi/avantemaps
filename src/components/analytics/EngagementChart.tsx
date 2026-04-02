@@ -23,7 +23,7 @@ interface EngagementChartProps {
 }
 
 const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, title, description, dateRange = 'week', onDateRangeChange, hasAnnualSubscription = false, hasRenewedAnnualSubscription = false }) => {
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  
   const isMobile = useIsMobile();
   
   const chartHeight = isMobile ? 280 : 400;
