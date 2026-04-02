@@ -168,7 +168,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
             />
           </div>
           
-          <div className="w-full max-w-full min-w-0 overflow-hidden mb-4 sm:mb-8 h-[400px] sm:h-[500px] md:h-[600px]">
+          <div className="w-full max-w-full min-w-0 overflow-hidden pb-2">
             <EngagementChart 
               data={engagementData}
               title="Views Over Time"
