@@ -143,22 +143,6 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
           {lineChartComponent}
         </CardContent>
       </Card>
-
-      <FullScreenChart 
-        isFullScreen={isFullScreen}
-        setIsFullScreen={setIsFullScreen}
-        title={title}
-        description={description}
-        data={data}
-        xScale={100}
-        setXScale={() => {}}
-        yScale={100}
-        setYScale={() => {}}
-        timelineFilter={dateRange}
-        setTimelineFilter={(v) => onDateRangeChange?.(v)}
-        hasAnnualSubscription={hasAnnualSubscription}
-        hasRenewedAnnualSubscription={hasRenewedAnnualSubscription}
-      />
     </>
   );
 });
