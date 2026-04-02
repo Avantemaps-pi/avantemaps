@@ -89,6 +89,7 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
                   </button>
                 ))}
               </div>
+            </div>
           </div>
 
           {/* Summary Stats Row */}
