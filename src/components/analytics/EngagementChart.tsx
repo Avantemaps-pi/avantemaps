@@ -1,11 +1,9 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Maximize, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import LineChartComponent from './charts/LineChartComponent';
-import FullScreenChart from './charts/FullScreenChart';
 
 interface ChartData {
   name: string;
