@@ -127,16 +127,6 @@ const About = () => {
                       <Facebook className="h-5 w-5" />
                     </a>
                   </Button>
-                  <Button variant="outline" size="icon" className="rounded-full hover:text-pink-500" asChild>
-                    <a href="https://instagram.com/avantemaps" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                      <Instagram className="h-5 w-5" />
-                    </a>
-                  </Button>
-                  <Button variant="outline" size="icon" className="rounded-full hover:text-blue-700" asChild>
-                    <a href="https://linkedin.com/company/avantemaps" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                      <Linkedin className="h-5 w-5" />
-                    </a>
-                  </Button>
                 </div>
               </PopoverContent>
             </Popover>
