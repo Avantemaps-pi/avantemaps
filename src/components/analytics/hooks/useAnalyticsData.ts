@@ -25,6 +25,7 @@ interface EngagementDataPoint {
 const generateMockData = (days: number, isHourly = false): DailyViewData[] => {
   const data: DailyViewData[] = [];
   if (isHourly) {
+    // Generate hourly data for full 24h range
     for (let i = 23; i >= 0; i--) {
       const date = new Date();
       date.setHours(date.getHours() - i, 0, 0, 0);
@@ -35,14 +36,15 @@ const generateMockData = (days: number, isHourly = false): DailyViewData[] => {
       });
     }
   } else {
+    // Generate daily data for each day in the range
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const base = 3 + Math.floor(Math.random() * 8);
-      const spike = Math.random() > 0.8 ? Math.floor(Math.random() * 10) : 0;
+      // Use smooth base with slight variation for natural-looking curves
+      const base = 5 + Math.round(Math.sin(i * 0.3) * 3 + Math.random() * 3);
       data.push({
         view_date: date.toISOString().split('T')[0],
-        view_count: base + spike,
+        view_count: Math.max(0, base),
       });
     }
   }
