@@ -97,8 +97,8 @@ const PrivacyPolicy = () => {
                     Questions about this Privacy Policy? Contact us at:
                   </p>
                   <p className="mt-2">
-                    <strong>Email:</strong> privacy@avantemaps.com<br />
-                    <strong>Address:</strong> 123 Pi Street, San Francisco, CA 94103
+                    <strong>Email:</strong> support@avantemaps.com<br />
+                    <strong>Address:</strong> 113 Jabu Ndlovu Street, KZN 3201
                   </p>
                 </section>
               </div>
