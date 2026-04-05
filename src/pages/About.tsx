@@ -103,11 +103,25 @@ const About = () => {
         <div className="flex flex-col items-center justify-center space-y-4 py-8">
           <h2 className="text-2xl font-semibold">Connect With Us</h2>
           <div className="flex space-x-4">
-            <Button variant="outline" className="rounded-full" size="icon">
-              <Heart className="h-5 w-5" />
-            </Button>
-            <Button variant="outline" className="rounded-full" size="icon">
-              <Mail className="h-5 w-5" />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="rounded-full" size="icon">
+                  <Heart className="h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-3" align="center">
+                <p className="text-xs text-muted-foreground mb-2 text-center">Share Avante Maps</p>
+                <ShareBar
+                  title="Avante Maps"
+                  text="Check out Avante Maps – discover businesses that accept Pi cryptocurrency!"
+                  url="https://avantemaps.lovable.app"
+                />
+              </PopoverContent>
+            </Popover>
+            <Button variant="outline" className="rounded-full" size="icon" asChild>
+              <a href="mailto:inquiries@avantemaps.com">
+                <Mail className="h-5 w-5" />
+              </a>
             </Button>
             <Button variant="outline" className="rounded-full" size="icon">
               <Github className="h-5 w-5" />
