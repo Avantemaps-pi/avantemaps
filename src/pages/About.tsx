@@ -6,7 +6,7 @@ import { Heart, Mail, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MessageCircle, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { MessageCircle, Facebook, Twitter } from 'lucide-react';
 
 const About = () => {
   const navigate = useNavigate();
@@ -125,16 +125,6 @@ const About = () => {
                   <Button variant="outline" size="icon" className="rounded-full hover:text-blue-600" asChild>
                     <a href="https://facebook.com/avantemaps" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                       <Facebook className="h-5 w-5" />
-                    </a>
-                  </Button>
-                  <Button variant="outline" size="icon" className="rounded-full hover:text-pink-500" asChild>
-                    <a href="https://instagram.com/avantemaps" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                      <Instagram className="h-5 w-5" />
-                    </a>
-                  </Button>
-                  <Button variant="outline" size="icon" className="rounded-full hover:text-blue-700" asChild>
-                    <a href="https://linkedin.com/company/avantemaps" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                      <Linkedin className="h-5 w-5" />
                     </a>
                   </Button>
                 </div>
