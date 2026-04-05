@@ -46,7 +46,7 @@ const Contact = () => {
           </div>
         </Card>
 
-        <Card className="material-card">
+        <Card id="send-message" className="material-card scroll-mt-4">
           <CardHeader>
             <CardTitle>Send us a message</CardTitle>
             <CardDescription>
