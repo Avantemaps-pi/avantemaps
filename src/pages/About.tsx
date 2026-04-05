@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Heart, Mail, Github } from 'lucide-react';
+import { Heart, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -132,9 +132,6 @@ const About = () => {
             </Popover>
             <Button variant="outline" className="rounded-full" size="icon" onClick={() => navigate('/contact#send-message')}>
               <Mail className="h-5 w-5" />
-            </Button>
-            <Button variant="outline" className="rounded-full" size="icon">
-              <Github className="h-5 w-5" />
             </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-4">
