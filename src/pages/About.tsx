@@ -110,12 +110,34 @@ const About = () => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-3" align="center">
-                <p className="text-xs text-muted-foreground mb-2 text-center">Share Avante Maps</p>
-                <ShareBar
-                  title="Avante Maps"
-                  text="Check out Avante Maps – discover businesses that accept Pi cryptocurrency!"
-                  url="https://avantemaps.lovable.app"
-                />
+                <p className="text-xs text-muted-foreground mb-2 text-center">Follow us on social media</p>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" className="rounded-full hover:text-green-600" asChild>
+                    <a href="https://wa.me/27683422444" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                      <MessageCircle className="h-5 w-5" />
+                    </a>
+                  </Button>
+                  <Button variant="outline" size="icon" className="rounded-full hover:text-blue-500" asChild>
+                    <a href="https://x.com/AvanteMap" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
+                      <Twitter className="h-5 w-5" />
+                    </a>
+                  </Button>
+                  <Button variant="outline" size="icon" className="rounded-full hover:text-blue-600" asChild>
+                    <a href="https://facebook.com/avantemaps" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                      <Facebook className="h-5 w-5" />
+                    </a>
+                  </Button>
+                  <Button variant="outline" size="icon" className="rounded-full hover:text-pink-500" asChild>
+                    <a href="https://instagram.com/avantemaps" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                      <Instagram className="h-5 w-5" />
+                    </a>
+                  </Button>
+                  <Button variant="outline" size="icon" className="rounded-full hover:text-blue-700" asChild>
+                    <a href="https://linkedin.com/company/avantemaps" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                      <Linkedin className="h-5 w-5" />
+                    </a>
+                  </Button>
+                </div>
               </PopoverContent>
             </Popover>
             <Button variant="outline" className="rounded-full" size="icon" asChild>
