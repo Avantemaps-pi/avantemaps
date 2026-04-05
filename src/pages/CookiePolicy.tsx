@@ -128,7 +128,7 @@ const CookiePolicy = () => {
                   If you have any questions about our use of cookies or other technologies, please email us at privacy@avantemaps.com or contact us at:
                 </p>
                 <p>
-                  <strong>Address:</strong> 123 Pi Street, Suite 456, San Francisco, CA 94103
+                  <strong>Address:</strong> 113 Jabu Ndlovu Street, KZN 3201
                 </p>
                 <p>
                   <strong>Phone:</strong> (555) 123-4567
