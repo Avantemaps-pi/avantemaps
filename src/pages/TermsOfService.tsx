@@ -108,7 +108,7 @@ const TermsOfService = () => {
 
                 <h3 className="text-lg font-medium">12. Contact Us</h3>
                 <p>
-                  If you have any questions about these Terms, please contact us at terms@avantemaps.com.
+                  If you have any questions about these Terms, please contact us at support@avantemaps.com.
                 </p>
               </div>
             </ScrollArea>
