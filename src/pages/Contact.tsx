@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Contact = () => {
   const location = useLocation();
+  const { toast } = useToast();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [department, setDepartment] = useState('');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (location.hash) {
@@ -20,6 +26,18 @@ const Contact = () => {
       }
     }
   }, [location.hash]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!department) {
+      toast({ title: 'Please select a department', variant: 'destructive' });
+      return;
+    }
+    const subject = encodeURIComponent(`Message from ${name || 'Website Visitor'}`);
+    const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`);
+    window.open(`mailto:${department}?subject=${subject}&body=${body}`, '_blank');
+    toast({ title: 'Opening your email client...', description: 'Your message details have been pre-filled.' });
+  };
 
   return <AppLayout title="Contact Us">
       <div className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 animate-fade-in">
@@ -66,26 +84,26 @@ const Contact = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="name" className="text-sm font-medium">
                     Name
                   </label>
-                  <Input id="name" placeholder="Your name" />
+                  <Input id="name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="email" className="text-sm font-medium">
                     Email
                   </label>
-                  <Input id="email" type="email" placeholder="Your email address" />
+                  <Input id="email" type="email" placeholder="Your email address" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
               </div>
               <div className="space-y-2">
                 <label htmlFor="subject" className="text-sm font-medium">
                   Department
                 </label>
-                <Select>
+                <Select value={department} onValueChange={setDepartment}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a department" />
                   </SelectTrigger>
@@ -101,7 +119,7 @@ const Contact = () => {
                 <label htmlFor="message" className="text-sm font-medium">
                   Message
                 </label>
-                <Textarea id="message" placeholder="How can we help you?" rows={5} className="resize-none" />
+                <Textarea id="message" placeholder="How can we help you?" rows={5} className="resize-none" value={message} onChange={(e) => setMessage(e.target.value)} required />
               </div>
               <Button className="w-full sm:w-auto" type="submit">
                 <Send className="mr-2 h-4 w-4" />
