@@ -55,6 +55,7 @@ const EngagementChart: React.FC<EngagementChartProps> = React.memo(({ data, titl
         chartWidth="100%"
         chartHeight={chartHeight}
         containerStyle={{ overflowX: "auto" as const, overflowY: "hidden" as const }}
+        fitContainer={true}
       />
     </div>
   ), [data, chartHeight]);
