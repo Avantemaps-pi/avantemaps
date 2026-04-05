@@ -84,26 +84,26 @@ const Contact = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="name" className="text-sm font-medium">
                     Name
                   </label>
-                  <Input id="name" placeholder="Your name" />
+                  <Input id="name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="email" className="text-sm font-medium">
                     Email
                   </label>
-                  <Input id="email" type="email" placeholder="Your email address" />
+                  <Input id="email" type="email" placeholder="Your email address" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
               </div>
               <div className="space-y-2">
                 <label htmlFor="subject" className="text-sm font-medium">
                   Department
                 </label>
-                <Select>
+                <Select value={department} onValueChange={setDepartment}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a department" />
                   </SelectTrigger>
@@ -119,7 +119,7 @@ const Contact = () => {
                 <label htmlFor="message" className="text-sm font-medium">
                   Message
                 </label>
-                <Textarea id="message" placeholder="How can we help you?" rows={5} className="resize-none" />
+                <Textarea id="message" placeholder="How can we help you?" rows={5} className="resize-none" value={message} onChange={(e) => setMessage(e.target.value)} required />
               </div>
               <Button className="w-full sm:w-auto" type="submit">
                 <Send className="mr-2 h-4 w-4" />
