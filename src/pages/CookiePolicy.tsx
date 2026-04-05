@@ -125,7 +125,7 @@ const CookiePolicy = () => {
                 
                 <h3 className="text-lg font-medium">8. Where Can You Get Further Information?</h3>
                 <p>
-                  If you have any questions about our use of cookies or other technologies, please email us at privacy@avantemaps.com or contact us at:
+                  If you have any questions about our use of cookies or other technologies, please email us at support@avantemaps.com or contact us at:
                 </p>
                 <p>
                   <strong>Address:</strong> 113 Jabu Ndlovu Street, KZN 3201
