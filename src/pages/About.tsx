@@ -130,10 +130,8 @@ const About = () => {
                 </div>
               </PopoverContent>
             </Popover>
-            <Button variant="outline" className="rounded-full" size="icon" asChild>
-              <a href="mailto:inquiries@avantemaps.com">
-                <Mail className="h-5 w-5" />
-              </a>
+            <Button variant="outline" className="rounded-full" size="icon" onClick={() => navigate('/contact#send-message')}>
+              <Mail className="h-5 w-5" />
             </Button>
             <Button variant="outline" className="rounded-full" size="icon">
               <Github className="h-5 w-5" />

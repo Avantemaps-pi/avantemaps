@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +10,17 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 
 const Contact = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const el = document.querySelector(location.hash);
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 300);
+      }
+    }
+  }, [location.hash]);
+
   return <AppLayout title="Contact Us">
       <div className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 animate-fade-in">
         <div className="space-y-4">
@@ -46,7 +58,7 @@ const Contact = () => {
           </div>
         </Card>
 
-        <Card className="material-card">
+        <Card id="send-message" className="material-card scroll-mt-4">
           <CardHeader>
             <CardTitle>Send us a message</CardTitle>
             <CardDescription>
