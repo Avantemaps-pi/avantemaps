@@ -6,7 +6,7 @@ import { Heart, Mail, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MessageCircle, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { MessageCircle, Facebook, Twitter } from 'lucide-react';
 
 const About = () => {
   const navigate = useNavigate();
