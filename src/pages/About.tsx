@@ -133,9 +133,6 @@ const About = () => {
             <Button variant="outline" className="rounded-full" size="icon" onClick={() => navigate('/contact#send-message')}>
               <Mail className="h-5 w-5" />
             </Button>
-            <Button variant="outline" className="rounded-full" size="icon">
-              <Github className="h-5 w-5" />
-            </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-4">
             © 2025 Avante Maps. All rights reserved.
