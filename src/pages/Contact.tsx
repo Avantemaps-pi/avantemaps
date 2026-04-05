@@ -10,6 +10,17 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 
 const Contact = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const el = document.querySelector(location.hash);
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 300);
+      }
+    }
+  }, [location.hash]);
+
   return <AppLayout title="Contact Us">
       <div className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 animate-fade-in">
         <div className="space-y-4">
