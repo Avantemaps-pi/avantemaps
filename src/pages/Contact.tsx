@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Contact = () => {
   const location = useLocation();
+  const { toast } = useToast();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [department, setDepartment] = useState('');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (location.hash) {
@@ -20,6 +26,18 @@ const Contact = () => {
       }
     }
   }, [location.hash]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!department) {
+      toast({ title: 'Please select a department', variant: 'destructive' });
+      return;
+    }
+    const subject = encodeURIComponent(`Message from ${name || 'Website Visitor'}`);
+    const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`);
+    window.open(`mailto:${department}?subject=${subject}&body=${body}`, '_blank');
+    toast({ title: 'Opening your email client...', description: 'Your message details have been pre-filled.' });
+  };
 
   return <AppLayout title="Contact Us">
       <div className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 animate-fade-in">
