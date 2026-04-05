@@ -140,46 +140,69 @@ export const useAnalyticsData = (businessId?: number, demoMode = false) => {
     fetchAnalytics();
   }, [businessId, dateRange]);
 
-  // Transform daily data into engagement chart format
+  // Transform daily data into engagement chart format with consistent intervals
   const engagementData = useMemo((): EngagementDataPoint[] => {
     const days = getDaysForRange(dateRange);
     const isHourly = dateRange === 'day';
     const data: EngagementDataPoint[] = [];
     
     if (isHourly) {
-      // Generate 24 hourly data points
-      for (let i = 23; i >= 0; i--) {
+      // 24h → every 2 hours = 12 points for smooth curve
+      for (let i = 22; i >= 0; i -= 2) {
         const date = new Date();
         date.setHours(date.getHours() - i, 0, 0, 0);
-        const hourStr = date.toISOString().slice(0, 13); // match by hour
+        const hourStr = date.toISOString().slice(0, 13);
+        const nextHourStr = new Date(date.getTime() + 3600000).toISOString().slice(0, 13);
         
-        const hourData = dailyData.find(d => d.view_date.slice(0, 13) === hourStr);
+        const hourData = dailyData.filter(d => 
+          d.view_date.slice(0, 13) === hourStr || d.view_date.slice(0, 13) === nextHourStr
+        );
+        const totalViews = hourData.reduce((sum, d) => sum + d.view_count, 0);
         
         data.push({
           name: date.toLocaleTimeString('en-US', { 
             hour: 'numeric',
             hour12: true,
           }),
-          views: hourData?.view_count || 0,
+          views: totalViews,
           clicks: 0,
           bookmarks: 0,
         });
       }
     } else {
-      const days = getDaysForRange(dateRange);
-      for (let i = days - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
+      // Determine aggregation step to keep ~7-12 points
+      let step: number;
+      if (days <= 7) {
+        step = 1; // week: 7 daily points
+      } else if (days <= 30) {
+        step = 3; // month: ~10 points (every 3 days)
+      } else if (days <= 90) {
+        step = 7; // quarter: ~13 points (weekly)
+      } else {
+        step = 30; // year: ~12 points (monthly)
+      }
+
+      for (let i = days - 1; i >= 0; i -= step) {
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() - i);
         
-        const dayData = dailyData.find(d => d.view_date === dateStr);
+        // Aggregate views over the step window
+        let totalViews = 0;
+        for (let j = 0; j < step && (i - j) >= 0; j++) {
+          const d = new Date();
+          d.setDate(d.getDate() - (i - j));
+          const dateStr = d.toISOString().split('T')[0];
+          const dayData = dailyData.find(dd => dd.view_date === dateStr);
+          totalViews += dayData?.view_count || 0;
+        }
+        
+        const label = step >= 30
+          ? endDate.toLocaleDateString('en-US', { month: 'short' })
+          : endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         
         data.push({
-          name: date.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric' 
-          }),
-          views: dayData?.view_count || 0,
+          name: label,
+          views: totalViews,
           clicks: 0,
           bookmarks: 0,
         });
