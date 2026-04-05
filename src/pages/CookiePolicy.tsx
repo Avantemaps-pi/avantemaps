@@ -131,7 +131,7 @@ const CookiePolicy = () => {
                   <strong>Address:</strong> 113 Jabu Ndlovu Street, KZN 3201
                 </p>
                 <p>
-                  <strong>Phone:</strong> (555) 123-4567
+                  <strong>Phone:</strong> (062) 476-7535
                 </p>
               </div>
             </ScrollArea>
