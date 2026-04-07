@@ -61,7 +61,8 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
     totalReviews: 0,
     category: values.businessTypes.join(', ') || 'Business',
     description: values.businessDescription || 'Your business description will appear here',
-    image: getPreviewImage(),
+    image: getAllPreviewImages()[0],
+    images: getAllPreviewImages(),
     phone: values.phone ? `${values.countryCode || ''}${values.phone}` : undefined,
     website: values.website || undefined,
     hours: {
