@@ -24,6 +24,7 @@ interface PlaceCardProps {
   showDetails?: boolean;
   isBookmarked?: boolean;
   previewMode?: boolean;
+  disableRating?: boolean;
   singleImageOnly?: boolean;
   hideGalleryIndicators?: boolean;
 }
@@ -36,6 +37,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   showDetails = false,
   isBookmarked: initialIsBookmarked = false,
   previewMode = false,
+  disableRating = false,
   singleImageOnly = false,
   hideGalleryIndicators = false
 }) => {
@@ -138,7 +140,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
 
         <div className="flex justify-between items-start gap-2">
           <div className={`flex flex-col items-start gap-2 ${previewMode ? 'pointer-events-none select-none' : ''}`}>
-            <PlaceCardRating rating={place.rating} onClick={previewMode ? undefined : handleRatingClick} />
+            <PlaceCardRating rating={place.rating} onClick={(previewMode || disableRating) ? undefined : handleRatingClick} />
             <CategoryBadge category={categories[0] || ''} />
           </div>
           
