@@ -94,10 +94,10 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   return (
     <Card 
       key={place.id} 
-      className={`material-card ${previewMode ? '' : 'card-hover'} w-full ${className || ''} place-card-container ${previewMode ? 'pointer-events-none select-none' : ''}`}
+      className={`material-card ${previewMode ? '' : 'card-hover'} w-full ${className || ''} place-card-container`}
     >
       {/* Title + Bookmark above image (matching homepage popup) */}
-      <CardHeader className="pb-2 px-3 pt-3">
+      <CardHeader className={`pb-2 px-3 pt-3 ${previewMode ? 'pointer-events-none select-none' : ''}`}>
         <div className="flex items-start justify-between">
           <PlaceCardTitle 
             name={place.name} 
@@ -121,27 +121,31 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
         onBookmarkToggle={handleBookmarkToggle}
         onShare={handleShare}
         placeId={place.id}
-        onClick={previewMode || singleImageOnly ? undefined : handlePlaceClick}
-        previewMode={true}
+        onClick={singleImageOnly ? undefined : handlePlaceClick}
+        previewMode={previewMode ? false : true}
         hideIndicators={hideGalleryIndicators}
       />
       
       <CardContent className="pt-3 px-3 space-y-3">
-        <PlaceCardAddress address={place.address} onClick={previewMode ? undefined : handleAddressClick} />
+        <div className={previewMode ? 'pointer-events-none select-none' : ''}>
+          <PlaceCardAddress address={place.address} onClick={previewMode ? undefined : handleAddressClick} />
+        </div>
 
-        <div className="relative h-20 overflow-hidden">
+        <div className={`relative h-20 overflow-hidden ${previewMode ? 'select-none' : ''}`}>
           <ExpandableDescription text={place.description} maxLines={4} />
           <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
         </div>
 
         <div className="flex justify-between items-start gap-2">
-          <div className="flex flex-col items-start gap-2">
+          <div className={`flex flex-col items-start gap-2 ${previewMode ? 'pointer-events-none select-none' : ''}`}>
             <PlaceCardRating rating={place.rating} onClick={previewMode ? undefined : handleRatingClick} />
             <CategoryBadge category={categories[0] || ''} />
           </div>
           
           <div className="flex flex-col gap-2 items-end flex-shrink-0">
-            <PlaceCardWebsiteButton url={place.website} disabled={previewMode} />
+            <div className={previewMode ? 'pointer-events-none select-none' : ''}>
+              <PlaceCardWebsiteButton url={place.website} disabled={previewMode} />
+            </div>
             
             <PlaceCardDetails 
               place={place} 
