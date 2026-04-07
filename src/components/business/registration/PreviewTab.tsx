@@ -99,6 +99,7 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
               showDetails={true}
               previewMode={false}
               disableRating={true}
+              disableBookmark={true}
               className="shadow-lg"
             />
           </div>
