@@ -24,6 +24,7 @@ interface PlaceCardProps {
   showDetails?: boolean;
   isBookmarked?: boolean;
   previewMode?: boolean;
+  disableRating?: boolean;
   singleImageOnly?: boolean;
   hideGalleryIndicators?: boolean;
 }
@@ -36,6 +37,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   showDetails = false,
   isBookmarked: initialIsBookmarked = false,
   previewMode = false,
+  disableRating = false,
   singleImageOnly = false,
   hideGalleryIndicators = false
 }) => {
