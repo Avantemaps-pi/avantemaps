@@ -25,6 +25,7 @@ interface PlaceCardProps {
   isBookmarked?: boolean;
   previewMode?: boolean;
   disableRating?: boolean;
+  disableBookmark?: boolean;
   singleImageOnly?: boolean;
   hideGalleryIndicators?: boolean;
 }
@@ -38,6 +39,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   isBookmarked: initialIsBookmarked = false,
   previewMode = false,
   disableRating = false,
+  disableBookmark = false,
   singleImageOnly = false,
   hideGalleryIndicators = false
 }) => {
@@ -108,10 +110,12 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
             isCertified={place.isCertified}
             verificationStatus={place.verificationStatus}
           />
-          <BookmarkButton 
-            isBookmarked={isBookmarked} 
-            onToggle={handleBookmarkToggle}
-          />
+          {!disableBookmark && (
+            <BookmarkButton 
+              isBookmarked={isBookmarked} 
+              onToggle={handleBookmarkToggle}
+            />
+          )}
         </div>
       </CardHeader>
 
