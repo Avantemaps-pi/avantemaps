@@ -27,15 +27,18 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
   const { getValues } = useFormContext<FormValues>();
   const values = getValues();
 
-  // Determine the preview image - prioritize existing images, then new uploads
-  const getPreviewImage = (): string | undefined => {
+  // Collect all preview images for slideshow
+  const getAllPreviewImages = (): string[] => {
+    const allImages: string[] = [];
     if (existingImages.length > 0) {
-      return existingImages[0];
+      allImages.push(...existingImages);
     }
-    if (images.length > 0 && images[0].previewUrl) {
-      return images[0].previewUrl;
-    }
-    return undefined;
+    images.forEach(img => {
+      if (img.previewUrl && !allImages.includes(img.previewUrl)) {
+        allImages.push(img.previewUrl);
+      }
+    });
+    return allImages;
   };
 
   // Convert form values to Place object for preview
