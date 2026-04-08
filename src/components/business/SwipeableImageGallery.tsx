@@ -14,6 +14,7 @@ interface SwipeableImageGalleryProps {
   previewMode?: boolean;
   imageClassName?: string;
   hideIndicators?: boolean;
+  paused?: boolean;
 }
 
 const STORY_DURATION = 3000; // 3 seconds per image
