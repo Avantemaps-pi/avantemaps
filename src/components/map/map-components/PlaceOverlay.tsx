@@ -106,6 +106,7 @@ const PlaceOverlayContent: React.FC<{ place: Place; detailCardRef?: React.RefObj
           placeId={place.id}
           onClick={handlePlaceClick}
           previewMode={true}
+          paused={showDetails}
         />
         
         {/* Details overlay on top of images */}

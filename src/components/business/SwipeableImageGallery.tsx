@@ -14,6 +14,7 @@ interface SwipeableImageGalleryProps {
   previewMode?: boolean;
   imageClassName?: string;
   hideIndicators?: boolean;
+  paused?: boolean;
 }
 
 const STORY_DURATION = 3000; // 3 seconds per image
@@ -29,6 +30,7 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
   previewMode = false,
   imageClassName,
   hideIndicators = false,
+  paused = false,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -43,7 +45,11 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
   // Auto-advance timer with smooth progress
   useEffect(() => {
     if (images.length <= 1) return;
-
+    if (paused) {
+      // Cancel any running animation when paused
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      return;
+    }
     const animate = (timestamp: number) => {
       if (!startTimeRef.current) startTimeRef.current = timestamp;
       if (pausedRef.current) {
@@ -78,7 +84,7 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [currentIndex, images.length]);
+  }, [currentIndex, images.length, paused]);
 
   const goToNext = useCallback(() => {
     if (currentIndex < images.length - 1 && !isAnimating) {
