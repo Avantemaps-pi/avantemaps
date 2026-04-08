@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import { Place } from '@/types/business';
@@ -11,10 +11,12 @@ import PlaceCardAddress from './PlaceCardAddress';
 import PlaceCardRating from './PlaceCardRating';
 import PlaceCardWebsiteButton from './PlaceCardWebsiteButton';
 import PlaceCardDetails from './PlaceCardDetails';
+import DetailsCard from './DetailsCard';
 import { useBookmark } from '@/hooks/useBookmark';
 import { useSharePlace } from '@/hooks/useSharePlace';
 import SwipeableImageGallery from './SwipeableImageGallery';
 import BookmarkButton from '@/components/map/buttons/BookmarkButton';
+import { Info, X } from 'lucide-react';
 
 interface PlaceCardProps {
   place: Place;
@@ -45,6 +47,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [detailsOverlayOpen, setDetailsOverlayOpen] = useState(false);
   
   // Use our custom hooks
   const { isBookmarked, handleBookmarkToggle } = useBookmark({
@@ -119,18 +122,36 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
         </div>
       </CardHeader>
 
-      {/* Image gallery without overlay actions */}
-      <SwipeableImageGallery
-        images={images}
-        name={place.name}
-        isBookmarked={isBookmarked}
-        onBookmarkToggle={handleBookmarkToggle}
-        onShare={handleShare}
-        placeId={place.id}
-        onClick={singleImageOnly ? undefined : handlePlaceClick}
-        previewMode={previewMode ? false : true}
-        hideIndicators={hideGalleryIndicators}
-      />
+      {/* Image gallery with optional details overlay */}
+      <div className="relative">
+        <SwipeableImageGallery
+          images={images}
+          name={place.name}
+          isBookmarked={isBookmarked}
+          onBookmarkToggle={handleBookmarkToggle}
+          onShare={handleShare}
+          placeId={place.id}
+          onClick={singleImageOnly ? undefined : handlePlaceClick}
+          previewMode={previewMode ? false : true}
+          hideIndicators={hideGalleryIndicators}
+          paused={detailsOverlayOpen}
+        />
+        
+        {/* Details overlay on top of images */}
+        {detailsOverlayOpen && (
+          <div className="absolute inset-0 z-20 bg-background/95 backdrop-blur-sm rounded-lg overflow-y-auto flex flex-col">
+            <button
+              onClick={() => setDetailsOverlayOpen(false)}
+              className="absolute top-1 right-1 z-30 p-1 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+            >
+              <X className="h-4 w-4 text-foreground" />
+            </button>
+            <div className="flex-1 flex items-center justify-center p-2">
+              <DetailsCard place={place} className="shadow-none border-0 bg-transparent" />
+            </div>
+          </div>
+        )}
+      </div>
       
       <CardContent className="pt-3 px-3 space-y-3">
         <div className={previewMode ? 'pointer-events-none select-none' : ''}>
@@ -153,11 +174,15 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
               <PlaceCardWebsiteButton url={place.website} disabled={previewMode} />
             </div>
             
-            <PlaceCardDetails 
-              place={place} 
-              showDetails={showDetails} 
-              isRecommendationsPage={isRecommendationsPage} 
-            />
+            {showDetails && (
+              <div 
+                className="text-primary font-medium text-sm cursor-pointer flex items-center whitespace-nowrap"
+                onClick={() => setDetailsOverlayOpen(!detailsOverlayOpen)}
+              >
+                <Info className="h-3 w-3 mr-1" />
+                Details
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
