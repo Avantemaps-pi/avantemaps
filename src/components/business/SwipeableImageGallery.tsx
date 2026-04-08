@@ -30,6 +30,7 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
   previewMode = false,
   imageClassName,
   hideIndicators = false,
+  paused = false,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
