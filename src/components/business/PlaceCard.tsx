@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import { Place } from '@/types/business';
@@ -11,10 +11,12 @@ import PlaceCardAddress from './PlaceCardAddress';
 import PlaceCardRating from './PlaceCardRating';
 import PlaceCardWebsiteButton from './PlaceCardWebsiteButton';
 import PlaceCardDetails from './PlaceCardDetails';
+import DetailsCard from './DetailsCard';
 import { useBookmark } from '@/hooks/useBookmark';
 import { useSharePlace } from '@/hooks/useSharePlace';
 import SwipeableImageGallery from './SwipeableImageGallery';
 import BookmarkButton from '@/components/map/buttons/BookmarkButton';
+import { Info, X } from 'lucide-react';
 
 interface PlaceCardProps {
   place: Place;
