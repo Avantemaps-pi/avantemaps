@@ -84,7 +84,7 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [currentIndex, images.length]);
+  }, [currentIndex, images.length, paused]);
 
   const goToNext = useCallback(() => {
     if (currentIndex < images.length - 1 && !isAnimating) {
