@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Map, LayoutGrid, Bookmark, Bell, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -15,11 +15,31 @@ const navItems = [
 const BottomNavBar: React.FC = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
+  const [visible, setVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+        setVisible(false);
+      } else {
+        setVisible(true);
+      }
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   if (!isMobile) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-sm safe-area-bottom">
+    <nav className={cn(
+      "fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-sm safe-area-bottom transition-transform duration-300",
+      visible ? "translate-y-0" : "translate-y-full"
+    )}>
       <div className="flex items-center justify-around h-14">
         {navItems.map(({ to, icon: Icon, label }) => {
           const isActive = location.pathname === to;
