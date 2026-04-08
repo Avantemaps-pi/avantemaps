@@ -497,7 +497,6 @@ export const refreshUserData = async (
           };
 
           await updateUserData(updated, setUser);
-          toast.success("User profile updated");
         } else {
           // If authResult not provided, just update subscription tier if changed
           if (user.subscriptionTier !== subscriptionTier) {
