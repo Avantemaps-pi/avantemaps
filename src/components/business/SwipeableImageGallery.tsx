@@ -45,7 +45,11 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
   // Auto-advance timer with smooth progress
   useEffect(() => {
     if (images.length <= 1) return;
-
+    if (paused) {
+      // Cancel any running animation when paused
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      return;
+    }
     const animate = (timestamp: number) => {
       if (!startTimeRef.current) startTimeRef.current = timestamp;
       if (pausedRef.current) {
