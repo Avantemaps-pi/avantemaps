@@ -47,6 +47,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [detailsOverlayOpen, setDetailsOverlayOpen] = useState(false);
   
   // Use our custom hooks
   const { isBookmarked, handleBookmarkToggle } = useBookmark({
