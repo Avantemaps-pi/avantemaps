@@ -153,7 +153,7 @@ const Contact = () => {
               <AccordionItem value="item-3">
                 <AccordionTrigger>Is Avante Maps affiliated with Pi Network?</AccordionTrigger>
                 <AccordionContent>
-                  Avante Maps is an independent platform created by Pi Network enthusiast to support the Pi ecosystem.
+                  Avante Maps is an independent platform created by a Pi Network enthusiast to support the Pi ecosystem.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
