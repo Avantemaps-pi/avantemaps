@@ -60,7 +60,19 @@ const MOCK_STATS: BusinessStats = {
 };
 
 export const useAnalyticsData = (businessId?: number, demoMode = false) => {
-  const [dateRange, setDateRange] = useState('week');
+  const [dateRange, setDateRange] = useState(() => {
+    try {
+      return localStorage.getItem('analytics_dateRange') || 'week';
+    } catch {
+      return 'week';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('analytics_dateRange', dateRange);
+    } catch {}
+  }, [dateRange]);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<BusinessStats | null>(null);
   const [dailyData, setDailyData] = useState<DailyViewData[]>([]);
