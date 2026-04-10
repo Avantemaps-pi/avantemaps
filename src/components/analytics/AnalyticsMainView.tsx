@@ -9,6 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SubscriptionTier } from '@/utils/piNetwork';
+import { hasFeatureAccess } from '@/utils/piNetwork/subscription';
 
 interface AnalyticsMainViewProps {
   handleExport: (format: 'csv' | 'pdf') => void;
