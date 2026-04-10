@@ -81,6 +81,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
   const selectedBusiness = userBusinesses.find(b => b.id === selectedBusinessId);
   const displayBusinessName = isDemoMode ? 'Demo Business' : (selectedBusiness?.business_name || 'My Business');
   const displayBusinesses = isDemoMode ? [{ id: 0, business_name: 'Demo Business' }] : userBusinesses;
+  const canExport = isDemoMode || hasFeatureAccess(user?.subscriptionTier || SubscriptionTier.INDIVIDUAL, SubscriptionTier.ORGANIZATION);
   
   // Loading state (skip if demo mode)
   if (loadingBusinesses && !isDemoMode) {
