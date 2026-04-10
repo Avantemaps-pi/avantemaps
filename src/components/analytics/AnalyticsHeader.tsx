@@ -33,6 +33,7 @@ const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
   onExport,
   hasAnnualSubscription = false,
   hasRenewedAnnualSubscription = false,
+  canExport = false,
 }) => {
   const navigate = useNavigate();
   
