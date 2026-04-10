@@ -115,6 +115,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
         onExport={handleExport}
         hasAnnualSubscription={isDemoMode || annualSubCount >= 1}
         hasRenewedAnnualSubscription={isDemoMode || annualSubCount >= 2}
+        canExport={canExport}
       />
       
       {isLoading ? (
