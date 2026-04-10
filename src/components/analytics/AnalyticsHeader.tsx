@@ -20,6 +20,7 @@ interface AnalyticsHeaderProps {
   onExport: (format: 'csv' | 'pdf') => void;
   hasAnnualSubscription?: boolean;
   hasRenewedAnnualSubscription?: boolean;
+  canExport?: boolean;
 }
 
 const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
@@ -32,6 +33,7 @@ const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
   onExport,
   hasAnnualSubscription = false,
   hasRenewedAnnualSubscription = false,
+  canExport = false,
 }) => {
   const navigate = useNavigate();
   
@@ -78,16 +80,18 @@ const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
           </SelectContent>
         </Select>
         
-        <Select onValueChange={(value) => onExport(value as 'csv' | 'pdf')}>
-          <SelectTrigger className="w-[120px]">
-            <Download className="mr-2 h-4 w-4" />
-            <SelectValue placeholder="Export" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="csv">Export as CSV</SelectItem>
-            <SelectItem value="pdf">Export as PDF</SelectItem>
-          </SelectContent>
-        </Select>
+        {canExport && (
+          <Select onValueChange={(value) => onExport(value as 'csv' | 'pdf')}>
+            <SelectTrigger className="w-[120px]">
+              <Download className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Export" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="csv">Export as CSV</SelectItem>
+              <SelectItem value="pdf">Export as PDF</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
     </div>
   );

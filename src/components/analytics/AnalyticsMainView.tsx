@@ -9,6 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SubscriptionTier } from '@/utils/piNetwork';
+import { hasFeatureAccess } from '@/utils/piNetwork/subscription';
 
 interface AnalyticsMainViewProps {
   handleExport: (format: 'csv' | 'pdf') => void;
@@ -79,6 +81,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
   const selectedBusiness = userBusinesses.find(b => b.id === selectedBusinessId);
   const displayBusinessName = isDemoMode ? 'Demo Business' : (selectedBusiness?.business_name || 'My Business');
   const displayBusinesses = isDemoMode ? [{ id: 0, business_name: 'Demo Business' }] : userBusinesses;
+  const canExport = isDemoMode || hasFeatureAccess(user?.subscriptionTier || SubscriptionTier.INDIVIDUAL, SubscriptionTier.ORGANIZATION);
   
   // Loading state (skip if demo mode)
   if (loadingBusinesses && !isDemoMode) {
@@ -112,6 +115,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
         onExport={handleExport}
         hasAnnualSubscription={isDemoMode || annualSubCount >= 1}
         hasRenewedAnnualSubscription={isDemoMode || annualSubCount >= 2}
+        canExport={canExport}
       />
       
       {isLoading ? (
