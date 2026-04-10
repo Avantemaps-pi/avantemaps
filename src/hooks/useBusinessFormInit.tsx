@@ -2,18 +2,31 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { formSchema, FormValues } from '@/components/business/registration/formSchema';
 import { Business } from '@/types/business';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
-// Helper to extract country code from phone number
-const extractCountryCode = (phone?: string): string => {
-  if (!phone) return '+1';
-  const match = phone.match(/^(\+\d{1,3})/);
-  return match ? match[1] : '+1';
-};
-
-// Helper to extract phone number without country code
-const extractPhoneNumber = (phone?: string): string => {
-  if (!phone) return '';
-  return phone.replace(/^\+\d{1,3}\s*/, '');
+// Helper to extract country code and national number from a full phone string
+const parseStoredPhone = (phone?: string): { countryCode: string; nationalNumber: string } => {
+  if (!phone) return { countryCode: '+1', nationalNumber: '' };
+  
+  try {
+    const parsed = parsePhoneNumberFromString(phone);
+    if (parsed) {
+      return {
+        countryCode: `+${parsed.countryCallingCode}`,
+        nationalNumber: parsed.nationalNumber,
+      };
+    }
+  } catch {
+    // fallback below
+  }
+  
+  // Fallback: try simple regex (less reliable)
+  const match = phone.match(/^(\+\d{1,3})(.*)/);
+  if (match) {
+    return { countryCode: match[1], nationalNumber: match[2].trim() };
+  }
+  
+  return { countryCode: '+1', nationalNumber: phone };
 };
 
 export const useBusinessFormInit = (business: Business) => {
