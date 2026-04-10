@@ -1,4 +1,7 @@
 {
+  "rewrites": [
+    { "source": "/((?!api|assets|storage|lovable-uploads|service-worker\\.js|validation-key\\.txt|offline\\.html|placeholder\\.svg).*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",
