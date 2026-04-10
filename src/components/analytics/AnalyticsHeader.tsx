@@ -20,6 +20,7 @@ interface AnalyticsHeaderProps {
   onExport: (format: 'csv' | 'pdf') => void;
   hasAnnualSubscription?: boolean;
   hasRenewedAnnualSubscription?: boolean;
+  canExport?: boolean;
 }
 
 const AnalyticsHeader: React.FC<AnalyticsHeaderProps> = ({
