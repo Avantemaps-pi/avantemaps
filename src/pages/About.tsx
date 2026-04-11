@@ -118,7 +118,7 @@ const About = () => {
                     </a>
                   </Button>
                   <Button variant="outline" size="icon" className="rounded-full hover:text-blue-500" asChild>
-                    <a href="https://x.com/AvanteMap" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
+                    <a href="https://x.com/Avantemaps" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
                       <Twitter className="h-5 w-5" />
                     </a>
                   </Button>
