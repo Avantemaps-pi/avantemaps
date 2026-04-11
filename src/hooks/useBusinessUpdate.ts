@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -13,6 +14,7 @@ export const useBusinessUpdate = (business: Business, onSuccess?: () => void) =>
   const [removedExistingImages, setRemovedExistingImages] = useState<number[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Use the image upload hook
   const imageUpload = useImageUpload({ maxImages: 3, bucketName: 'business-images' });
@@ -119,6 +121,7 @@ export const useBusinessUpdate = (business: Business, onSuccess?: () => void) =>
       }
 
       console.log('✅ Business updated successfully:', business.id);
+      await queryClient.invalidateQueries({ queryKey: ['businesses'] });
       toast.success('Business information updated successfully!');
       
       // Clear uploaded images and reset removed images
