@@ -123,7 +123,7 @@ const About = () => {
                     </a>
                   </Button>
                   <Button variant="outline" size="icon" className="rounded-full hover:text-blue-600" asChild>
-                    <a href="https://facebook.com/avantemaps" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                    <a href="https://web.facebook.com/profile.php?id=61570803414310" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                       <Facebook className="h-5 w-5" />
                     </a>
                   </Button>
