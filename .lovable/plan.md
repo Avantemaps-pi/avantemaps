@@ -1,45 +1,48 @@
 
 
-## Summary
+## Plan: Landing Page Redesign with Auth Gating
 
-The video shows a **drag-to-track** crosshair UX (like CoinMarketCap/TradingView mobile), where:
-- Touch-and-hold on the chart activates a crosshair
-- Dragging horizontally snaps the tracking dot to each data point under the finger
-- Lifting the finger dismisses the crosshair
-- During tracking, the chart does NOT scroll — finger movement controls which point is highlighted
+### What We're Building
 
-This differs from the current tap-to-pin implementation. The key UX distinction: **the crosshair follows the finger in real-time during a drag gesture, rather than being placed by a tap.**
+A marketing-first landing page that only unauthenticated users see. Authenticated users go straight to the map. The design follows the uploaded reference image: top bar with logo + profile icon, search bar, value proposition text, map preview image (static, not the real map component), and feature cards at the bottom.
 
-## Plan
+### Auth Gating
 
-### 1. Replace tap-to-pin with drag-to-track mode
-**File: `src/components/analytics/charts/LineChartComponent.tsx`**
+In `App.tsx`, the `/` route will use a wrapper component:
+- **Authenticated** → renders current `Index` (map) as-is
+- **Not authenticated / loading** → renders `LandingPage`
 
-- Replace `pinnedIndex` state with `trackingIndex` (active only while finger is down)
-- On `pointerdown`: record start position, set a short delay (~150ms) to distinguish scroll vs track
-- On `pointermove`: if tracking is active, calculate the nearest data point index from the finger's X position and update `trackingIndex` in real-time. Prevent chart scrolling during tracking.
-- On `pointerup`/`pointerleave`: clear `trackingIndex` (crosshair disappears)
+No route changes needed. The map stays at `/`.
 
-### 2. Distinguish scroll vs track gestures
-- If the user moves quickly (momentum scroll), treat it as a pan/scroll
-- If the user holds for ~150ms before moving, activate tracking mode and prevent scrolling
-- This ensures normal drag-to-pan still works for navigation
+### Landing Page Sections (matching the reference image)
 
-### 3. Fix build errors
-- Replace any remaining `centerDataPoint` references with the correct variable name (the build errors suggest stale references exist in the deployed version)
+1. **Top Bar** -- Avante Maps logo (left) + profile/sign-in icon (right)
+2. **Search Bar** -- Styled search input (navigates to map on interaction)
+3. **Hero Text** -- "Discover, Explore, and Connect with Businesses Nearby!"
+4. **Map Preview** -- A static map illustration/image as background (lightweight, no Leaflet)
+5. **Feature Cards** -- Horizontal scrollable row: "Discover Businesses", "Earn Pi Rewards", "Save & Share"
+6. **Stats Section** -- Community numbers (businesses registered, users, countries) fetched from Supabase
+7. **Problem/Solution** -- Why Avante Maps exists, benefits of using it
+8. **Final CTA** -- "Explore the Map" and "Register Your Business" buttons
+9. **Bottom Nav** -- Reuse existing `BottomNavBar` on mobile
 
-### Technical Details
+### Files to Create/Change
 
-```text
-Gesture flow:
-  pointerdown → start 150ms timer
-    ├─ finger moves > threshold before timer → pan mode (existing behavior)
-    └─ timer fires while finger still down → tracking mode
-        ├─ pointermove → update trackingIndex from X position
-        └─ pointerup → clear trackingIndex, crosshair disappears
-```
+| File | Change |
+|------|--------|
+| `src/pages/LandingPage.tsx` | **New** -- Full landing page component with all sections above. Fetches stats from Supabase. Search bar click/focus navigates to map. CTA buttons trigger login or navigate to `/registration`. |
+| `src/pages/Index.tsx` | Wrap with auth check -- if not authenticated, render `LandingPage` instead. Show `PageLoader` skeleton while auth is loading. |
+| `src/components/layout/BottomNavBar.tsx` | Update Map nav item: when on landing page and not authenticated, label as "Home" pointing to `/`. |
 
-- During tracking mode: `e.preventDefault()` on scroll, `pointer-events` managed to block chart's native tooltip
-- `trackingIndex` maps finger X → nearest data point using same `pointSpacing` math as current tap logic
-- ReferenceLine + ReferenceDots + floating badge render identically to current pinned UI, but only while `trackingIndex !== null`
+### Design Details
+- Mobile-first (390px viewport), matching the reference image style
+- Light blue/sky gradient background for the hero area
+- White rounded cards for features
+- Icons for each feature card (Store, Pi coin, Bookmark)
+- Uses existing Tailwind + shadcn Button/Card components
+- No heavy map component loaded -- uses a static decorative map image or CSS gradient
+- Smooth, clean layout matching the uploaded mockup
+
+### Stats Data
+Will use `supabase.from('businesses').select('*', { count: 'exact', head: true })` for business count. For user/country counts, will use similar count queries or show hardcoded "growing" numbers if RLS blocks anon access, with a note to add an RPC function later for accurate stats.
 
