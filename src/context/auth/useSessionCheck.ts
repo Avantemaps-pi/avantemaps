@@ -27,9 +27,8 @@ export const useSessionCheck = (
             // Session expired, try to re-authenticate
             await login();
           }
-        } else if (navigator.onLine && isPiNetworkAvailable()) {
-          // No stored session but online, try auto-login
-          await login();
+        } else {
+          // Don't auto-login - wait for explicit user action
         }
       } catch (error) {
         console.error("Error checking session:", error);
