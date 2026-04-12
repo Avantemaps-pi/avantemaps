@@ -110,8 +110,7 @@ const LandingPage: React.FC = () => {
           ].map(({ icon: Icon, title, desc, color }) => (
             <Card
               key={title}
-              className="flex-shrink-0 w-40 p-4 flex flex-col items-start gap-2 border border-border bg-card hover:shadow-md transition-shadow cursor-pointer"
-              onClick={handleExplore}
+              className="flex-shrink-0 w-40 p-4 flex flex-col items-start gap-2 border border-border bg-card"
             >
               <div className={`p-2 rounded-lg bg-muted/60`}>
                 <Icon className={`h-5 w-5 ${color}`} />
