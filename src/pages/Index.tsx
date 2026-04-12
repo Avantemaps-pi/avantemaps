@@ -12,12 +12,15 @@ import PlaceCardSEO from '@/components/seo/PlaceCardSEO';
 import MetaTags from '@/components/seo/MetaTags';
 import { BusinessSuggestion } from '@/hooks/useBusinessAutocomplete';
 import { useSearchTracking } from '@/hooks/useSearchTracking';
+import { useAuth } from '@/context/auth/useAuth';
+import LandingPage from './LandingPage';
 import '../styles/map.css';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
 const AddBusinessButton = lazy(() => import('@/components/map/buttons/AddBusinessButton'));
 
 const Index = () => {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const location = useLocation();
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -89,6 +92,15 @@ const Index = () => {
 
   // Find the selected place for SEO
   const selectedPlaceData = [...places, ...filteredPlaces].find(place => place.id === selectedPlace);
+
+  // Show landing page for unauthenticated users
+  if (!isAuthenticated && !authLoading) {
+    return <LandingPage />;
+  }
+
+  if (authLoading) {
+    return <div className="w-full h-screen bg-muted animate-pulse" />;
+  }
 
   return (
     <div className="w-full h-screen relative overflow-hidden">

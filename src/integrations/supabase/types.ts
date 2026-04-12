@@ -1334,6 +1334,7 @@ export type Database = {
           views_this_week: number
         }[]
       }
+      get_landing_stats: { Args: never; Returns: Json }
       get_public_business_info: {
         Args: { user_uuid?: string }
         Returns: {
