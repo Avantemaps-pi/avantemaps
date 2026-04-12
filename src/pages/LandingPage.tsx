@@ -1,13 +1,14 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Store, Coins, Bookmark, Search, MapPin, Users, Globe, ChevronRight, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import mapPreview from '@/assets/map-preview.jpg';
-import BottomNavBar from '@/components/layout/BottomNavBar';
+import { useBusinessData } from '@/hooks/useBusinessData';
+
+const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
 
 interface LandingStats {
   business_count: number;
@@ -19,6 +20,7 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [stats, setStats] = useState<LandingStats>({ business_count: 0, user_count: 0, country_count: 0 });
+  const { places = [], isLoading: placesLoading } = useBusinessData();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -76,20 +78,23 @@ const LandingPage: React.FC = () => {
         </p>
       </section>
 
-      {/* Map Preview */}
+      {/* Live Map Preview */}
       <section className="px-4 py-4">
         <div
-          className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/5 to-accent/10 border border-border cursor-pointer group"
+          className="relative rounded-2xl overflow-hidden border border-border cursor-pointer group"
           onClick={handleExplore}
         >
-          <img
-            src={mapPreview}
-            alt="Map preview showing businesses near you"
-            className="w-full h-48 object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-            width={800}
-            height={512}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent flex items-end justify-center pb-4">
+          <div className="w-full h-56 pointer-events-none">
+            <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
+              <LeafletMap
+                places={places}
+                selectedPlaceId={null}
+                onMarkerClick={() => {}}
+                isLoading={placesLoading}
+              />
+            </Suspense>
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent flex items-end justify-center pb-4 pointer-events-auto">
             <Button size="sm" className="rounded-full gap-1 shadow-md">
               Explore the Map <ChevronRight className="h-4 w-4" />
             </Button>
@@ -182,10 +187,8 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Footer spacing for bottom nav */}
-      <div className="h-20" />
-
-      <BottomNavBar />
+      {/* Footer spacing */}
+      <div className="h-8" />
     </div>
   );
 };
