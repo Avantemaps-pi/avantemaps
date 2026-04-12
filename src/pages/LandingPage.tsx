@@ -24,7 +24,7 @@ const LandingPage: React.FC = () => {
     const fetchStats = async () => {
       try {
         const { data } = await supabase.rpc('get_landing_stats');
-        if (data) setStats(data as LandingStats);
+        if (data) setStats(data as unknown as LandingStats);
       } catch (e) {
         console.error('Failed to fetch landing stats:', e);
       }

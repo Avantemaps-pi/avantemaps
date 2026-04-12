@@ -20,6 +20,7 @@ const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
 const AddBusinessButton = lazy(() => import('@/components/map/buttons/AddBusinessButton'));
 
 const Index = () => {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const location = useLocation();
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
