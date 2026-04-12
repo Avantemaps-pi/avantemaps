@@ -57,47 +57,43 @@ const LandingPage: React.FC = () => {
         </Button>
       </header>
 
-      {/* Search Bar */}
-      <div className="px-4 pt-2 pb-4">
-        <div
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/60 border border-border text-muted-foreground text-sm text-left"
-        >
-          <Search className="h-4 w-4 flex-shrink-0" />
-          <span>Search for businesses nearby...</span>
+      {/* Map + Search overlay */}
+      <section className="relative w-full flex-1 min-h-[60vh]">
+        <div className="absolute inset-0 pointer-events-none">
+          <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
+            <LeafletMap
+              places={places}
+              selectedPlaceId={null}
+              onMarkerClick={() => {}}
+              isLoading={placesLoading}
+            />
+          </Suspense>
         </div>
-      </div>
+        {/* Search Bar overlaid on map */}
+        <div className="relative z-10 px-4 pt-2">
+          <div
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border border-border text-muted-foreground text-sm text-left shadow-sm"
+          >
+            <Search className="h-4 w-4 flex-shrink-0" />
+            <span>Search for businesses nearby...</span>
+          </div>
+        </div>
+        {/* Gradient + CTA at bottom of map */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/80 to-transparent flex items-end justify-center pb-4 pointer-events-auto z-10">
+          <Button size="sm" className="rounded-full gap-1 shadow-md">
+            Explore the Map <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </section>
 
       {/* Hero Section */}
-      <section className="px-4 pb-2">
+      <section className="px-4 py-4">
         <h1 className="text-2xl font-bold text-foreground leading-tight">
           Discover, Explore, and Connect with Businesses Nearby!
         </h1>
         <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
           Find local businesses that accept Pi cryptocurrency. Save your favorites, earn rewards, and support your community.
         </p>
-      </section>
-
-      {/* Live Map Preview */}
-      <section className="px-4 py-4">
-        <div
-          className="relative rounded-2xl overflow-hidden border border-border group"
-        >
-          <div className="w-full h-56 pointer-events-none">
-            <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
-              <LeafletMap
-                places={places}
-                selectedPlaceId={null}
-                onMarkerClick={() => {}}
-                isLoading={placesLoading}
-              />
-            </Suspense>
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent flex items-end justify-center pb-4 pointer-events-auto">
-            <Button size="sm" className="rounded-full gap-1 shadow-md">
-              Explore the Map <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
       </section>
 
       {/* Feature Cards */}
