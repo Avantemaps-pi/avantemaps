@@ -98,7 +98,8 @@ const Index = () => {
     return <LandingPage />;
   }
 
-  if (authLoading) {
+  // Show loading only when not yet authenticated and still loading
+  if (!isAuthenticated && authLoading) {
     return <div className="w-full h-screen bg-muted animate-pulse" />;
   }
 

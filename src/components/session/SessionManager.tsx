@@ -22,7 +22,7 @@ export const SessionManager = () => {
     // Optionally refresh user data on token refresh
     // Using setTimeout to defer and avoid blocking
     setTimeout(() => {
-      refreshUserData?.();
+      refreshUserData?.(true); // silent=true to avoid flashing loading state
     }, 100);
   }, [refreshUserData]);
 
