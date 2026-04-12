@@ -80,8 +80,7 @@ const LandingPage: React.FC = () => {
       {/* Live Map Preview */}
       <section className="px-4 py-4">
         <div
-          className="relative rounded-2xl overflow-hidden border border-border cursor-pointer group"
-          onClick={handleExplore}
+          className="relative rounded-2xl overflow-hidden border border-border group"
         >
           <div className="w-full h-56 pointer-events-none">
             <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
