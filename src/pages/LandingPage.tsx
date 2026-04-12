@@ -59,13 +59,12 @@ const LandingPage: React.FC = () => {
 
       {/* Search Bar */}
       <div className="px-4 pt-2 pb-4">
-        <button
-          onClick={handleExplore}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/60 border border-border text-muted-foreground text-sm text-left transition-colors hover:bg-muted"
+        <div
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/60 border border-border text-muted-foreground text-sm text-left"
         >
           <Search className="h-4 w-4 flex-shrink-0" />
           <span>Search for businesses nearby...</span>
-        </button>
+        </div>
       </div>
 
       {/* Hero Section */}
@@ -81,8 +80,7 @@ const LandingPage: React.FC = () => {
       {/* Live Map Preview */}
       <section className="px-4 py-4">
         <div
-          className="relative rounded-2xl overflow-hidden border border-border cursor-pointer group"
-          onClick={handleExplore}
+          className="relative rounded-2xl overflow-hidden border border-border group"
         >
           <div className="w-full h-56 pointer-events-none">
             <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
@@ -112,8 +110,7 @@ const LandingPage: React.FC = () => {
           ].map(({ icon: Icon, title, desc, color }) => (
             <Card
               key={title}
-              className="flex-shrink-0 w-40 p-4 flex flex-col items-start gap-2 border border-border bg-card hover:shadow-md transition-shadow cursor-pointer"
-              onClick={handleExplore}
+              className="flex-shrink-0 w-40 p-4 flex flex-col items-start gap-2 border border-border bg-card"
             >
               <div className={`p-2 rounded-lg bg-muted/60`}>
                 <Icon className={`h-5 w-5 ${color}`} />
