@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, Coins, Bookmark, Search, MapPin, Users, Globe, ChevronRight, User } from 'lucide-react';
+import { Store, Coins, Search, MapPin, Users, Globe, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
@@ -46,6 +46,7 @@ const LandingPage: React.FC = () => {
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {/* Top Bar */}
       <header className="flex items-center justify-between px-4 py-3 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
+        <div className="w-9" />
         <div className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
             <MapPin className="h-5 w-5 text-primary" />
@@ -57,9 +58,9 @@ const LandingPage: React.FC = () => {
         </Button>
       </header>
 
-      {/* Map + Search overlay */}
+      {/* Map + Search overlay + Feature cards */}
       <section className="relative w-full flex-1 min-h-[60vh]">
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0">
           <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
             <LeafletMap
               places={places}
@@ -70,19 +71,35 @@ const LandingPage: React.FC = () => {
           </Suspense>
         </div>
         {/* Search Bar overlaid on map */}
-        <div className="relative z-10 px-4 pt-2">
+        <div className="relative z-10 px-4 pt-2 pointer-events-none">
           <div
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border border-border text-muted-foreground text-sm text-left shadow-sm"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border border-border text-muted-foreground text-sm text-left shadow-sm pointer-events-auto"
           >
             <Search className="h-4 w-4 flex-shrink-0" />
             <span>Search for businesses nearby...</span>
           </div>
         </div>
-        {/* Gradient + CTA at bottom of map */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/80 to-transparent flex items-end justify-center pb-4 pointer-events-auto z-10">
-          <Button size="sm" className="rounded-full gap-1 shadow-md">
-            Explore the Map <ChevronRight className="h-4 w-4" />
-          </Button>
+        {/* Feature cards at bottom of map */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-auto">
+          <div className="bg-gradient-to-t from-background/80 to-transparent pt-8 pb-3 px-4">
+            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+              {[
+                { icon: Store, title: 'Discover Businesses', desc: 'Find Pi-accepting shops nearby', color: 'text-primary' },
+                { icon: Coins, title: 'Earn Pi Rewards', desc: 'Transact with Pi cryptocurrency', color: 'text-amber-500' },
+              ].map(({ icon: Icon, title, desc, color }) => (
+                <Card
+                  key={title}
+                  className="flex-shrink-0 w-40 p-3 flex flex-col items-start gap-1.5 border border-border bg-card/95 backdrop-blur-sm shadow-md"
+                >
+                  <div className={`p-1.5 rounded-lg bg-muted/60`}>
+                    <Icon className={`h-4 w-4 ${color}`} />
+                  </div>
+                  <h3 className="text-xs font-semibold text-foreground">{title}</h3>
+                  <p className="text-[10px] text-muted-foreground leading-snug">{desc}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -94,28 +111,6 @@ const LandingPage: React.FC = () => {
         <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
           Find local businesses that accept Pi cryptocurrency. Save your favorites, earn rewards, and support your community.
         </p>
-      </section>
-
-      {/* Feature Cards */}
-      <section className="px-4 pb-4">
-        <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-          {[
-            { icon: Store, title: 'Discover Businesses', desc: 'Find Pi-accepting shops nearby', color: 'text-primary' },
-            { icon: Coins, title: 'Earn Pi Rewards', desc: 'Transact with Pi cryptocurrency', color: 'text-amber-500' },
-            { icon: Bookmark, title: 'Save & Share', desc: 'Bookmark and share your finds', color: 'text-emerald-500' },
-          ].map(({ icon: Icon, title, desc, color }) => (
-            <Card
-              key={title}
-              className="flex-shrink-0 w-40 p-4 flex flex-col items-start gap-2 border border-border bg-card"
-            >
-              <div className={`p-2 rounded-lg bg-muted/60`}>
-                <Icon className={`h-5 w-5 ${color}`} />
-              </div>
-              <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-              <p className="text-xs text-muted-foreground leading-snug">{desc}</p>
-            </Card>
-          ))}
-        </div>
       </section>
 
       {/* Stats Section */}
