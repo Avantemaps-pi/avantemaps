@@ -46,16 +46,16 @@ const LandingPage: React.FC = () => {
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {/* Top Bar */}
       <header className="flex items-center justify-between px-4 py-3 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
-        <div className="w-9" />
+        <Button variant="ghost" size="icon" onClick={handleExplore} className="rounded-full">
+          <User className="h-5 w-5 text-muted-foreground" />
+        </Button>
         <div className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
             <MapPin className="h-5 w-5 text-primary" />
           </div>
           <span className="font-bold text-lg text-foreground">Avante Maps</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={handleExplore} className="rounded-full">
-          <User className="h-5 w-5 text-muted-foreground" />
-        </Button>
+        <div className="w-9" />
       </header>
 
       {/* Map + Search overlay + Feature cards */}
