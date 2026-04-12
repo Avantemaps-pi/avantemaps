@@ -46,16 +46,16 @@ const LandingPage: React.FC = () => {
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {/* Top Bar */}
       <header className="flex items-center justify-between px-4 py-3 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
-        <div className="w-9" />
+        <Button variant="ghost" size="icon" onClick={handleExplore} className="rounded-full">
+          <User className="h-5 w-5 text-muted-foreground" />
+        </Button>
         <div className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
             <MapPin className="h-5 w-5 text-primary" />
           </div>
           <span className="font-bold text-lg text-foreground">Avante Maps</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={handleExplore} className="rounded-full">
-          <User className="h-5 w-5 text-muted-foreground" />
-        </Button>
+        <div className="w-9" />
       </header>
 
       {/* Map + Search overlay + Feature cards */}
@@ -82,14 +82,14 @@ const LandingPage: React.FC = () => {
         {/* Feature cards at bottom of map */}
         <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-auto">
           <div className="bg-gradient-to-t from-background/80 to-transparent pt-8 pb-3 px-4">
-            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+            <div className="grid grid-cols-2 gap-3">
               {[
                 { icon: Store, title: 'Discover Businesses', desc: 'Find Pi-accepting shops nearby', color: 'text-primary' },
                 { icon: Coins, title: 'Earn Pi Rewards', desc: 'Transact with Pi cryptocurrency', color: 'text-amber-500' },
               ].map(({ icon: Icon, title, desc, color }) => (
                 <Card
                   key={title}
-                  className="flex-shrink-0 w-40 p-3 flex flex-col items-start gap-1.5 border border-border bg-card/95 backdrop-blur-sm shadow-md"
+                  className="p-3 flex flex-col items-start gap-1.5 border border-border bg-card/95 backdrop-blur-sm shadow-md"
                 >
                   <div className={`p-1.5 rounded-lg bg-muted/60`}>
                     <Icon className={`h-4 w-4 ${color}`} />
