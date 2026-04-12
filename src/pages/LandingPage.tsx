@@ -82,14 +82,14 @@ const LandingPage: React.FC = () => {
         {/* Feature cards at bottom of map */}
         <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-auto">
           <div className="bg-gradient-to-t from-background/80 to-transparent pt-8 pb-3 px-4">
-            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+            <div className="grid grid-cols-2 gap-3">
               {[
                 { icon: Store, title: 'Discover Businesses', desc: 'Find Pi-accepting shops nearby', color: 'text-primary' },
                 { icon: Coins, title: 'Earn Pi Rewards', desc: 'Transact with Pi cryptocurrency', color: 'text-amber-500' },
               ].map(({ icon: Icon, title, desc, color }) => (
                 <Card
                   key={title}
-                  className="flex-shrink-0 w-40 p-3 flex flex-col items-start gap-1.5 border border-border bg-card/95 backdrop-blur-sm shadow-md"
+                  className="p-3 flex flex-col items-start gap-1.5 border border-border bg-card/95 backdrop-blur-sm shadow-md"
                 >
                   <div className={`p-1.5 rounded-lg bg-muted/60`}>
                     <Icon className={`h-4 w-4 ${color}`} />
