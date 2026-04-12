@@ -93,6 +93,15 @@ const Index = () => {
   // Find the selected place for SEO
   const selectedPlaceData = [...places, ...filteredPlaces].find(place => place.id === selectedPlace);
 
+  // Show landing page for unauthenticated users
+  if (!isAuthenticated && !authLoading) {
+    return <LandingPage />;
+  }
+
+  if (authLoading) {
+    return <div className="w-full h-screen bg-muted animate-pulse" />;
+  }
+
   return (
     <div className="w-full h-screen relative overflow-hidden">
       {/* SEO metadata */}
