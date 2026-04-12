@@ -59,13 +59,12 @@ const LandingPage: React.FC = () => {
 
       {/* Search Bar */}
       <div className="px-4 pt-2 pb-4">
-        <button
-          onClick={handleExplore}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/60 border border-border text-muted-foreground text-sm text-left transition-colors hover:bg-muted"
+        <div
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/60 border border-border text-muted-foreground text-sm text-left"
         >
           <Search className="h-4 w-4 flex-shrink-0" />
           <span>Search for businesses nearby...</span>
-        </button>
+        </div>
       </div>
 
       {/* Hero Section */}
