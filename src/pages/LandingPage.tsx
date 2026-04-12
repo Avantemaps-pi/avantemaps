@@ -1,13 +1,14 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Store, Coins, Bookmark, Search, MapPin, Users, Globe, ChevronRight, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import mapPreview from '@/assets/map-preview.jpg';
-import BottomNavBar from '@/components/layout/BottomNavBar';
+import { useBusinessData } from '@/hooks/useBusinessData';
+
+const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
 
 interface LandingStats {
   business_count: number;
