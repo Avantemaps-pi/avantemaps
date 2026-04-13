@@ -170,7 +170,7 @@ const LandingPage: React.FC = () => {
           <h2 className="text-lg font-bold text-foreground">Ready to Get Started?</h2>
           <p className="text-sm text-muted-foreground">Join the growing Pi business community today.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={handleExplore} size="lg" className="rounded-full w-full sm:w-auto">
+            <Button onClick={() => setLoginOpen(true)} size="lg" className="rounded-full w-full sm:w-auto">
               Explore the Map
             </Button>
             <Button onClick={() => navigate('/registration')} variant="outline" size="lg" className="rounded-full w-full sm:w-auto">
