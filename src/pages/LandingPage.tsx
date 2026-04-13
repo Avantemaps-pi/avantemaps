@@ -45,7 +45,7 @@ const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {/* Top Bar */}
-      <header className="flex items-center justify-between px-4 py-3 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
+      <header className="flex items-center justify-between px-4 py-1 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
         <Button variant="ghost" size="icon" onClick={handleExplore} className="rounded-full">
           <User className="h-5 w-5 text-muted-foreground" />
         </Button>
@@ -70,14 +70,17 @@ const LandingPage: React.FC = () => {
             />
           </Suspense>
         </div>
-        {/* Search Bar overlaid on map */}
-        <div className="relative z-10 px-4 pt-2 pointer-events-none">
+        {/* Search Bar + Hero text overlaid on map */}
+        <div className="relative z-10 px-4 pt-2 pointer-events-none space-y-2">
           <div
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border border-border text-muted-foreground text-sm text-left shadow-sm pointer-events-auto"
           >
             <Search className="h-4 w-4 flex-shrink-0" />
             <span>Search for businesses nearby...</span>
           </div>
+          <h6 className="text-xs font-medium text-foreground text-center drop-shadow-sm">
+            Discover, Explore, and Connect with Businesses Nearby!
+          </h6>
         </div>
         {/* Feature cards at bottom of map */}
         <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-auto">
@@ -101,16 +104,6 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Hero Section */}
-      <section className="px-4 py-4">
-        <h1 className="text-2xl font-bold text-foreground leading-tight">
-          Discover, Explore, and Connect with Businesses Nearby!
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-          Find local businesses that accept Pi cryptocurrency. Save your favorites, earn rewards, and support your community.
-        </p>
       </section>
 
       {/* Stats Section */}
