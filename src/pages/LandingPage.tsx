@@ -45,7 +45,7 @@ const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {/* Top Bar */}
-      <header className="flex items-center justify-between px-4 py-3 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
+      <header className="flex items-center justify-between px-4 py-1 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
         <Button variant="ghost" size="icon" onClick={handleExplore} className="rounded-full">
           <User className="h-5 w-5 text-muted-foreground" />
         </Button>
