@@ -106,16 +106,6 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Hero Section */}
-      <section className="px-4 py-4">
-        <h1 className="text-2xl font-bold text-foreground leading-tight">
-          Discover, Explore, and Connect with Businesses Nearby!
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-          Find local businesses that accept Pi cryptocurrency. Save your favorites, earn rewards, and support your community.
-        </p>
-      </section>
-
       {/* Stats Section */}
       <section className="px-4 py-6 bg-muted/30">
         <h2 className="text-lg font-bold text-foreground text-center mb-4">Our Growing Community</h2>
