@@ -34,7 +34,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   showSearch = false,
   className = '',
   backButton = false,
-  onBackClick
+  onBackClick,
+  showFooter = true
 }) => {
   const isMobile = useIsMobile();
   const contentClasses = `flex min-w-0 flex-col ${fullHeight ? 'h-screen' : 'min-h-screen'} ${fullWidth ? 'w-full' : 'max-w-7xl mx-auto w-full'} ${className}`;
@@ -60,6 +61,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             {children}
           </main>
           
+          {showFooter && <Footer />}
           <BottomNavBar />
           <Toaster />
         </div>
