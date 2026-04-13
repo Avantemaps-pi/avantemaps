@@ -26,6 +26,8 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [stats, setStats] = useState<LandingStats>({ business_count: 0, user_count: 0, country_count: 0 });
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
   const { places = [], isLoading: placesLoading } = useBusinessData();
 
   useEffect(() => {
