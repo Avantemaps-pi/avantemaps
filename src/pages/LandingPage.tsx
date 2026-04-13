@@ -43,23 +43,23 @@ const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
+    <div className="h-screen bg-background flex flex-col overflow-x-hidden">
       {/* Top Bar */}
-      <header className="flex items-center justify-between px-4 py-1 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
-        <Button variant="ghost" size="icon" onClick={handleExplore} className="rounded-full">
-          <User className="h-5 w-5 text-muted-foreground" />
+      <header className="flex items-center justify-between px-3 py-1.5 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
+        <Button variant="ghost" size="icon" onClick={handleExplore} className="rounded-full h-8 w-8">
+          <User className="h-4 w-4 text-muted-foreground" />
         </Button>
-        <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-            <MapPin className="h-5 w-5 text-primary" />
+        <div className="flex items-center gap-1.5">
+          <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
+            <MapPin className="h-4 w-4 text-primary" />
           </div>
-          <span className="font-bold text-lg text-foreground">Avante Maps</span>
+          <span className="font-bold text-base text-foreground">Avante Maps</span>
         </div>
-        <div className="w-9" />
+        <div className="w-8" />
       </header>
 
-      {/* Map + Search overlay + Feature cards */}
-      <section className="relative w-full h-[calc(100vh-56px)]">
+      {/* Map + Search overlay + Feature cards — fills remaining screen */}
+      <section className="relative flex-1 w-full min-h-0">
         <div className="absolute inset-0">
           <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
             <LeafletMap
@@ -71,33 +71,33 @@ const LandingPage: React.FC = () => {
           </Suspense>
         </div>
         {/* Search Bar + Hero text overlaid on map */}
-        <div className="relative z-10 px-4 pt-2 pointer-events-none space-y-2">
+        <div className="relative z-10 px-3 pt-2 pointer-events-none space-y-1">
           <div
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border border-border text-muted-foreground text-sm text-left shadow-sm pointer-events-auto"
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-background/90 backdrop-blur-sm border border-border text-muted-foreground text-sm text-left shadow-sm pointer-events-auto"
           >
             <Search className="h-4 w-4 flex-shrink-0" />
             <span>Search for businesses nearby...</span>
           </div>
-          <h6 className="text-xs font-medium text-foreground text-center drop-shadow-sm">
+          <p className="text-[11px] font-medium text-foreground text-center drop-shadow-sm">
             Discover, Explore, and Connect with Businesses Nearby!
-          </h6>
+          </p>
         </div>
-        {/* Feature cards at bottom of map */}
+        {/* Feature cards pinned to bottom of map */}
         <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-auto">
-          <div className="bg-gradient-to-t from-background/80 to-transparent pt-8 pb-3 px-4">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gradient-to-t from-background/80 to-transparent pt-6 pb-2 px-3">
+            <div className="grid grid-cols-2 gap-2">
               {[
                 { icon: Store, title: 'Discover Businesses', desc: 'Find Pi-accepting shops nearby', color: 'text-primary' },
                 { icon: Coins, title: 'Earn Pi Rewards', desc: 'Transact with Pi cryptocurrency', color: 'text-amber-500' },
               ].map(({ icon: Icon, title, desc, color }) => (
                 <Card
                   key={title}
-                  className="p-3 flex flex-col items-start gap-1.5 border border-border bg-card/95 backdrop-blur-sm shadow-md"
+                  className="p-2.5 flex flex-col items-start gap-1 border border-border bg-card/95 backdrop-blur-sm shadow-md"
                 >
-                  <div className={`p-1.5 rounded-lg bg-muted/60`}>
+                  <div className={`p-1 rounded-md bg-muted/60`}>
                     <Icon className={`h-4 w-4 ${color}`} />
                   </div>
-                  <h3 className="text-xs font-semibold text-foreground">{title}</h3>
+                  <h3 className="text-xs font-semibold text-foreground leading-tight">{title}</h3>
                   <p className="text-[10px] text-muted-foreground leading-snug">{desc}</p>
                 </Card>
               ))}
