@@ -182,6 +182,37 @@ const LandingPage: React.FC = () => {
 
       {/* Footer spacing */}
       <div className="h-8" />
+
+      {/* Login Dialog */}
+      <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center">Sign In</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <MapPin className="h-8 w-8 text-primary" />
+            </div>
+            <p className="text-sm text-muted-foreground text-center">
+              Sign in to explore businesses, save bookmarks, and more.
+            </p>
+            <Button
+              onClick={handleLoginWithPi}
+              disabled={loginLoading}
+              className="w-full bg-[#7b2cbf] hover:bg-[#6a24a6] text-white"
+            >
+              {loginLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Authenticating...
+                </>
+              ) : (
+                'Login with Pi Network'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
