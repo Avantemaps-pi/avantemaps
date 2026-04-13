@@ -4,7 +4,7 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import DesktopSidebar from './sidebar/DesktopSidebar';
 import MobileSidebar from './sidebar/MobileSidebar';
-import { navItems, legalItems } from './sidebar/sidebarConfig';
+import { navItems } from './sidebar/sidebarConfig';
 import { getUnreadNotificationsCount } from '@/utils/notificationUtils';
 import { useAuth } from '@/context/auth';
 
@@ -53,7 +53,6 @@ const AppSidebar = ({ className }: AppSidebarProps = {}) => {
         <DesktopSidebar
           className={className}
           navItems={filteredNavItems}
-          legalItems={legalItems}
           currentPath={location.pathname}
           onLinkClick={handleLinkClick}
         />
@@ -61,7 +60,6 @@ const AppSidebar = ({ className }: AppSidebarProps = {}) => {
         <MobileSidebar
           isOpen={openMobile}
           navItems={filteredNavItems}
-          legalItems={legalItems}
           currentPath={location.pathname}
           onClose={() => setOpenMobile(false)}
           onLinkClick={handleLinkClick}

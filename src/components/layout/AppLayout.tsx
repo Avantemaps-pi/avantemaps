@@ -2,6 +2,7 @@
 import React, { ReactNode } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import PageHeader from '@/components/layout/PageHeader';
+import Footer from '@/components/layout/Footer';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AppSidebar from './AppSidebar';
 import BottomNavBar from './BottomNavBar';
@@ -19,6 +20,7 @@ interface AppLayoutProps {
   className?: string;
   backButton?: boolean;
   onBackClick?: () => void;
+  showFooter?: boolean;
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ 
@@ -32,7 +34,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   showSearch = false,
   className = '',
   backButton = false,
-  onBackClick
+  onBackClick,
+  showFooter = true
 }) => {
   const isMobile = useIsMobile();
   const contentClasses = `flex min-w-0 flex-col ${fullHeight ? 'h-screen' : 'min-h-screen'} ${fullWidth ? 'w-full' : 'max-w-7xl mx-auto w-full'} ${className}`;
@@ -58,6 +61,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             {children}
           </main>
           
+          {showFooter && <Footer />}
           <BottomNavBar />
           <Toaster />
         </div>
