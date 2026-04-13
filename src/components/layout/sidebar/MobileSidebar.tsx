@@ -84,7 +84,7 @@ const MobileSidebar = ({
         />
       )}
       
-      <div className={`fixed inset-y-0 left-0 w-4/5 max-w-[300px] bg-background z-50 transform transition-transform duration-300 ease-in-out shadow-xl ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`fixed inset-y-0 left-0 w-4/5 max-w-[300px] bg-background z-[60] transform transition-transform duration-300 ease-in-out shadow-xl ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
           <div className="p-4 flex items-center justify-between border-b border-sidebar-border">
             <div className="flex items-center gap-3 cursor-pointer" onClick={handleProfileClick}>
