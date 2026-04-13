@@ -50,7 +50,7 @@ const LandingPage: React.FC = () => {
       // User cancelled or error
     } finally {
       setLoginLoading(false);
-      setLoginOpen(false);
+      setShowLogin(false);
     }
   };
 
@@ -58,9 +58,25 @@ const LandingPage: React.FC = () => {
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {/* Top Bar */}
       <header className="flex items-center justify-between px-4 py-1 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
-        <Button variant="ghost" size="icon" onClick={() => setLoginOpen(true)} className="rounded-full">
-          <User className="h-5 w-5 text-muted-foreground" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => setShowLogin(prev => !prev)} className="rounded-full">
+            <User className="h-5 w-5 text-muted-foreground" />
+          </Button>
+          {showLogin && (
+            <Button
+              onClick={handleLoginWithPi}
+              disabled={loginLoading}
+              size="sm"
+              className="bg-[#7b2cbf] hover:bg-[#6a24a6] text-white rounded-full text-xs h-8"
+            >
+              {loginLoading ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                'Login'
+              )}
+            </Button>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
             <MapPin className="h-5 w-5 text-primary" />
@@ -170,7 +186,7 @@ const LandingPage: React.FC = () => {
           <h2 className="text-lg font-bold text-foreground">Ready to Get Started?</h2>
           <p className="text-sm text-muted-foreground">Join the growing Pi business community today.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={() => setLoginOpen(true)} size="lg" className="rounded-full w-full sm:w-auto">
+            <Button onClick={handleLoginWithPi} size="lg" className="rounded-full w-full sm:w-auto">
               Explore the Map
             </Button>
             <Button onClick={() => navigate('/registration')} variant="outline" size="lg" className="rounded-full w-full sm:w-auto">
@@ -183,36 +199,6 @@ const LandingPage: React.FC = () => {
       {/* Footer spacing */}
       <div className="h-8" />
 
-      {/* Login Dialog */}
-      <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-center">Sign In</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center gap-4 py-4">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <MapPin className="h-8 w-8 text-primary" />
-            </div>
-            <p className="text-sm text-muted-foreground text-center">
-              Sign in to explore businesses, save bookmarks, and more.
-            </p>
-            <Button
-              onClick={handleLoginWithPi}
-              disabled={loginLoading}
-              className="w-full bg-[#7b2cbf] hover:bg-[#6a24a6] text-white"
-            >
-              {loginLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Authenticating...
-                </>
-              ) : (
-                'Login with Pi Network'
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
