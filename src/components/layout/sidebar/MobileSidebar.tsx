@@ -147,26 +147,48 @@ const MobileSidebar = ({
             )}
           </div>
           
-          {/* Mobile Footer with Legal Links */}
-          <div className="p-4 border-t border-sidebar-border bg-muted/30">
-            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground mb-2">
-              {legalItems.map((item, index) => (
-                <React.Fragment key={item.to}>
-                  <Link 
-                    to={item.to} 
-                    onClick={onLinkClick}
-                    className="hover:text-primary transition-colors"
-                  >
-                    {item.label}
-                  </Link>
-                  {index < legalItems.length - 1 && (
-                    <span className="text-border">|</span>
-                  )}
-                </React.Fragment>
-              ))}
+          {/* Mobile Footer with Legal Links & Info */}
+          <div className="p-4 border-t border-sidebar-border bg-muted/30 space-y-3">
+            {/* Quick Actions */}
+            <div className="flex gap-2">
+              <Link 
+                to="/contact" 
+                onClick={onLinkClick}
+                className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+              >
+                Contact Us
+              </Link>
+              <a 
+                href="mailto:support@avantemaps.com" 
+                className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Email Support
+              </a>
             </div>
-            <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} Avante Maps
+
+            {/* Legal Links */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+              {legalItems
+                .filter(item => item.to !== '/contact')
+                .map((item, index, arr) => (
+                  <React.Fragment key={item.to}>
+                    <Link 
+                      to={item.to} 
+                      onClick={onLinkClick}
+                      className="hover:text-primary transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                    {index < arr.length - 1 && (
+                      <span className="text-border">·</span>
+                    )}
+                  </React.Fragment>
+                ))}
+            </div>
+
+            {/* Copyright */}
+            <p className="text-[11px] text-muted-foreground">
+              © {new Date().getFullYear()} Avante Maps Pty Ltd
             </p>
           </div>
         </div>
