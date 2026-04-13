@@ -2,6 +2,7 @@
 import React, { ReactNode } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import PageHeader from '@/components/layout/PageHeader';
+import Footer from '@/components/layout/Footer';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AppSidebar from './AppSidebar';
 import BottomNavBar from './BottomNavBar';
@@ -19,6 +20,7 @@ interface AppLayoutProps {
   className?: string;
   backButton?: boolean;
   onBackClick?: () => void;
+  showFooter?: boolean;
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ 
