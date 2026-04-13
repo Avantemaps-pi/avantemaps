@@ -1,12 +1,18 @@
 
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, Coins, Search, MapPin, Users, Globe, User } from 'lucide-react';
+import { Store, Coins, Search, MapPin, Users, Globe, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessData } from '@/hooks/useBusinessData';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
 
