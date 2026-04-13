@@ -1,12 +1,18 @@
 
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, Coins, Search, MapPin, Users, Globe, User } from 'lucide-react';
+import { Store, Coins, Search, MapPin, Users, Globe, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessData } from '@/hooks/useBusinessData';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
 
@@ -20,6 +26,8 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [stats, setStats] = useState<LandingStats>({ business_count: 0, user_count: 0, country_count: 0 });
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
   const { places = [], isLoading: placesLoading } = useBusinessData();
 
   useEffect(() => {
@@ -34,11 +42,15 @@ const LandingPage: React.FC = () => {
     fetchStats();
   }, []);
 
-  const handleExplore = async () => {
+  const handleLoginWithPi = async () => {
+    setLoginLoading(true);
     try {
       await login();
     } catch {
       // User cancelled or error
+    } finally {
+      setLoginLoading(false);
+      setLoginOpen(false);
     }
   };
 
@@ -46,7 +58,7 @@ const LandingPage: React.FC = () => {
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {/* Top Bar */}
       <header className="flex items-center justify-between px-4 py-1 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
-        <Button variant="ghost" size="icon" onClick={handleExplore} className="rounded-full">
+        <Button variant="ghost" size="icon" onClick={() => setLoginOpen(true)} className="rounded-full">
           <User className="h-5 w-5 text-muted-foreground" />
         </Button>
         <div className="flex items-center gap-2">
@@ -158,7 +170,7 @@ const LandingPage: React.FC = () => {
           <h2 className="text-lg font-bold text-foreground">Ready to Get Started?</h2>
           <p className="text-sm text-muted-foreground">Join the growing Pi business community today.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={handleExplore} size="lg" className="rounded-full w-full sm:w-auto">
+            <Button onClick={() => setLoginOpen(true)} size="lg" className="rounded-full w-full sm:w-auto">
               Explore the Map
             </Button>
             <Button onClick={() => navigate('/registration')} variant="outline" size="lg" className="rounded-full w-full sm:w-auto">
@@ -170,6 +182,37 @@ const LandingPage: React.FC = () => {
 
       {/* Footer spacing */}
       <div className="h-8" />
+
+      {/* Login Dialog */}
+      <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center">Sign In</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <MapPin className="h-8 w-8 text-primary" />
+            </div>
+            <p className="text-sm text-muted-foreground text-center">
+              Sign in to explore businesses, save bookmarks, and more.
+            </p>
+            <Button
+              onClick={handleLoginWithPi}
+              disabled={loginLoading}
+              className="w-full bg-[#7b2cbf] hover:bg-[#6a24a6] text-white"
+            >
+              {loginLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Authenticating...
+                </>
+              ) : (
+                'Login with Pi Network'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
