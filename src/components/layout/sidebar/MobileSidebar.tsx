@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import NavItem from './NavItem';
 import { useAuth } from '@/context/auth';
 import { cn } from '@/lib/utils';
+import { legalItems } from './sidebarConfig';
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -16,11 +17,6 @@ interface MobileSidebarProps {
     label: string;
     badge?: number | null;
   }>;
-  legalItems: Array<{
-    to: string;
-    icon: React.ElementType;
-    label: string;
-  }>;
   currentPath: string;
   onClose: () => void;
   onLinkClick: () => void;
@@ -29,7 +25,6 @@ interface MobileSidebarProps {
 const MobileSidebar = ({
   isOpen,
   navItems,
-  legalItems,
   currentPath,
   onClose,
   onLinkClick
@@ -142,25 +137,37 @@ const MobileSidebar = ({
               </ul>
             </nav>
 
-            <div className="mt-6 px-2">
-              <h3 className="text-xs uppercase text-muted-foreground font-medium mb-2 px-3">Legal</h3>
-              <ul className="space-y-1">
-                {legalItems.map(item => <NavItem key={item.to} to={item.to} icon={item.icon} label={item.label} isActive={currentPath === item.to} onClick={onLinkClick} />)}
-              </ul>
-              {isAuthenticated && (
-                <div className="mt-4">
-                  <Button onClick={handleLogout} disabled={isLoading} className="w-full bg-white hover:bg-gray-100 border border-red-500 text-red-500">
-                    <LogOut className="h-4 w-4 mr-2 text-red-500" />
-                    Logout
-                  </Button>
-                </div>
-              )}
-            </div>
+            {isAuthenticated && (
+              <div className="mt-4 px-2">
+                <Button onClick={handleLogout} disabled={isLoading} className="w-full bg-white hover:bg-gray-100 border border-red-500 text-red-500">
+                  <LogOut className="h-4 w-4 mr-2 text-red-500" />
+                  Logout
+                </Button>
+              </div>
+            )}
           </div>
           
-          <div className="p-4 border-t border-sidebar-border text-xs text-muted-foreground">
-            <p>© 2025 Avante Maps</p>
-            <p>By Avante Maps Pty Ltd</p>
+          {/* Mobile Footer with Legal Links */}
+          <div className="p-4 border-t border-sidebar-border bg-muted/30">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground mb-2">
+              {legalItems.map((item, index) => (
+                <React.Fragment key={item.to}>
+                  <Link 
+                    to={item.to} 
+                    onClick={onLinkClick}
+                    className="hover:text-primary transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                  {index < legalItems.length - 1 && (
+                    <span className="text-border">|</span>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              © {new Date().getFullYear()} Avante Maps
+            </p>
           </div>
         </div>
       </div>

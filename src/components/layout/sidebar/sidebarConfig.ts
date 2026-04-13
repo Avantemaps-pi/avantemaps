@@ -10,7 +10,6 @@ import {
   Info,
   Lock,
   FileText,
-  Phone,
   Cookie,
   FileCode,
   Send,
@@ -83,11 +82,6 @@ export const navItems = [
     adminOnly: true,
   },
   {
-    to: '/contact',
-    icon: Phone,
-    label: 'Contact Us',
-  },
-  {
     to: '/about',
     icon: Info,
     label: 'About Us',
@@ -96,18 +90,20 @@ export const navItems = [
 
 export const legalItems = [
   {
-    to: '/privacy', // Updated from '/privacy-policy'
-    icon: Lock,
+    to: '/privacy',
     label: 'Privacy Policy',
   },
   {
-    to: '/terms', // Updated from '/terms-of-service'
-    icon: FileText,
+    to: '/terms',
     label: 'Terms of Service',
   },
   {
     to: '/cookies',
-    icon: Cookie,
     label: 'Cookie Policy',
   },
+  {
+    to: '/contact',
+    label: 'Contact Us',
+  },
 ];
+
