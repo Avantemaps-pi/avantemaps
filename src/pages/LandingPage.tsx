@@ -42,11 +42,15 @@ const LandingPage: React.FC = () => {
     fetchStats();
   }, []);
 
-  const handleExplore = async () => {
+  const handleLoginWithPi = async () => {
+    setLoginLoading(true);
     try {
       await login();
     } catch {
       // User cancelled or error
+    } finally {
+      setLoginLoading(false);
+      setLoginOpen(false);
     }
   };
 
