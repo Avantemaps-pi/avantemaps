@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, Coins, Search, MapPin, Users, Globe, User, Loader2 } from 'lucide-react';
+import { Store, Search, MapPin, Users, Globe, User, Loader2, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
@@ -99,18 +99,18 @@ const LandingPage: React.FC = () => {
           <div className="bg-gradient-to-t from-background/80 to-transparent pt-4 pb-2 px-4">
             <div className="grid grid-cols-2 gap-3">
               {[
-                { icon: Store, title: 'Discover Businesses', desc: 'Find Pi-accepting shops nearby', color: 'text-primary' },
-                { icon: Coins, title: 'Earn Pi Rewards', desc: 'Transact with Pi cryptocurrency', color: 'text-amber-500' },
+                { icon: Store, title: 'Discover Businesses', desc: 'Find local shops, services, and attractions', color: 'text-amber-500' },
+                { icon: Bookmark, title: 'Save & Share', desc: 'Bookmark favorite spots and share them with friends', color: 'text-violet-500' },
               ].map(({ icon: Icon, title, desc, color }) => (
                 <Card
                   key={title}
-                  className="p-3 flex flex-col items-start gap-1.5 border border-border bg-card/95 backdrop-blur-sm shadow-md"
+                  className="p-4 flex flex-col items-start gap-2 border border-border bg-card/95 backdrop-blur-sm shadow-md rounded-2xl"
                 >
-                  <div className={`p-1.5 rounded-lg bg-muted/60`}>
-                    <Icon className={`h-4 w-4 ${color}`} />
+                  <div className={`p-2 rounded-xl bg-muted/60`}>
+                    <Icon className={`h-5 w-5 ${color}`} />
                   </div>
-                  <h3 className="text-xs font-semibold text-foreground">{title}</h3>
-                  <p className="text-[10px] text-muted-foreground leading-snug">{desc}</p>
+                  <h3 className="text-sm font-bold text-foreground leading-tight">{title}</h3>
+                  <p className="text-xs text-muted-foreground leading-snug">{desc}</p>
                 </Card>
               ))}
             </div>
