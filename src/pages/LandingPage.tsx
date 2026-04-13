@@ -52,7 +52,7 @@ const LandingPage: React.FC = () => {
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {/* Top Bar */}
       <header className="flex items-center justify-between px-4 py-1 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col items-start">
           <Button variant="ghost" size="icon" onClick={() => setShowLogin(prev => !prev)} className="rounded-full">
             <User className="h-5 w-5 text-muted-foreground" />
           </Button>
@@ -61,7 +61,7 @@ const LandingPage: React.FC = () => {
               onClick={handleLoginWithPi}
               disabled={loginLoading}
               size="sm"
-              className="bg-[#7b2cbf] hover:bg-[#6a24a6] text-white rounded-full text-xs h-8"
+              className="bg-[#7b2cbf] hover:bg-[#6a24a6] text-white rounded-full text-xs h-8 mt-1"
             >
               {loginLoading ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
