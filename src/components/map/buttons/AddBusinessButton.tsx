@@ -10,7 +10,7 @@ interface AddBusinessButtonProps {
 
 const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) => {
   return (
-    <div className={`absolute bottom-6 ${selectedPlace ? 'right-16 md:right-[calc(50%+200px)]' : 'right-6'} z-20 transition-all duration-300`}>
+    <div className={`absolute bottom-20 sm:bottom-6 ${selectedPlace ? 'right-16 md:right-[calc(50%+200px)]' : 'right-6'} z-20 transition-all duration-300`}>
       <Link to="/registration">
         <Button 
           className="h-14 w-14 md:h-16 md:w-16 lg:h-16 lg:w-16 rounded-full bg-primary hover:bg-primary/90 shadow-lg"
