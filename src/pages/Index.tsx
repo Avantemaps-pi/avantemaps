@@ -205,6 +205,7 @@ const Index = () => {
       <Suspense fallback={null}>
         <AddBusinessButton selectedPlace={selectedPlace} />
       </Suspense>
+      <BottomNavBar />
     </div>
   );
 };
