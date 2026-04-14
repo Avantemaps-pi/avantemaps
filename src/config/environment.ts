@@ -59,13 +59,13 @@ export const isDevelopmentMode = (): boolean => import.meta.env.DEV;
 export const shouldBypassAuth = (): boolean => {
   const hostname = window.location.hostname;
   
-  // Allow test mode ONLY on Lovable preview domains
-  if (hostname.includes('lovable.app') || hostname.includes('lovableproject.com')) {
+  // Allow test mode ONLY on Lovable preview/project domains (NOT the published app)
+  if (hostname.includes('lovableproject.com') || hostname.includes('id-preview')) {
     console.log('🧪 Preview environment: Test mode enabled');
     return true;
   }
   
-  // Production: never bypass
+  // Production and published domains: never bypass
   console.log('🔒 Production mode: Real Pi Browser authentication required');
   return false;
 };
