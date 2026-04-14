@@ -1,16 +1,8 @@
 
 import {
-  Map,
-  LayoutGrid,
-  Bookmark,
-  Bell,
   Building,
   MessageSquare,
-  Settings,
   Info,
-  Lock,
-  FileText,
-  Cookie,
   FileCode,
   Send,
   TestTube,
