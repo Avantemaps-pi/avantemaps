@@ -150,6 +150,14 @@ const MobileSidebar = ({
           {/* Compact Footer */}
           <div className="px-4 py-3 border-t border-sidebar-border bg-muted/30 space-y-2">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+              <Link 
+                to="/pricing" 
+                onClick={onLinkClick}
+                className="hover:text-primary transition-colors font-medium"
+              >
+                Pricing
+              </Link>
+              <span className="text-border">·</span>
               {legalItems.map((item, index, arr) => (
                 <React.Fragment key={item.to}>
                   <Link 
