@@ -3,6 +3,7 @@ import {
   Building,
   MessageSquare,
   Info,
+  CreditCard,
   FileCode,
   Send,
   TestTube,
