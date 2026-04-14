@@ -50,12 +50,12 @@ const NavItem = ({
       <Link 
         to={to} 
         className={cn(
-          "flex items-center gap-3 px-3 py-2 rounded-md transition-colors hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground relative",
+          "flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground relative",
           isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "text-sidebar-foreground"
         )}
         onClick={handleClick}
       >
-        <Icon className="h-5 w-5" />
+        <Icon className="h-4 w-4" />
         <span>{label}</span>
         {badge > 0 && (
           <span className="absolute right-4 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">

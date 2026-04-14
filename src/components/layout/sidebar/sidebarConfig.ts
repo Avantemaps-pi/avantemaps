@@ -1,16 +1,8 @@
 
 import {
-  Map,
-  LayoutGrid,
-  Bookmark,
-  Bell,
   Building,
   MessageSquare,
-  Settings,
   Info,
-  Lock,
-  FileText,
-  Cookie,
   FileCode,
   Send,
   TestTube,
@@ -22,27 +14,6 @@ import { getUnreadNotificationsCount } from '@/utils/notificationUtils';
 
 export const navItems = [
   {
-    to: '/',
-    icon: Map,
-    label: 'Map',
-  },
-  {
-    to: '/recommendations',
-    icon: LayoutGrid,
-    label: 'Recommendations',
-  },
-  {
-    to: '/bookmarks',
-    icon: Bookmark,
-    label: 'Bookmarks',
-  },
-  {
-    to: '/notifications',
-    icon: Bell,
-    label: 'Notifications',
-    // Badge will be set dynamically in AppSidebar
-  },
-  {
     to: '/registered-business',
     icon: Building,
     label: 'Registered Business',
@@ -53,9 +24,9 @@ export const navItems = [
     label: 'CommuniCon',
   },
   {
-    to: '/settings',
-    icon: Settings,
-    label: 'Settings',
+    to: '/about',
+    icon: Info,
+    label: 'About Us',
   },
   {
     to: '/notification-templates',
