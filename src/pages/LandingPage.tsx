@@ -106,7 +106,7 @@ const LandingPage: React.FC = () => {
         </div>
         {/* Feature cards at bottom of map */}
         <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-auto">
-          <div className="bg-gradient-to-t from-background/80 to-transparent pt-4 pb-2 px-4">
+          <div className="bg-gradient-to-t from-background via-background/90 to-transparent pt-8 pb-0 px-4">
             <div className="grid grid-cols-2 gap-3">
               {[
                 { icon: Store, title: 'Discover Businesses', desc: 'Find local shops, services, and attractions', color: 'text-amber-500' },
