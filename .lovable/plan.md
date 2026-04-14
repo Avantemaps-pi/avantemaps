@@ -1,48 +1,39 @@
 
 
-## Plan: Landing Page Redesign with Auth Gating
+## Plan: Lighten the Sidebar Navigation
 
-### What We're Building
+The sidebar currently shows 8 navigation items, many of which duplicate the bottom nav bar (Map, Recommendations, Bookmarks, Notifications, Settings). This makes it feel cluttered and "heavy."
 
-A marketing-first landing page that only unauthenticated users see. Authenticated users go straight to the map. The design follows the uploaded reference image: top bar with logo + profile icon, search bar, value proposition text, map preview image (static, not the real map component), and feature cards at the bottom.
+### Changes
 
-### Auth Gating
+**1. Remove items already in the bottom nav bar from the sidebar**
 
-In `App.tsx`, the `/` route will use a wrapper component:
-- **Authenticated** → renders current `Index` (map) as-is
-- **Not authenticated / loading** → renders `LandingPage`
+The bottom nav already has: Map, Explore (Recommendations), Saved (Bookmarks), Alerts (Notifications), Settings.
 
-No route changes needed. The map stays at `/`.
+The sidebar will keep only items NOT in the bottom nav:
+- Registered Business
+- CommuniCon
+- About Us
+- Admin-only items (Templates, Bulk Notifications, A/B Testing, Frequency Caps)
 
-### Landing Page Sections (matching the reference image)
+**2. Visually lighten the sidebar nav items**
 
-1. **Top Bar** -- Avante Maps logo (left) + profile/sign-in icon (right)
-2. **Search Bar** -- Styled search input (navigates to map on interaction)
-3. **Hero Text** -- "Discover, Explore, and Connect with Businesses Nearby!"
-4. **Map Preview** -- A static map illustration/image as background (lightweight, no Leaflet)
-5. **Feature Cards** -- Horizontal scrollable row: "Discover Businesses", "Earn Pi Rewards", "Save & Share"
-6. **Stats Section** -- Community numbers (businesses registered, users, countries) fetched from Supabase
-7. **Problem/Solution** -- Why Avante Maps exists, benefits of using it
-8. **Final CTA** -- "Explore the Map" and "Register Your Business" buttons
-9. **Bottom Nav** -- Reuse existing `BottomNavBar` on mobile
+- Reduce icon size from `h-5 w-5` to `h-4 w-4`
+- Reduce vertical padding from `py-2` to `py-1.5`
+- Use smaller text size (`text-sm`)
 
-### Files to Create/Change
+**3. Clean up the footer section**
 
-| File | Change |
-|------|--------|
-| `src/pages/LandingPage.tsx` | **New** -- Full landing page component with all sections above. Fetches stats from Supabase. Search bar click/focus navigates to map. CTA buttons trigger login or navigate to `/registration`. |
-| `src/pages/Index.tsx` | Wrap with auth check -- if not authenticated, render `LandingPage` instead. Show `PageLoader` skeleton while auth is loading. |
-| `src/components/layout/BottomNavBar.tsx` | Update Map nav item: when on landing page and not authenticated, label as "Home" pointing to `/`. |
+- Simplify the footer: keep just legal links and copyright in a single compact block
+- Move "Contact Us" and "Email Support" buttons into a simpler text-link style
 
-### Design Details
-- Mobile-first (390px viewport), matching the reference image style
-- Light blue/sky gradient background for the hero area
-- White rounded cards for features
-- Icons for each feature card (Store, Pi coin, Bookmark)
-- Uses existing Tailwind + shadcn Button/Card components
-- No heavy map component loaded -- uses a static decorative map image or CSS gradient
-- Smooth, clean layout matching the uploaded mockup
+### Files to modify
 
-### Stats Data
-Will use `supabase.from('businesses').select('*', { count: 'exact', head: true })` for business count. For user/country counts, will use similar count queries or show hardcoded "growing" numbers if RLS blocks anon access, with a note to add an RPC function later for accurate stats.
+- `src/components/layout/sidebar/sidebarConfig.ts` -- remove Map, Recommendations, Bookmarks, Notifications, Settings from `navItems`
+- `src/components/layout/sidebar/NavItem.tsx` -- reduce icon/text size and padding
+- `src/components/layout/sidebar/MobileSidebar.tsx` -- simplify footer section
+
+### Result
+
+The sidebar becomes a complementary menu for secondary pages (Registered Business, CommuniCon, About Us) rather than duplicating the primary bottom nav. This makes it feel much lighter and purposeful.
 
