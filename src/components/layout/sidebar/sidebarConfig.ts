@@ -30,6 +30,11 @@ export const navItems = [
     label: 'About Us',
   },
   {
+    to: '/pricing',
+    icon: CreditCard,
+    label: 'Pricing',
+  },
+  {
     to: '/notification-templates',
     icon: FileCode,
     label: 'Templates',
