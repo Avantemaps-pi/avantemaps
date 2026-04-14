@@ -8,6 +8,7 @@ import SearchBar from '@/components/map/SearchBar';
 import { useSidebar } from '@/components/ui/sidebar';
 import AvanteMapLogo from '@/components/layout/header/AvanteMapLogo';
 import AppSidebar from '@/components/layout/AppSidebar';
+import BottomNavBar from '@/components/layout/BottomNavBar';
 import PlaceCardSEO from '@/components/seo/PlaceCardSEO';
 import MetaTags from '@/components/seo/MetaTags';
 import { BusinessSuggestion } from '@/hooks/useBusinessAutocomplete';
