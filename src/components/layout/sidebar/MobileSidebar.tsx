@@ -121,7 +121,7 @@ const MobileSidebar = ({
             </Button>
           </div>
           
-          <div className="flex-1 overflow-y-auto py-4">
+          <div className="flex-1 overflow-y-auto py-4 flex flex-col">
             {!isAuthenticated && (
               <div className="px-2 mb-4">
                 <Button onClick={handleLogin} disabled={isLoading} className="w-full flex items-center bg-blue-500 hover:bg-blue-600 text-white">
@@ -138,7 +138,7 @@ const MobileSidebar = ({
             </nav>
 
             {isAuthenticated && (
-              <div className="mt-4 px-2">
+              <div className="mt-auto px-2 pt-4">
                 <Button onClick={handleLogout} disabled={isLoading} className="w-full bg-white hover:bg-gray-100 border border-red-500 text-red-500">
                   <LogOut className="h-4 w-4 mr-2 text-red-500" />
                   Logout
