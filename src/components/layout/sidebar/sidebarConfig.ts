@@ -3,6 +3,7 @@ import {
   Building,
   MessageSquare,
   Info,
+  CreditCard,
   FileCode,
   Send,
   TestTube,
@@ -27,6 +28,11 @@ export const navItems = [
     to: '/about',
     icon: Info,
     label: 'About Us',
+  },
+  {
+    to: '/pricing',
+    icon: CreditCard,
+    label: 'Pricing',
   },
   {
     to: '/notification-templates',
