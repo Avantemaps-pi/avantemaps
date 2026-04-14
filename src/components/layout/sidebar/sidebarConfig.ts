@@ -52,11 +52,6 @@ export const navItems = [
     label: 'Frequency Caps',
     adminOnly: true,
   },
-  {
-    to: '/about',
-    icon: Info,
-    label: 'About Us',
-  },
 ];
 
 export const legalItems = [
