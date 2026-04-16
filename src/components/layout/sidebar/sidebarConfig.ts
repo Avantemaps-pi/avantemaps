@@ -3,13 +3,9 @@ import {
   Building,
   MessageSquare,
   Info,
-  FileCode,
-  Send,
-  TestTube,
-  Timer,
+  Bell,
 } from 'lucide-react';
 
-// Create a function to dynamically get the notification count
 import { getUnreadNotificationsCount } from '@/utils/notificationUtils';
 
 export const navItems = [
@@ -29,27 +25,9 @@ export const navItems = [
     label: 'About Us',
   },
   {
-    to: '/notification-templates',
-    icon: FileCode,
-    label: 'Templates',
-    adminOnly: true,
-  },
-  {
-    to: '/bulk-notifications',
-    icon: Send,
-    label: 'Bulk Notifications',
-    adminOnly: true,
-  },
-  {
-    to: '/ab-testing',
-    icon: TestTube,
-    label: 'A/B Testing',
-    adminOnly: true,
-  },
-  {
-    to: '/frequency-caps',
-    icon: Timer,
-    label: 'Frequency Caps',
+    to: '/notification-admin',
+    icon: Bell,
+    label: 'Notification Admin',
     adminOnly: true,
   },
 ];
