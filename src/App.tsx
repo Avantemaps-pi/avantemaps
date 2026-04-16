@@ -34,11 +34,7 @@ const VerificationInfo = lazy(() => import("./pages/VerificationInfo"));
 const Review = lazy(() => import("./pages/Review"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Analytics = lazy(() => import("./pages/Analytics"));
-const NotificationTemplates = lazy(() => import("./pages/NotificationTemplates"));
-const BulkNotifications = lazy(() => import("./pages/BulkNotifications"));
-const CronSetup = lazy(() => import("./pages/CronSetup"));
-const ABTestingDashboard = lazy(() => import("./pages/ABTestingDashboard"));
-const FrequencyCaps = lazy(() => import("./pages/FrequencyCaps"));
+const NotificationAdmin = lazy(() => import("./pages/NotificationAdmin"));
 
 const queryClient = new QueryClient();
 
@@ -151,11 +147,7 @@ const App = () => {
                       <Route path="/update-registration/:businessId?" element={<UpdateRegistration />} />
                       <Route path="/pricing" element={<Pricing />} />
                       <Route path="/analytics" element={<Analytics />} />
-                      <Route path="/notification-templates" element={<NotificationTemplates />} />
-                      <Route path="/bulk-notifications" element={<BulkNotifications />} />
-                      <Route path="/cron-setup" element={<CronSetup />} />
-                      <Route path="/ab-testing" element={<ABTestingDashboard />} />
-                      <Route path="/frequency-caps" element={<FrequencyCaps />} />
+                      <Route path="/notification-admin" element={<NotificationAdmin />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </Suspense>
