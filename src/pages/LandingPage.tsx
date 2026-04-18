@@ -82,7 +82,7 @@ const LandingPage: React.FC = () => {
 
       {/* Map + Search overlay + Feature cards */}
       <section className="relative w-full h-[calc(100vh-56px)]">
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 pointer-events-none">
           <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
             <LeafletMap
               places={places}
