@@ -126,6 +126,13 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
         </div>
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 pointer-events-none">
+          <span className="text-xs text-muted-foreground/70 font-medium">Scroll to explore</span>
+          <div className="animate-bounce">
+            <ChevronDown className="h-5 w-5 text-primary" />
+          </div>
+        </div>
       </section>
 
       {/* Stats Section */}
