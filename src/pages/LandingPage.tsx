@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, Search, MapPin, Users, Globe, User, Loader2, Bookmark } from 'lucide-react';
+import { Store, Search, MapPin, Users, Globe, User, Loader2, Bookmark, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
@@ -124,6 +124,13 @@ const LandingPage: React.FC = () => {
                 </Card>
               ))}
             </div>
+          </div>
+        </div>
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 pointer-events-none">
+          <span className="text-xs text-muted-foreground/70 font-medium">Scroll to explore</span>
+          <div className="animate-bounce">
+            <ChevronDown className="h-5 w-5 text-primary" />
           </div>
         </div>
       </section>
