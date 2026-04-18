@@ -104,13 +104,17 @@ const LandingPage: React.FC = () => {
             Discover, Explore, and Connect with Businesses Nearby!
           </h6>
         </div>
-        {/* Feature cards at bottom of map - extends into background to remove gap */}
-        <div className="absolute -bottom-px left-0 right-0 z-10 pointer-events-auto">
-          <div className="bg-gradient-to-t from-background via-background/95 to-transparent pt-16 pb-0 px-4">
-            <div className="grid grid-cols-2 gap-3 pb-0 [&>*]:mb-0">
-              <div className="hidden" />
-            </div>
-            <div className="grid grid-cols-2 gap-3 -mt-px">
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-44 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 pointer-events-none">
+          <span className="text-xs text-foreground/80 font-medium drop-shadow-sm">Scroll to explore</span>
+          <div className="animate-bounce">
+            <ChevronDown className="h-5 w-5 text-primary" />
+          </div>
+        </div>
+        {/* Feature cards anchored to bottom of map */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-auto">
+          <div className="bg-gradient-to-t from-background via-background/95 to-transparent pt-16 pb-4 px-4">
+            <div className="grid grid-cols-2 gap-3">
               {[
                 { icon: Store, title: 'Discover Businesses', desc: 'Find local shops, services, and attractions', color: 'text-amber-500' },
                 { icon: Bookmark, title: 'Save & Share', desc: 'Bookmark favorite spots and share them with friends', color: 'text-violet-500' },
@@ -129,17 +133,10 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
         </div>
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 pointer-events-none">
-          <span className="text-xs text-muted-foreground/70 font-medium">Scroll to explore</span>
-          <div className="animate-bounce">
-            <ChevronDown className="h-5 w-5 text-primary" />
-          </div>
-        </div>
       </section>
 
       {/* Stats Section */}
-      <section className="px-4 py-6 bg-muted/30">
+      <section className="px-4 pt-2 pb-6 bg-background">
         <h2 className="text-lg font-bold text-foreground text-center mb-4">Our Growing Community</h2>
         <div className="grid grid-cols-3 gap-3">
           {[
