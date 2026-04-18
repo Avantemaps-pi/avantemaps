@@ -104,10 +104,13 @@ const LandingPage: React.FC = () => {
             Discover, Explore, and Connect with Businesses Nearby!
           </h6>
         </div>
-        {/* Feature cards at bottom of map */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-auto">
-          <div className="bg-gradient-to-t from-background via-background/90 to-transparent pt-8 pb-0 px-4">
-            <div className="grid grid-cols-2 gap-3">
+        {/* Feature cards at bottom of map - extends into background to remove gap */}
+        <div className="absolute -bottom-px left-0 right-0 z-10 pointer-events-auto">
+          <div className="bg-gradient-to-t from-background via-background/95 to-transparent pt-16 pb-0 px-4">
+            <div className="grid grid-cols-2 gap-3 pb-0 [&>*]:mb-0">
+              <div className="hidden" />
+            </div>
+            <div className="grid grid-cols-2 gap-3 -mt-px">
               {[
                 { icon: Store, title: 'Discover Businesses', desc: 'Find local shops, services, and attractions', color: 'text-amber-500' },
                 { icon: Bookmark, title: 'Save & Share', desc: 'Bookmark favorite spots and share them with friends', color: 'text-violet-500' },
