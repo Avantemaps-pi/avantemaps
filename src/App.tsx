@@ -14,6 +14,7 @@ import AuthenticatingOverlay from "@/components/auth/AuthenticatingOverlay";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import { initializePiNetwork } from "./utils/piNetwork";
+import { prefetchHighPriorityRoutes } from "@/lib/routePrefetch";
 
 // Lazy-loaded pages for code splitting
 const Recommendations = lazy(() => import("./pages/Recommendations"));
@@ -36,7 +37,18 @@ const Pricing = lazy(() => import("./pages/Pricing"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const NotificationAdmin = lazy(() => import("./pages/NotificationAdmin"));
 
-const queryClient = new QueryClient();
+// Cache query results across route navigations so revisiting a page
+// renders instantly from cache instead of refetching every time.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000, // 1 min — data considered fresh between nav
+      gcTime: 5 * 60 * 1000, // 5 min — keep in memory after unmount
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const PageLoader = () => (
   <div className="flex flex-col min-h-screen bg-background">
@@ -110,6 +122,12 @@ const App = () => {
       setIsDarkMode(false);
       localStorage.setItem('colorScheme', 'light');
     }
+  }, []);
+
+  // Warm the route cache for likely-next pages during idle time so
+  // the first navigation away from the landing/map page feels instant.
+  useEffect(() => {
+    prefetchHighPriorityRoutes();
   }, []);
 
 

@@ -3,6 +3,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/auth';
+import { prefetchRoute } from '@/lib/routePrefetch';
 
 interface NavItemProps {
   to: string;
@@ -54,6 +55,9 @@ const NavItem = ({
           isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "text-sidebar-foreground"
         )}
         onClick={handleClick}
+        onMouseEnter={() => !isLogout && prefetchRoute(to)}
+        onFocus={() => !isLogout && prefetchRoute(to)}
+        onTouchStart={() => !isLogout && prefetchRoute(to)}
       >
         <Icon className="h-4 w-4" />
         <span>{label}</span>
