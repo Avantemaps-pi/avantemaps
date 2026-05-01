@@ -154,12 +154,14 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         </MarkerClusterGroup>
       </MapContainer>
       
-      <PlaceOverlay 
-        selectedPlace={selectedPlace} 
-        showPopover={showPopover} 
-        onOverlayClick={handleOverlayClick}
-        detailCardRef={detailCardRef}
-      />
+      {!suppressOverlay && (
+        <PlaceOverlay 
+          selectedPlace={selectedPlace} 
+          showPopover={showPopover} 
+          onOverlayClick={handleOverlayClick}
+          detailCardRef={detailCardRef}
+        />
+      )}
     </div>
   );
 };
