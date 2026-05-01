@@ -89,7 +89,11 @@ const LandingPage: React.FC = () => {
               places={places}
               selectedPlaceId={null}
               onMarkerClick={() => {
+                const now = Date.now();
+                if (now - lastLoginToastRef.current < 4000) return;
+                lastLoginToastRef.current = now;
                 toast.info('Please log in to view business details', {
+                  id: 'landing-login-required',
                   description: 'Sign in with Pi Network to see full information.',
                 });
               }}
