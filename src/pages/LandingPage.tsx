@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Store, Search, MapPin, Users, Globe, User, Loader2, Bookmark, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
@@ -24,6 +24,7 @@ const LandingPage: React.FC = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const { places = [], isLoading: placesLoading } = useBusinessData();
+  const lastLoginToastRef = useRef(0);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -89,7 +90,11 @@ const LandingPage: React.FC = () => {
               places={places}
               selectedPlaceId={null}
               onMarkerClick={() => {
+                const now = Date.now();
+                if (now - lastLoginToastRef.current < 4000) return;
+                lastLoginToastRef.current = now;
                 toast.info('Please log in to view business details', {
+                  id: 'landing-login-required',
                   description: 'Sign in with Pi Network to see full information.',
                 });
               }}
