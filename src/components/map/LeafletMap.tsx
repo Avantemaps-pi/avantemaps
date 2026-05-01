@@ -19,6 +19,7 @@ interface LeafletMapProps {
   onMarkerClick?: (placeId: string) => void; 
   detailCardRef?: React.RefObject<HTMLDivElement>; 
   isLoading?: boolean; 
+  suppressOverlay?: boolean;
 }
 
 const LeafletMap: React.FC<LeafletMapProps> = ({ 
@@ -26,7 +27,8 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   selectedPlaceId = null,
   onMarkerClick,
   detailCardRef,
-  isLoading = false
+  isLoading = false,
+  suppressOverlay = false
 }) => {
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
   const [showPopover, setShowPopover] = useState(false);
@@ -103,6 +105,10 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   }, [displayPlaces]);
 
   const handleMarkerClick = (id: string) => {
+    if (suppressOverlay) {
+      if (onMarkerClick) onMarkerClick(id);
+      return;
+    }
     setActiveMarker(id);
     setShowPopover(true);
     
