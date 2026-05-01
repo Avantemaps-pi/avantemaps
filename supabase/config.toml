@@ -28,3 +28,6 @@ verify_jwt = false
 
 [functions.log-error]
 verify_jwt = false
+
+[functions.public-businesses]
+verify_jwt = false
