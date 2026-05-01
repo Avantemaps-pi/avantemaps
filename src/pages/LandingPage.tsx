@@ -2,6 +2,7 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Store, Search, MapPin, Users, Globe, User, Loader2, Bookmark, ChevronDown } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
@@ -87,8 +88,13 @@ const LandingPage: React.FC = () => {
             <LeafletMap
               places={places}
               selectedPlaceId={null}
-              onMarkerClick={() => {}}
+              onMarkerClick={() => {
+                toast.info('Please log in to view business details', {
+                  description: 'Sign in with Pi Network to see full information.',
+                });
+              }}
               isLoading={placesLoading}
+              suppressOverlay
             />
           </Suspense>
         </div>
