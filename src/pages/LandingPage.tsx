@@ -24,6 +24,7 @@ const LandingPage: React.FC = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const { places = [], isLoading: placesLoading } = useBusinessData();
+  const lastLoginToastRef = useRef(0);
 
   useEffect(() => {
     const fetchStats = async () => {
