@@ -15,6 +15,7 @@ import { BusinessSuggestion } from '@/hooks/useBusinessAutocomplete';
 import { useSearchTracking } from '@/hooks/useSearchTracking';
 import { useAuth } from '@/context/auth/useAuth';
 import LandingPage from './LandingPage';
+import { useIpLocationFocus } from '@/hooks/useIpLocationFocus';
 import '../styles/map.css';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
