@@ -30,6 +30,9 @@ const Index = () => {
   const { setOpenMobile } = useSidebar();
   const { trackBusinessSearch } = useSearchTracking();
 
+  // After login, focus the map on the user's approximate IP location (cached, once per session)
+  useIpLocationFocus(isAuthenticated && !authLoading);
+
   const handlePlaceClick = (placeId: string, zoomToLocation?: boolean) => {
     setSelectedPlace(placeId);
     if (zoomToLocation) {
