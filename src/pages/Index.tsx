@@ -15,6 +15,7 @@ import { BusinessSuggestion } from '@/hooks/useBusinessAutocomplete';
 import { useSearchTracking } from '@/hooks/useSearchTracking';
 import { useAuth } from '@/context/auth/useAuth';
 import LandingPage from './LandingPage';
+import { useIpLocationFocus } from '@/hooks/useIpLocationFocus';
 import '../styles/map.css';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
@@ -28,6 +29,9 @@ const Index = () => {
   const { places = [], filteredPlaces = [], isLoading = false, handleSearch } = useBusinessData();
   const { setOpenMobile } = useSidebar();
   const { trackBusinessSearch } = useSearchTracking();
+
+  // After login, focus the map on the user's approximate IP location (cached, once per session)
+  useIpLocationFocus(isAuthenticated && !authLoading);
 
   const handlePlaceClick = (placeId: string, zoomToLocation?: boolean) => {
     setSelectedPlace(placeId);
