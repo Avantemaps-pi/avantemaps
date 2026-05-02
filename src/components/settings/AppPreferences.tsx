@@ -54,6 +54,18 @@ const AppPreferences = ({
             </SelectContent>
           </Select>
         </div>
+
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pt-2 border-t">
+          <div className="space-y-0.5">
+            <Label htmlFor="use-location" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Use my location
+              <Badge variant="secondary" className="text-[10px] font-normal">Coming soon</Badge>
+            </Label>
+            <p className="text-muted-foreground text-sm">Focus the map on your approximate location when you sign in.</p>
+          </div>
+          <Switch id="use-location" disabled aria-label="Use my location (coming soon)" />
+        </div>
       </CardContent>
     </Card>
   );
