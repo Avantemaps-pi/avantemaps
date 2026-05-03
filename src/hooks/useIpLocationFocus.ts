@@ -19,6 +19,7 @@ interface CachedLocation {
 export function useIpLocationFocus(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
+    if (localStorage.getItem('use_location_focus') === '0') return;
     if (sessionStorage.getItem(SESSION_KEY) === '1') return;
 
     const dispatch = (lat: number, lng: number) => {
