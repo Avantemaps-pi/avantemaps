@@ -60,7 +60,13 @@ export async function startPayment(
 }
 
 /**
- * Execute a subscription payment with full flow
+ * Execute a subscription payment with full flow.
+ *
+ * NOTE: This is the per-period U2A flow used today. When the Pi Network
+ * PiRC2 subscription contract ships and `FEATURE_FLAGS.pirc2Subscriptions`
+ * is enabled (see `src/config/featureFlags.ts`), monthly renewals should
+ * be driven server-side via an allowance-based charge job instead.
+ * Rationale and migration plan: docs/pirc2-integration.md
  */
 export async function executeSubscriptionPayment(
   amount: number,

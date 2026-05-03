@@ -10,8 +10,13 @@ const SUBSCRIPTION_USD_PRICES: PricingStructure = {
 };
 
 /**
- * Determines the correct USD price based on tier and frequency
- * This returns USD amounts that will be converted to Pi by the payment hook
+ * Determines the correct USD price based on tier and frequency.
+ * This returns USD amounts that will be converted to Pi by the payment hook.
+ *
+ * Pricing here feeds the current per-period subscription flow. Under PiRC2
+ * (feature flag `pirc2Subscriptions`, see `src/config/featureFlags.ts`),
+ * these prices would map to PiRC2 Plan rows instead. See
+ * docs/pirc2-integration.md for the migration plan.
  */
 export const getSubscriptionPrice = (
   tier: SubscriptionTier,
