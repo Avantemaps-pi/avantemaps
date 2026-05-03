@@ -10,6 +10,11 @@ import { SubscriptionTier } from '@/utils/piNetwork';
 import { toast } from 'sonner';
 import { withPiErrorHandling } from '@/utils/piPayment/piErrorHandler';
 
+// TODO(PiRC2): When the Pi Network PiRC2 subscription contract ships and
+// `FEATURE_FLAGS.pirc2Subscriptions` is enabled, route monthly renewals
+// through the contract (server-side cron + allowance) instead of the
+// per-period U2A flow used here. See docs/pirc2-integration.md.
+
 export const useSubscriptionPayment = () => {
   const { user, isAuthenticated, login, refreshUserData } = useAuth();
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);

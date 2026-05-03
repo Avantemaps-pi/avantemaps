@@ -22,8 +22,8 @@ export const FEATURE_FLAGS = {
    *
    * See: docs/pirc2-integration.md for the full migration plan.
    */
-  pirc2Subscriptions: false,
-} as const;
+  pirc2Subscriptions: false as boolean,
+};
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;
 
