@@ -38,6 +38,18 @@ const Settings = () => {
   const [isAccountDeleted, setIsAccountDeleted] = useState(false);
   const [deletionDate, setDeletionDate] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>("profile");
+  const [useLocation, setUseLocation] = useState<boolean>(() => {
+    return localStorage.getItem('use_location_focus') !== '0';
+  });
+
+  const handleUseLocationChange = (value: boolean) => {
+    setUseLocation(value);
+    localStorage.setItem('use_location_focus', value ? '1' : '0');
+    if (!value) {
+      // Clear cached IP focus so disabling takes immediate effect on next login
+      sessionStorage.removeItem('ip_location_focused');
+    }
+  };
 
   // Check if account has a scheduled deletion
   useEffect(() => {
@@ -216,6 +228,8 @@ const Settings = () => {
               <AppPreferences 
                 colorScheme={colorScheme} 
                 onColorSchemeChange={handleColorSchemeChange} 
+                useLocation={useLocation}
+                onUseLocationChange={handleUseLocationChange}
               />
             </AccordionContent>
           </AccordionItem>
