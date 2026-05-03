@@ -5,16 +5,19 @@ import { Label } from '@/components/ui/label';
 import { Monitor, Sun, Moon, MapPin } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 
 interface AppPreferencesProps {
   colorScheme: 'system' | 'light' | 'dark';
   onColorSchemeChange: (scheme: 'system' | 'light' | 'dark') => void;
+  useLocation: boolean;
+  onUseLocationChange: (value: boolean) => void;
 }
 
 const AppPreferences = ({
   colorScheme,
   onColorSchemeChange,
+  useLocation,
+  onUseLocationChange,
 }: AppPreferencesProps) => {
   return (
     <Card className="overflow-hidden">
@@ -60,11 +63,17 @@ const AppPreferences = ({
             <Label htmlFor="use-location" className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               Use my location
-              <Badge variant="secondary" className="text-[10px] font-normal">Coming soon</Badge>
             </Label>
-            <p className="text-muted-foreground text-sm">Focus the map on your approximate location when you sign in.</p>
+            <p className="text-muted-foreground text-sm">
+              Focus the map on your approximate (IP-based) location when you sign in.
+            </p>
           </div>
-          <Switch id="use-location" disabled aria-label="Use my location (coming soon)" />
+          <Switch
+            id="use-location"
+            checked={useLocation}
+            onCheckedChange={onUseLocationChange}
+            aria-label="Use my location"
+          />
         </div>
       </CardContent>
     </Card>
