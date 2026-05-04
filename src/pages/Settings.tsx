@@ -51,6 +51,18 @@ const Settings = () => {
     }
   };
 
+  // Sync the toggle across tabs/windows via the storage event
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key !== 'use_location_focus' || e.storageArea !== localStorage) return;
+      const next = e.newValue !== '0';
+      setUseLocation((prev) => (prev === next ? prev : next));
+      if (!next) sessionStorage.removeItem('ip_location_focused');
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   // Check if account has a scheduled deletion
   useEffect(() => {
     const checkDeletionStatus = async () => {
