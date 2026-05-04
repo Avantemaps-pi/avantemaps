@@ -114,6 +114,31 @@ Deno.serve(async (req) => {
     
     console.log('Existing payment found:', !!existingPayment);
 
+    // Ownership guard: a payment_id must belong to the same user that initiated it
+    if (existingPayment && existingPayment.user_id !== paymentRequest.userId) {
+      console.error('Ownership mismatch on payment_id');
+      return new Response(
+        JSON.stringify({ success: false, message: 'Payment ownership mismatch' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
+    }
+
+    // Idempotency: terminal states return immediately, no Pi Network call
+    if (existingPayment?.status?.completed) {
+      console.log('Idempotent: payment already completed');
+      return new Response(
+        JSON.stringify({ success: true, message: 'Payment already completed', paymentId: paymentRequest.paymentId, txid: existingPayment.txid }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (existingPayment?.status?.cancelled && !isStalePayment(existingPayment)) {
+      console.log('Idempotent: payment already cancelled (terminal)');
+      return new Response(
+        JSON.stringify({ success: false, message: 'Payment was cancelled', paymentId: paymentRequest.paymentId }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+      );
+    }
+
     // Handle stale payments - automatically cancel them
     if (existingPayment && isStalePayment(existingPayment)) {
       console.log('Detected stale payment, attempting to cancel');
@@ -148,7 +173,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Check if payment was already approved (and not stale)
+    // Idempotent: payment already approved and still valid — skip Pi Network call
     if (existingPayment?.status?.approved && !isStalePayment(existingPayment)) {
       return new Response(
         JSON.stringify({ success: true, message: 'Payment was already approved', paymentId: paymentRequest.paymentId }),
