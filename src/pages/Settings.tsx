@@ -38,23 +38,29 @@ const Settings = () => {
   const [isAccountDeleted, setIsAccountDeleted] = useState(false);
   const [deletionDate, setDeletionDate] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>("profile");
-  const [useLocation, setUseLocation] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
+  // Deterministic SSR default: opt-in (true). Real value is hydrated from
+  // localStorage after mount to keep server and first client render identical.
+  const [useLocation, setUseLocation] = useState<boolean>(true);
+
+  // Hydrate from localStorage on mount (client-only)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
     try {
-      return window.localStorage.getItem('use_location_focus') !== '0';
+      const stored = window.localStorage?.getItem('use_location_focus');
+      if (stored === '0') setUseLocation(false);
     } catch {
-      return true;
+      // ignore — storage unavailable (private mode, disabled, etc.)
     }
-  });
+  }, []);
 
   const handleUseLocationChange = (value: boolean) => {
     setUseLocation(value);
     if (typeof window === 'undefined') return;
     try {
-      window.localStorage.setItem('use_location_focus', value ? '1' : '0');
+      window.localStorage?.setItem('use_location_focus', value ? '1' : '0');
       if (!value) {
         // Clear cached IP focus so disabling takes immediate effect on next login
-        window.sessionStorage.removeItem('ip_location_focused');
+        window.sessionStorage?.removeItem('ip_location_focused');
       }
     } catch {
       // ignore storage errors (private mode, quota, etc.)
@@ -64,13 +70,24 @@ const Settings = () => {
   // Sync the toggle across tabs/windows via the storage event
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    let ls: Storage | null = null;
+    try {
+      ls = window.localStorage ?? null;
+    } catch {
+      ls = null;
+    }
+    if (!ls) return;
+
     const handleStorage = (e: StorageEvent) => {
-      if (e.key !== 'use_location_focus' || e.storageArea !== window.localStorage) return;
-      const next = e.newValue !== '0';
+      if (!e || e.key !== 'use_location_focus') return;
+      // storageArea may be missing in some environments — only compare when present
+      if (e.storageArea && e.storageArea !== ls) return;
+      // newValue is null when the key is cleared; treat that as the default (true)
+      const next = e.newValue == null ? true : e.newValue !== '0';
       setUseLocation((prev) => (prev === next ? prev : next));
       if (!next) {
         try {
-          window.sessionStorage.removeItem('ip_location_focused');
+          window.sessionStorage?.removeItem('ip_location_focused');
         } catch {
           // ignore
         }
