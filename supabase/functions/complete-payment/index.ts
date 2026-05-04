@@ -79,6 +79,59 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Idempotency + ownership pre-check
+    const { data: existingPayment, error: lookupError } = await supabaseClient
+      .from('payments')
+      .select('user_id, txid, status')
+      .eq('payment_id', paymentRequest.paymentId)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error('Database lookup error:', lookupError);
+      return new Response(
+        JSON.stringify({ success: false, message: 'Payment processing failed. Please try again.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+
+    if (existingPayment && existingPayment.user_id !== paymentRequest.userId) {
+      console.error('Ownership mismatch on payment_id');
+      return new Response(
+        JSON.stringify({ success: false, message: 'Payment ownership mismatch' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
+    }
+
+    // Terminal: already completed — return immediately, no external call
+    if (existingPayment?.status?.completed) {
+      if (existingPayment.txid && existingPayment.txid !== paymentRequest.txid) {
+        console.error('txid mismatch on completed payment');
+        return new Response(
+          JSON.stringify({ success: false, message: 'Transaction ID mismatch on completed payment' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+        );
+      }
+      console.log('Idempotent: payment already completed');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Payment was already completed',
+          paymentId: paymentRequest.paymentId,
+          txid: existingPayment.txid ?? paymentRequest.txid,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Terminal: cancelled — refuse to complete
+    if (existingPayment?.status?.cancelled) {
+      console.log('Refusing to complete a cancelled payment');
+      return new Response(
+        JSON.stringify({ success: false, message: 'Payment was cancelled and cannot be completed' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+      );
+    }
+
     // Step 7: Server-Side Completion - Call Pi Servers /complete API
     try {
       const piNetworkApiUrl = 'https://api.minepi.com/v2/payments';
