@@ -39,25 +39,42 @@ const Settings = () => {
   const [deletionDate, setDeletionDate] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>("profile");
   const [useLocation, setUseLocation] = useState<boolean>(() => {
-    return localStorage.getItem('use_location_focus') !== '0';
+    if (typeof window === 'undefined') return true;
+    try {
+      return window.localStorage.getItem('use_location_focus') !== '0';
+    } catch {
+      return true;
+    }
   });
 
   const handleUseLocationChange = (value: boolean) => {
     setUseLocation(value);
-    localStorage.setItem('use_location_focus', value ? '1' : '0');
-    if (!value) {
-      // Clear cached IP focus so disabling takes immediate effect on next login
-      sessionStorage.removeItem('ip_location_focused');
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('use_location_focus', value ? '1' : '0');
+      if (!value) {
+        // Clear cached IP focus so disabling takes immediate effect on next login
+        window.sessionStorage.removeItem('ip_location_focused');
+      }
+    } catch {
+      // ignore storage errors (private mode, quota, etc.)
     }
   };
 
   // Sync the toggle across tabs/windows via the storage event
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const handleStorage = (e: StorageEvent) => {
-      if (e.key !== 'use_location_focus' || e.storageArea !== localStorage) return;
+      if (e.key !== 'use_location_focus' || e.storageArea !== window.localStorage) return;
       const next = e.newValue !== '0';
       setUseLocation((prev) => (prev === next ? prev : next));
-      if (!next) sessionStorage.removeItem('ip_location_focused');
+      if (!next) {
+        try {
+          window.sessionStorage.removeItem('ip_location_focused');
+        } catch {
+          // ignore
+        }
+      }
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
