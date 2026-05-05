@@ -179,7 +179,7 @@ const Index = () => {
       <div className="absolute inset-0 w-full h-full">
         <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
           <LeafletMap
-            places={filteredPlaces.length > 0 ? filteredPlaces : places}
+            places={visiblePlaces}
             selectedPlaceId={selectedPlace}
             onMarkerClick={handlePlaceClick}
             isLoading={isLoading}
