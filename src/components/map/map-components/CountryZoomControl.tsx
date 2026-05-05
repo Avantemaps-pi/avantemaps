@@ -38,6 +38,13 @@ const CountryZoomControl: React.FC = () => {
   // Reposition above the Add Business button on any layout change
   useLayoutEffect(() => {
     const mapEl = map.getContainer();
+    let trackedBtn: HTMLElement | null = null;
+    let ro: ResizeObserver | null = null;
+    let mo: MutationObserver | null = null;
+    let bodyObserver: MutationObserver | null = null;
+    let pollId: number | null = null;
+    let pollAttempts = 0;
+    const MAX_POLL_ATTEMPTS = 40; // ~4s at 100ms
 
     const recompute = () => {
       const addBtn = document.querySelector<HTMLElement>('[data-add-business-button]');
@@ -45,52 +52,89 @@ const CountryZoomControl: React.FC = () => {
         setBottom(FALLBACK_BOTTOM);
         return;
       }
-      const mapRect = mapEl.getBoundingClientRect();
       const btnRect = addBtn.getBoundingClientRect();
-      // Distance from map's bottom edge up to the top of the + button + gap
+      // If button is rendered but has zero size (not laid out yet), keep fallback
+      if (btnRect.height === 0 && btnRect.width === 0) {
+        setBottom(FALLBACK_BOTTOM);
+        return;
+      }
+      const mapRect = mapEl.getBoundingClientRect();
       const next = Math.max(0, mapRect.bottom - btnRect.top + GAP_PX);
       setBottom(next);
+
+      // Attach observers/listeners to the button the first time we see it
+      if (addBtn !== trackedBtn) {
+        if (trackedBtn) {
+          ro?.unobserve(trackedBtn);
+          trackedBtn.removeEventListener('transitionend', recompute);
+        }
+        trackedBtn = addBtn;
+        ro?.observe(addBtn);
+        mo?.disconnect();
+        mo = new MutationObserver(recompute);
+        mo.observe(addBtn, {
+          attributes: true,
+          attributeFilter: ['class', 'style'],
+          childList: true,
+          subtree: true,
+        });
+        addBtn.addEventListener('transitionend', recompute);
+        // Found it — stop polling and stop observing body for it
+        if (pollId !== null) {
+          window.clearInterval(pollId);
+          pollId = null;
+        }
+        bodyObserver?.disconnect();
+        bodyObserver = null;
+      }
     };
+
+    // Core observers
+    ro = new ResizeObserver(recompute);
+    ro.observe(mapEl);
+
+    // Window-level
+    window.addEventListener('resize', recompute);
+    window.addEventListener('orientationchange', recompute);
+    map.on('resize', recompute);
 
     recompute();
 
-    // 1. Viewport / orientation
-    window.addEventListener('resize', recompute);
-    window.addEventListener('orientationchange', recompute);
+    // Fallback strategy when the + button isn't in the DOM yet
+    // (lazy Suspense boundary, route transition, conditional render, etc.)
+    if (!trackedBtn) {
+      // a) Poll briefly — cheap and bounded
+      pollId = window.setInterval(() => {
+        pollAttempts += 1;
+        recompute();
+        if (trackedBtn || pollAttempts >= MAX_POLL_ATTEMPTS) {
+          if (pollId !== null) {
+            window.clearInterval(pollId);
+            pollId = null;
+          }
+        }
+      }, 100);
 
-    // 2. Map container size (Leaflet emits this on programmatic resizes too)
-    map.on('resize', recompute);
-
-    // 3. Layout shifts of the map or the + button (font scaling, sidebar, etc.)
-    const ro = new ResizeObserver(recompute);
-    ro.observe(mapEl);
-    const addBtn = document.querySelector<HTMLElement>('[data-add-business-button]');
-    if (addBtn) ro.observe(addBtn);
-
-    // 4. The + button slides horizontally / re-renders when a place is selected.
-    //    Watch for class/style changes on it and on its subtree.
-    let mo: MutationObserver | null = null;
-    if (addBtn) {
-      mo = new MutationObserver(recompute);
-      mo.observe(addBtn, {
-        attributes: true,
-        attributeFilter: ['class', 'style'],
+      // b) Watch the document for the button being added or its
+      //    data attribute appearing later.
+      bodyObserver = new MutationObserver(() => recompute());
+      bodyObserver.observe(document.body, {
         childList: true,
         subtree: true,
+        attributes: true,
+        attributeFilter: ['data-add-business-button'],
       });
     }
-
-    // 5. After CSS transitions on the + button finish, re-measure once.
-    const onTransitionEnd = () => recompute();
-    addBtn?.addEventListener('transitionend', onTransitionEnd);
 
     return () => {
       window.removeEventListener('resize', recompute);
       window.removeEventListener('orientationchange', recompute);
       map.off('resize', recompute);
-      ro.disconnect();
+      ro?.disconnect();
       mo?.disconnect();
-      addBtn?.removeEventListener('transitionend', onTransitionEnd);
+      bodyObserver?.disconnect();
+      if (pollId !== null) window.clearInterval(pollId);
+      trackedBtn?.removeEventListener('transitionend', recompute);
     };
   }, [map]);
 
