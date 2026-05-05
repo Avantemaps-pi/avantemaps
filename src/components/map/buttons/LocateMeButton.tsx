@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 
 const CACHE_KEY = 'ip_location_cache_v1';
 const TTL_MS = 24 * 60 * 60 * 1000;
+const TOAST_ID = 'locate-me';
 
 interface CachedLocation { lat: number; lng: number; ts: number }
 
@@ -17,13 +18,15 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
 
   const handleClick = async () => {
     if (loading) return;
-    // Try cache first
+
+    // Try cache first — instant, no loading state needed
     try {
       const raw = localStorage.getItem(CACHE_KEY);
       if (raw) {
         const cached: CachedLocation = JSON.parse(raw);
         if (Date.now() - cached.ts < TTL_MS) {
           dispatchCenter(cached.lat, cached.lng);
+          toast.success('Centered on your approximate location', { id: TOAST_ID });
           return;
         }
       }
@@ -32,8 +35,14 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
     }
 
     setLoading(true);
+    toast.loading('Resolving your location…', {
+      id: TOAST_ID,
+      description: 'Using IP-based location (privacy-friendly).',
+    });
+
     try {
       const res = await fetch('https://ipwho.is/?fields=success,latitude,longitude');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (data?.success && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
         localStorage.setItem(
@@ -41,11 +50,18 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
           JSON.stringify({ lat: data.latitude, lng: data.longitude, ts: Date.now() })
         );
         dispatchCenter(data.latitude, data.longitude);
+        toast.success('Centered on your approximate location', { id: TOAST_ID });
       } else {
-        toast.error("Couldn't determine your location");
+        toast.error("Couldn't determine your location", {
+          id: TOAST_ID,
+          description: data?.message || 'The location service returned no data. Please try again.',
+        });
       }
-    } catch {
-      toast.error("Couldn't determine your location");
+    } catch (err) {
+      toast.error("Couldn't determine your location", {
+        id: TOAST_ID,
+        description: 'Network or service error. Check your connection and try again.',
+      });
     } finally {
       setLoading(false);
     }
@@ -55,10 +71,12 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
     <button
       type="button"
       onClick={handleClick}
-      aria-label="Locate me"
-      title="Locate me"
+      disabled={loading}
+      aria-label={loading ? 'Resolving your location' : 'Locate me'}
+      aria-busy={loading}
+      title={loading ? 'Resolving your location…' : 'Locate me'}
       className={cn(
-        'h-10 w-10 rounded-full bg-background/95 backdrop-blur-sm border border-border shadow-md flex items-center justify-center text-foreground hover:bg-accent transition-colors',
+        'h-10 w-10 rounded-full bg-background/95 backdrop-blur-sm border border-border shadow-md flex items-center justify-center text-foreground hover:bg-accent transition-colors disabled:opacity-70 disabled:cursor-progress',
         className
       )}
     >
