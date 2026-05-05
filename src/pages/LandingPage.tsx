@@ -135,55 +135,61 @@ const LandingPage: React.FC = () => {
 
       {/* Stats Section */}
       <section className="px-4 pt-2 pb-6 bg-background">
-        <h2 className="text-lg font-bold text-foreground text-center mb-4">Our Growing Community</h2>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { icon: Store, value: stats.business_count, label: 'Businesses' },
-            { icon: Users, value: stats.user_count, label: 'Users' },
-            { icon: Globe, value: stats.country_count || 1, label: 'Countries' },
-          ].map(({ icon: Icon, value, label }) => (
-            <div key={label} className="flex flex-col items-center gap-1 p-3 rounded-xl bg-card border border-border">
-              <Icon className="h-5 w-5 text-primary mb-1" />
-              <span className="text-xl font-bold text-foreground">{value}+</span>
-              <span className="text-xs text-muted-foreground">{label}</span>
-            </div>
-          ))}
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-lg md:text-2xl font-bold text-foreground text-center mb-4">Our Growing Community</h2>
+          <div className="grid grid-cols-3 gap-3 md:gap-6">
+            {[
+              { icon: Store, value: stats.business_count, label: 'Businesses' },
+              { icon: Users, value: stats.user_count, label: 'Users' },
+              { icon: Globe, value: stats.country_count || 1, label: 'Countries' },
+            ].map(({ icon: Icon, value, label }) => (
+              <div key={label} className="flex flex-col items-center gap-1 p-3 md:p-5 rounded-xl bg-card border border-border">
+                <Icon className="h-5 w-5 md:h-6 md:w-6 text-primary mb-1" />
+                <span className="text-xl md:text-3xl font-bold text-foreground">{value}+</span>
+                <span className="text-xs md:text-sm text-muted-foreground">{label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Problem Section */}
       <section className="px-4 py-6">
-        <h2 className="text-lg font-bold text-foreground mb-2">The Problem</h2>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Pi holders struggle to find real places to spend their cryptocurrency. Businesses that accept Pi have no easy way to get discovered by potential customers.
-        </p>
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-lg md:text-2xl font-bold text-foreground mb-2">The Problem</h2>
+          <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+            Pi holders struggle to find real places to spend their cryptocurrency. Businesses that accept Pi have no easy way to get discovered by potential customers.
+          </p>
+        </div>
       </section>
 
       {/* Solution Section */}
       <section className="px-4 py-6 bg-muted/30">
-        <h2 className="text-lg font-bold text-foreground mb-4">How Avante Maps Helps</h2>
-        <div className="space-y-4">
-          {[
-            { title: 'For Pi Holders', desc: 'Find businesses near you that accept Pi. Explore, review, and save your favorites.' },
-            { title: 'For Business Owners', desc: 'Register your business for free. Get discovered by Pi users in your area.' },
-            { title: 'For the Community', desc: 'Build a thriving Pi economy by connecting buyers and sellers in one place.' },
-          ].map(({ title, desc }) => (
-            <div key={title} className="flex gap-3 items-start">
-              <div className="mt-1 h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-lg md:text-2xl font-bold text-foreground mb-4">How Avante Maps Helps</h2>
+          <div className="space-y-4 md:grid md:grid-cols-3 md:gap-6 md:space-y-0">
+            {[
+              { title: 'For Pi Holders', desc: 'Find businesses near you that accept Pi. Explore, review, and save your favorites.' },
+              { title: 'For Business Owners', desc: 'Register your business for free. Get discovered by Pi users in your area.' },
+              { title: 'For the Community', desc: 'Build a thriving Pi economy by connecting buyers and sellers in one place.' },
+            ].map(({ title, desc }) => (
+              <div key={title} className="flex gap-3 items-start md:flex-col md:items-start">
+                <div className="mt-1 h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                <div>
+                  <h3 className="text-sm md:text-base font-semibold text-foreground">{title}</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground mt-0.5">{desc}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Final CTA */}
       <section className="px-4 py-8">
-        <div className="text-center space-y-4">
-          <h2 className="text-lg font-bold text-foreground">Ready to Get Started?</h2>
-          <p className="text-sm text-muted-foreground">Join the growing Pi business community today.</p>
+        <div className="max-w-3xl mx-auto text-center space-y-4">
+          <h2 className="text-lg md:text-2xl font-bold text-foreground">Ready to Get Started?</h2>
+          <p className="text-sm md:text-base text-muted-foreground">Join the growing Pi business community today.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button onClick={handleLoginWithPi} size="lg" className="rounded-full w-full sm:w-auto">
               Explore the Map
