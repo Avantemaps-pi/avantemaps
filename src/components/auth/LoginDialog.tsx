@@ -55,6 +55,21 @@ interface LoginDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Cooldown thresholds: kick in after the 2nd consecutive failure.
+// Durations escalate: 15s, 30s, 60s, then cap at 120s.
+const COOLDOWN_TRIGGER_AT = 2;
+const COOLDOWN_STEPS_SECONDS = [15, 30, 60, 120];
+
+// Module-scoped state survives dialog close/reopen within a session
+let persistentFailureCount = 0;
+let persistentCooldownUntil = 0;
+
+const computeCooldownSeconds = (failures: number): number => {
+  if (failures < COOLDOWN_TRIGGER_AT) return 0;
+  const idx = Math.min(failures - COOLDOWN_TRIGGER_AT, COOLDOWN_STEPS_SECONDS.length - 1);
+  return COOLDOWN_STEPS_SECONDS[idx];
+};
+
 const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const { login, isLoading, authError } = useAuth();
   const [sdkAvailable, setSdkAvailable] = useState<boolean>(false);
@@ -62,14 +77,31 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const [showTroubleshooting, setShowTroubleshooting] = useState<boolean>(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [attemptCount, setAttemptCount] = useState<number>(0);
+  const [failureCount, setFailureCount] = useState<number>(persistentFailureCount);
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(() =>
+    Math.max(0, Math.ceil((persistentCooldownUntil - Date.now()) / 1000))
+  );
 
-  // Reset local error when dialog re-opens
+  // Reset transient UI state when dialog re-opens, but keep persistent
+  // failure/cooldown state so users can't bypass by closing the dialog.
   useEffect(() => {
     if (open) {
       setLocalError(null);
       setAttemptCount(0);
+      setFailureCount(persistentFailureCount);
+      setCooldownRemaining(Math.max(0, Math.ceil((persistentCooldownUntil - Date.now()) / 1000)));
     }
   }, [open]);
+
+  // Tick down the cooldown every second while active and dialog is open
+  useEffect(() => {
+    if (!open || cooldownRemaining <= 0) return;
+    const id = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((persistentCooldownUntil - Date.now()) / 1000));
+      setCooldownRemaining(remaining);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [open, cooldownRemaining]);
 
   useEffect(() => {
     // In preview/dev environments, allow login even without SDK
