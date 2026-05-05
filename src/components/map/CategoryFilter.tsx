@@ -26,15 +26,13 @@ interface CategoryFilterProps {
 
 const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategoryId, onSelect, className }) => {
   return (
-    <div
-      className={cn(
-        'flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 py-1',
-        className
-      )}
-      role="tablist"
-      aria-label="Filter businesses by category"
-    >
-      {CATEGORY_OPTIONS.map(({ id, label, icon: Icon }) => {
+    <div className={cn('relative -mx-1', className)}>
+      <div
+        className="flex gap-2 overflow-x-auto no-scrollbar px-1 py-1"
+        role="tablist"
+        aria-label="Filter businesses by category"
+      >
+        {CATEGORY_OPTIONS.map(({ id, label, icon: Icon }) => {
         const active = id === selectedCategoryId;
         return (
           <button
@@ -54,7 +52,12 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategoryId, onS
             {label}
           </button>
         );
-      })}
+        })}
+      </div>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-background/95 to-transparent"
+      />
     </div>
   );
 };
