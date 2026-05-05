@@ -264,7 +264,7 @@ const Index = () => {
       <Suspense fallback={null}>
         <AddBusinessButton selectedPlace={selectedPlace} />
       </Suspense>
-      <LocateMeButton className="absolute right-3 bottom-24 z-30 sm:bottom-6" />
+      <LocateMeButton className="absolute right-6 bottom-36 sm:bottom-20 z-20" />
       <BottomNavBar />
     </div>
   );
