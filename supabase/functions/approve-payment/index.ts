@@ -3,12 +3,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import {
-  getOrCreateCorrelationId,
+  getOrCreateLifecycleId,
   makeLogger,
   correlationHeaders,
 } from '../_shared/logger.ts';
 
-// Validation schema for payment requests with strict input validation
+const FN = 'approve-payment';
+
 const PaymentRequestSchema = z.object({
   paymentId: z.string()
     .min(1, 'Payment ID is required')
@@ -54,50 +55,42 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const correlationId = getOrCreateCorrelationId(req);
-  const log = makeLogger({ fn: 'approve-payment', correlationId });
+  const lifecycleId = getOrCreateLifecycleId(req);
+  const log = makeLogger({ fn: FN, lifecycleId });
   const startTime = Date.now();
 
   const respond = (body: Record<string, unknown>, status = 200) =>
-    new Response(JSON.stringify({ ...body, correlationId }), {
+    new Response(JSON.stringify({ ...body, lifecycleId, correlationId: lifecycleId }), {
       headers: {
         ...corsHeaders,
-        ...correlationHeaders(correlationId),
+        ...correlationHeaders(lifecycleId),
         'Content-Type': 'application/json',
       },
       status,
     });
 
-  log.info('approve.start');
+  log.info(`${FN}.request.received`, { stage: 'validation' });
 
   try {
     const rawBody = await req.json();
     const validationResult = PaymentRequestSchema.safeParse(rawBody);
 
     if (!validationResult.success) {
-      log.warn('approve.validation_failed', {
-        errors: validationResult.error.errors.map(e => ({
-          field: e.path.join('.'),
-          message: e.message,
-        })),
-      });
-      return respond({
-        success: false,
-        message: 'Invalid request data',
-        errors: validationResult.error.errors.map(e => ({
-          field: e.path.join('.'),
-          message: e.message,
-        })),
-      }, 400);
+      const errors = validationResult.error.errors.map(e => ({
+        field: e.path.join('.'),
+        message: e.message,
+      }));
+      log.warn(`${FN}.validation.failed`, { stage: 'validation', errors });
+      return respond({ success: false, message: 'Invalid request data', errors }, 400);
     }
 
     const paymentRequest = validationResult.data;
     log.extend({ paymentId: paymentRequest.paymentId, userId: paymentRequest.userId });
-    log.info('approve.request_validated', { amount: paymentRequest.amount });
+    log.info(`${FN}.validation.ok`, { stage: 'validation', amount: paymentRequest.amount });
 
     const piApiKey = Deno.env.get('PI_API_KEY');
     if (!piApiKey) {
-      log.error('approve.pi_api_key_missing');
+      log.error(`${FN}.config.missing_api_key`, { stage: 'error' });
       return respond({ success: false, message: 'Payment service not configured' }, 500);
     }
 
@@ -108,24 +101,30 @@ Deno.serve(async (req) => {
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') {
-      log.error('approve.db_check_error', { code: checkError.code, message: checkError.message });
+      log.error(`${FN}.lookup.error`, {
+        stage: 'lookup',
+        code: checkError.code,
+        message: checkError.message,
+      });
       return respond({ success: false, message: 'Payment processing failed. Please try again.' }, 500);
     }
 
-    log.info('approve.existing_lookup', {
+    log.info(`${FN}.lookup.ok`, {
+      stage: 'lookup',
       exists: !!existingPayment,
       currentStatus: existingPayment?.status ?? null,
     });
 
     if (existingPayment && existingPayment.user_id !== paymentRequest.userId) {
-      log.error('approve.ownership_mismatch', {
+      log.error(`${FN}.lookup.ownership_mismatch`, {
+        stage: 'lookup',
         ownerOnRecord: existingPayment.user_id,
       });
       return respond({ success: false, message: 'Payment ownership mismatch' }, 403);
     }
 
     if (existingPayment?.status?.completed) {
-      log.info('approve.terminal.already_completed');
+      log.info(`${FN}.terminal.idempotent`, { stage: 'transition', terminalReason: 'completed' });
       return respond({
         success: true,
         message: 'Payment already completed',
@@ -134,7 +133,7 @@ Deno.serve(async (req) => {
       });
     }
     if (existingPayment?.status?.cancelled && !isStalePayment(existingPayment)) {
-      log.info('approve.terminal.already_cancelled');
+      log.info(`${FN}.terminal.idempotent`, { stage: 'transition', terminalReason: 'cancelled' });
       return respond({
         success: false,
         message: 'Payment was cancelled',
@@ -143,7 +142,7 @@ Deno.serve(async (req) => {
     }
 
     if (existingPayment && isStalePayment(existingPayment)) {
-      log.warn('approve.stale_detected');
+      log.warn(`${FN}.stale.detected`, { stage: 'lookup' });
       try {
         const piNetworkApiUrl = 'https://api.minepi.com/v2/payments';
         await fetch(`${piNetworkApiUrl}/${paymentRequest.paymentId}/cancel`, {
@@ -165,19 +164,20 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString(),
         }).eq('payment_id', paymentRequest.paymentId);
 
-        log.info('approve.transition', {
-          from: existingPayment.status,
-          to: 'cancelled_stale',
+        log.transition(existingPayment.status, { cancelled: true }, {
+          terminalReason: 'cancelled',
+          reason: 'stale',
         });
       } catch (cancelError) {
-        log.error('approve.stale_cancel_error', {
+        log.error(`${FN}.stale.cancel_error`, {
+          stage: 'error',
           message: cancelError instanceof Error ? cancelError.message : String(cancelError),
         });
       }
     }
 
     if (existingPayment?.status?.approved && !isStalePayment(existingPayment)) {
-      log.info('approve.terminal.already_approved');
+      log.info(`${FN}.terminal.idempotent`, { stage: 'transition', terminalReason: null, note: 'already_approved' });
       return respond({
         success: true,
         message: 'Payment was already approved',
@@ -202,17 +202,17 @@ Deno.serve(async (req) => {
           },
         });
       if (error && error.code !== '23505') {
-        log.error('approve.insert_error', { code: error.code, message: error.message });
+        log.error(`${FN}.db_write.insert_error`, {
+          stage: 'db_write',
+          code: error.code,
+          message: error.message,
+        });
         return respond({ success: false, message: 'Payment processing failed. Please try again.' }, 500);
       }
-      log.info('approve.transition', {
-        from: 'none',
-        to: 'created',
-        idempotent: error?.code === '23505',
-      });
+      log.transition('none', 'pending', { idempotent: error?.code === '23505' });
     }
 
-    log.info('approve.pi_api.call');
+    log.info(`${FN}.pi_api.call`, { stage: 'pi_api' });
     try {
       const piNetworkApiUrl = 'https://api.minepi.com/v2/payments';
       const approveResponse = await fetch(`${piNetworkApiUrl}/${paymentRequest.paymentId}/approve`, {
@@ -224,7 +224,8 @@ Deno.serve(async (req) => {
       });
 
       const approveResult = await approveResponse.json();
-      log.info('approve.pi_api.response', {
+      log.info(`${FN}.pi_api.response`, {
+        stage: 'pi_api',
         ok: approveResponse.ok,
         status: approveResponse.status,
       });
@@ -241,7 +242,7 @@ Deno.serve(async (req) => {
             updated_at: new Date().toISOString(),
           }).eq('payment_id', paymentRequest.paymentId);
 
-          log.info('approve.transition', { from: 'pending', to: 'approved', source: 'pi_already_approved' });
+          log.transition('pending', 'approved', { source: 'pi_already_approved' });
           return respond({
             success: true,
             message: 'Payment was already approved',
@@ -260,8 +261,8 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString(),
         }).eq('payment_id', paymentRequest.paymentId);
 
-        log.error('approve.pi_api.error', { result: approveResult });
-        log.info('approve.transition', { from: 'pending', to: 'cancelled_error' });
+        log.error(`${FN}.pi_api.error`, { stage: 'pi_api', result: approveResult });
+        log.transition('pending', 'cancelled', { terminalReason: 'error', source: 'pi_api_error' });
         return respond({ success: false, message: 'Payment approval failed. Please try again.' }, 502);
       }
 
@@ -274,7 +275,7 @@ Deno.serve(async (req) => {
         },
         updated_at: new Date().toISOString(),
       }).eq('payment_id', paymentRequest.paymentId);
-      log.info('approve.transition', { from: 'pending', to: 'approved' });
+      log.transition('pending', 'approved');
 
       const subscriptionTier = determineSubscriptionTier(paymentRequest.amount, paymentRequest.metadata);
       const duration = Number(paymentRequest.metadata?.duration) || null;
@@ -308,25 +309,34 @@ Deno.serve(async (req) => {
                 start_date: now.toISOString(),
                 end_date: endDate?.toISOString() || null,
               });
-            if (subError) log.warn('approve.subscription_history_error', { message: subError.message });
+            if (subError) {
+              log.warn(`${FN}.db_write.subscription_history_error`, {
+                stage: 'db_write',
+                message: subError.message,
+              });
+            }
           } else {
-            log.warn('approve.user_update_error', { message: updateError.message });
+            log.warn(`${FN}.db_write.user_update_error`, {
+              stage: 'db_write',
+              message: updateError.message,
+            });
           }
         } else {
-          log.info('approve.subscription_unchanged');
+          log.info(`${FN}.subscription.unchanged`, { stage: 'db_write' });
         }
       } else {
-        log.warn('approve.user_not_found');
+        log.warn(`${FN}.lookup.user_not_found`, { stage: 'lookup' });
       }
 
-      log.info('approve.complete', { durationMs: Date.now() - startTime });
+      log.info(`${FN}.done`, { stage: 'done', durationMs: Date.now() - startTime });
       return respond({
         success: true,
         message: 'Payment approved successfully',
         paymentId: paymentRequest.paymentId,
       });
     } catch (apiError) {
-      log.error('approve.pi_api.exception', {
+      log.error(`${FN}.pi_api.exception`, {
+        stage: 'pi_api',
         message: apiError instanceof Error ? apiError.message : String(apiError),
       });
       await supabaseClient.from('payments').update({
@@ -339,12 +349,13 @@ Deno.serve(async (req) => {
         },
         updated_at: new Date().toISOString(),
       }).eq('payment_id', paymentRequest.paymentId);
-      log.info('approve.transition', { from: 'pending', to: 'cancelled_api_error' });
+      log.transition('pending', 'cancelled', { terminalReason: 'error', source: 'pi_api_exception' });
 
       return respond({ success: false, message: 'Payment service temporarily unavailable. Please try again.' }, 502);
     }
   } catch (error) {
-    log.error('approve.unhandled', {
+    log.error(`${FN}.unhandled`, {
+      stage: 'error',
       message: error instanceof Error ? error.message : String(error),
     });
     return respond({ success: false, message: 'Payment service error. Please try again later.' }, 500);
