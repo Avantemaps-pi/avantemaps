@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/context/auth';
 import {
   executeSubscriptionPayment,
@@ -9,6 +9,7 @@ import { approvePayment } from '@/api/payments';
 import { SubscriptionTier } from '@/utils/piNetwork';
 import { toast } from 'sonner';
 import { withPiErrorHandling } from '@/utils/piPayment/piErrorHandler';
+import { usePaymentStatusPolling } from '@/hooks/usePaymentStatusPolling';
 
 // TODO(PiRC2): When the Pi Network PiRC2 subscription contract ships and
 // `FEATURE_FLAGS.pirc2Subscriptions` is enabled, route monthly renewals
