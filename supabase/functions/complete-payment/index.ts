@@ -197,6 +197,7 @@ Deno.serve(async (req) => {
             cancelled: true,
             error: `Pi Network completion API error: ${JSON.stringify(completeResult)}`,
           },
+          lifecycle_id: lifecycleId,
           updated_at: new Date().toISOString(),
         }).eq('payment_id', paymentRequest.paymentId);
 
