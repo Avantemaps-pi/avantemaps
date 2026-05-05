@@ -203,7 +203,7 @@ const Index = () => {
           <AvanteMapLogo size="small" />
         </div>
         
-        <div className="flex-1 max-w-xs sm:max-w-md md:max-w-lg mx-auto md:ml-6 lg:ml-8">
+        <div className="flex-1 min-w-0">
           <div className="space-y-2">
             <SearchBar 
               onSearch={handleSearchChange}
