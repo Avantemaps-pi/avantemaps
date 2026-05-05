@@ -1,6 +1,11 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
+import {
+  getOrCreateCorrelationId,
+  makeLogger,
+  correlationHeaders,
+} from '../_shared/logger.ts';
 
 interface StatusRequest {
   paymentId: string;
