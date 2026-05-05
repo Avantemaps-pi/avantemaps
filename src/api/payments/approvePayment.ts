@@ -1,39 +1,47 @@
 /**
  * Payment approval endpoint
  *
- * Calls the `approve-payment` Supabase Edge Function. Forwards an
- * end-to-end correlation ID via `x-correlation-id` so client and server
- * logs can be lined up across the entire payment lifecycle.
+ * Calls the `approve-payment` Supabase Edge Function. Forwards the
+ * end-to-end lifecycle ID via `x-lifecycle-id` (and `x-correlation-id`
+ * for backwards compat) so client and server logs can be lined up.
  */
 import { supabase } from '@/integrations/supabase/client';
 import { PaymentRequest, PaymentResponse } from './types';
 import {
   correlationHeaders,
-  generateCorrelationId,
-  CORRELATION_HEADER,
+  generateLifecycleId,
 } from '@/utils/correlation';
+
+const FN = 'client.approve-payment';
+
+function emit(
+  level: 'info' | 'warn' | 'error',
+  event: string,
+  base: Record<string, unknown>,
+  extra?: Record<string, unknown>
+) {
+  const line = JSON.stringify({
+    ts: new Date().toISOString(),
+    level,
+    event,
+    fn: FN,
+    ...base,
+    ...(extra ?? {}),
+  });
+  if (level === 'error') console.error(line);
+  else if (level === 'warn') console.warn(line);
+  else console.log(line);
+}
 
 export const approvePayment = async (
   req: PaymentRequest,
-  opts: { correlationId?: string } = {}
-): Promise<PaymentResponse & { correlationId: string }> => {
-  const correlationId = opts.correlationId ?? generateCorrelationId('approve');
-  const log = (level: 'info' | 'warn' | 'error', event: string, extra?: Record<string, unknown>) => {
-    const line = JSON.stringify({
-      ts: new Date().toISOString(),
-      level,
-      event,
-      fn: 'client.approvePayment',
-      correlationId,
-      paymentId: req.paymentId,
-      ...(extra ?? {}),
-    });
-    if (level === 'error') console.error(line);
-    else if (level === 'warn') console.warn(line);
-    else console.log(line);
-  };
+  opts: { lifecycleId?: string; correlationId?: string } = {}
+): Promise<PaymentResponse & { lifecycleId: string; correlationId: string }> => {
+  const lifecycleId =
+    opts.lifecycleId ?? opts.correlationId ?? generateLifecycleId('approve');
+  const base = { lifecycleId, paymentId: req.paymentId, stage: 'pi_api' as const };
 
-  log('info', 'approve.request.start');
+  emit('info', `${FN}.request.start`, base);
 
   try {
     const timeoutPromise = new Promise<PaymentResponse>((_, reject) => {
@@ -43,27 +51,28 @@ export const approvePayment = async (
     const fetchPromise = supabase.functions
       .invoke('approve-payment', {
         body: JSON.stringify(req),
-        headers: correlationHeaders(correlationId),
+        headers: correlationHeaders(lifecycleId),
       })
       .then(({ data, error }) => {
         if (error) {
-          log('error', 'approve.request.error', { message: error.message });
+          emit('error', `${FN}.request.error`, base, { message: error.message });
           return {
             success: false,
             message: `Failed to approve payment: ${error.message}`,
             paymentId: req.paymentId,
           } as PaymentResponse;
         }
-        log('info', 'approve.request.success', {
-          serverCorrelationId: (data as any)?.correlationId,
+        emit('info', `${FN}.request.success`, base, {
+          serverLifecycleId:
+            (data as any)?.lifecycleId ?? (data as any)?.correlationId,
         });
         return data as PaymentResponse;
       });
 
     const result = await Promise.race([fetchPromise, timeoutPromise]);
-    return { ...result, correlationId };
+    return { ...result, lifecycleId, correlationId: lifecycleId };
   } catch (fetchError) {
-    log('error', 'approve.request.exception', {
+    emit('error', `${FN}.request.exception`, base, {
       message: fetchError instanceof Error ? fetchError.message : 'Unknown error',
     });
     return {
@@ -72,9 +81,8 @@ export const approvePayment = async (
         'Payment approval request failed: ' +
         (fetchError instanceof Error ? fetchError.message : 'Unknown error'),
       paymentId: req.paymentId,
-      correlationId,
+      lifecycleId,
+      correlationId: lifecycleId,
     };
   }
 };
-
-export { CORRELATION_HEADER };

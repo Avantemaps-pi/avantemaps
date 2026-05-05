@@ -18,7 +18,7 @@ import type {
 
 import { approvePayment, completePayment } from '@/api/payments';
 import { supabase } from '@/integrations/supabase/client';
-import { generateCorrelationId } from '@/utils/correlation';
+import { generateLifecycleId } from '@/utils/correlation';
 
 // State tracking
 let paymentInProgress = false;
@@ -119,49 +119,52 @@ export async function executeSubscriptionPayment(
       frequency: normalizedFrequency,
     };
 
-    // Single correlation ID for the full approve → complete → status lifecycle.
-    const correlationId = generateCorrelationId('subpay');
-    const lcLog = (event: string, extra?: Record<string, unknown>) =>
-      console.log(
-        JSON.stringify({
-          ts: new Date().toISOString(),
-          level: 'info',
-          event,
-          fn: 'client.executeSubscriptionPayment',
-          correlationId,
-          tier,
-          frequency: normalizedFrequency,
-          ...(extra ?? {}),
-        })
-      );
-    lcLog('lifecycle.start');
+    // Single lifecycle ID for the full approve → complete → status flow.
+    const lifecycleId = generateLifecycleId('subpay');
+    const FN_LC = 'client.executeSubscriptionPayment';
+    const lcEmit = (
+      level: 'info' | 'warn' | 'error',
+      event: string,
+      stage: string,
+      extra?: Record<string, unknown>
+    ) => {
+      const line = JSON.stringify({
+        ts: new Date().toISOString(),
+        level,
+        event,
+        fn: FN_LC,
+        stage,
+        lifecycleId,
+        tier,
+        frequency: normalizedFrequency,
+        ...(extra ?? {}),
+      });
+      if (level === 'error') console.error(line);
+      else if (level === 'warn') console.warn(line);
+      else console.log(line);
+    };
+    lcEmit('info', `${FN_LC}.lifecycle.start`, 'validation');
 
     return new Promise<PaymentResult>((resolve) => {
       const callbacks: PaymentCallbacks = {
         onReadyForServerApproval: async (paymentId: string) => {
-          lcLog('lifecycle.approve.start', { paymentId });
+          lcEmit('info', `${FN_LC}.approve.start`, 'pi_api', { paymentId });
           try {
             hooks?.onPaymentId?.(paymentId);
             const approvalResult = await approvePayment(
               { paymentId, userId: supabaseUserId, amount, memo, metadata },
-              { correlationId }
+              { lifecycleId }
             );
-            lcLog('lifecycle.approve.result', {
+            lcEmit('info', `${FN_LC}.approve.result`, 'pi_api', {
               paymentId,
               success: approvalResult.success,
             });
           } catch (error) {
-            console.error(
-              JSON.stringify({
-                ts: new Date().toISOString(),
-                level: 'error',
-                event: 'lifecycle.approve.exception',
-                fn: 'client.executeSubscriptionPayment',
-                correlationId,
-                paymentId,
-                message: error instanceof Error ? error.message : String(error),
-              })
-            );
+            lcEmit('error', `${FN_LC}.approve.exception`, 'error', {
+              paymentId,
+              terminalReason: 'error',
+              message: error instanceof Error ? error.message : String(error),
+            });
             resolve({
               success: false,
               message: 'Failed to approve payment on server',
@@ -169,16 +172,17 @@ export async function executeSubscriptionPayment(
           }
         },
         onReadyForServerCompletion: async (paymentId: string, txid: string) => {
-          lcLog('lifecycle.complete.start', { paymentId, txid });
+          lcEmit('info', `${FN_LC}.complete.start`, 'pi_api', { paymentId, txid });
           try {
             const completionResult = await completePayment(
               { paymentId, userId: supabaseUserId, amount, memo, metadata, txid },
-              { correlationId }
+              { lifecycleId }
             );
-            lcLog('lifecycle.complete.result', {
+            lcEmit('info', `${FN_LC}.complete.result`, 'pi_api', {
               paymentId,
               txid,
               success: completionResult.success,
+              terminalReason: completionResult.success ? 'completed' : 'error',
             });
             resolve({
               success: true,
@@ -187,18 +191,12 @@ export async function executeSubscriptionPayment(
               paymentId,
             });
           } catch (error) {
-            console.error(
-              JSON.stringify({
-                ts: new Date().toISOString(),
-                level: 'error',
-                event: 'lifecycle.complete.exception',
-                fn: 'client.executeSubscriptionPayment',
-                correlationId,
-                paymentId,
-                txid,
-                message: error instanceof Error ? error.message : String(error),
-              })
-            );
+            lcEmit('error', `${FN_LC}.complete.exception`, 'error', {
+              paymentId,
+              txid,
+              terminalReason: 'error',
+              message: error instanceof Error ? error.message : String(error),
+            });
             resolve({
               success: false,
               message: 'Payment completed but failed to update subscription',
@@ -206,23 +204,20 @@ export async function executeSubscriptionPayment(
           }
         },
         onCancel: (paymentId: string) => {
-          lcLog('lifecycle.cancel', { paymentId });
+          lcEmit('info', `${FN_LC}.cancel`, 'transition', {
+            paymentId,
+            terminalReason: 'cancelled',
+          });
           resolve({
             success: false,
             message: 'Payment was cancelled',
           });
         },
         onError: (error: Error) => {
-          console.error(
-            JSON.stringify({
-              ts: new Date().toISOString(),
-              level: 'error',
-              event: 'lifecycle.error',
-              fn: 'client.executeSubscriptionPayment',
-              correlationId,
-              message: error.message,
-            })
-          );
+          lcEmit('error', `${FN_LC}.error`, 'error', {
+            terminalReason: 'error',
+            message: error.message,
+          });
           resolve({
             success: false,
             message: error.message || 'Payment failed',

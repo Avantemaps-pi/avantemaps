@@ -3,10 +3,12 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { createPaymentNotification } from '../_shared/notifications.ts';
 import {
-  getOrCreateCorrelationId,
+  getOrCreateLifecycleId,
   makeLogger,
   correlationHeaders,
 } from '../_shared/logger.ts';
+
+const FN = 'complete-payment';
 
 const PaymentRequestSchema = z.object({
   paymentId: z.string()
@@ -39,41 +41,33 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const correlationId = getOrCreateCorrelationId(req);
-  const log = makeLogger({ fn: 'complete-payment', correlationId });
+  const lifecycleId = getOrCreateLifecycleId(req);
+  const log = makeLogger({ fn: FN, lifecycleId });
   const startTime = Date.now();
 
   const respond = (body: Record<string, unknown>, status = 200) =>
-    new Response(JSON.stringify({ ...body, correlationId }), {
+    new Response(JSON.stringify({ ...body, lifecycleId, correlationId: lifecycleId }), {
       headers: {
         ...corsHeaders,
-        ...correlationHeaders(correlationId),
+        ...correlationHeaders(lifecycleId),
         'Content-Type': 'application/json',
       },
       status,
     });
 
-  log.info('complete.start');
+  log.info(`${FN}.request.received`, { stage: 'validation' });
 
   try {
     const rawBody = await req.json();
     const validationResult = PaymentRequestSchema.safeParse(rawBody);
 
     if (!validationResult.success) {
-      log.warn('complete.validation_failed', {
-        errors: validationResult.error.errors.map(e => ({
-          field: e.path.join('.'),
-          message: e.message,
-        })),
-      });
-      return respond({
-        success: false,
-        message: 'Invalid request data',
-        errors: validationResult.error.errors.map(e => ({
-          field: e.path.join('.'),
-          message: e.message,
-        })),
-      }, 400);
+      const errors = validationResult.error.errors.map(e => ({
+        field: e.path.join('.'),
+        message: e.message,
+      }));
+      log.warn(`${FN}.validation.failed`, { stage: 'validation', errors });
+      return respond({ success: false, message: 'Invalid request data', errors }, 400);
     }
 
     const paymentRequest = validationResult.data;
@@ -82,11 +76,11 @@ Deno.serve(async (req) => {
       userId: paymentRequest.userId,
       txid: paymentRequest.txid,
     });
-    log.info('complete.request_validated', { amount: paymentRequest.amount });
+    log.info(`${FN}.validation.ok`, { stage: 'validation', amount: paymentRequest.amount });
 
     const piApiKey = Deno.env.get('PI_API_KEY');
     if (!piApiKey) {
-      log.error('complete.pi_api_key_missing');
+      log.error(`${FN}.config.missing_api_key`, { stage: 'error' });
       return respond({ success: false, message: 'Payment service not configured' }, 500);
     }
 
@@ -97,26 +91,40 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (lookupError) {
-      log.error('complete.db_lookup_error', { code: lookupError.code, message: lookupError.message });
+      log.error(`${FN}.lookup.error`, {
+        stage: 'lookup',
+        code: lookupError.code,
+        message: lookupError.message,
+      });
       return respond({ success: false, message: 'Payment processing failed. Please try again.' }, 500);
     }
 
-    log.info('complete.existing_lookup', {
+    log.info(`${FN}.lookup.ok`, {
+      stage: 'lookup',
       exists: !!existingPayment,
       currentStatus: existingPayment?.status ?? null,
     });
 
     if (existingPayment && existingPayment.user_id !== paymentRequest.userId) {
-      log.error('complete.ownership_mismatch', { ownerOnRecord: existingPayment.user_id });
+      log.error(`${FN}.lookup.ownership_mismatch`, {
+        stage: 'lookup',
+        ownerOnRecord: existingPayment.user_id,
+      });
       return respond({ success: false, message: 'Payment ownership mismatch' }, 403);
     }
 
     if (existingPayment?.status?.completed) {
       if (existingPayment.txid && existingPayment.txid !== paymentRequest.txid) {
-        log.error('complete.txid_mismatch', { recorded: existingPayment.txid });
-        return respond({ success: false, message: 'Transaction ID mismatch on completed payment' }, 409);
+        log.error(`${FN}.lookup.txid_mismatch`, {
+          stage: 'lookup',
+          recorded: existingPayment.txid,
+        });
+        return respond({
+          success: false,
+          message: 'Transaction ID mismatch on completed payment',
+        }, 409);
       }
-      log.info('complete.terminal.already_completed');
+      log.info(`${FN}.terminal.idempotent`, { stage: 'transition', terminalReason: 'completed' });
       return respond({
         success: true,
         message: 'Payment was already completed',
@@ -126,14 +134,17 @@ Deno.serve(async (req) => {
     }
 
     if (existingPayment?.status?.cancelled) {
-      log.warn('complete.refused_cancelled');
+      log.warn(`${FN}.terminal.refused`, {
+        stage: 'transition',
+        terminalReason: 'cancelled',
+      });
       return respond({
         success: false,
         message: 'Payment was cancelled and cannot be completed',
       }, 409);
     }
 
-    log.info('complete.pi_api.call');
+    log.info(`${FN}.pi_api.call`, { stage: 'pi_api' });
     try {
       const piNetworkApiUrl = 'https://api.minepi.com/v2/payments';
       const completeResponse = await fetch(`${piNetworkApiUrl}/${paymentRequest.paymentId}/complete`, {
@@ -146,7 +157,8 @@ Deno.serve(async (req) => {
       });
 
       const completeResult = await completeResponse.json();
-      log.info('complete.pi_api.response', {
+      log.info(`${FN}.pi_api.response`, {
+        stage: 'pi_api',
         ok: completeResponse.ok,
         status: completeResponse.status,
       });
@@ -164,9 +176,8 @@ Deno.serve(async (req) => {
             updated_at: new Date().toISOString(),
           }).eq('payment_id', paymentRequest.paymentId);
 
-          log.info('complete.transition', {
-            from: existingPayment?.status ?? null,
-            to: 'completed',
+          log.transition(existingPayment?.status ?? null, 'completed', {
+            terminalReason: 'completed',
             source: 'pi_already_completed',
           });
           return respond({
@@ -188,10 +199,10 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString(),
         }).eq('payment_id', paymentRequest.paymentId);
 
-        log.error('complete.pi_api.error', { result: completeResult });
-        log.info('complete.transition', {
-          from: existingPayment?.status ?? null,
-          to: 'cancelled_error',
+        log.error(`${FN}.pi_api.error`, { stage: 'pi_api', result: completeResult });
+        log.transition(existingPayment?.status ?? null, 'cancelled', {
+          terminalReason: 'error',
+          source: 'pi_api_error',
         });
         return respond({
           success: false,
@@ -210,9 +221,8 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       }).eq('payment_id', paymentRequest.paymentId);
 
-      log.info('complete.transition', {
-        from: existingPayment?.status ?? 'approved',
-        to: 'completed',
+      log.transition(existingPayment?.status ?? 'approved', 'completed', {
+        terminalReason: 'completed',
       });
 
       if (paymentRequest.metadata?.subscriptionTier) {
@@ -229,12 +239,19 @@ Deno.serve(async (req) => {
           });
 
           if (subscriptionError) {
-            log.warn('complete.subscription_rpc_error', { message: subscriptionError.message });
+            log.warn(`${FN}.db_write.subscription_rpc_error`, {
+              stage: 'db_write',
+              message: subscriptionError.message,
+            });
           } else {
-            log.info('complete.subscription_created', { tier: paymentRequest.metadata.subscriptionTier });
+            log.info(`${FN}.subscription.created`, {
+              stage: 'db_write',
+              tier: paymentRequest.metadata.subscriptionTier,
+            });
           }
         } catch (subscriptionErr) {
-          log.error('complete.subscription_exception', {
+          log.error(`${FN}.subscription.exception`, {
+            stage: 'error',
             message: subscriptionErr instanceof Error ? subscriptionErr.message : String(subscriptionErr),
           });
         }
@@ -247,14 +264,19 @@ Deno.serve(async (req) => {
           paymentRequest.amount,
           paymentRequest.metadata?.subscriptionTier
         );
-        log.info('complete.notification_created');
+        log.info(`${FN}.notify.created`, { stage: 'notify' });
       } catch (notifError) {
-        log.warn('complete.notification_error', {
+        log.warn(`${FN}.notify.error`, {
+          stage: 'notify',
           message: notifError instanceof Error ? notifError.message : String(notifError),
         });
       }
 
-      log.info('complete.done', { durationMs: Date.now() - startTime });
+      log.info(`${FN}.done`, {
+        stage: 'done',
+        terminalReason: 'completed',
+        durationMs: Date.now() - startTime,
+      });
       return respond({
         success: true,
         message: 'Payment completed successfully',
@@ -263,7 +285,8 @@ Deno.serve(async (req) => {
         subscriptionCreated: !!paymentRequest.metadata?.subscriptionTier,
       });
     } catch (apiError) {
-      log.error('complete.pi_api.exception', {
+      log.error(`${FN}.pi_api.exception`, {
+        stage: 'pi_api',
         message: apiError instanceof Error ? apiError.message : String(apiError),
       });
 
@@ -278,9 +301,9 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       }).eq('payment_id', paymentRequest.paymentId);
 
-      log.info('complete.transition', {
-        from: existingPayment?.status ?? null,
-        to: 'cancelled_api_error',
+      log.transition(existingPayment?.status ?? null, 'cancelled', {
+        terminalReason: 'error',
+        source: 'pi_api_exception',
       });
 
       return respond({
@@ -291,7 +314,8 @@ Deno.serve(async (req) => {
       }, 502);
     }
   } catch (error) {
-    log.error('complete.unhandled', {
+    log.error(`${FN}.unhandled`, {
+      stage: 'error',
       message: error instanceof Error ? error.message : String(error),
     });
     return respond({ success: false, message: 'Payment completion service temporarily unavailable' }, 500);
