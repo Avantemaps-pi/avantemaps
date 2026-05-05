@@ -1,40 +1,65 @@
-
 /**
  * Payment status endpoint
- * 
- * This endpoint retrieves the current status of a payment by calling
- * a Supabase Edge Function that securely accesses the payment database
+ *
+ * Calls the `payment-status` Supabase Edge Function. Forwards the
+ * end-to-end correlation ID (when provided) so polling logs are tied
+ * back to the original approve / complete attempt.
  */
 import { supabase } from '@/integrations/supabase/client';
 import { PaymentResponse } from './types';
+import { correlationHeaders, generateCorrelationId } from '@/utils/correlation';
 
-export const getPaymentStatus = async (paymentId: string): Promise<PaymentResponse> => {
+export const getPaymentStatus = async (
+  paymentId: string,
+  opts: { correlationId?: string } = {}
+): Promise<PaymentResponse & { correlationId: string }> => {
+  const correlationId = opts.correlationId ?? generateCorrelationId('status');
   try {
-    console.log('Calling payment status edge function:', paymentId);
-    
-    // Call the Supabase Edge Function for payment status
     const { data, error } = await supabase.functions.invoke('payment-status', {
-      body: JSON.stringify({ paymentId })
+      body: JSON.stringify({ paymentId }),
+      headers: correlationHeaders(correlationId),
     });
-    
+
     if (error) {
-      console.error('Error calling payment status edge function:', error);
+      console.error(
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          level: 'error',
+          event: 'status.request.error',
+          fn: 'client.getPaymentStatus',
+          correlationId,
+          paymentId,
+          message: error.message,
+        })
+      );
       return {
         success: false,
         message: `Failed to get payment status: ${error.message}`,
-        paymentId
+        paymentId,
+        correlationId,
       };
     }
-    
-    console.log('Payment status edge function response:', data);
-    
-    return data as PaymentResponse;
+
+    return { ...(data as PaymentResponse), correlationId };
   } catch (error) {
-    console.error('Error getting payment status:', error);
+    console.error(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        level: 'error',
+        event: 'status.request.exception',
+        fn: 'client.getPaymentStatus',
+        correlationId,
+        paymentId,
+        message: error instanceof Error ? error.message : 'Unknown error',
+      })
+    );
     return {
       success: false,
-      message: 'Failed to get payment status: ' + (error instanceof Error ? error.message : 'Unknown error'),
-      paymentId
+      message:
+        'Failed to get payment status: ' +
+        (error instanceof Error ? error.message : 'Unknown error'),
+      paymentId,
+      correlationId,
     };
   }
 };
