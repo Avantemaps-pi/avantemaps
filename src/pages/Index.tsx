@@ -27,6 +27,7 @@ const Index = () => {
   const location = useLocation();
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const { places = [], filteredPlaces = [], isLoading = false, handleSearch } = useBusinessData();
   const { setOpenMobile } = useSidebar();
   const { trackBusinessSearch } = useSearchTracking();
