@@ -220,6 +220,7 @@ Deno.serve(async (req) => {
           cancelled: false,
         },
         txid: paymentRequest.txid,
+        lifecycle_id: lifecycleId,
         updated_at: new Date().toISOString(),
       }).eq('payment_id', paymentRequest.paymentId);
 
