@@ -4,10 +4,11 @@ import AppLayout from '@/components/layout/AppLayout';
 import ProfileSettings from '@/components/settings/ProfileSettings';
 import AppPreferences from '@/components/settings/AppPreferences';
 import DangerZone from '@/components/settings/DangerZone';
+import PaymentHistory from '@/components/settings/PaymentHistory';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/auth';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
-import { User, Settings as SettingsIcon, AlertTriangle } from 'lucide-react';
+import { User, Settings as SettingsIcon, AlertTriangle, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
