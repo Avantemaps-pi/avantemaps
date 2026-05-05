@@ -24,6 +24,7 @@ const CountryZoomControl: React.FC = () => {
   const map = useMap();
   const [zoom, setZoom] = useState<number>(map.getZoom());
   const [bottom, setBottom] = useState<number>(FALLBACK_BOTTOM);
+  const [right, setRight] = useState<number>(24);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Track zoom level for enable/disable state
