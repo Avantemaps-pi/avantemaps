@@ -333,10 +333,13 @@ const CountryZoomControl: React.FC = () => {
     };
   }, [map]);
 
-  const plusDisabled = zoom >= COUNTRY_ZOOM;
-  const minusDisabled = zoom <= COUNTRY_ZOOM;
+  const mapMinZoom = map.getMinZoom();
+  const mapMaxZoom = map.getMaxZoom();
+  const plusDisabled = zoom >= mapMaxZoom;
+  const minusDisabled = zoom <= mapMinZoom;
   const atCountry = zoom === COUNTRY_ZOOM;
-  const goToCountry = () => map.setZoom(COUNTRY_ZOOM);
+  const zoomIn = () => map.zoomIn();
+  const zoomOut = () => map.zoomOut();
 
   // Pointer-move threshold: if the pointer travels more than DRAG_THRESHOLD_PX
   // between pointerdown and pointerup, treat the gesture as a drag and
@@ -362,14 +365,15 @@ const CountryZoomControl: React.FC = () => {
   };
   const handleBtnClick = (
     e: React.MouseEvent<HTMLButtonElement>,
-    disabled: boolean
+    disabled: boolean,
+    action: () => void
   ) => {
     e.stopPropagation();
     const wasDrag = draggedRef.current;
     pointerStartRef.current = null;
     draggedRef.current = false;
     if (wasDrag || disabled) return;
-    goToCountry();
+    action();
   };
 
   const btnBase =
