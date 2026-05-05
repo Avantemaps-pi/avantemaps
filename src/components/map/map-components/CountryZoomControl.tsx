@@ -108,6 +108,22 @@ const CountryZoomControl: React.FC = () => {
       return null;
     };
 
+    /** Selectors for map UI we must NOT overlap. */
+    const OBSTACLE_SELECTORS = [
+      '[data-search-bar]',
+      '.leaflet-control-container .leaflet-top',
+      '.leaflet-popup',
+      '.leaflet-tooltip',
+      '.leaflet-control-zoom',
+      '.leaflet-control-attribution',
+    ];
+
+    /** Estimated control size (w x h) — kept in sync with the rendered markup. */
+    const CONTROL_W = 36;
+    const CONTROL_H = 72;
+    /** Min margins from map edges. */
+    const EDGE_MARGIN = 12;
+
     const recompute = () => {
       const addBtn = findAddButton();
       if (!addBtn) {
@@ -122,8 +138,45 @@ const CountryZoomControl: React.FC = () => {
       }
 
       const mapRect = mapEl.getBoundingClientRect();
-      const next = Math.max(0, mapRect.bottom - btnRect.top + GAP_PX);
-      setBottom(next);
+
+      // Horizontal: mirror the Add Business button's right offset so the
+      // control slides with it when a place is selected.
+      const rightPx = Math.max(EDGE_MARGIN, mapRect.right - btnRect.right);
+      setRight(rightPx);
+
+      // Vertical: 16px above the + button, then clamped against obstacles.
+      let bottomPx = Math.max(EDGE_MARGIN, mapRect.bottom - btnRect.top + GAP_PX);
+
+      // Collision avoidance: project the control's would-be rect and bump it
+      // up if it overlaps any known map UI (search bar, popups, tooltips,
+      // leaflet controls). We only push UP because horizontal anchoring is
+      // already tied to the + button.
+      const projectedTop = mapRect.bottom - bottomPx - CONTROL_H;
+      const projectedLeft = mapRect.right - rightPx - CONTROL_W;
+      const projectedRight = mapRect.right - rightPx;
+      const projectedBottom = mapRect.bottom - bottomPx;
+
+      let pushUp = 0;
+      for (const sel of OBSTACLE_SELECTORS) {
+        document.querySelectorAll<HTMLElement>(sel).forEach((el) => {
+          const r = el.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) return;
+          const overlapsX = r.right > projectedLeft && r.left < projectedRight;
+          const overlapsY = r.bottom > projectedTop && r.top < projectedBottom;
+          if (overlapsX && overlapsY) {
+            // How much we'd need to lift the control to clear this element.
+            const lift = projectedBottom - (r.top - GAP_PX);
+            if (lift > pushUp) pushUp = lift;
+          }
+        });
+      }
+      if (pushUp > 0) bottomPx += pushUp;
+
+      // Final safety clamp so we never escape the map container.
+      const maxBottom = Math.max(EDGE_MARGIN, mapRect.height - CONTROL_H - EDGE_MARGIN);
+      if (bottomPx > maxBottom) bottomPx = maxBottom;
+
+      setBottom(bottomPx);
 
       // Attach observers/listeners to the button the first time we see it
       if (addBtn !== trackedBtn) {
