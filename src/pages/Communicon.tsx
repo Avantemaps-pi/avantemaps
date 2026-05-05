@@ -126,7 +126,7 @@ const Communicon = () => {
   };
 
   return (
-    <AppLayout title="Avante Maps">
+    <AppLayout title="Avante Maps" showFooter={false}>
       <div className="max-w-4xl mx-auto mt-6">
         <UserProfileCard />
         <ChatInterface 
