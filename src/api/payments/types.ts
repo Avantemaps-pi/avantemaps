@@ -17,6 +17,8 @@ export interface PaymentResponse {
   paymentId?: string;
   txid?: string;
   status?: PaymentStatus;
+  /** End-to-end correlation ID linking client + server logs for this attempt. */
+  correlationId?: string;
 }
 
 export interface PaymentStatus {
