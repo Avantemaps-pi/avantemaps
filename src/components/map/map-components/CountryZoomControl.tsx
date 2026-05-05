@@ -27,6 +27,9 @@ const CountryZoomControl: React.FC = () => {
   const [zoom, setZoom] = useState<number>(map.getZoom());
   const [bottom, setBottom] = useState<number>(FALLBACK_BOTTOM);
   const [right, setRight] = useState<number>(24);
+  // Dynamically computed z-index that always sits above Leaflet's panes and
+  // controls so other overlays can't hide the control.
+  const [zIndex, setZIndex] = useState<number>(1000);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Track zoom level for enable/disable state
