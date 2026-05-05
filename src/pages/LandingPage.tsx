@@ -92,18 +92,18 @@ const LandingPage: React.FC = () => {
         </div>
         {/* Search Bar + Hero text overlaid on map */}
         <div className="relative z-10 px-4 pt-2 pointer-events-none space-y-2">
-          <div
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border border-border text-muted-foreground text-sm text-left shadow-sm pointer-events-auto"
-          >
-            <Search className="h-4 w-4 flex-shrink-0" />
-            <span>Search for businesses nearby...</span>
+          <div className="max-w-2xl mx-auto w-full">
+            <div className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border border-border text-muted-foreground text-sm md:text-base text-left shadow-sm pointer-events-auto">
+              <Search className="h-4 w-4 flex-shrink-0" />
+              <span>Search for businesses nearby...</span>
+            </div>
           </div>
-          <h6 className="text-xs font-medium text-foreground text-center drop-shadow-sm">
+          <h6 className="text-xs md:text-sm font-medium text-foreground text-center drop-shadow-sm">
             Discover, Explore, and Connect with Businesses Nearby!
           </h6>
         </div>
         {/* Scroll Indicator */}
-        <div className="absolute bottom-44 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 pointer-events-none">
+        <div className="absolute bottom-44 md:bottom-52 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 pointer-events-none">
           <span className="text-xs text-foreground/80 font-medium drop-shadow-sm">Scroll to explore</span>
           <div className="animate-bounce">
             <ChevronDown className="h-5 w-5 text-primary" />
@@ -112,7 +112,7 @@ const LandingPage: React.FC = () => {
         {/* Feature cards anchored to bottom of map */}
         <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-auto">
           <div className="bg-gradient-to-t from-background via-background/95 to-transparent pt-16 pb-4 px-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="max-w-4xl mx-auto grid grid-cols-2 gap-3 md:gap-4">
               {[
                 { icon: Store, title: 'Discover Businesses', desc: 'Find local shops, services, and attractions', color: 'text-amber-500' },
                 { icon: Bookmark, title: 'Save & Share', desc: 'Bookmark favorite spots and share them with friends', color: 'text-violet-500' },
@@ -121,7 +121,7 @@ const LandingPage: React.FC = () => {
                   key={title}
                   className="p-4 flex flex-col items-start gap-2 border border-border bg-card/95 backdrop-blur-sm shadow-md rounded-2xl"
                 >
-                  <div className={`p-2 rounded-xl bg-muted/60`}>
+                  <div className="p-2 rounded-xl bg-muted/60">
                     <Icon className={`h-5 w-5 ${color}`} />
                   </div>
                   <h3 className="text-sm font-bold text-foreground leading-tight">{title}</h3>
