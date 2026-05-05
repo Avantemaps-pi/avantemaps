@@ -136,17 +136,37 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   }, [open, sdkAvailable, retryCount]);
 
   const handleLogin = async () => {
+    if (cooldownRemaining > 0) {
+      toast.error(`Please wait ${cooldownRemaining}s before retrying.`);
+      return;
+    }
     setLocalError(null);
     setAttemptCount((c) => c + 1);
     try {
       secureLog.info("Starting Pi authentication...");
       await login();
+      // Success: clear failure/cooldown state
+      persistentFailureCount = 0;
+      persistentCooldownUntil = 0;
+      setFailureCount(0);
+      setCooldownRemaining(0);
       onOpenChange(false);
     } catch (error) {
       secureLog.error("❌ Pi login error:", error);
       const message = friendlyAuthError(error);
       setLocalError(message);
       toast.error(message);
+
+      // Track failure and apply cooldown
+      const nextFailures = persistentFailureCount + 1;
+      persistentFailureCount = nextFailures;
+      setFailureCount(nextFailures);
+
+      const seconds = computeCooldownSeconds(nextFailures);
+      if (seconds > 0) {
+        persistentCooldownUntil = Date.now() + seconds * 1000;
+        setCooldownRemaining(seconds);
+      }
     }
   };
 
@@ -157,6 +177,13 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   // Prefer the most recent local error, fall back to context-level authError
   const displayError = localError ?? authError;
   const showPersistentHint = attemptCount >= 2;
+  const isCoolingDown = cooldownRemaining > 0;
+  const formatCooldown = (s: number) => {
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return r === 0 ? `${m}m` : `${m}m ${r}s`;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
