@@ -71,7 +71,13 @@ export const useSubscriptionPayment = () => {
       return;
     }
 
+    if (isPaymentLocked) {
+      toast.info("A payment is already being processed. Please wait for it to finish.");
+      return;
+    }
+
     setIsProcessingPayment(true);
+    polling.reset();
 
     try {
       console.log("Refreshing user data before payment...");
@@ -80,19 +86,25 @@ export const useSubscriptionPayment = () => {
       const subscriptionTier = tier as SubscriptionTier;
       const price = getSubscriptionPrice(subscriptionTier, selectedFrequency);
 
-      // Execute the payment using the Pi Network flow with error handling
+      // Execute the payment using the Pi Network flow with error handling.
+      // Start polling as soon as we have a paymentId so we can react to
+      // terminal states (completed/cancelled/voided) coming from the server
+      // even if the SDK callback path is delayed or duplicated.
       const result = await withPiErrorHandling(async () => {
         return await executeSubscriptionPayment(
           price,
           subscriptionTier,
-          selectedFrequency as 'monthly' | 'yearly'
+          selectedFrequency as 'monthly' | 'yearly',
+          {
+            onPaymentId: (paymentId) => {
+              polling.start(paymentId);
+            },
+          }
         );
       });
 
       if (result && result.success) {
         toast.success(result.message);
-        
-        // Refresh user data if the payment was successful and requires refresh
         if (result.shouldRefreshUser) {
           console.log("Payment successful, refreshing user data...");
           await refreshUserData();
