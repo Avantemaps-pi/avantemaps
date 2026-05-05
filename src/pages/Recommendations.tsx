@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 import PlaceCard from '@/components/business/PlaceCard';
@@ -7,7 +7,7 @@ import RecommendationsSEO from '@/components/seo/RecommendationsSEO';
 import { useRecommendations } from '@/hooks/useRecommendations';
 import RecommendationSkeleton from '@/components/recommendations/RecommendationSkeleton';
 import EmptyRecommendationSection from '@/components/recommendations/EmptyRecommendationSection';
-import { Award, Star, ChevronDown, Check } from 'lucide-react';
+import { Award, Star, ChevronDown, Check, Lock } from 'lucide-react';
 import MetaTags from '@/components/seo/MetaTags';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -18,11 +18,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useBusinessData } from '@/hooks/useBusinessData';
+import { useAuth } from '@/context/auth';
+import LoginDialog from '@/components/auth/LoginDialog';
 
 const Recommendations = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [showLogin, setShowLogin] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'rating'>('rating');
   const { avanteTopChoice, recommendedForYou, isLoading } = useRecommendations();
