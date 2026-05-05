@@ -20,6 +20,15 @@ export const useSubscriptionPayment = () => {
   const { user, isAuthenticated, login, refreshUserData } = useAuth();
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [selectedFrequency, setSelectedFrequency] = useState("monthly");
+  const polling = usePaymentStatusPolling();
+
+  // Disable duplicate submissions while processing OR while a payment is being
+  // polled. Stays locked once a terminal "completed" state is seen so the UI
+  // can refresh user data without allowing a re-submit.
+  const isPaymentLocked =
+    isProcessingPayment ||
+    polling.isPolling ||
+    (polling.isTerminal && polling.terminalReason === 'completed');
 
   const handleFrequencyChange = (frequency: string) => {
     setSelectedFrequency(frequency);
