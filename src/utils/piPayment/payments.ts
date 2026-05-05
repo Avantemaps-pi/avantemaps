@@ -119,6 +119,23 @@ export async function executeSubscriptionPayment(
       frequency: normalizedFrequency,
     };
 
+    // Single correlation ID for the full approve → complete → status lifecycle.
+    const correlationId = generateCorrelationId('subpay');
+    const lcLog = (event: string, extra?: Record<string, unknown>) =>
+      console.log(
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          level: 'info',
+          event,
+          fn: 'client.executeSubscriptionPayment',
+          correlationId,
+          tier,
+          frequency: normalizedFrequency,
+          ...(extra ?? {}),
+        })
+      );
+    lcLog('lifecycle.start');
+
     return new Promise<PaymentResult>((resolve) => {
       const callbacks: PaymentCallbacks = {
         onReadyForServerApproval: async (paymentId: string) => {
