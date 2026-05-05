@@ -5,6 +5,7 @@ import { useBusinessData } from '@/hooks/useBusinessData';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SearchBar from '@/components/map/SearchBar';
+import CategoryFilter, { CATEGORY_OPTIONS } from '@/components/map/CategoryFilter';
 import { useSidebar } from '@/components/ui/sidebar';
 import AvanteMapLogo from '@/components/layout/header/AvanteMapLogo';
 import AppSidebar from '@/components/layout/AppSidebar';
@@ -26,6 +27,7 @@ const Index = () => {
   const location = useLocation();
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const { places = [], filteredPlaces = [], isLoading = false, handleSearch } = useBusinessData();
   const { setOpenMobile } = useSidebar();
   const { trackBusinessSearch } = useSearchTracking();
@@ -95,6 +97,25 @@ const Index = () => {
     }
   }, [location]);
 
+  // Apply category filter on top of search filter
+  const basePlaces = filteredPlaces.length > 0 || searchTerm ? filteredPlaces : places;
+  const visiblePlaces = React.useMemo(() => {
+    if (selectedCategoryId === 'all') return basePlaces;
+    const opt = CATEGORY_OPTIONS.find(o => o.id === selectedCategoryId);
+    if (!opt || opt.match.length === 0) return basePlaces;
+    return basePlaces.filter(p => {
+      const haystack = [
+        p.category,
+        ...(p.business_types || []),
+        ...(p.keywords || []),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return opt.match.some(m => haystack.includes(m));
+    });
+  }, [basePlaces, selectedCategoryId]);
+
   // Find the selected place for SEO
   const selectedPlaceData = [...places, ...filteredPlaces].find(place => place.id === selectedPlace);
 
@@ -158,7 +179,7 @@ const Index = () => {
       <div className="absolute inset-0 w-full h-full">
         <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
           <LeafletMap
-            places={filteredPlaces.length > 0 ? filteredPlaces : places}
+            places={visiblePlaces}
             selectedPlaceId={selectedPlace}
             onMarkerClick={handlePlaceClick}
             isLoading={isLoading}
@@ -202,6 +223,10 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">no businesses found.</p>
               </div>
             )}
+            <CategoryFilter
+              selectedCategoryId={selectedCategoryId}
+              onSelect={setSelectedCategoryId}
+            />
           </div>
         </div>
       </div>
