@@ -52,7 +52,12 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategoryId, onS
             {label}
           </button>
         );
-      })}
+        })}
+      </div>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-background/95 to-transparent"
+      />
     </div>
   );
 };
