@@ -44,12 +44,21 @@ const CountryZoomControl: React.FC = () => {
     let bodyObserver: MutationObserver | null = null;
     let pollId: number | null = null;
     let pollAttempts = 0;
-    const MAX_POLL_ATTEMPTS = 40; // ~4s at 100ms
+    const MAX_POLL_ATTEMPTS = 20; // bounded discovery window
+    // Exponential backoff for discovery polling: 100ms → 200 → 400 → … (cap 1.5s)
+    const POLL_BASE_MS = 100;
+    const POLL_MAX_MS = 1500;
+    const nextPollDelay = () =>
+      Math.min(POLL_MAX_MS, POLL_BASE_MS * Math.pow(2, pollAttempts));
 
-    // rAF-based coalescing: collapse bursts of events (resize, font scale,
-    // transitions, mutations) into a single measurement per frame to avoid
-    // layout thrashing.
+    // rAF-based coalescing for tight bursts (resize / scroll / transition).
     let rafId: number | null = null;
+    // Trailing debounce for noisier sources (MutationObserver) once the
+    // button is being tracked — collapses long mutation storms into a single
+    // measurement after things settle.
+    let debounceId: number | null = null;
+    const DEBOUNCE_MS = 80;
+
     const scheduleRecompute = () => {
       if (rafId !== null) return;
       rafId = window.requestAnimationFrame(() => {
@@ -57,6 +66,14 @@ const CountryZoomControl: React.FC = () => {
         recompute();
       });
     };
+    const debouncedRecompute = () => {
+      if (debounceId !== null) window.clearTimeout(debounceId);
+      debounceId = window.setTimeout(() => {
+        debounceId = null;
+        scheduleRecompute();
+      }, DEBOUNCE_MS);
+    };
+
 
     /**
      * Resolve the "+" Add Business button using a prioritized list of selectors.
