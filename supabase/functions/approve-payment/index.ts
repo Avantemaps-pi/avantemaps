@@ -16,26 +16,16 @@ const PaymentRequestSchema = z.object({
     .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid payment ID format'),
   userId: z.string().uuid('Invalid user ID format'),
   amount: z.number().positive('Amount must be positive').max(1000000, 'Amount exceeds maximum'),
-  memo: z.string().max(500, 'Memo too long').transform(val => 
-    val.replace(/[<>]/g, '') // Sanitize potential HTML/script tags
+  memo: z.string().max(500, 'Memo too long').transform(val =>
+    val.replace(/[<>]/g, '')
   ).optional(),
   metadata: z.object({
     subscriptionTier: z.enum(['individual', 'small-business', 'organization']).optional(),
     frequency: z.enum(['monthly', 'annual']).optional(),
     duration: z.number().int().positive().max(365).optional()
-  }).strict() // Only allow known keys for security
+  }).strict()
 });
 
-type PaymentRequest = z.infer<typeof PaymentRequestSchema>;
-
-interface PaymentResponse {
-  success: boolean;
-  message: string;
-  paymentId?: string;
-  txid?: string;
-}
-
-// Determine subscription tier based on payment amount
 function determineSubscriptionTier(amount: number, metadata: Record<string, any>): string {
   if (metadata?.subscriptionTier) return metadata.subscriptionTier;
   if (amount < 1) return 'individual';
@@ -43,15 +33,13 @@ function determineSubscriptionTier(amount: number, metadata: Record<string, any>
   return 'organization';
 }
 
-// Check if a payment is stale (older than 10 minutes and not completed)
 function isStalePayment(payment: any): boolean {
   const createdAt = new Date(payment.created_at).getTime();
   const now = Date.now();
-  const tenMinutesInMs = 10 * 60 * 1000; // 10 minutes
-  
+  const tenMinutesInMs = 10 * 60 * 1000;
   return (
-    !payment.status.completed && 
-    !payment.status.cancelled && 
+    !payment.status.completed &&
+    !payment.status.cancelled &&
     (now - createdAt) > tenMinutesInMs
   );
 }
@@ -66,127 +54,137 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const correlationId = getOrCreateCorrelationId(req);
+  const log = makeLogger({ fn: 'approve-payment', correlationId });
   const startTime = Date.now();
-  console.log(`Starting payment approval at ${new Date().toISOString()}`);
+
+  const respond = (body: Record<string, unknown>, status = 200) =>
+    new Response(JSON.stringify({ ...body, correlationId }), {
+      headers: {
+        ...corsHeaders,
+        ...correlationHeaders(correlationId),
+        'Content-Type': 'application/json',
+      },
+      status,
+    });
+
+  log.info('approve.start');
 
   try {
-    // Parse and validate request body
     const rawBody = await req.json();
     const validationResult = PaymentRequestSchema.safeParse(rawBody);
-    
+
     if (!validationResult.success) {
-      console.error('Invalid payment request data:', validationResult.error.errors);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'Invalid request data',
-          errors: validationResult.error.errors.map(e => ({
-            field: e.path.join('.'),
-            message: e.message
-          }))
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+      log.warn('approve.validation_failed', {
+        errors: validationResult.error.errors.map(e => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
+      });
+      return respond({
+        success: false,
+        message: 'Invalid request data',
+        errors: validationResult.error.errors.map(e => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
+      }, 400);
     }
-    
+
     const paymentRequest = validationResult.data;
-    console.log('Payment approval request received');
+    log.extend({ paymentId: paymentRequest.paymentId, userId: paymentRequest.userId });
+    log.info('approve.request_validated', { amount: paymentRequest.amount });
 
     const piApiKey = Deno.env.get('PI_API_KEY');
     if (!piApiKey) {
-      console.error('PI_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ success: false, message: 'Payment service not configured' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
+      log.error('approve.pi_api_key_missing');
+      return respond({ success: false, message: 'Payment service not configured' }, 500);
     }
 
-    // Check for existing payment
-    console.log('Checking for existing payment...');
     const { data: existingPayment, error: checkError } = await supabaseClient
       .from('payments')
       .select('*')
       .eq('payment_id', paymentRequest.paymentId)
       .single();
-    
+
     if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Database check error:', checkError);
-      return new Response(
-        JSON.stringify({ success: false, message: 'Payment processing failed. Please try again.' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
+      log.error('approve.db_check_error', { code: checkError.code, message: checkError.message });
+      return respond({ success: false, message: 'Payment processing failed. Please try again.' }, 500);
     }
-    
-    console.log('Existing payment found:', !!existingPayment);
 
-    // Ownership guard: a payment_id must belong to the same user that initiated it
+    log.info('approve.existing_lookup', {
+      exists: !!existingPayment,
+      currentStatus: existingPayment?.status ?? null,
+    });
+
     if (existingPayment && existingPayment.user_id !== paymentRequest.userId) {
-      console.error('Ownership mismatch on payment_id');
-      return new Response(
-        JSON.stringify({ success: false, message: 'Payment ownership mismatch' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
-      );
+      log.error('approve.ownership_mismatch', {
+        ownerOnRecord: existingPayment.user_id,
+      });
+      return respond({ success: false, message: 'Payment ownership mismatch' }, 403);
     }
 
-    // Idempotency: terminal states return immediately, no Pi Network call
     if (existingPayment?.status?.completed) {
-      console.log('Idempotent: payment already completed');
-      return new Response(
-        JSON.stringify({ success: true, message: 'Payment already completed', paymentId: paymentRequest.paymentId, txid: existingPayment.txid }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      log.info('approve.terminal.already_completed');
+      return respond({
+        success: true,
+        message: 'Payment already completed',
+        paymentId: paymentRequest.paymentId,
+        txid: existingPayment.txid,
+      });
     }
     if (existingPayment?.status?.cancelled && !isStalePayment(existingPayment)) {
-      console.log('Idempotent: payment already cancelled (terminal)');
-      return new Response(
-        JSON.stringify({ success: false, message: 'Payment was cancelled', paymentId: paymentRequest.paymentId }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
-      );
+      log.info('approve.terminal.already_cancelled');
+      return respond({
+        success: false,
+        message: 'Payment was cancelled',
+        paymentId: paymentRequest.paymentId,
+      }, 409);
     }
 
-    // Handle stale payments - automatically cancel them
     if (existingPayment && isStalePayment(existingPayment)) {
-      console.log('Detected stale payment, attempting to cancel');
-      
+      log.warn('approve.stale_detected');
       try {
-        // Try to cancel the stale payment with Pi Network
         const piNetworkApiUrl = 'https://api.minepi.com/v2/payments';
-        const cancelResponse = await fetch(`${piNetworkApiUrl}/${paymentRequest.paymentId}/cancel`, {
+        await fetch(`${piNetworkApiUrl}/${paymentRequest.paymentId}/cancel`, {
           method: 'POST',
           headers: {
             'Authorization': `Key ${piApiKey}`,
-            'Content-Type': 'application/json'
-          }
+            'Content-Type': 'application/json',
+          },
         });
 
-        // Update our database regardless of Pi Network response
         await supabaseClient.from('payments').update({
           status: {
             approved: false,
             verified: false,
             completed: false,
             cancelled: true,
-            error: 'Payment automatically cancelled due to staleness (>10 minutes old)'
+            error: 'Payment automatically cancelled due to staleness (>10 minutes old)',
           },
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         }).eq('payment_id', paymentRequest.paymentId);
 
-        console.log('Stale payment cancelled');
+        log.info('approve.transition', {
+          from: existingPayment.status,
+          to: 'cancelled_stale',
+        });
       } catch (cancelError) {
-        console.error('Error cancelling stale payment:', cancelError);
-        // Continue with approval process even if cancellation fails
+        log.error('approve.stale_cancel_error', {
+          message: cancelError instanceof Error ? cancelError.message : String(cancelError),
+        });
       }
     }
 
-    // Idempotent: payment already approved and still valid — skip Pi Network call
     if (existingPayment?.status?.approved && !isStalePayment(existingPayment)) {
-      return new Response(
-        JSON.stringify({ success: true, message: 'Payment was already approved', paymentId: paymentRequest.paymentId }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      log.info('approve.terminal.already_approved');
+      return respond({
+        success: true,
+        message: 'Payment was already approved',
+        paymentId: paymentRequest.paymentId,
+      });
     }
 
-    // Create new payment record if it doesn't exist
     if (!existingPayment) {
       const { error } = await supabaseClient
         .from('payments')
@@ -200,32 +198,36 @@ Deno.serve(async (req) => {
             approved: false,
             verified: false,
             completed: false,
-            cancelled: false
-          }
+            cancelled: false,
+          },
         });
       if (error && error.code !== '23505') {
-        console.error('Payment creation error:', error);
-        return new Response(
-          JSON.stringify({ success: false, message: 'Payment processing failed. Please try again.' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-        );
+        log.error('approve.insert_error', { code: error.code, message: error.message });
+        return respond({ success: false, message: 'Payment processing failed. Please try again.' }, 500);
       }
+      log.info('approve.transition', {
+        from: 'none',
+        to: 'created',
+        idempotent: error?.code === '23505',
+      });
     }
 
-    // Attempt to approve the payment with Pi Network
-    console.log('Calling Pi Network API for approval...');
+    log.info('approve.pi_api.call');
     try {
       const piNetworkApiUrl = 'https://api.minepi.com/v2/payments';
       const approveResponse = await fetch(`${piNetworkApiUrl}/${paymentRequest.paymentId}/approve`, {
         method: 'POST',
         headers: {
           'Authorization': `Key ${piApiKey}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       });
 
       const approveResult = await approveResponse.json();
-      console.log('Pi Network API response received');
+      log.info('approve.pi_api.response', {
+        ok: approveResponse.ok,
+        status: approveResponse.status,
+      });
 
       if (!approveResponse.ok) {
         if (approveResult.message?.includes('already approved')) {
@@ -234,15 +236,17 @@ Deno.serve(async (req) => {
               approved: true,
               verified: false,
               completed: false,
-              cancelled: false
+              cancelled: false,
             },
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           }).eq('payment_id', paymentRequest.paymentId);
 
-          return new Response(
-            JSON.stringify({ success: true, message: 'Payment was already approved', paymentId: paymentRequest.paymentId }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          log.info('approve.transition', { from: 'pending', to: 'approved', source: 'pi_already_approved' });
+          return respond({
+            success: true,
+            message: 'Payment was already approved',
+            paymentId: paymentRequest.paymentId,
+          });
         }
 
         await supabaseClient.from('payments').update({
@@ -251,36 +255,33 @@ Deno.serve(async (req) => {
             verified: false,
             completed: false,
             cancelled: true,
-            error: `Pi Network API error: ${JSON.stringify(approveResult)}`
+            error: `Pi Network API error: ${JSON.stringify(approveResult)}`,
           },
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         }).eq('payment_id', paymentRequest.paymentId);
 
-        console.error('Pi Network API error:', approveResult);
-        return new Response(
-          JSON.stringify({ success: false, message: 'Payment approval failed. Please try again.' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
-        );
+        log.error('approve.pi_api.error', { result: approveResult });
+        log.info('approve.transition', { from: 'pending', to: 'cancelled_error' });
+        return respond({ success: false, message: 'Payment approval failed. Please try again.' }, 502);
       }
 
-      // Update payment status to approved
       await supabaseClient.from('payments').update({
         status: {
           approved: true,
           verified: false,
           completed: false,
-          cancelled: false
+          cancelled: false,
         },
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }).eq('payment_id', paymentRequest.paymentId);
+      log.info('approve.transition', { from: 'pending', to: 'approved' });
 
-      // Update user subscription
       const subscriptionTier = determineSubscriptionTier(paymentRequest.amount, paymentRequest.metadata);
       const duration = Number(paymentRequest.metadata?.duration) || null;
       const now = new Date();
       const endDate = duration ? new Date(now.getTime() + duration * 86400000) : null;
 
-      const { data: userData, error: userError } = await supabaseClient
+      const { data: userData } = await supabaseClient
         .from('users')
         .select('id, subscription')
         .eq('id', paymentRequest.userId)
@@ -303,51 +304,49 @@ Deno.serve(async (req) => {
               .insert({
                 user_id: paymentRequest.userId,
                 plan: subscriptionTier,
-                duration: duration,
+                duration,
                 start_date: now.toISOString(),
-                end_date: endDate?.toISOString() || null
+                end_date: endDate?.toISOString() || null,
               });
-
-            if (subError) console.error('Error recording subscription history:', subError);
+            if (subError) log.warn('approve.subscription_history_error', { message: subError.message });
+          } else {
+            log.warn('approve.user_update_error', { message: updateError.message });
           }
         } else {
-          console.log('User subscription unchanged - current tier equal or better');
+          log.info('approve.subscription_unchanged');
         }
       } else {
-        console.log('User not found in database');
+        log.warn('approve.user_not_found');
       }
 
-      const endTime = Date.now();
-      console.log(`Payment approval completed in ${endTime - startTime}ms`);
-
-      return new Response(
-        JSON.stringify({ success: true, message: 'Payment approved successfully', paymentId: paymentRequest.paymentId }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-
+      log.info('approve.complete', { durationMs: Date.now() - startTime });
+      return respond({
+        success: true,
+        message: 'Payment approved successfully',
+        paymentId: paymentRequest.paymentId,
+      });
     } catch (apiError) {
-      console.error('Pi Network API call error:', apiError);
+      log.error('approve.pi_api.exception', {
+        message: apiError instanceof Error ? apiError.message : String(apiError),
+      });
       await supabaseClient.from('payments').update({
         status: {
           approved: false,
           verified: false,
           completed: false,
           cancelled: true,
-          error: `API call error: ${apiError instanceof Error ? apiError.message : String(apiError)}`
+          error: `API call error: ${apiError instanceof Error ? apiError.message : String(apiError)}`,
         },
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }).eq('payment_id', paymentRequest.paymentId);
+      log.info('approve.transition', { from: 'pending', to: 'cancelled_api_error' });
 
-      return new Response(
-        JSON.stringify({ success: false, message: 'Payment service temporarily unavailable. Please try again.' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
-      );
+      return respond({ success: false, message: 'Payment service temporarily unavailable. Please try again.' }, 502);
     }
   } catch (error) {
-    console.error('Error in approve-payment function:', error);
-    return new Response(
-      JSON.stringify({ success: false, message: 'Payment service error. Please try again later.' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
+    log.error('approve.unhandled', {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return respond({ success: false, message: 'Payment service error. Please try again later.' }, 500);
   }
 });
