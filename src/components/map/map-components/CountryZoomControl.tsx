@@ -389,7 +389,8 @@ const CountryZoomControl: React.FC = () => {
           <Minus className="w-4 h-4 pointer-events-none" />
         </button>
       </div>
-    </div>
+    </div>,
+    map.getContainer()
   );
 };
 
