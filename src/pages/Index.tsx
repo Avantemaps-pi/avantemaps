@@ -97,6 +97,25 @@ const Index = () => {
     }
   }, [location]);
 
+  // Apply category filter on top of search filter
+  const basePlaces = filteredPlaces.length > 0 || searchTerm ? filteredPlaces : places;
+  const visiblePlaces = React.useMemo(() => {
+    if (selectedCategoryId === 'all') return basePlaces;
+    const opt = CATEGORY_OPTIONS.find(o => o.id === selectedCategoryId);
+    if (!opt || opt.match.length === 0) return basePlaces;
+    return basePlaces.filter(p => {
+      const haystack = [
+        p.category,
+        ...(p.business_types || []),
+        ...(p.keywords || []),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return opt.match.some(m => haystack.includes(m));
+    });
+  }, [basePlaces, selectedCategoryId]);
+
   // Find the selected place for SEO
   const selectedPlaceData = [...places, ...filteredPlaces].find(place => place.id === selectedPlace);
 
