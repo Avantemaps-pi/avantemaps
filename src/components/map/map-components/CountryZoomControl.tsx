@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useMap } from 'react-leaflet';
+import L from 'leaflet';
 import { Plus, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -278,30 +279,49 @@ const CountryZoomControl: React.FC = () => {
 
   return (
     <div
-      ref={containerRef}
+      ref={(el) => {
+        containerRef.current = el;
+        if (el) {
+          // Canonical Leaflet fix: stop pointer/touch/scroll events from
+          // bubbling to the map so taps don't pan/zoom the map underneath.
+          L.DomEvent.disableClickPropagation(el);
+          L.DomEvent.disableScrollPropagation(el);
+        }
+      }}
       className={cn(
-        'absolute z-[20] transition-shadow',
+        'absolute z-[20] transition-shadow select-none touch-manipulation',
         atCountry && 'ring-2 ring-primary/60 rounded-md shadow-lg'
       )}
       style={{ bottom, right }}
       aria-label={atCountry ? 'Map is at country zoom level' : undefined}
+      // Belt-and-braces: stop common event types at the React layer too.
+      onPointerDown={(e) => e.stopPropagation()}
+      onPointerUp={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onMouseUp={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+      onContextMenu={(e) => e.stopPropagation()}
+      onWheel={(e) => e.stopPropagation()}
     >
-      <div
-        className="rounded-md overflow-hidden border border-border shadow-md bg-background"
-        onMouseDown={(e) => e.stopPropagation()}
-        onDoubleClick={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="rounded-md overflow-hidden border border-border shadow-md bg-background">
         <button
           type="button"
           aria-label="Zoom to country level"
           aria-disabled={plusDisabled}
           title={plusDisabled ? 'Already at country zoom' : 'Zoom in to country view'}
           disabled={plusDisabled}
-          onClick={goToCountry}
-          className={cn(btnBase, 'border-b border-border')}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!plusDisabled) goToCountry();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          className={cn(btnBase, 'border-b border-border touch-manipulation')}
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 pointer-events-none" />
         </button>
         <button
           type="button"
@@ -309,10 +329,15 @@ const CountryZoomControl: React.FC = () => {
           aria-disabled={minusDisabled}
           title={minusDisabled ? 'Already at country zoom' : 'Zoom out to country view'}
           disabled={minusDisabled}
-          onClick={goToCountry}
-          className={btnBase}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!minusDisabled) goToCountry();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          className={cn(btnBase, 'touch-manipulation')}
         >
-          <Minus className="w-4 h-4" />
+          <Minus className="w-4 h-4 pointer-events-none" />
         </button>
       </div>
     </div>
