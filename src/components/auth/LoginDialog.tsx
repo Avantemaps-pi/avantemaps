@@ -227,17 +227,17 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
                     Still having trouble? Open the troubleshooting steps below, or try closing and reopening the Pi Browser.
                   </p>
                 )}
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-2 items-center">
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
                     className="h-8 text-xs"
                     onClick={handleLogin}
-                    disabled={isLoading || !sdkAvailable}
+                    disabled={isLoading || !sdkAvailable || isCoolingDown}
                   >
                     <RefreshCw className={`h-3 w-3 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-                    Try again
+                    {isCoolingDown ? `Retry in ${formatCooldown(cooldownRemaining)}` : 'Try again'}
                   </Button>
                   <Button
                     type="button"
