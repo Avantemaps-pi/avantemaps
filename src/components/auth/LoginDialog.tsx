@@ -60,7 +60,17 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const [sdkAvailable, setSdkAvailable] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState<number>(0);
   const [showTroubleshooting, setShowTroubleshooting] = useState<boolean>(false);
-  
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [attemptCount, setAttemptCount] = useState<number>(0);
+
+  // Reset local error when dialog re-opens
+  useEffect(() => {
+    if (open) {
+      setLocalError(null);
+      setAttemptCount(0);
+    }
+  }, [open]);
+
   useEffect(() => {
     // In preview/dev environments, allow login even without SDK
     const allowTestMode = isPreviewOrDev();
@@ -93,29 +103,28 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
     }
   }, [open, sdkAvailable, retryCount]);
 
-  console.log("SDK check:", {
-    hasPi: !!window.Pi,
-    hasAuthenticate: typeof window.Pi?.authenticate,
-    isSdkAvailable: sdkAvailable,
-  });
-
-  
   const handleLogin = async () => {
+    setLocalError(null);
+    setAttemptCount((c) => c + 1);
     try {
       secureLog.info("Starting Pi authentication...");
-      
-      // Use the auth context's login function which handles both
-      // real Pi authentication and test/dev mode
       await login();
       onOpenChange(false);
     } catch (error) {
       secureLog.error("❌ Pi login error:", error);
+      const message = friendlyAuthError(error);
+      setLocalError(message);
+      toast.error(message);
     }
   };
-  
+
   const handleContinueBrowsing = () => {
     onOpenChange(false);
   };
+
+  // Prefer the most recent local error, fall back to context-level authError
+  const displayError = localError ?? authError;
+  const showPersistentHint = attemptCount >= 2;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
