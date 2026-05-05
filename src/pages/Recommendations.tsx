@@ -262,6 +262,7 @@ const Recommendations = () => {
           ))}
         </div>
       </div>
+      )}
     </AppLayout>
   );
 };
