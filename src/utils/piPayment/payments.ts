@@ -206,19 +206,28 @@ export async function executeSubscriptionPayment(
           }
         },
         onCancel: (paymentId: string) => {
-          console.log('Payment cancelled:', paymentId);
+          lcLog('lifecycle.cancel', { paymentId });
           resolve({
             success: false,
-            message: 'Payment was cancelled'
+            message: 'Payment was cancelled',
           });
         },
         onError: (error: Error) => {
-          console.error('Payment error:', error);
+          console.error(
+            JSON.stringify({
+              ts: new Date().toISOString(),
+              level: 'error',
+              event: 'lifecycle.error',
+              fn: 'client.executeSubscriptionPayment',
+              correlationId,
+              message: error.message,
+            })
+          );
           resolve({
             success: false,
-            message: error.message || 'Payment failed'
+            message: error.message || 'Payment failed',
           });
-        }
+        },
       };
 
       createPiPayment({ amount, memo, metadata }, callbacks)
