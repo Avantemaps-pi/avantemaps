@@ -160,6 +160,17 @@ export const useSubscriptionPayment = () => {
 
   return {
     isProcessingPayment,
+    isPaymentLocked,
+    paymentPolling: {
+      paymentId: polling.paymentId,
+      status: polling.status,
+      isPolling: polling.isPolling,
+      isTerminal: polling.isTerminal,
+      terminalReason: polling.terminalReason,
+      attempts: polling.attempts,
+      reset: polling.reset,
+      stop: polling.stop,
+    },
     selectedFrequency,
     handleFrequencyChange,
     handleSubscribe,
