@@ -289,10 +289,21 @@ const CountryZoomControl: React.FC = () => {
         }
       }}
       className={cn(
-        'absolute z-[20] transition-shadow select-none touch-manipulation',
+        'absolute z-[20] transition-shadow select-none',
         atCountry && 'ring-2 ring-primary/60 rounded-md shadow-lg'
       )}
-      style={{ bottom, right }}
+      style={{
+        bottom,
+        right,
+        // Block native gestures (pan/zoom/pinch) from reaching the map
+        touchAction: 'none',
+        // Ensure the container always captures pointer events
+        pointerEvents: 'auto',
+        WebkitTapHighlightColor: 'transparent',
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
+        overscrollBehavior: 'contain',
+      }}
       aria-label={atCountry ? 'Map is at country zoom level' : undefined}
       // Belt-and-braces: stop common event types at the React layer too.
       onPointerDown={(e) => e.stopPropagation()}
