@@ -198,6 +198,7 @@ const LandingPage: React.FC = () => {
       {/* Footer spacing */}
       <div className="h-8" />
 
+      <LoginDialog open={showLogin} onOpenChange={setShowLogin} />
     </div>
   );
 };
