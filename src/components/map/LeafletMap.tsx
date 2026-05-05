@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { defaultCenter, defaultZoom, minZoom, maxZoom, OSM_TILE_LAYER, worldBounds, maxBoundsViscosity } from './mapConfig';
 import MapMarkers from './map-components/MapMarkers';
 import MapViewUpdater from './map-components/MapViewUpdater';
+import CountryClickFocus from './map-components/CountryClickFocus';
 import PlaceOverlay from './map-components/PlaceOverlay';
 import LoadingOverlay from './map-components/LoadingOverlay';
 import EmptyMapState from './EmptyMapState';
@@ -148,6 +149,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         />
         
         <MapViewUpdater center={mapCenter} zoom={zoom} />
+        <CountryClickFocus />
         
         <MarkerClusterGroup>
           <MapMarkers places={displayPlaces} activeMarkerId={activeMarker} onMarkerClick={handleMarkerClick} />
