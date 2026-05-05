@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/context/auth';
 import {
   executeSubscriptionPayment,
@@ -9,6 +9,7 @@ import { approvePayment } from '@/api/payments';
 import { SubscriptionTier } from '@/utils/piNetwork';
 import { toast } from 'sonner';
 import { withPiErrorHandling } from '@/utils/piPayment/piErrorHandler';
+import { usePaymentStatusPolling } from '@/hooks/usePaymentStatusPolling';
 
 // TODO(PiRC2): When the Pi Network PiRC2 subscription contract ships and
 // `FEATURE_FLAGS.pirc2Subscriptions` is enabled, route monthly renewals
@@ -19,6 +20,15 @@ export const useSubscriptionPayment = () => {
   const { user, isAuthenticated, login, refreshUserData } = useAuth();
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [selectedFrequency, setSelectedFrequency] = useState("monthly");
+  const polling = usePaymentStatusPolling();
+
+  // Disable duplicate submissions while processing OR while a payment is being
+  // polled. Stays locked once a terminal "completed" state is seen so the UI
+  // can refresh user data without allowing a re-submit.
+  const isPaymentLocked =
+    isProcessingPayment ||
+    polling.isPolling ||
+    (polling.isTerminal && polling.terminalReason === 'completed');
 
   const handleFrequencyChange = (frequency: string) => {
     setSelectedFrequency(frequency);
@@ -61,7 +71,13 @@ export const useSubscriptionPayment = () => {
       return;
     }
 
+    if (isPaymentLocked) {
+      toast.info("A payment is already being processed. Please wait for it to finish.");
+      return;
+    }
+
     setIsProcessingPayment(true);
+    polling.reset();
 
     try {
       console.log("Refreshing user data before payment...");
@@ -70,19 +86,25 @@ export const useSubscriptionPayment = () => {
       const subscriptionTier = tier as SubscriptionTier;
       const price = getSubscriptionPrice(subscriptionTier, selectedFrequency);
 
-      // Execute the payment using the Pi Network flow with error handling
+      // Execute the payment using the Pi Network flow with error handling.
+      // Start polling as soon as we have a paymentId so we can react to
+      // terminal states (completed/cancelled/voided) coming from the server
+      // even if the SDK callback path is delayed or duplicated.
       const result = await withPiErrorHandling(async () => {
         return await executeSubscriptionPayment(
           price,
           subscriptionTier,
-          selectedFrequency as 'monthly' | 'yearly'
+          selectedFrequency as 'monthly' | 'yearly',
+          {
+            onPaymentId: (paymentId) => {
+              polling.start(paymentId);
+            },
+          }
         );
       });
 
       if (result && result.success) {
         toast.success(result.message);
-        
-        // Refresh user data if the payment was successful and requires refresh
         if (result.shouldRefreshUser) {
           console.log("Payment successful, refreshing user data...");
           await refreshUserData();
@@ -138,6 +160,17 @@ export const useSubscriptionPayment = () => {
 
   return {
     isProcessingPayment,
+    isPaymentLocked,
+    paymentPolling: {
+      paymentId: polling.paymentId,
+      status: polling.status,
+      isPolling: polling.isPolling,
+      isTerminal: polling.isTerminal,
+      terminalReason: polling.terminalReason,
+      attempts: polling.attempts,
+      reset: polling.reset,
+      stop: polling.stop,
+    },
     selectedFrequency,
     handleFrequencyChange,
     handleSubscribe,

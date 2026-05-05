@@ -19,13 +19,15 @@ const Pricing = () => {
   const [previousPlan, setPreviousPlan] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   // Get subscription payment utilities
-  const { 
+  const {
     userSubscriptionTier,
-    selectedFrequency, 
+    selectedFrequency,
     handleFrequencyChange,
     handleSubscribe,
     updateUserSubscription,
-    isProcessingPayment 
+    isProcessingPayment,
+    isPaymentLocked,
+    paymentPolling,
   } = useSubscriptionPayment();
   
   // Handle frequency change
@@ -99,8 +101,8 @@ const Pricing = () => {
               handleSubscribe(tier.id);
             }
           },
-          isLoading: isProcessingPayment,
-          disabled: false // Remove the comingSoon check to enable all tiers
+          isLoading: isProcessingPayment || (paymentPolling.isPolling && !paymentPolling.isTerminal),
+          disabled: isPaymentLocked,
         }))}
         frequencies={["monthly", "yearly"]}
         onFrequencyChange={handleBillingChange}
