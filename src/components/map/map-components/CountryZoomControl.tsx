@@ -333,10 +333,13 @@ const CountryZoomControl: React.FC = () => {
     };
   }, [map]);
 
-  const plusDisabled = zoom >= COUNTRY_ZOOM;
-  const minusDisabled = zoom <= COUNTRY_ZOOM;
+  const mapMinZoom = map.getMinZoom();
+  const mapMaxZoom = map.getMaxZoom();
+  const plusDisabled = zoom >= mapMaxZoom;
+  const minusDisabled = zoom <= mapMinZoom;
   const atCountry = zoom === COUNTRY_ZOOM;
-  const goToCountry = () => map.setZoom(COUNTRY_ZOOM);
+  const zoomIn = () => map.zoomIn();
+  const zoomOut = () => map.zoomOut();
 
   // Pointer-move threshold: if the pointer travels more than DRAG_THRESHOLD_PX
   // between pointerdown and pointerup, treat the gesture as a drag and
@@ -362,14 +365,15 @@ const CountryZoomControl: React.FC = () => {
   };
   const handleBtnClick = (
     e: React.MouseEvent<HTMLButtonElement>,
-    disabled: boolean
+    disabled: boolean,
+    action: () => void
   ) => {
     e.stopPropagation();
     const wasDrag = draggedRef.current;
     pointerStartRef.current = null;
     draggedRef.current = false;
     if (wasDrag || disabled) return;
-    goToCountry();
+    action();
   };
 
   const btnBase =
@@ -425,14 +429,14 @@ const CountryZoomControl: React.FC = () => {
       <div className="rounded-md overflow-hidden border border-border shadow-md bg-background">
         <button
           type="button"
-          aria-label="Zoom to country level"
+          aria-label="Zoom in"
           aria-disabled={plusDisabled}
-          title={plusDisabled ? 'Already at country zoom' : 'Zoom in to country view'}
+          title={plusDisabled ? 'Maximum zoom reached' : 'Zoom in'}
           disabled={plusDisabled}
           onPointerDown={handleBtnPointerDown}
           onPointerMove={handleBtnPointerMove}
           onPointerCancel={() => { pointerStartRef.current = null; draggedRef.current = false; }}
-          onClick={(e) => handleBtnClick(e, plusDisabled)}
+          onClick={(e) => handleBtnClick(e, plusDisabled, zoomIn)}
           onTouchStart={(e) => e.stopPropagation()}
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
           className={cn(btnBase, 'border-b border-border')}
@@ -441,14 +445,14 @@ const CountryZoomControl: React.FC = () => {
         </button>
         <button
           type="button"
-          aria-label="Zoom out to country level"
+          aria-label="Zoom out"
           aria-disabled={minusDisabled}
-          title={minusDisabled ? 'Already at country zoom' : 'Zoom out to country view'}
+          title={minusDisabled ? 'Minimum zoom reached' : 'Zoom out'}
           disabled={minusDisabled}
           onPointerDown={handleBtnPointerDown}
           onPointerMove={handleBtnPointerMove}
           onPointerCancel={() => { pointerStartRef.current = null; draggedRef.current = false; }}
-          onClick={(e) => handleBtnClick(e, minusDisabled)}
+          onClick={(e) => handleBtnClick(e, minusDisabled, zoomOut)}
           onTouchStart={(e) => e.stopPropagation()}
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
           className={cn(btnBase)}
