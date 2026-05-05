@@ -1,39 +1,52 @@
 /**
  * Payment completion endpoint
  *
- * Calls the `complete-payment` Supabase Edge Function. Forwards an
- * end-to-end correlation ID so the entire approve → complete → status
+ * Calls the `complete-payment` Supabase Edge Function. Forwards the
+ * end-to-end lifecycle ID so the entire approve → complete → status
  * lifecycle can be traced in one query.
  */
 import { supabase } from '@/integrations/supabase/client';
 import { PaymentRequest, PaymentResponse } from './types';
 import {
   correlationHeaders,
-  generateCorrelationId,
+  generateLifecycleId,
 } from '@/utils/correlation';
+
+const FN = 'client.complete-payment';
+
+function emit(
+  level: 'info' | 'warn' | 'error',
+  event: string,
+  base: Record<string, unknown>,
+  extra?: Record<string, unknown>
+) {
+  const line = JSON.stringify({
+    ts: new Date().toISOString(),
+    level,
+    event,
+    fn: FN,
+    ...base,
+    ...(extra ?? {}),
+  });
+  if (level === 'error') console.error(line);
+  else if (level === 'warn') console.warn(line);
+  else console.log(line);
+}
 
 export const completePayment = async (
   req: PaymentRequest & { txid: string },
-  opts: { correlationId?: string } = {}
-): Promise<PaymentResponse & { correlationId: string }> => {
-  const correlationId = opts.correlationId ?? generateCorrelationId('complete');
-  const log = (level: 'info' | 'warn' | 'error', event: string, extra?: Record<string, unknown>) => {
-    const line = JSON.stringify({
-      ts: new Date().toISOString(),
-      level,
-      event,
-      fn: 'client.completePayment',
-      correlationId,
-      paymentId: req.paymentId,
-      txid: req.txid,
-      ...(extra ?? {}),
-    });
-    if (level === 'error') console.error(line);
-    else if (level === 'warn') console.warn(line);
-    else console.log(line);
+  opts: { lifecycleId?: string; correlationId?: string } = {}
+): Promise<PaymentResponse & { lifecycleId: string; correlationId: string }> => {
+  const lifecycleId =
+    opts.lifecycleId ?? opts.correlationId ?? generateLifecycleId('complete');
+  const base = {
+    lifecycleId,
+    paymentId: req.paymentId,
+    txid: req.txid,
+    stage: 'pi_api' as const,
   };
 
-  log('info', 'complete.request.start');
+  emit('info', `${FN}.request.start`, base);
 
   try {
     const timeoutPromise = new Promise<PaymentResponse>((_, reject) => {
@@ -43,11 +56,11 @@ export const completePayment = async (
     const fetchPromise = supabase.functions
       .invoke('complete-payment', {
         body: JSON.stringify(req),
-        headers: correlationHeaders(correlationId),
+        headers: correlationHeaders(lifecycleId),
       })
       .then(({ data, error }) => {
         if (error) {
-          log('error', 'complete.request.error', { message: error.message });
+          emit('error', `${FN}.request.error`, base, { message: error.message });
           return {
             success: false,
             message: `Failed to complete payment: ${error.message}`,
@@ -55,16 +68,17 @@ export const completePayment = async (
             txid: req.txid,
           } as PaymentResponse;
         }
-        log('info', 'complete.request.success', {
-          serverCorrelationId: (data as any)?.correlationId,
+        emit('info', `${FN}.request.success`, base, {
+          serverLifecycleId:
+            (data as any)?.lifecycleId ?? (data as any)?.correlationId,
         });
         return data as PaymentResponse;
       });
 
     const result = await Promise.race([fetchPromise, timeoutPromise]);
-    return { ...result, correlationId };
+    return { ...result, lifecycleId, correlationId: lifecycleId };
   } catch (fetchError) {
-    log('error', 'complete.request.exception', {
+    emit('error', `${FN}.request.exception`, base, {
       message: fetchError instanceof Error ? fetchError.message : 'Unknown error',
     });
     return {
@@ -74,7 +88,8 @@ export const completePayment = async (
         (fetchError instanceof Error ? fetchError.message : 'Unknown error'),
       paymentId: req.paymentId,
       txid: req.txid,
-      correlationId,
+      lifecycleId,
+      correlationId: lifecycleId,
     };
   }
 };
