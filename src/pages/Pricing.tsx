@@ -19,13 +19,15 @@ const Pricing = () => {
   const [previousPlan, setPreviousPlan] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   // Get subscription payment utilities
-  const { 
+  const {
     userSubscriptionTier,
-    selectedFrequency, 
+    selectedFrequency,
     handleFrequencyChange,
     handleSubscribe,
     updateUserSubscription,
-    isProcessingPayment 
+    isProcessingPayment,
+    isPaymentLocked,
+    paymentPolling,
   } = useSubscriptionPayment();
   
   // Handle frequency change
