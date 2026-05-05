@@ -35,7 +35,7 @@ const CountryZoomControl: React.FC = () => {
     'transition-colors hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-background';
 
   return (
-    <div className="leaflet-top leaflet-right" style={{ pointerEvents: 'none' }}>
+    <div className="leaflet-top leaflet-right" style={{ pointerEvents: 'none', top: 72 }}>
       <div
         className="leaflet-control rounded-md overflow-hidden border border-border shadow-md bg-background"
         style={{ pointerEvents: 'auto', margin: '12px' }}
