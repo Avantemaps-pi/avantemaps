@@ -101,8 +101,8 @@ const Pricing = () => {
               handleSubscribe(tier.id);
             }
           },
-          isLoading: isProcessingPayment,
-          disabled: false // Remove the comingSoon check to enable all tiers
+          isLoading: isProcessingPayment || (paymentPolling.isPolling && !paymentPolling.isTerminal),
+          disabled: isPaymentLocked,
         }))}
         frequencies={["monthly", "yearly"]}
         onFrequencyChange={handleBillingChange}
