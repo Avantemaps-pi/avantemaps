@@ -218,11 +218,40 @@ const Index = () => {
               ]} 
               cycleInterval={3000} 
             />
-            {searchTerm && filteredPlaces.length === 0 && !isLoading && (
-              <div className="bg-background/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-sm border border-border">
-                <p className="text-sm text-muted-foreground">no businesses found.</p>
-              </div>
-            )}
+            {!isLoading && visiblePlaces.length === 0 && (searchTerm || selectedCategoryId !== 'all') && (() => {
+              const categoryLabel = CATEGORY_OPTIONS.find(o => o.id === selectedCategoryId)?.label;
+              const hasSearch = !!searchTerm;
+              const hasCategory = selectedCategoryId !== 'all';
+              const searchHasMatchesInAll = hasSearch && filteredPlaces.length > 0;
+              let reason = '';
+              if (hasSearch && hasCategory) {
+                reason = searchHasMatchesInAll
+                  ? `No results for "${searchTerm}" in ${categoryLabel}. Matches exist in other categories.`
+                  : `No businesses match "${searchTerm}" in ${categoryLabel}.`;
+              } else if (hasSearch) {
+                reason = `No businesses match "${searchTerm}".`;
+              } else {
+                reason = `No businesses found in ${categoryLabel}.`;
+              }
+              return (
+                <div className="bg-background/95 backdrop-blur-sm rounded-lg px-4 py-3 shadow-sm border border-border flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">No matching businesses</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{reason}</p>
+                  </div>
+                  {hasCategory && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="flex-shrink-0"
+                      onClick={() => setSelectedCategoryId('all')}
+                    >
+                      Show All
+                    </Button>
+                  )}
+                </div>
+              );
+            })()}
             <CategoryFilter
               selectedCategoryId={selectedCategoryId}
               onSelect={setSelectedCategoryId}
