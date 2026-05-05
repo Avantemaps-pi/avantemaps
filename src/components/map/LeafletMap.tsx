@@ -7,6 +7,7 @@ import { defaultCenter, defaultZoom, minZoom, maxZoom, OSM_TILE_LAYER, worldBoun
 import MapMarkers from './map-components/MapMarkers';
 import MapViewUpdater from './map-components/MapViewUpdater';
 import CountryClickFocus from './map-components/CountryClickFocus';
+import CountryZoomControl from './map-components/CountryZoomControl';
 import PlaceOverlay from './map-components/PlaceOverlay';
 import LoadingOverlay from './map-components/LoadingOverlay';
 import EmptyMapState from './EmptyMapState';
@@ -150,6 +151,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         
         <MapViewUpdater center={mapCenter} zoom={zoom} />
         <CountryClickFocus />
+        <CountryZoomControl />
         
         <MarkerClusterGroup>
           <MapMarkers places={displayPlaces} activeMarkerId={activeMarker} onMarkerClick={handleMarkerClick} />
