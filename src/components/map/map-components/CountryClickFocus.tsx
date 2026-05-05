@@ -6,12 +6,18 @@ import L from 'leaflet';
  * On map click, reverse-geocode the point, fly to that country's bounds,
  * and highlight its polygon outline/fill.
  *
- * Caching strategy (to minimize Nominatim calls):
- *  - L1: in-memory cache by country_code -> { bbox, geojson }
- *  - L2: localStorage cache by country_code (7-day TTL) for bbox + geojson
- *  - Tile cache: rounded lat/lng -> country_code, so repeated clicks within
- *    the same ~0.5° tile resolve instantly without any network call
- *  - In-flight de-duplication so simultaneous clicks share one request
+ * Multi-tier cache (most → least specific, all checked before any network call):
+ *
+ *   1. Polygon hit-test       — if point lies inside an already-cached country's
+ *                               GeoJSON, resolve instantly (border-accurate).
+ *   2. Bbox hit-test          — fast bounding-box check across cached countries.
+ *                               Catches clicks anywhere in a previously-loaded
+ *                               country with zero network cost.
+ *   3. Tile cache (in-mem)    — rounded lat/lng → country_code (or null=ocean).
+ *   4. Tile cache (storage)   — same, persisted across reloads.
+ *   5. Country cache (memory) — country_code → { bbox, geojson }.
+ *   6. Country cache (storage)— same, 7-day TTL, stale-while-revalidate.
+ *   7. In-flight de-dup       — concurrent clicks on the same tile share one fetch.
  */
 
 interface CountryData {
@@ -20,45 +26,87 @@ interface CountryData {
 }
 
 const STORAGE_PREFIX = 'country_focus_v1:';
+const TILE_STORAGE_KEY = 'country_focus_v1_tiles';
 const TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const MEMORY_CAP = 60;       // max cached countries in memory
+const TILE_MEMORY_CAP = 2000; // max tile entries in memory
+const TILE_STORAGE_CAP = 1500;
 
 /**
- * Tile precision (decimal places used to round lat/lng for the tile cache key).
- * Higher = more accurate but lower cache hit rate; lower = coarser but more reuse.
- *
- *   0  → ~111 km tiles  (very high reuse, may misclassify near borders)
- *   1  → ~11 km tiles   (default — good balance)
- *   2  → ~1.1 km tiles  (high accuracy, lower reuse)
- *   3  → ~110 m tiles   (near-exact, minimal reuse)
- *
+ * Tile precision (decimals on lat/lng). Higher = accurate, lower hit-rate.
+ *   0 → ~111 km   1 → ~11 km (default)   2 → ~1.1 km   3 → ~110 m
  * Override at runtime: `window.__COUNTRY_FOCUS_TILE_PRECISION = 2`
  */
 export const DEFAULT_TILE_PRECISION = 1;
 
 const getTilePrecision = (): number => {
-  const override = (globalThis as any).__COUNTRY_FOCUS_TILE_PRECISION;
-  return Number.isFinite(override) ? Math.max(0, Math.min(4, override)) : DEFAULT_TILE_PRECISION;
+  const o = (globalThis as any).__COUNTRY_FOCUS_TILE_PRECISION;
+  return Number.isFinite(o) ? Math.max(0, Math.min(4, o)) : DEFAULT_TILE_PRECISION;
 };
 
+// ---------- LRU-ish caches (Map preserves insertion order) ----------
+
 const memoryCache = new Map<string, CountryData>();
-const tileCache = new Map<string, string | null>(); // tileKey -> country_code or null (ocean)
+const tileCache = new Map<string, string | null>();
 const inflight = new Map<string, Promise<{ countryCode: string | null; data: CountryData | null }>>();
+
+const touch = <V,>(map: Map<string, V>, key: string, val: V, cap: number) => {
+  if (map.has(key)) map.delete(key);
+  map.set(key, val);
+  while (map.size > cap) {
+    const first = map.keys().next().value;
+    if (first === undefined) break;
+    map.delete(first);
+  }
+};
 
 const tileKey = (lat: number, lng: number) => {
   const p = getTilePrecision();
   return `${lat.toFixed(p)},${lng.toFixed(p)}`;
 };
 
-const loadFromStorage = (code: string): CountryData | null => {
+// ---------- Persistent tile cache ----------
+
+let tileStorageDirty = false;
+const flushTileStorage = () => {
+  if (!tileStorageDirty) return;
+  tileStorageDirty = false;
+  try {
+    // Only persist most-recent TILE_STORAGE_CAP entries
+    const entries = Array.from(tileCache.entries()).slice(-TILE_STORAGE_CAP);
+    localStorage.setItem(TILE_STORAGE_KEY, JSON.stringify(entries));
+  } catch {
+    /* quota — ignore */
+  }
+};
+const scheduleTileFlush = () => {
+  tileStorageDirty = true;
+  // Coalesce writes
+  if (typeof queueMicrotask === 'function') queueMicrotask(flushTileStorage);
+  else setTimeout(flushTileStorage, 0);
+};
+
+const hydrateTileCache = () => {
+  try {
+    const raw = localStorage.getItem(TILE_STORAGE_KEY);
+    if (!raw) return;
+    const entries = JSON.parse(raw) as [string, string | null][];
+    for (const [k, v] of entries) tileCache.set(k, v);
+  } catch {
+    /* ignore */
+  }
+};
+
+// ---------- Persistent country cache (with stale-while-revalidate) ----------
+
+const loadFromStorage = (
+  code: string
+): { data: CountryData; stale: boolean } | null => {
   try {
     const raw = localStorage.getItem(STORAGE_PREFIX + code);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as { ts: number; data: CountryData };
-    if (Date.now() - parsed.ts > TTL_MS) {
-      localStorage.removeItem(STORAGE_PREFIX + code);
-      return null;
-    }
-    return parsed.data;
+    return { data: parsed.data, stale: Date.now() - parsed.ts > TTL_MS };
   } catch {
     return null;
   }
@@ -71,57 +119,147 @@ const saveToStorage = (code: string, data: CountryData) => {
       JSON.stringify({ ts: Date.now(), data })
     );
   } catch {
-    // quota exceeded — ignore
+    /* quota — ignore */
   }
+};
+
+// ---------- Geo helpers ----------
+
+const inBbox = (lat: number, lng: number, b: CountryData['bbox']) =>
+  lat >= b[0] && lat <= b[1] && lng >= b[2] && lng <= b[3];
+
+// Ray-casting point-in-polygon (lng, lat)
+const pointInRing = (lng: number, lat: number, ring: number[][]) => {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    const intersect =
+      yi > lat !== yj > lat &&
+      lng < ((xj - xi) * (lat - yi)) / (yj - yi + 1e-12) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+};
+
+const pointInGeoJson = (lat: number, lng: number, geo: any): boolean => {
+  if (!geo) return false;
+  const test = (coords: number[][][]) => {
+    if (!coords?.length) return false;
+    if (!pointInRing(lng, lat, coords[0])) return false;
+    for (let i = 1; i < coords.length; i++) {
+      if (pointInRing(lng, lat, coords[i])) return false; // hole
+    }
+    return true;
+  };
+  if (geo.type === 'Polygon') return test(geo.coordinates);
+  if (geo.type === 'MultiPolygon') return geo.coordinates.some(test);
+  return false;
+};
+
+/** Search cached countries; returns the one containing this point, if any. */
+const findCachedCountry = (
+  lat: number,
+  lng: number
+): { countryCode: string; data: CountryData } | null => {
+  // Iterate in reverse (most-recently-used first)
+  const entries = Array.from(memoryCache.entries()).reverse();
+  // Polygon-accurate pass first
+  for (const [code, data] of entries) {
+    if (data.geojson && inBbox(lat, lng, data.bbox) &&
+        pointInGeoJson(lat, lng, data.geojson)) {
+      return { countryCode: code, data };
+    }
+  }
+  // Fallback: bbox-only (cheaper but can overlap between countries)
+  for (const [code, data] of entries) {
+    if (!data.geojson && inBbox(lat, lng, data.bbox)) {
+      return { countryCode: code, data };
+    }
+  }
+  return null;
+};
+
+// ---------- Network ----------
+
+const fetchCountryNetwork = async (
+  lat: number,
+  lng: number
+): Promise<{ countryCode: string | null; data: CountryData | null }> => {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=3&addressdetails=1&polygon_geojson=1`;
+  const res = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!res.ok) throw new Error('reverse geocode failed');
+  const json = await res.json();
+  const code: string | undefined = json?.address?.country_code;
+  const bboxRaw: [string, string, string, string] | undefined = json?.boundingbox;
+  if (!code || !bboxRaw) return { countryCode: null, data: null };
+  const data: CountryData = {
+    bbox: [
+      parseFloat(bboxRaw[0]),
+      parseFloat(bboxRaw[1]),
+      parseFloat(bboxRaw[2]),
+      parseFloat(bboxRaw[3]),
+    ],
+    geojson: json.geojson ?? null,
+  };
+  return { countryCode: code, data };
+};
+
+const commit = (code: string, data: CountryData) => {
+  touch(memoryCache, code, data, MEMORY_CAP);
+  saveToStorage(code, data);
 };
 
 const fetchCountry = async (
   lat: number,
   lng: number
 ): Promise<{ countryCode: string | null; data: CountryData | null }> => {
-  const key = tileKey(lat, lng);
-
-  // Tile cache hit (covers ocean too, where value is null)
-  if (tileCache.has(key)) {
-    const code = tileCache.get(key) ?? null;
-    if (!code) return { countryCode: null, data: null };
-    const cached = memoryCache.get(code) ?? loadFromStorage(code);
-    if (cached) {
-      memoryCache.set(code, cached);
-      return { countryCode: code, data: cached };
-    }
+  // 1 + 2: hit-test against already-cached country polygons / bboxes
+  const cachedHit = findCachedCountry(lat, lng);
+  if (cachedHit) {
+    touch(memoryCache, cachedHit.countryCode, cachedHit.data, MEMORY_CAP);
+    return cachedHit;
   }
 
-  // De-dupe in-flight requests for the same tile
+  // 3 + 4: tile cache
+  const key = tileKey(lat, lng);
+  if (tileCache.has(key)) {
+    const code = tileCache.get(key) ?? null;
+    touch(tileCache, key, code, TILE_MEMORY_CAP); // refresh LRU position
+    if (!code) return { countryCode: null, data: null };
+    let cached = memoryCache.get(code);
+    if (!cached) {
+      const persisted = loadFromStorage(code);
+      if (persisted) {
+        cached = persisted.data;
+        touch(memoryCache, code, cached, MEMORY_CAP);
+        if (persisted.stale) {
+          // SWR: refresh in background, return cached immediately
+          fetchCountryNetwork(lat, lng)
+            .then(({ countryCode, data }) => {
+              if (countryCode && data) commit(countryCode, data);
+            })
+            .catch(() => {});
+        }
+      }
+    }
+    if (cached) return { countryCode: code, data: cached };
+  }
+
+  // 7: dedupe simultaneous fetches
   const existing = inflight.get(key);
   if (existing) return existing;
 
   const promise = (async () => {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=3&addressdetails=1&polygon_geojson=1`;
-    const res = await fetch(url, { headers: { Accept: 'application/json' } });
-    if (!res.ok) throw new Error('reverse geocode failed');
-    const json = await res.json();
-    const countryCode: string | undefined = json?.address?.country_code;
-    const bboxRaw: [string, string, string, string] | undefined = json?.boundingbox;
-
-    if (!countryCode || !bboxRaw) {
-      tileCache.set(key, null);
+    const { countryCode, data } = await fetchCountryNetwork(lat, lng);
+    if (!countryCode || !data) {
+      touch(tileCache, key, null, TILE_MEMORY_CAP);
+      scheduleTileFlush();
       return { countryCode: null, data: null };
     }
-
-    const data: CountryData = {
-      bbox: [
-        parseFloat(bboxRaw[0]),
-        parseFloat(bboxRaw[1]),
-        parseFloat(bboxRaw[2]),
-        parseFloat(bboxRaw[3]),
-      ],
-      geojson: json.geojson ?? null,
-    };
-
-    memoryCache.set(countryCode, data);
-    saveToStorage(countryCode, data);
-    tileCache.set(key, countryCode);
+    commit(countryCode, data);
+    touch(tileCache, key, countryCode, TILE_MEMORY_CAP);
+    scheduleTileFlush();
     return { countryCode, data };
   })();
 
@@ -133,10 +271,20 @@ const fetchCountry = async (
   }
 };
 
+// One-time hydration
+let hydrated = false;
+const hydrateOnce = () => {
+  if (hydrated) return;
+  hydrated = true;
+  hydrateTileCache();
+};
+
 const CountryClickFocus: React.FC = () => {
   const lastClickRef = useRef<number>(0);
   const lastCountryRef = useRef<string | null>(null);
   const layerRef = useRef<L.GeoJSON | null>(null);
+
+  hydrateOnce();
 
   const map = useMapEvents({
     click: async (e) => {
@@ -157,7 +305,6 @@ const CountryClickFocus: React.FC = () => {
         const { lat, lng } = e.latlng;
         const { countryCode, data } = await fetchCountry(lat, lng);
 
-        // Ocean / no country — clear highlight
         if (!countryCode || !data) {
           if (layerRef.current) {
             layerRef.current.remove();
@@ -198,7 +345,7 @@ const CountryClickFocus: React.FC = () => {
         const bounds = L.latLngBounds([south, west], [north, east]);
         map.flyToBounds(bounds, { padding: [40, 40], duration: 0.8 });
       } catch {
-        // silent fail
+        /* silent */
       }
     },
   });
