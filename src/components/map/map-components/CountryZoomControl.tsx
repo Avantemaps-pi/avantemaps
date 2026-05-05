@@ -185,14 +185,15 @@ const CountryZoomControl: React.FC = () => {
       pollId = window.setTimeout(tick, POLL_BASE_MS);
 
 
-      // b) Watch the document for the button being added or its
-      //    data attribute appearing later.
-      bodyObserver = new MutationObserver(scheduleRecompute);
+      // b) Watch the document for the button being added. Subtree childList
+      //    is necessary (we don't know where it'll be inserted) but we
+      //    debounce so a burst of unrelated DOM activity doesn't spam
+      //    recompute. Once the button is found, recompute() disconnects
+      //    this observer entirely.
+      bodyObserver = new MutationObserver(debouncedRecompute);
       bodyObserver.observe(document.body, {
         childList: true,
         subtree: true,
-        attributes: true,
-        attributeFilter: ['data-add-business-button'],
       });
     }
 
@@ -203,8 +204,9 @@ const CountryZoomControl: React.FC = () => {
       ro?.disconnect();
       mo?.disconnect();
       bodyObserver?.disconnect();
-      if (pollId !== null) window.clearInterval(pollId);
+      if (pollId !== null) window.clearTimeout(pollId);
       if (rafId !== null) window.cancelAnimationFrame(rafId);
+      if (debounceId !== null) window.clearTimeout(debounceId);
       trackedBtn?.removeEventListener('transitionend', scheduleRecompute);
     };
   }, [map]);
