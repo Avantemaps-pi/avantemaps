@@ -606,6 +606,7 @@ export type Database = {
           amount: number
           created_at: string | null
           id: number
+          lifecycle_id: string | null
           memo: string | null
           metadata: Json | null
           payment_id: string
@@ -618,6 +619,7 @@ export type Database = {
           amount: number
           created_at?: string | null
           id?: number
+          lifecycle_id?: string | null
           memo?: string | null
           metadata?: Json | null
           payment_id: string
@@ -630,6 +632,7 @@ export type Database = {
           amount?: number
           created_at?: string | null
           id?: number
+          lifecycle_id?: string | null
           memo?: string | null
           metadata?: Json | null
           payment_id?: string
