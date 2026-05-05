@@ -194,6 +194,7 @@ Deno.serve(async (req) => {
           amount: paymentRequest.amount,
           memo: paymentRequest.memo,
           metadata: paymentRequest.metadata,
+          lifecycle_id: lifecycleId,
           status: {
             approved: false,
             verified: false,
