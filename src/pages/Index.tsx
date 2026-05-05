@@ -223,6 +223,10 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">no businesses found.</p>
               </div>
             )}
+            <CategoryFilter
+              selectedCategoryId={selectedCategoryId}
+              onSelect={setSelectedCategoryId}
+            />
           </div>
         </div>
       </div>
