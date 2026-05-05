@@ -55,6 +55,21 @@ interface LoginDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Cooldown thresholds: kick in after the 2nd consecutive failure.
+// Durations escalate: 15s, 30s, 60s, then cap at 120s.
+const COOLDOWN_TRIGGER_AT = 2;
+const COOLDOWN_STEPS_SECONDS = [15, 30, 60, 120];
+
+// Module-scoped state survives dialog close/reopen within a session
+let persistentFailureCount = 0;
+let persistentCooldownUntil = 0;
+
+const computeCooldownSeconds = (failures: number): number => {
+  if (failures < COOLDOWN_TRIGGER_AT) return 0;
+  const idx = Math.min(failures - COOLDOWN_TRIGGER_AT, COOLDOWN_STEPS_SECONDS.length - 1);
+  return COOLDOWN_STEPS_SECONDS[idx];
+};
+
 const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const { login, isLoading, authError } = useAuth();
   const [sdkAvailable, setSdkAvailable] = useState<boolean>(false);
@@ -62,14 +77,31 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const [showTroubleshooting, setShowTroubleshooting] = useState<boolean>(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [attemptCount, setAttemptCount] = useState<number>(0);
+  const [failureCount, setFailureCount] = useState<number>(persistentFailureCount);
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(() =>
+    Math.max(0, Math.ceil((persistentCooldownUntil - Date.now()) / 1000))
+  );
 
-  // Reset local error when dialog re-opens
+  // Reset transient UI state when dialog re-opens, but keep persistent
+  // failure/cooldown state so users can't bypass by closing the dialog.
   useEffect(() => {
     if (open) {
       setLocalError(null);
       setAttemptCount(0);
+      setFailureCount(persistentFailureCount);
+      setCooldownRemaining(Math.max(0, Math.ceil((persistentCooldownUntil - Date.now()) / 1000)));
     }
   }, [open]);
+
+  // Tick down the cooldown every second while active and dialog is open
+  useEffect(() => {
+    if (!open || cooldownRemaining <= 0) return;
+    const id = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((persistentCooldownUntil - Date.now()) / 1000));
+      setCooldownRemaining(remaining);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [open, cooldownRemaining]);
 
   useEffect(() => {
     // In preview/dev environments, allow login even without SDK
@@ -104,17 +136,37 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   }, [open, sdkAvailable, retryCount]);
 
   const handleLogin = async () => {
+    if (cooldownRemaining > 0) {
+      toast.error(`Please wait ${cooldownRemaining}s before retrying.`);
+      return;
+    }
     setLocalError(null);
     setAttemptCount((c) => c + 1);
     try {
       secureLog.info("Starting Pi authentication...");
       await login();
+      // Success: clear failure/cooldown state
+      persistentFailureCount = 0;
+      persistentCooldownUntil = 0;
+      setFailureCount(0);
+      setCooldownRemaining(0);
       onOpenChange(false);
     } catch (error) {
       secureLog.error("❌ Pi login error:", error);
       const message = friendlyAuthError(error);
       setLocalError(message);
       toast.error(message);
+
+      // Track failure and apply cooldown
+      const nextFailures = persistentFailureCount + 1;
+      persistentFailureCount = nextFailures;
+      setFailureCount(nextFailures);
+
+      const seconds = computeCooldownSeconds(nextFailures);
+      if (seconds > 0) {
+        persistentCooldownUntil = Date.now() + seconds * 1000;
+        setCooldownRemaining(seconds);
+      }
     }
   };
 
@@ -125,6 +177,13 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   // Prefer the most recent local error, fall back to context-level authError
   const displayError = localError ?? authError;
   const showPersistentHint = attemptCount >= 2;
+  const isCoolingDown = cooldownRemaining > 0;
+  const formatCooldown = (s: number) => {
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return r === 0 ? `${m}m` : `${m}m ${r}s`;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -168,17 +227,17 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
                     Still having trouble? Open the troubleshooting steps below, or try closing and reopening the Pi Browser.
                   </p>
                 )}
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-2 items-center">
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
                     className="h-8 text-xs"
                     onClick={handleLogin}
-                    disabled={isLoading || !sdkAvailable}
+                    disabled={isLoading || !sdkAvailable || isCoolingDown}
                   >
                     <RefreshCw className={`h-3 w-3 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-                    Try again
+                    {isCoolingDown ? `Retry in ${formatCooldown(cooldownRemaining)}` : 'Try again'}
                   </Button>
                   <Button
                     type="button"
@@ -207,16 +266,32 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
             </div>
           </div>
           
+          {isCoolingDown && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="w-full mb-3 text-xs text-center text-muted-foreground bg-muted/40 border border-border rounded-md py-2 px-3"
+            >
+              Too many failed attempts. You can retry in{' '}
+              <span className="font-semibold text-foreground tabular-nums">{formatCooldown(cooldownRemaining)}</span>
+              {failureCount > 0 && (
+                <> · failed attempts: <span className="font-semibold">{failureCount}</span></>
+              )}
+            </div>
+          )}
+
           <Button 
             className="w-full mb-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3"
             onClick={handleLogin}
-            disabled={isLoading || !sdkAvailable}
+            disabled={isLoading || !sdkAvailable || isCoolingDown}
           >
-            {isLoading 
-              ? "Connecting..." 
-              : !sdkAvailable
-                ? "Pi Network Not Available"
-                : "Connect with Pi Network"
+            {isCoolingDown
+              ? `Retry in ${formatCooldown(cooldownRemaining)}`
+              : isLoading
+                ? "Connecting..."
+                : !sdkAvailable
+                  ? "Pi Network Not Available"
+                  : "Connect with Pi Network"
             }
           </Button>
           
