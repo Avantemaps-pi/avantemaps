@@ -119,22 +119,31 @@ export async function executeSubscriptionPayment(
       frequency: normalizedFrequency,
     };
 
-    // Single correlation ID for the full approve → complete → status lifecycle.
-    const correlationId = generateCorrelationId('subpay');
-    const lcLog = (event: string, extra?: Record<string, unknown>) =>
-      console.log(
-        JSON.stringify({
-          ts: new Date().toISOString(),
-          level: 'info',
-          event,
-          fn: 'client.executeSubscriptionPayment',
-          correlationId,
-          tier,
-          frequency: normalizedFrequency,
-          ...(extra ?? {}),
-        })
-      );
-    lcLog('lifecycle.start');
+    // Single lifecycle ID for the full approve → complete → status flow.
+    const lifecycleId = generateLifecycleId('subpay');
+    const FN_LC = 'client.executeSubscriptionPayment';
+    const lcEmit = (
+      level: 'info' | 'warn' | 'error',
+      event: string,
+      stage: string,
+      extra?: Record<string, unknown>
+    ) => {
+      const line = JSON.stringify({
+        ts: new Date().toISOString(),
+        level,
+        event,
+        fn: FN_LC,
+        stage,
+        lifecycleId,
+        tier,
+        frequency: normalizedFrequency,
+        ...(extra ?? {}),
+      });
+      if (level === 'error') console.error(line);
+      else if (level === 'warn') console.warn(line);
+      else console.log(line);
+    };
+    lcEmit('info', `${FN_LC}.lifecycle.start`, 'validation');
 
     return new Promise<PaymentResult>((resolve) => {
       const callbacks: PaymentCallbacks = {
