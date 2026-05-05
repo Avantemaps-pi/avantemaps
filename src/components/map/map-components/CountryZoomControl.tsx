@@ -347,7 +347,8 @@ const CountryZoomControl: React.FC = () => {
           }}
           onPointerDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
-          className={cn(btnBase, 'touch-manipulation')}
+          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+          className={cn(btnBase)}
         >
           <Minus className="w-4 h-4 pointer-events-none" />
         </button>
