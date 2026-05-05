@@ -213,17 +213,24 @@ const CountryZoomControl: React.FC = () => {
 
   const plusDisabled = zoom >= COUNTRY_ZOOM;
   const minusDisabled = zoom <= COUNTRY_ZOOM;
+  const atCountry = zoom === COUNTRY_ZOOM;
   const goToCountry = () => map.setZoom(COUNTRY_ZOOM);
 
-  const btn =
-    'w-9 h-9 flex items-center justify-center bg-background text-foreground ' +
-    'transition-colors hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-background';
+  const btnBase =
+    'w-9 h-9 flex items-center justify-center transition-colors ' +
+    'bg-background text-foreground hover:bg-accent hover:text-accent-foreground ' +
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ' +
+    'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-background disabled:hover:text-foreground';
 
   return (
     <div
       ref={containerRef}
-      className="absolute right-6 z-[20]"
+      className={cn(
+        'absolute right-6 z-[20] transition-shadow',
+        atCountry && 'ring-2 ring-primary/60 rounded-md shadow-lg'
+      )}
       style={{ bottom }}
+      aria-label={atCountry ? 'Map is at country zoom level' : undefined}
     >
       <div
         className="rounded-md overflow-hidden border border-border shadow-md bg-background"
@@ -234,18 +241,22 @@ const CountryZoomControl: React.FC = () => {
         <button
           type="button"
           aria-label="Zoom to country level"
+          aria-disabled={plusDisabled}
+          title={plusDisabled ? 'Already at country zoom' : 'Zoom in to country view'}
           disabled={plusDisabled}
           onClick={goToCountry}
-          className={cn(btn, 'border-b border-border')}
+          className={cn(btnBase, 'border-b border-border')}
         >
           <Plus className="w-4 h-4" />
         </button>
         <button
           type="button"
           aria-label="Zoom out to country level"
+          aria-disabled={minusDisabled}
+          title={minusDisabled ? 'Already at country zoom' : 'Zoom out to country view'}
           disabled={minusDisabled}
           onClick={goToCountry}
-          className={btn}
+          className={btnBase}
         >
           <Minus className="w-4 h-4" />
         </button>
