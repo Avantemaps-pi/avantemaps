@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useMap } from 'react-leaflet';
+import L from 'leaflet';
 import { Plus, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
