@@ -264,7 +264,8 @@ const Index = () => {
       <Suspense fallback={null}>
         <AddBusinessButton selectedPlace={selectedPlace} />
       </Suspense>
-      <LocateMeButton className="absolute right-6 bottom-36 sm:bottom-20 z-20" />
+      {/* Sits above the country zoom +/- control (which itself sits above the Add Business button). */}
+      <LocateMeButton className="absolute right-6 bottom-60 sm:bottom-44 z-20" />
       <BottomNavBar />
     </div>
   );
