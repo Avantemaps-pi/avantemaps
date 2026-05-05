@@ -89,6 +89,22 @@ const Pricing = () => {
           description: 'Choose your plan and pay with Pi cryptocurrency'
         }}
       />
+      <PaymentOutcomeBanner
+        isPolling={paymentPolling.isPolling}
+        isTerminal={paymentPolling.isTerminal}
+        terminalReason={paymentPolling.terminalReason}
+        paymentId={paymentPolling.paymentId}
+        retryDisabled={isPaymentLocked}
+        onRetry={
+          lastAttemptedTier.current
+            ? () => {
+                paymentPolling.reset();
+                handleSubscribe(lastAttemptedTier.current!);
+              }
+            : undefined
+        }
+        onDismiss={() => paymentPolling.reset()}
+      />
       <PricingSection
         title="Simple, transparent pricing"
         subtitle="Choose the plan that's right for you and explore Avante Maps with premium features."
@@ -99,6 +115,7 @@ const Pricing = () => {
             if (tier.id === 'individual') {
               handleIndividualPlanClick();
             } else {
+              lastAttemptedTier.current = tier.id;
               handleSubscribe(tier.id);
             }
           },
