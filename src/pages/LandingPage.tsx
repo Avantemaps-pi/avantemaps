@@ -56,23 +56,9 @@ const LandingPage: React.FC = () => {
       {/* Top Bar */}
       <header className="flex items-center justify-between px-4 py-1 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setShowLogin(prev => !prev)} className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={() => setShowLogin(true)} className="rounded-full">
             <User className="h-5 w-5 text-muted-foreground" />
           </Button>
-          {showLogin && (
-            <Button
-              onClick={handleLoginWithPi}
-              disabled={loginLoading}
-              size="sm"
-              className="bg-[#7b2cbf] hover:bg-[#6a24a6] text-white rounded-full text-xs h-8"
-            >
-              {loginLoading ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                'Login'
-              )}
-            </Button>
-          )}
         </div>
         <div className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
