@@ -18,6 +18,7 @@ import type {
 
 import { approvePayment, completePayment } from '@/api/payments';
 import { supabase } from '@/integrations/supabase/client';
+import { generateCorrelationId } from '@/utils/correlation';
 
 // State tracking
 let paymentInProgress = false;
