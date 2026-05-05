@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessData } from '@/hooks/useBusinessData';
+import LoginDialog from '@/components/auth/LoginDialog';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
 
