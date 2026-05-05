@@ -134,17 +134,20 @@ const CountryZoomControl: React.FC = () => {
         trackedBtn = addBtn;
         ro?.observe(addBtn);
         mo?.disconnect();
-        mo = new MutationObserver(scheduleRecompute);
+        // Narrow scope: only attribute mutations on the button itself can
+        // affect its position. Skip childList/subtree to avoid noise from
+        // icon swaps or descendant updates. Use trailing debounce since
+        // class/style toggles often arrive in rapid bursts.
+        mo = new MutationObserver(debouncedRecompute);
         mo.observe(addBtn, {
           attributes: true,
           attributeFilter: ['class', 'style'],
-          childList: true,
-          subtree: true,
         });
         addBtn.addEventListener('transitionend', scheduleRecompute);
-        // Found it — stop polling and stop observing body for it
+
+        // Found it — tear down discovery machinery (polling + body observer)
         if (pollId !== null) {
-          window.clearInterval(pollId);
+          window.clearTimeout(pollId);
           pollId = null;
         }
         bodyObserver?.disconnect();
@@ -166,17 +169,21 @@ const CountryZoomControl: React.FC = () => {
     // Fallback strategy when the + button isn't in the DOM yet
     // (lazy Suspense boundary, route transition, conditional render, etc.)
     if (!trackedBtn) {
-      // a) Poll briefly — cheap and bounded
-      pollId = window.setInterval(() => {
+      // a) Backoff polling — 100ms → 200 → 400 → … capped at 1.5s, ~20 attempts
+      const tick = () => {
         pollAttempts += 1;
         scheduleRecompute();
         if (trackedBtn || pollAttempts >= MAX_POLL_ATTEMPTS) {
           if (pollId !== null) {
-            window.clearInterval(pollId);
+            window.clearTimeout(pollId);
             pollId = null;
           }
+          return;
         }
-      }, 100);
+        pollId = window.setTimeout(tick, nextPollDelay());
+      };
+      pollId = window.setTimeout(tick, POLL_BASE_MS);
+
 
       // b) Watch the document for the button being added or its
       //    data attribute appearing later.
