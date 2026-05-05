@@ -173,6 +173,7 @@ Deno.serve(async (req) => {
               cancelled: false,
             },
             txid: paymentRequest.txid,
+            lifecycle_id: lifecycleId,
             updated_at: new Date().toISOString(),
           }).eq('payment_id', paymentRequest.paymentId);
 
@@ -196,6 +197,7 @@ Deno.serve(async (req) => {
             cancelled: true,
             error: `Pi Network completion API error: ${JSON.stringify(completeResult)}`,
           },
+          lifecycle_id: lifecycleId,
           updated_at: new Date().toISOString(),
         }).eq('payment_id', paymentRequest.paymentId);
 
@@ -218,6 +220,7 @@ Deno.serve(async (req) => {
           cancelled: false,
         },
         txid: paymentRequest.txid,
+        lifecycle_id: lifecycleId,
         updated_at: new Date().toISOString(),
       }).eq('payment_id', paymentRequest.paymentId);
 
@@ -298,6 +301,7 @@ Deno.serve(async (req) => {
           cancelled: true,
           error: `API call error: ${apiError instanceof Error ? apiError.message : String(apiError)}`,
         },
+        lifecycle_id: lifecycleId,
         updated_at: new Date().toISOString(),
       }).eq('payment_id', paymentRequest.paymentId);
 
