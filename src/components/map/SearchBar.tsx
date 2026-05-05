@@ -245,7 +245,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <div ref={dropdownRef} className="relative w-full">
+    <div ref={dropdownRef} data-search-bar className="relative w-full">
       <form onSubmit={handleSearch}>
         <Input
           ref={inputRef}
