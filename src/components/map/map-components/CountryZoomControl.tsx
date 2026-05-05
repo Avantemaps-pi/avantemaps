@@ -358,11 +358,10 @@ const CountryZoomControl: React.FC = () => {
           aria-disabled={plusDisabled}
           title={plusDisabled ? 'Already at country zoom' : 'Zoom in to country view'}
           disabled={plusDisabled}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!plusDisabled) goToCountry();
-          }}
-          onPointerDown={(e) => e.stopPropagation()}
+          onPointerDown={handleBtnPointerDown}
+          onPointerMove={handleBtnPointerMove}
+          onPointerCancel={() => { pointerStartRef.current = null; draggedRef.current = false; }}
+          onClick={(e) => handleBtnClick(e, plusDisabled)}
           onTouchStart={(e) => e.stopPropagation()}
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
           className={cn(btnBase, 'border-b border-border')}
@@ -375,11 +374,10 @@ const CountryZoomControl: React.FC = () => {
           aria-disabled={minusDisabled}
           title={minusDisabled ? 'Already at country zoom' : 'Zoom out to country view'}
           disabled={minusDisabled}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!minusDisabled) goToCountry();
-          }}
-          onPointerDown={(e) => e.stopPropagation()}
+          onPointerDown={handleBtnPointerDown}
+          onPointerMove={handleBtnPointerMove}
+          onPointerCancel={() => { pointerStartRef.current = null; draggedRef.current = false; }}
+          onClick={(e) => handleBtnClick(e, minusDisabled)}
           onTouchStart={(e) => e.stopPropagation()}
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
           className={cn(btnBase)}
