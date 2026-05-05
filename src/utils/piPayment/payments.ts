@@ -139,48 +139,69 @@ export async function executeSubscriptionPayment(
     return new Promise<PaymentResult>((resolve) => {
       const callbacks: PaymentCallbacks = {
         onReadyForServerApproval: async (paymentId: string) => {
-          console.log('Payment ready for server approval:', paymentId);
+          lcLog('lifecycle.approve.start', { paymentId });
           try {
             hooks?.onPaymentId?.(paymentId);
-            const approvalResult = await approvePayment({
+            const approvalResult = await approvePayment(
+              { paymentId, userId: supabaseUserId, amount, memo, metadata },
+              { correlationId }
+            );
+            lcLog('lifecycle.approve.result', {
               paymentId,
-              userId: supabaseUserId,
-              amount,
-              memo,
-              metadata
+              success: approvalResult.success,
             });
-            console.log('Server approval result:', approvalResult);
           } catch (error) {
-            console.error('Failed to approve payment:', error);
+            console.error(
+              JSON.stringify({
+                ts: new Date().toISOString(),
+                level: 'error',
+                event: 'lifecycle.approve.exception',
+                fn: 'client.executeSubscriptionPayment',
+                correlationId,
+                paymentId,
+                message: error instanceof Error ? error.message : String(error),
+              })
+            );
             resolve({
               success: false,
-              message: 'Failed to approve payment on server'
+              message: 'Failed to approve payment on server',
             });
           }
         },
         onReadyForServerCompletion: async (paymentId: string, txid: string) => {
-          console.log('Payment ready for completion:', paymentId, txid);
+          lcLog('lifecycle.complete.start', { paymentId, txid });
           try {
-            const completionResult = await completePayment({
+            const completionResult = await completePayment(
+              { paymentId, userId: supabaseUserId, amount, memo, metadata, txid },
+              { correlationId }
+            );
+            lcLog('lifecycle.complete.result', {
               paymentId,
-              userId: supabaseUserId,
-              amount,
-              memo,
-              metadata,
-              txid
+              txid,
+              success: completionResult.success,
             });
-            console.log('Server completion result:', completionResult);
             resolve({
               success: true,
               message: `Successfully subscribed to ${tier} plan!`,
               shouldRefreshUser: true,
-              paymentId
+              paymentId,
             });
           } catch (error) {
-            console.error('Failed to complete payment:', error);
+            console.error(
+              JSON.stringify({
+                ts: new Date().toISOString(),
+                level: 'error',
+                event: 'lifecycle.complete.exception',
+                fn: 'client.executeSubscriptionPayment',
+                correlationId,
+                paymentId,
+                txid,
+                message: error instanceof Error ? error.message : String(error),
+              })
+            );
             resolve({
               success: false,
-              message: 'Payment completed but failed to update subscription'
+              message: 'Payment completed but failed to update subscription',
             });
           }
         },
