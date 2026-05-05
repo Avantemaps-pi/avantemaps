@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Plus, Minus } from 'lucide-react';
@@ -311,7 +312,10 @@ const CountryZoomControl: React.FC = () => {
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ' +
     'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-background disabled:hover:text-foreground';
 
-  return (
+  // Render via portal directly into the Leaflet map container so the absolute
+  // positioning isn't affected by Leaflet's pane transforms (which would
+  // otherwise translate the control off-screen during pan/zoom).
+  return createPortal(
     <div
       ref={(el) => {
         containerRef.current = el;
@@ -385,7 +389,8 @@ const CountryZoomControl: React.FC = () => {
           <Minus className="w-4 h-4 pointer-events-none" />
         </button>
       </div>
-    </div>
+    </div>,
+    map.getContainer()
   );
 };
 
