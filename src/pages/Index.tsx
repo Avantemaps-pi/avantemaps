@@ -6,6 +6,7 @@ import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SearchBar from '@/components/map/SearchBar';
 import CategoryFilter, { CATEGORY_OPTIONS } from '@/components/map/CategoryFilter';
+import LocateMeButton from '@/components/map/buttons/LocateMeButton';
 import { useSidebar } from '@/components/ui/sidebar';
 import AvanteMapLogo from '@/components/layout/header/AvanteMapLogo';
 import AppSidebar from '@/components/layout/AppSidebar';
@@ -263,6 +264,7 @@ const Index = () => {
       <Suspense fallback={null}>
         <AddBusinessButton selectedPlace={selectedPlace} />
       </Suspense>
+      <LocateMeButton className="absolute right-3 bottom-24 z-30 sm:bottom-6" />
       <BottomNavBar />
     </div>
   );
