@@ -280,10 +280,10 @@ const CountryZoomControl: React.FC = () => {
     <div
       ref={containerRef}
       className={cn(
-        'absolute right-6 z-[20] transition-shadow',
+        'absolute z-[20] transition-shadow',
         atCountry && 'ring-2 ring-primary/60 rounded-md shadow-lg'
       )}
-      style={{ bottom }}
+      style={{ bottom, right }}
       aria-label={atCountry ? 'Map is at country zoom level' : undefined}
     >
       <div
