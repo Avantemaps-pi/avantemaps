@@ -2,6 +2,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import {
+  getOrCreateCorrelationId,
+  makeLogger,
+  correlationHeaders,
+} from '../_shared/logger.ts';
 
 // Validation schema for payment requests with strict input validation
 const PaymentRequestSchema = z.object({
