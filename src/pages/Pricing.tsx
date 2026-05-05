@@ -19,6 +19,7 @@ const Pricing = () => {
   const navigate = useNavigate();
   const [previousPlan, setPreviousPlan] = useState("");
   const [showDialog, setShowDialog] = useState(false);
+  const lastAttemptedTier = useRef<string | null>(null);
   // Get subscription payment utilities
   const {
     userSubscriptionTier,
