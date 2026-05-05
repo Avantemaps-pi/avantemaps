@@ -270,6 +270,69 @@ const CountryZoomControl: React.FC = () => {
     };
   }, [map]);
 
+  // Dynamically compute a z-index that always beats Leaflet's panes/controls
+  // and any other overlays currently mounted in the map container.
+  useEffect(() => {
+    const mapEl = map.getContainer();
+
+    const computeZ = () => {
+      const SELECTORS = [
+        '.leaflet-pane',
+        '.leaflet-top',
+        '.leaflet-bottom',
+        '.leaflet-popup',
+        '.leaflet-tooltip',
+        '.leaflet-control',
+        '.leaflet-marker-pane',
+        '.leaflet-overlay-pane',
+        '.leaflet-shadow-pane',
+        '.leaflet-tile-pane',
+      ];
+      let maxZ = 0;
+      const seen = new Set<Element>();
+      const consider = (el: Element) => {
+        if (seen.has(el)) return;
+        seen.add(el);
+        const z = parseInt(getComputedStyle(el as HTMLElement).zIndex, 10);
+        if (!Number.isNaN(z) && z > maxZ) maxZ = z;
+      };
+      SELECTORS.forEach((sel) => {
+        mapEl.querySelectorAll(sel).forEach(consider);
+      });
+      // Also scan direct children of the map container — catches custom
+      // overlays (search bar, loading overlay, place overlay, etc.).
+      Array.from(mapEl.children).forEach((child) => {
+        if (containerRef.current && child === containerRef.current) return;
+        consider(child);
+      });
+      setZIndex(Math.max(1000, maxZ + 50));
+    };
+
+    computeZ();
+
+    // Re-sample on DOM changes within the map container. rAF-coalesced.
+    let rafId: number | null = null;
+    const schedule = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        computeZ();
+      });
+    };
+    const mo = new MutationObserver(schedule);
+    mo.observe(mapEl, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style', 'class'],
+    });
+
+    return () => {
+      mo.disconnect();
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+    };
+  }, [map]);
+
   const plusDisabled = zoom >= COUNTRY_ZOOM;
   const minusDisabled = zoom <= COUNTRY_ZOOM;
   const atCountry = zoom === COUNTRY_ZOOM;
