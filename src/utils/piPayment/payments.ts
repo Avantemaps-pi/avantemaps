@@ -71,7 +71,8 @@ export async function startPayment(
 export async function executeSubscriptionPayment(
   amount: number,
   tier: string,
-  frequency: 'monthly' | 'yearly'
+  frequency: 'monthly' | 'yearly',
+  hooks?: { onPaymentId?: (paymentId: string) => void }
 ): Promise<PaymentResult> {
   if (paymentInProgress) {
     return {
@@ -122,6 +123,7 @@ export async function executeSubscriptionPayment(
         onReadyForServerApproval: async (paymentId: string) => {
           console.log('Payment ready for server approval:', paymentId);
           try {
+            hooks?.onPaymentId?.(paymentId);
             const approvalResult = await approvePayment({
               paymentId,
               userId: supabaseUserId,
