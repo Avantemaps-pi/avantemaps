@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 import PlaceCard from '@/components/business/PlaceCard';
@@ -7,7 +7,7 @@ import RecommendationsSEO from '@/components/seo/RecommendationsSEO';
 import { useRecommendations } from '@/hooks/useRecommendations';
 import RecommendationSkeleton from '@/components/recommendations/RecommendationSkeleton';
 import EmptyRecommendationSection from '@/components/recommendations/EmptyRecommendationSection';
-import { Award, Star, ChevronDown, Check } from 'lucide-react';
+import { Award, Star, ChevronDown, Check, Lock } from 'lucide-react';
 import MetaTags from '@/components/seo/MetaTags';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -18,11 +18,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useBusinessData } from '@/hooks/useBusinessData';
+import { useAuth } from '@/context/auth';
+import LoginDialog from '@/components/auth/LoginDialog';
 
 const Recommendations = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [showLogin, setShowLogin] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'rating'>('rating');
   const { avanteTopChoice, recommendedForYou, isLoading } = useRecommendations();
@@ -113,6 +118,28 @@ const Recommendations = () => {
         }}
       />
 
+      {!authLoading && !isAuthenticated ? (
+        <div className="w-full mx-auto pb-6 px-4 md:px-[15px] flex items-center justify-center min-h-[60vh]">
+          <div className="max-w-md w-full text-center bg-card border rounded-xl p-6 shadow-sm">
+            <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Lock className="h-6 w-6 text-primary" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Sign in to view Pi recommendations</h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              Pi-accepting business recommendations are available to authenticated Pi Network users. Sign in to discover top-rated Pi-accepting businesses curated for you.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button onClick={() => setShowLogin(true)} className="w-full sm:w-auto">
+                Login with Pi Network
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/')} className="w-full sm:w-auto">
+                Back to map
+              </Button>
+            </div>
+          </div>
+          <LoginDialog open={showLogin} onOpenChange={setShowLogin} />
+        </div>
+      ) : (
       <div className="w-full mx-auto pb-6 overflow-y-auto overflow-x-hidden px-0">
         {/* Active Filters Summary */}
         {selectedCategories.length > 0 && (
@@ -235,6 +262,7 @@ const Recommendations = () => {
           ))}
         </div>
       </div>
+      )}
     </AppLayout>
   );
 };
