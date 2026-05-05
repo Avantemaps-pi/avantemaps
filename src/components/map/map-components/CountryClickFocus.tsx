@@ -34,7 +34,17 @@ const CountryClickFocus: React.FC = () => {
         const data = await res.json();
         const countryCode: string | undefined = data?.address?.country_code;
         const bbox: [string, string, string, string] | undefined = data?.boundingbox;
-        if (!countryCode || !bbox) return;
+
+        // Clicked on ocean / no country — clear any highlight
+        if (!countryCode) {
+          if (layerRef.current) {
+            layerRef.current.remove();
+            layerRef.current = null;
+          }
+          lastCountryRef.current = null;
+          return;
+        }
+        if (!bbox) return;
 
         if (lastCountryRef.current === countryCode) return;
         lastCountryRef.current = countryCode;
