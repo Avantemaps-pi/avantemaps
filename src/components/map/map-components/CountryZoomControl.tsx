@@ -44,12 +44,21 @@ const CountryZoomControl: React.FC = () => {
     let bodyObserver: MutationObserver | null = null;
     let pollId: number | null = null;
     let pollAttempts = 0;
-    const MAX_POLL_ATTEMPTS = 40; // ~4s at 100ms
+    const MAX_POLL_ATTEMPTS = 20; // bounded discovery window
+    // Exponential backoff for discovery polling: 100ms → 200 → 400 → … (cap 1.5s)
+    const POLL_BASE_MS = 100;
+    const POLL_MAX_MS = 1500;
+    const nextPollDelay = () =>
+      Math.min(POLL_MAX_MS, POLL_BASE_MS * Math.pow(2, pollAttempts));
 
-    // rAF-based coalescing: collapse bursts of events (resize, font scale,
-    // transitions, mutations) into a single measurement per frame to avoid
-    // layout thrashing.
+    // rAF-based coalescing for tight bursts (resize / scroll / transition).
     let rafId: number | null = null;
+    // Trailing debounce for noisier sources (MutationObserver) once the
+    // button is being tracked — collapses long mutation storms into a single
+    // measurement after things settle.
+    let debounceId: number | null = null;
+    const DEBOUNCE_MS = 80;
+
     const scheduleRecompute = () => {
       if (rafId !== null) return;
       rafId = window.requestAnimationFrame(() => {
@@ -57,6 +66,14 @@ const CountryZoomControl: React.FC = () => {
         recompute();
       });
     };
+    const debouncedRecompute = () => {
+      if (debounceId !== null) window.clearTimeout(debounceId);
+      debounceId = window.setTimeout(() => {
+        debounceId = null;
+        scheduleRecompute();
+      }, DEBOUNCE_MS);
+    };
+
 
     /**
      * Resolve the "+" Add Business button using a prioritized list of selectors.
@@ -117,17 +134,20 @@ const CountryZoomControl: React.FC = () => {
         trackedBtn = addBtn;
         ro?.observe(addBtn);
         mo?.disconnect();
-        mo = new MutationObserver(scheduleRecompute);
+        // Narrow scope: only attribute mutations on the button itself can
+        // affect its position. Skip childList/subtree to avoid noise from
+        // icon swaps or descendant updates. Use trailing debounce since
+        // class/style toggles often arrive in rapid bursts.
+        mo = new MutationObserver(debouncedRecompute);
         mo.observe(addBtn, {
           attributes: true,
           attributeFilter: ['class', 'style'],
-          childList: true,
-          subtree: true,
         });
         addBtn.addEventListener('transitionend', scheduleRecompute);
-        // Found it — stop polling and stop observing body for it
+
+        // Found it — tear down discovery machinery (polling + body observer)
         if (pollId !== null) {
-          window.clearInterval(pollId);
+          window.clearTimeout(pollId);
           pollId = null;
         }
         bodyObserver?.disconnect();
@@ -149,26 +169,31 @@ const CountryZoomControl: React.FC = () => {
     // Fallback strategy when the + button isn't in the DOM yet
     // (lazy Suspense boundary, route transition, conditional render, etc.)
     if (!trackedBtn) {
-      // a) Poll briefly — cheap and bounded
-      pollId = window.setInterval(() => {
+      // a) Backoff polling — 100ms → 200 → 400 → … capped at 1.5s, ~20 attempts
+      const tick = () => {
         pollAttempts += 1;
         scheduleRecompute();
         if (trackedBtn || pollAttempts >= MAX_POLL_ATTEMPTS) {
           if (pollId !== null) {
-            window.clearInterval(pollId);
+            window.clearTimeout(pollId);
             pollId = null;
           }
+          return;
         }
-      }, 100);
+        pollId = window.setTimeout(tick, nextPollDelay());
+      };
+      pollId = window.setTimeout(tick, POLL_BASE_MS);
 
-      // b) Watch the document for the button being added or its
-      //    data attribute appearing later.
-      bodyObserver = new MutationObserver(scheduleRecompute);
+
+      // b) Watch the document for the button being added. Subtree childList
+      //    is necessary (we don't know where it'll be inserted) but we
+      //    debounce so a burst of unrelated DOM activity doesn't spam
+      //    recompute. Once the button is found, recompute() disconnects
+      //    this observer entirely.
+      bodyObserver = new MutationObserver(debouncedRecompute);
       bodyObserver.observe(document.body, {
         childList: true,
         subtree: true,
-        attributes: true,
-        attributeFilter: ['data-add-business-button'],
       });
     }
 
@@ -179,8 +204,9 @@ const CountryZoomControl: React.FC = () => {
       ro?.disconnect();
       mo?.disconnect();
       bodyObserver?.disconnect();
-      if (pollId !== null) window.clearInterval(pollId);
+      if (pollId !== null) window.clearTimeout(pollId);
       if (rafId !== null) window.cancelAnimationFrame(rafId);
+      if (debounceId !== null) window.clearTimeout(debounceId);
       trackedBtn?.removeEventListener('transitionend', scheduleRecompute);
     };
   }, [map]);
