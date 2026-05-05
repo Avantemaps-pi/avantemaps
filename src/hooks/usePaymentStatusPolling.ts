@@ -86,7 +86,7 @@ export function usePaymentStatusPolling(opts: Options = {}) {
   }, []);
 
   const start = useCallback(
-    (paymentId: string) => {
+    (paymentId: string, opts: { correlationId?: string } = {}) => {
       if (!paymentId) return;
       // Reset prior run
       cancelledRef.current = false;
@@ -108,7 +108,9 @@ export function usePaymentStatusPolling(opts: Options = {}) {
         if (cancelledRef.current || activeIdRef.current !== paymentId) return;
         attempts += 1;
         try {
-          const response = await getPaymentStatus(paymentId);
+          const response = await getPaymentStatus(paymentId, {
+            correlationId: opts.correlationId,
+          });
           if (cancelledRef.current || activeIdRef.current !== paymentId) return;
 
           const terminalReason = deriveTerminal(response.status);

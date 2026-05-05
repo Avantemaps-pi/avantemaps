@@ -18,6 +18,7 @@ import type {
 
 import { approvePayment, completePayment } from '@/api/payments';
 import { supabase } from '@/integrations/supabase/client';
+import { generateCorrelationId } from '@/utils/correlation';
 
 // State tracking
 let paymentInProgress = false;
@@ -118,68 +119,115 @@ export async function executeSubscriptionPayment(
       frequency: normalizedFrequency,
     };
 
+    // Single correlation ID for the full approve → complete → status lifecycle.
+    const correlationId = generateCorrelationId('subpay');
+    const lcLog = (event: string, extra?: Record<string, unknown>) =>
+      console.log(
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          level: 'info',
+          event,
+          fn: 'client.executeSubscriptionPayment',
+          correlationId,
+          tier,
+          frequency: normalizedFrequency,
+          ...(extra ?? {}),
+        })
+      );
+    lcLog('lifecycle.start');
+
     return new Promise<PaymentResult>((resolve) => {
       const callbacks: PaymentCallbacks = {
         onReadyForServerApproval: async (paymentId: string) => {
-          console.log('Payment ready for server approval:', paymentId);
+          lcLog('lifecycle.approve.start', { paymentId });
           try {
             hooks?.onPaymentId?.(paymentId);
-            const approvalResult = await approvePayment({
+            const approvalResult = await approvePayment(
+              { paymentId, userId: supabaseUserId, amount, memo, metadata },
+              { correlationId }
+            );
+            lcLog('lifecycle.approve.result', {
               paymentId,
-              userId: supabaseUserId,
-              amount,
-              memo,
-              metadata
+              success: approvalResult.success,
             });
-            console.log('Server approval result:', approvalResult);
           } catch (error) {
-            console.error('Failed to approve payment:', error);
+            console.error(
+              JSON.stringify({
+                ts: new Date().toISOString(),
+                level: 'error',
+                event: 'lifecycle.approve.exception',
+                fn: 'client.executeSubscriptionPayment',
+                correlationId,
+                paymentId,
+                message: error instanceof Error ? error.message : String(error),
+              })
+            );
             resolve({
               success: false,
-              message: 'Failed to approve payment on server'
+              message: 'Failed to approve payment on server',
             });
           }
         },
         onReadyForServerCompletion: async (paymentId: string, txid: string) => {
-          console.log('Payment ready for completion:', paymentId, txid);
+          lcLog('lifecycle.complete.start', { paymentId, txid });
           try {
-            const completionResult = await completePayment({
+            const completionResult = await completePayment(
+              { paymentId, userId: supabaseUserId, amount, memo, metadata, txid },
+              { correlationId }
+            );
+            lcLog('lifecycle.complete.result', {
               paymentId,
-              userId: supabaseUserId,
-              amount,
-              memo,
-              metadata,
-              txid
+              txid,
+              success: completionResult.success,
             });
-            console.log('Server completion result:', completionResult);
             resolve({
               success: true,
               message: `Successfully subscribed to ${tier} plan!`,
               shouldRefreshUser: true,
-              paymentId
+              paymentId,
             });
           } catch (error) {
-            console.error('Failed to complete payment:', error);
+            console.error(
+              JSON.stringify({
+                ts: new Date().toISOString(),
+                level: 'error',
+                event: 'lifecycle.complete.exception',
+                fn: 'client.executeSubscriptionPayment',
+                correlationId,
+                paymentId,
+                txid,
+                message: error instanceof Error ? error.message : String(error),
+              })
+            );
             resolve({
               success: false,
-              message: 'Payment completed but failed to update subscription'
+              message: 'Payment completed but failed to update subscription',
             });
           }
         },
         onCancel: (paymentId: string) => {
-          console.log('Payment cancelled:', paymentId);
+          lcLog('lifecycle.cancel', { paymentId });
           resolve({
             success: false,
-            message: 'Payment was cancelled'
+            message: 'Payment was cancelled',
           });
         },
         onError: (error: Error) => {
-          console.error('Payment error:', error);
+          console.error(
+            JSON.stringify({
+              ts: new Date().toISOString(),
+              level: 'error',
+              event: 'lifecycle.error',
+              fn: 'client.executeSubscriptionPayment',
+              correlationId,
+              message: error.message,
+            })
+          );
           resolve({
             success: false,
-            message: error.message || 'Payment failed'
+            message: error.message || 'Payment failed',
           });
-        }
+        },
       };
 
       createPiPayment({ amount, memo, metadata }, callbacks)
