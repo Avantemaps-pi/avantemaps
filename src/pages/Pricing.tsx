@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { TIERS } from '@/components/pricing/pricingTiers';
 import { useAuth } from '@/context/auth';
 import { useSubscriptionPayment } from '@/components/pricing/useSubscriptionPayment';
+import { PaymentOutcomeBanner } from '@/components/pricing/PaymentOutcomeBanner';
 import MetaTags from '@/components/seo/MetaTags';
 
 const Pricing = () => {
@@ -18,6 +19,7 @@ const Pricing = () => {
   const navigate = useNavigate();
   const [previousPlan, setPreviousPlan] = useState("");
   const [showDialog, setShowDialog] = useState(false);
+  const lastAttemptedTier = useRef<string | null>(null);
   // Get subscription payment utilities
   const {
     userSubscriptionTier,
@@ -88,6 +90,22 @@ const Pricing = () => {
           description: 'Choose your plan and pay with Pi cryptocurrency'
         }}
       />
+      <PaymentOutcomeBanner
+        isPolling={paymentPolling.isPolling}
+        isTerminal={paymentPolling.isTerminal}
+        terminalReason={paymentPolling.terminalReason}
+        paymentId={paymentPolling.paymentId}
+        retryDisabled={isPaymentLocked}
+        onRetry={
+          lastAttemptedTier.current
+            ? () => {
+                paymentPolling.reset();
+                handleSubscribe(lastAttemptedTier.current!);
+              }
+            : undefined
+        }
+        onDismiss={() => paymentPolling.reset()}
+      />
       <PricingSection
         title="Simple, transparent pricing"
         subtitle="Choose the plan that's right for you and explore Avante Maps with premium features."
@@ -98,6 +116,7 @@ const Pricing = () => {
             if (tier.id === 'individual') {
               handleIndividualPlanClick();
             } else {
+              lastAttemptedTier.current = tier.id;
               handleSubscribe(tier.id);
             }
           },
