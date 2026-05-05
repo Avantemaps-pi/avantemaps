@@ -393,12 +393,13 @@ const CountryZoomControl: React.FC = () => {
         }
       }}
       className={cn(
-        'absolute z-[800] transition-shadow select-none',
+        'absolute transition-shadow select-none',
         atCountry && 'ring-2 ring-primary/60 rounded-md shadow-lg'
       )}
       style={{
         bottom,
         right,
+        zIndex,
         // Block native gestures (pan/zoom/pinch) from reaching the map
         touchAction: 'none',
         // Ensure the container always captures pointer events
