@@ -78,19 +78,19 @@ const CountryZoomControl: React.FC = () => {
       if (addBtn !== trackedBtn) {
         if (trackedBtn) {
           ro?.unobserve(trackedBtn);
-          trackedBtn.removeEventListener('transitionend', recompute);
+          trackedBtn.removeEventListener('transitionend', scheduleRecompute);
         }
         trackedBtn = addBtn;
         ro?.observe(addBtn);
         mo?.disconnect();
-        mo = new MutationObserver(recompute);
+        mo = new MutationObserver(scheduleRecompute);
         mo.observe(addBtn, {
           attributes: true,
           attributeFilter: ['class', 'style'],
           childList: true,
           subtree: true,
         });
-        addBtn.addEventListener('transitionend', recompute);
+        addBtn.addEventListener('transitionend', scheduleRecompute);
         // Found it — stop polling and stop observing body for it
         if (pollId !== null) {
           window.clearInterval(pollId);
@@ -101,14 +101,14 @@ const CountryZoomControl: React.FC = () => {
       }
     };
 
-    // Core observers
-    ro = new ResizeObserver(recompute);
+    // Core observers — all funnel through scheduleRecompute (rAF-coalesced)
+    ro = new ResizeObserver(scheduleRecompute);
     ro.observe(mapEl);
 
     // Window-level
-    window.addEventListener('resize', recompute);
-    window.addEventListener('orientationchange', recompute);
-    map.on('resize', recompute);
+    window.addEventListener('resize', scheduleRecompute);
+    window.addEventListener('orientationchange', scheduleRecompute);
+    map.on('resize', scheduleRecompute);
 
     recompute();
 
@@ -118,7 +118,7 @@ const CountryZoomControl: React.FC = () => {
       // a) Poll briefly — cheap and bounded
       pollId = window.setInterval(() => {
         pollAttempts += 1;
-        recompute();
+        scheduleRecompute();
         if (trackedBtn || pollAttempts >= MAX_POLL_ATTEMPTS) {
           if (pollId !== null) {
             window.clearInterval(pollId);
@@ -129,7 +129,7 @@ const CountryZoomControl: React.FC = () => {
 
       // b) Watch the document for the button being added or its
       //    data attribute appearing later.
-      bodyObserver = new MutationObserver(() => recompute());
+      bodyObserver = new MutationObserver(scheduleRecompute);
       bodyObserver.observe(document.body, {
         childList: true,
         subtree: true,
@@ -139,14 +139,15 @@ const CountryZoomControl: React.FC = () => {
     }
 
     return () => {
-      window.removeEventListener('resize', recompute);
-      window.removeEventListener('orientationchange', recompute);
-      map.off('resize', recompute);
+      window.removeEventListener('resize', scheduleRecompute);
+      window.removeEventListener('orientationchange', scheduleRecompute);
+      map.off('resize', scheduleRecompute);
       ro?.disconnect();
       mo?.disconnect();
       bodyObserver?.disconnect();
       if (pollId !== null) window.clearInterval(pollId);
-      trackedBtn?.removeEventListener('transitionend', recompute);
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+      trackedBtn?.removeEventListener('transitionend', scheduleRecompute);
     };
   }, [map]);
 
