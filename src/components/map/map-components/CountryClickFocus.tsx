@@ -21,14 +21,33 @@ interface CountryData {
 
 const STORAGE_PREFIX = 'country_focus_v1:';
 const TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const TILE_PRECISION = 1; // ~0.5–1° tile granularity
+
+/**
+ * Tile precision (decimal places used to round lat/lng for the tile cache key).
+ * Higher = more accurate but lower cache hit rate; lower = coarser but more reuse.
+ *
+ *   0  → ~111 km tiles  (very high reuse, may misclassify near borders)
+ *   1  → ~11 km tiles   (default — good balance)
+ *   2  → ~1.1 km tiles  (high accuracy, lower reuse)
+ *   3  → ~110 m tiles   (near-exact, minimal reuse)
+ *
+ * Override at runtime: `window.__COUNTRY_FOCUS_TILE_PRECISION = 2`
+ */
+export const DEFAULT_TILE_PRECISION = 1;
+
+const getTilePrecision = (): number => {
+  const override = (globalThis as any).__COUNTRY_FOCUS_TILE_PRECISION;
+  return Number.isFinite(override) ? Math.max(0, Math.min(4, override)) : DEFAULT_TILE_PRECISION;
+};
 
 const memoryCache = new Map<string, CountryData>();
 const tileCache = new Map<string, string | null>(); // tileKey -> country_code or null (ocean)
 const inflight = new Map<string, Promise<{ countryCode: string | null; data: CountryData | null }>>();
 
-const tileKey = (lat: number, lng: number) =>
-  `${lat.toFixed(TILE_PRECISION)},${lng.toFixed(TILE_PRECISION)}`;
+const tileKey = (lat: number, lng: number) => {
+  const p = getTilePrecision();
+  return `${lat.toFixed(p)},${lng.toFixed(p)}`;
+};
 
 const loadFromStorage = (code: string): CountryData | null => {
   try {
