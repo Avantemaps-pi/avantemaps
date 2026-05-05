@@ -36,7 +36,7 @@ const CountryZoomControl: React.FC = () => {
 
   return (
     <div
-      className="absolute right-6 bottom-[152px] sm:bottom-[88px] z-[20]"
+      className="absolute right-6 bottom-[152px] sm:bottom-[104px] z-[20]"
     >
       <div
         className="rounded-md overflow-hidden border border-border shadow-md bg-background"
