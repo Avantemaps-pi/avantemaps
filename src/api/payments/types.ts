@@ -17,8 +17,12 @@ export interface PaymentResponse {
   paymentId?: string;
   txid?: string;
   status?: PaymentStatus;
-  /** End-to-end correlation ID linking client + server logs for this attempt. */
+  /** End-to-end lifecycle ID linking client + server logs for this attempt. */
+  lifecycleId?: string;
+  /** Backwards-compatible alias for lifecycleId. */
   correlationId?: string;
+  /** Canonical terminal outcome when known. */
+  terminalReason?: 'completed' | 'cancelled' | 'voided' | 'error' | 'timeout' | null;
 }
 
 export interface PaymentStatus {
