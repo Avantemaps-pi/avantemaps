@@ -58,8 +58,41 @@ const CountryZoomControl: React.FC = () => {
       });
     };
 
+    /**
+     * Resolve the "+" Add Business button using a prioritized list of selectors.
+     * This is resilient to:
+     *   - the canonical [data-add-business-button] hook being removed
+     *   - the button being relocated (mobile/desktop layouts)
+     *   - aria-label or routing-based variants
+     * Returns the first match that is actually laid out (non-zero size).
+     */
+    const ADD_BTN_SELECTORS = [
+      '[data-add-business-button]',
+      '[data-testid="add-business-button"]',
+      'a[href="/registration"] button',
+      'a[href^="/registration"]',
+      'button[aria-label="Register a business"]',
+      'button[aria-label*="business" i][aria-label*="add" i]',
+      'button[aria-label*="business" i][aria-label*="register" i]',
+    ];
+    const findAddButton = (): HTMLElement | null => {
+      for (const sel of ADD_BTN_SELECTORS) {
+        const candidates = document.querySelectorAll<HTMLElement>(sel);
+        for (const el of candidates) {
+          const r = el.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) return el;
+        }
+      }
+      // Last-resort: return the first match even if not yet laid out
+      for (const sel of ADD_BTN_SELECTORS) {
+        const el = document.querySelector<HTMLElement>(sel);
+        if (el) return el;
+      }
+      return null;
+    };
+
     const recompute = () => {
-      const addBtn = document.querySelector<HTMLElement>('[data-add-business-button]');
+      const addBtn = findAddButton();
       if (!addBtn) {
         setBottom(FALLBACK_BOTTOM);
         return;
@@ -70,6 +103,7 @@ const CountryZoomControl: React.FC = () => {
         setBottom(FALLBACK_BOTTOM);
         return;
       }
+
       const mapRect = mapEl.getBoundingClientRect();
       const next = Math.max(0, mapRect.bottom - btnRect.top + GAP_PX);
       setBottom(next);
