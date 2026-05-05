@@ -27,7 +27,7 @@ export function useIpLocationFocus(enabled: boolean) {
       // Slight delay to let map mount
       setTimeout(() => {
         window.dispatchEvent(
-          new CustomEvent('centerMap', { detail: { lat, lng, zoom: 11 } })
+          new CustomEvent('centerMap', { detail: { lat, lng, zoom: 14 } })
         );
       }, 400);
     };
