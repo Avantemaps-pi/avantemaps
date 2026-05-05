@@ -153,17 +153,48 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
             </div>
           )}
           
-          {authError && (
-            <div className="w-full bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 p-3 rounded-md mb-4 flex items-start">
+          {displayError && (
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="w-full bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 p-3 rounded-md mb-4 flex items-start"
+            >
               <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-semibold mb-1">Authentication Error</p>
-                <p>{authError}</p>
-                <p className="mt-2 text-xs opacity-80">If this issue persists, please try closing and reopening the Pi Browser, or check your internet connection.</p>
+              <div className="text-sm flex-1">
+                <p className="font-semibold mb-1">We couldn't sign you in</p>
+                <p>{displayError}</p>
+                {showPersistentHint && (
+                  <p className="mt-2 text-xs opacity-80">
+                    Still having trouble? Open the troubleshooting steps below, or try closing and reopening the Pi Browser.
+                  </p>
+                )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs"
+                    onClick={handleLogin}
+                    disabled={isLoading || !sdkAvailable}
+                  >
+                    <RefreshCw className={`h-3 w-3 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+                    Try again
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 text-xs"
+                    onClick={() => setShowTroubleshooting(true)}
+                  >
+                    <HelpCircle className="h-3 w-3 mr-1" />
+                    Troubleshooting
+                  </Button>
+                </div>
               </div>
             </div>
           )}
-          
+
           <div className="w-full bg-muted/50 p-4 rounded-lg mb-6">
             <div className="flex items-center">
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
