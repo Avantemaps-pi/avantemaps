@@ -63,7 +63,7 @@ export function PricingCard({
         
         <div className="flex flex-col gap-1">
           {piPrice ? (
-            <div className="flex items-baseline flex-wrap gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-baseline sm:flex-wrap gap-1 sm:gap-2">
               <div className="flex items-baseline">
                 <span className="text-3xl text-gray-900">π</span>
                 <span className="text-5xl font-bold tracking-tight text-gray-900 ml-1">
@@ -72,13 +72,16 @@ export function PricingCard({
                 <span className="ml-1 text-base font-normal text-gray-500">
                   Pi
                 </span>
+                <span className="ml-2 text-base font-normal text-gray-500 sm:hidden">
+                  / {paymentFrequency}
+                </span>
               </div>
               {!isCustom && (
                 <span className="text-2xl font-medium text-gray-600">
                   (${price} USD)
                 </span>
               )}
-              <span className="text-base font-normal text-gray-500">
+              <span className="hidden sm:inline text-base font-normal text-gray-500">
                 / {paymentFrequency}
               </span>
             </div>
