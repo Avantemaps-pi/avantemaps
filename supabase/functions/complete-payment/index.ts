@@ -2,8 +2,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { createPaymentNotification } from '../_shared/notifications.ts';
+import {
+  getOrCreateCorrelationId,
+  makeLogger,
+  correlationHeaders,
+} from '../_shared/logger.ts';
 
-// Validation schema for payment completion requests with strict input validation
 const PaymentRequestSchema = z.object({
   paymentId: z.string()
     .min(1, 'Payment ID is required')
@@ -15,24 +19,15 @@ const PaymentRequestSchema = z.object({
     .regex(/^[a-fA-F0-9]+$/, 'Invalid transaction ID format'),
   userId: z.string().uuid('Invalid user ID format'),
   amount: z.number().positive('Amount must be positive').max(1000000, 'Amount exceeds maximum'),
-  memo: z.string().max(500, 'Memo too long').transform(val => 
-    val.replace(/[<>]/g, '') // Sanitize potential HTML/script tags
+  memo: z.string().max(500, 'Memo too long').transform(val =>
+    val.replace(/[<>]/g, '')
   ).optional(),
   metadata: z.object({
     subscriptionTier: z.enum(['individual', 'small-business', 'organization']).optional(),
     frequency: z.enum(['monthly', 'annual']).optional(),
-    duration: z.number().int().positive().max(365).optional()
-  }).strict() // Only allow known keys for security
+    duration: z.number().int().positive().max(365).optional(),
+  }).strict(),
 });
-
-type PaymentRequest = z.infer<typeof PaymentRequestSchema>;
-
-interface PaymentResponse {
-  success: boolean;
-  message: string;
-  paymentId?: string;
-  txid?: string;
-}
 
 const supabaseClient = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -44,42 +39,57 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const correlationId = getOrCreateCorrelationId(req);
+  const log = makeLogger({ fn: 'complete-payment', correlationId });
   const startTime = Date.now();
-  console.log(`Starting payment completion at ${new Date().toISOString()}`);
+
+  const respond = (body: Record<string, unknown>, status = 200) =>
+    new Response(JSON.stringify({ ...body, correlationId }), {
+      headers: {
+        ...corsHeaders,
+        ...correlationHeaders(correlationId),
+        'Content-Type': 'application/json',
+      },
+      status,
+    });
+
+  log.info('complete.start');
 
   try {
-    // Parse and validate request body
     const rawBody = await req.json();
     const validationResult = PaymentRequestSchema.safeParse(rawBody);
-    
+
     if (!validationResult.success) {
-      console.error('Invalid payment completion request data:', validationResult.error.errors);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'Invalid request data',
-          errors: validationResult.error.errors.map(e => ({
-            field: e.path.join('.'),
-            message: e.message
-          }))
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+      log.warn('complete.validation_failed', {
+        errors: validationResult.error.errors.map(e => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
+      });
+      return respond({
+        success: false,
+        message: 'Invalid request data',
+        errors: validationResult.error.errors.map(e => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
+      }, 400);
     }
-    
+
     const paymentRequest = validationResult.data;
-    console.log('Payment completion request received');
+    log.extend({
+      paymentId: paymentRequest.paymentId,
+      userId: paymentRequest.userId,
+      txid: paymentRequest.txid,
+    });
+    log.info('complete.request_validated', { amount: paymentRequest.amount });
 
     const piApiKey = Deno.env.get('PI_API_KEY');
     if (!piApiKey) {
-      console.error('PI_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ success: false, message: 'Payment service not configured' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
+      log.error('complete.pi_api_key_missing');
+      return respond({ success: false, message: 'Payment service not configured' }, 500);
     }
 
-    // Idempotency + ownership pre-check
     const { data: existingPayment, error: lookupError } = await supabaseClient
       .from('payments')
       .select('user_id, txid, status')
@@ -87,157 +97,149 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (lookupError) {
-      console.error('Database lookup error:', lookupError);
-      return new Response(
-        JSON.stringify({ success: false, message: 'Payment processing failed. Please try again.' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
+      log.error('complete.db_lookup_error', { code: lookupError.code, message: lookupError.message });
+      return respond({ success: false, message: 'Payment processing failed. Please try again.' }, 500);
     }
+
+    log.info('complete.existing_lookup', {
+      exists: !!existingPayment,
+      currentStatus: existingPayment?.status ?? null,
+    });
 
     if (existingPayment && existingPayment.user_id !== paymentRequest.userId) {
-      console.error('Ownership mismatch on payment_id');
-      return new Response(
-        JSON.stringify({ success: false, message: 'Payment ownership mismatch' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
-      );
+      log.error('complete.ownership_mismatch', { ownerOnRecord: existingPayment.user_id });
+      return respond({ success: false, message: 'Payment ownership mismatch' }, 403);
     }
 
-    // Terminal: already completed — return immediately, no external call
     if (existingPayment?.status?.completed) {
       if (existingPayment.txid && existingPayment.txid !== paymentRequest.txid) {
-        console.error('txid mismatch on completed payment');
-        return new Response(
-          JSON.stringify({ success: false, message: 'Transaction ID mismatch on completed payment' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
-        );
+        log.error('complete.txid_mismatch', { recorded: existingPayment.txid });
+        return respond({ success: false, message: 'Transaction ID mismatch on completed payment' }, 409);
       }
-      console.log('Idempotent: payment already completed');
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'Payment was already completed',
-          paymentId: paymentRequest.paymentId,
-          txid: existingPayment.txid ?? paymentRequest.txid,
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      log.info('complete.terminal.already_completed');
+      return respond({
+        success: true,
+        message: 'Payment was already completed',
+        paymentId: paymentRequest.paymentId,
+        txid: existingPayment.txid ?? paymentRequest.txid,
+      });
     }
 
-    // Terminal: cancelled — refuse to complete
     if (existingPayment?.status?.cancelled) {
-      console.log('Refusing to complete a cancelled payment');
-      return new Response(
-        JSON.stringify({ success: false, message: 'Payment was cancelled and cannot be completed' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
-      );
+      log.warn('complete.refused_cancelled');
+      return respond({
+        success: false,
+        message: 'Payment was cancelled and cannot be completed',
+      }, 409);
     }
 
-    // Step 7: Server-Side Completion - Call Pi Servers /complete API
+    log.info('complete.pi_api.call');
     try {
       const piNetworkApiUrl = 'https://api.minepi.com/v2/payments';
       const completeResponse = await fetch(`${piNetworkApiUrl}/${paymentRequest.paymentId}/complete`, {
         method: 'POST',
         headers: {
           'Authorization': `Key ${piApiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ txid: paymentRequest.txid })
+        body: JSON.stringify({ txid: paymentRequest.txid }),
       });
 
       const completeResult = await completeResponse.json();
-      console.log('Pi Network completion API response received');
+      log.info('complete.pi_api.response', {
+        ok: completeResponse.ok,
+        status: completeResponse.status,
+      });
 
       if (!completeResponse.ok) {
-        // Check if payment was already completed
         if (completeResult.message?.includes('already completed')) {
-          console.log('Payment already completed');
-          
-          // Update our database to reflect completion
           await supabaseClient.from('payments').update({
             status: {
               approved: true,
               verified: true,
               completed: true,
-              cancelled: false
+              cancelled: false,
             },
             txid: paymentRequest.txid,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           }).eq('payment_id', paymentRequest.paymentId);
 
-          return new Response(
-            JSON.stringify({ 
-              success: true, 
-              message: 'Payment was already completed', 
-              paymentId: paymentRequest.paymentId,
-              txid: paymentRequest.txid 
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          log.info('complete.transition', {
+            from: existingPayment?.status ?? null,
+            to: 'completed',
+            source: 'pi_already_completed',
+          });
+          return respond({
+            success: true,
+            message: 'Payment was already completed',
+            paymentId: paymentRequest.paymentId,
+            txid: paymentRequest.txid,
+          });
         }
 
-        // Handle other Pi Network API errors
         await supabaseClient.from('payments').update({
           status: {
             approved: true,
             verified: false,
             completed: false,
             cancelled: true,
-            error: `Pi Network completion API error: ${JSON.stringify(completeResult)}`
+            error: `Pi Network completion API error: ${JSON.stringify(completeResult)}`,
           },
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         }).eq('payment_id', paymentRequest.paymentId);
 
-        console.error('Pi Network completion API error:', completeResult);
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: 'Payment completion failed. Please try again.'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
-        );
+        log.error('complete.pi_api.error', { result: completeResult });
+        log.info('complete.transition', {
+          from: existingPayment?.status ?? null,
+          to: 'cancelled_error',
+        });
+        return respond({
+          success: false,
+          message: 'Payment completion failed. Please try again.',
+        }, 502);
       }
 
-      // Payment completed successfully - update database
       await supabaseClient.from('payments').update({
         status: {
           approved: true,
           verified: true,
           completed: true,
-          cancelled: false
+          cancelled: false,
         },
         txid: paymentRequest.txid,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }).eq('payment_id', paymentRequest.paymentId);
 
-      // Handle subscription creation if payment is completed successfully
+      log.info('complete.transition', {
+        from: existingPayment?.status ?? 'approved',
+        to: 'completed',
+      });
+
       if (paymentRequest.metadata?.subscriptionTier) {
         try {
-          // Get user data from metadata or create defaults
           const metadata = paymentRequest.metadata as any;
           const username = metadata?.username || `user_${paymentRequest.userId.slice(0, 8)}`;
           const email = metadata?.email || `${username}@pi.app`;
-          
-          // Call the database function to handle subscription
+
           const { error: subscriptionError } = await supabaseClient.rpc('handle_subscription_after_payment', {
             p_user_id: paymentRequest.userId,
             p_username: username,
             p_email: email,
-            p_subscription_tier: paymentRequest.metadata.subscriptionTier
+            p_subscription_tier: paymentRequest.metadata.subscriptionTier,
           });
 
           if (subscriptionError) {
-            console.error('Subscription creation error:', subscriptionError);
-            // Don't fail the entire request since payment was successful
+            log.warn('complete.subscription_rpc_error', { message: subscriptionError.message });
           } else {
-            console.log('Subscription created successfully');
+            log.info('complete.subscription_created', { tier: paymentRequest.metadata.subscriptionTier });
           }
         } catch (subscriptionErr) {
-          console.error('Error handling subscription:', subscriptionErr);
-          // Don't fail the entire request since payment was successful
+          log.error('complete.subscription_exception', {
+            message: subscriptionErr instanceof Error ? subscriptionErr.message : String(subscriptionErr),
+          });
         }
       }
 
-      // Create payment notification
       try {
         await createPaymentNotification(
           supabaseClient,
@@ -245,56 +247,53 @@ Deno.serve(async (req) => {
           paymentRequest.amount,
           paymentRequest.metadata?.subscriptionTier
         );
-        console.log('Payment notification created');
+        log.info('complete.notification_created');
       } catch (notifError) {
-        // Don't fail the request if notification creation fails
-        console.error('Failed to create payment notification:', notifError);
+        log.warn('complete.notification_error', {
+          message: notifError instanceof Error ? notifError.message : String(notifError),
+        });
       }
 
-      const endTime = Date.now();
-      console.log(`Payment completion successful in ${endTime - startTime}ms`);
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Payment completed successfully', 
-          paymentId: paymentRequest.paymentId,
-          txid: paymentRequest.txid,
-          subscriptionCreated: !!paymentRequest.metadata?.subscriptionTier
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-
+      log.info('complete.done', { durationMs: Date.now() - startTime });
+      return respond({
+        success: true,
+        message: 'Payment completed successfully',
+        paymentId: paymentRequest.paymentId,
+        txid: paymentRequest.txid,
+        subscriptionCreated: !!paymentRequest.metadata?.subscriptionTier,
+      });
     } catch (apiError) {
-      console.error('Error calling Pi Network completion API:', apiError);
-      
+      log.error('complete.pi_api.exception', {
+        message: apiError instanceof Error ? apiError.message : String(apiError),
+      });
+
       await supabaseClient.from('payments').update({
         status: {
           approved: true,
           verified: false,
           completed: false,
           cancelled: true,
-          error: `API call error: ${apiError instanceof Error ? apiError.message : String(apiError)}`
+          error: `API call error: ${apiError instanceof Error ? apiError.message : String(apiError)}`,
         },
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }).eq('payment_id', paymentRequest.paymentId);
 
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: "Payment completion temporarily unavailable", 
-          paymentId: paymentRequest.paymentId,
-          txid: paymentRequest.txid 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
-      );
-    }
+      log.info('complete.transition', {
+        from: existingPayment?.status ?? null,
+        to: 'cancelled_api_error',
+      });
 
+      return respond({
+        success: false,
+        message: 'Payment completion temporarily unavailable',
+        paymentId: paymentRequest.paymentId,
+        txid: paymentRequest.txid,
+      }, 502);
+    }
   } catch (error) {
-    console.error('Error in complete-payment function:', error);
-    return new Response(
-      JSON.stringify({ success: false, message: "Payment completion service temporarily unavailable" }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
+    log.error('complete.unhandled', {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return respond({ success: false, message: 'Payment completion service temporarily unavailable' }, 500);
   }
 });
