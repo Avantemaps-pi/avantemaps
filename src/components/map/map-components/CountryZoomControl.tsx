@@ -327,7 +327,7 @@ const CountryZoomControl: React.FC = () => {
         }
       }}
       className={cn(
-        'absolute z-[20] transition-shadow select-none',
+        'absolute z-[800] transition-shadow select-none',
         atCountry && 'ring-2 ring-primary/60 rounded-md shadow-lg'
       )}
       style={{
