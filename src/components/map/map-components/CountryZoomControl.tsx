@@ -46,6 +46,18 @@ const CountryZoomControl: React.FC = () => {
     let pollAttempts = 0;
     const MAX_POLL_ATTEMPTS = 40; // ~4s at 100ms
 
+    // rAF-based coalescing: collapse bursts of events (resize, font scale,
+    // transitions, mutations) into a single measurement per frame to avoid
+    // layout thrashing.
+    let rafId: number | null = null;
+    const scheduleRecompute = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        recompute();
+      });
+    };
+
     const recompute = () => {
       const addBtn = document.querySelector<HTMLElement>('[data-add-business-button]');
       if (!addBtn) {
