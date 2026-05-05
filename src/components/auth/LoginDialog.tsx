@@ -266,16 +266,32 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
             </div>
           </div>
           
+          {isCoolingDown && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="w-full mb-3 text-xs text-center text-muted-foreground bg-muted/40 border border-border rounded-md py-2 px-3"
+            >
+              Too many failed attempts. You can retry in{' '}
+              <span className="font-semibold text-foreground tabular-nums">{formatCooldown(cooldownRemaining)}</span>
+              {failureCount > 0 && (
+                <> · failed attempts: <span className="font-semibold">{failureCount}</span></>
+              )}
+            </div>
+          )}
+
           <Button 
             className="w-full mb-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3"
             onClick={handleLogin}
-            disabled={isLoading || !sdkAvailable}
+            disabled={isLoading || !sdkAvailable || isCoolingDown}
           >
-            {isLoading 
-              ? "Connecting..." 
-              : !sdkAvailable
-                ? "Pi Network Not Available"
-                : "Connect with Pi Network"
+            {isCoolingDown
+              ? `Retry in ${formatCooldown(cooldownRemaining)}`
+              : isLoading
+                ? "Connecting..."
+                : !sdkAvailable
+                  ? "Pi Network Not Available"
+                  : "Connect with Pi Network"
             }
           </Button>
           
