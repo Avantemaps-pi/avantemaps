@@ -2,74 +2,54 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import {
-  getOrCreateCorrelationId,
+  getOrCreateLifecycleId,
   makeLogger,
   correlationHeaders,
+  deriveTerminalReason,
 } from '../_shared/logger.ts';
 
-interface StatusRequest {
-  paymentId: string;
-}
+const FN = 'payment-status';
 
-interface PaymentResponse {
-  success: boolean;
-  message: string;
-  paymentId?: string;
-  txid?: string;
-  status?: {
-    approved: boolean;
-    verified: boolean;
-    completed: boolean;
-    cancelled: boolean;
-    voided?: boolean;
-    error?: string;
-  };
-}
-
-// Create a Supabase client with service role key for database operations
 const supabaseClient = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
 
-// Helper function to check if a payment is likely voided due to timeout
 function checkIfPaymentVoided(payment: any): boolean {
-  // If a payment was created more than 10 minutes ago and hasn't been completed,
-  // it's likely voided by the Pi Network system
   const createdAt = new Date(payment.created_at).getTime();
   const now = Date.now();
   const tenMinutesInMs = 10 * 60 * 1000;
-  
   return (
-    !payment.status.completed && 
-    !payment.status.cancelled && 
+    !payment.status.completed &&
+    !payment.status.cancelled &&
     now - createdAt > tenMinutesInMs
   );
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
-  
-  const correlationId = getOrCreateCorrelationId(req);
-  const log = makeLogger({ fn: 'payment-status', correlationId });
+
+  const lifecycleId = getOrCreateLifecycleId(req);
+  const log = makeLogger({ fn: FN, lifecycleId });
 
   const respond = (body: Record<string, unknown>, status = 200) =>
-    new Response(JSON.stringify({ ...body, correlationId }), {
+    new Response(JSON.stringify({ ...body, lifecycleId, correlationId: lifecycleId }), {
       headers: {
         ...corsHeaders,
-        ...correlationHeaders(correlationId),
+        ...correlationHeaders(lifecycleId),
         'Content-Type': 'application/json',
       },
       status,
     });
 
+  log.info(`${FN}.request.received`, { stage: 'validation' });
+
   try {
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
-      log.warn('status.unauthorized.no_header');
+      log.warn(`${FN}.auth.missing_header`, { stage: 'validation' });
       return respond({ success: false, message: 'Unauthorized - authentication required' }, 401);
     }
 
@@ -80,7 +60,8 @@ Deno.serve(async (req) => {
       userId = jwt.sub;
       if (!userId) throw new Error('Invalid token: missing user ID');
     } catch (jwtError) {
-      log.error('status.invalid_jwt', {
+      log.error(`${FN}.auth.invalid_jwt`, {
+        stage: 'validation',
         message: jwtError instanceof Error ? jwtError.message : String(jwtError),
       });
       return respond({ success: false, message: 'Invalid authentication token' }, 401);
@@ -91,12 +72,12 @@ Deno.serve(async (req) => {
     const statusRequest: { paymentId?: string } = await req.json();
 
     if (!statusRequest.paymentId) {
-      log.warn('status.missing_payment_id');
+      log.warn(`${FN}.validation.missing_payment_id`, { stage: 'validation' });
       return respond({ success: false, message: 'Missing payment ID' }, 400);
     }
 
     log.extend({ paymentId: statusRequest.paymentId });
-    log.info('status.request');
+    log.info(`${FN}.validation.ok`, { stage: 'validation' });
 
     const { data, error } = await supabaseClient
       .from('payments')
@@ -107,14 +88,18 @@ Deno.serve(async (req) => {
 
     if (error) {
       if (error.code === 'PGRST116') {
-        log.warn('status.not_found_or_unauthorized');
+        log.warn(`${FN}.lookup.not_found`, { stage: 'lookup' });
         return respond({
           success: false,
           message: 'Payment not found or access denied',
           paymentId: statusRequest.paymentId,
         }, 404);
       }
-      log.error('status.db_error', { code: error.code, message: error.message });
+      log.error(`${FN}.lookup.error`, {
+        stage: 'lookup',
+        code: error.code,
+        message: error.message,
+      });
       return respond({
         success: false,
         message: 'Unable to retrieve payment status',
@@ -125,7 +110,10 @@ Deno.serve(async (req) => {
     let paymentStatus = { ...data.status };
 
     if (checkIfPaymentVoided(data)) {
-      log.info('status.transition', { from: data.status, to: 'voided' });
+      log.transition(data.status, { ...data.status, voided: true }, {
+        terminalReason: 'voided',
+        source: 'timeout',
+      });
       paymentStatus.voided = true;
 
       await supabaseClient
@@ -140,7 +128,12 @@ Deno.serve(async (req) => {
         .eq('payment_id', statusRequest.paymentId);
     }
 
-    log.info('status.response', { status: paymentStatus });
+    const terminalReason = deriveTerminalReason(paymentStatus);
+    log.info(`${FN}.done`, {
+      stage: 'done',
+      terminalReason,
+      currentStatus: paymentStatus,
+    });
 
     return respond({
       success: true,
@@ -148,9 +141,11 @@ Deno.serve(async (req) => {
       paymentId: statusRequest.paymentId,
       txid: data.txid,
       status: paymentStatus,
+      terminalReason,
     });
   } catch (error) {
-    log.error('status.unhandled', {
+    log.error(`${FN}.unhandled`, {
+      stage: 'error',
       message: error instanceof Error ? error.message : String(error),
     });
     return respond({ success: false, message: 'Payment status service temporarily unavailable' }, 500);
