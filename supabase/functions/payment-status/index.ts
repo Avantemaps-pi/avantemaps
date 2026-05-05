@@ -124,6 +124,8 @@ Deno.serve(async (req) => {
             voided: true,
             error: 'Payment voided due to timeout. No Pi was transferred.',
           },
+          lifecycle_id: lifecycleId,
+          updated_at: new Date().toISOString(),
         })
         .eq('payment_id', statusRequest.paymentId);
     }
