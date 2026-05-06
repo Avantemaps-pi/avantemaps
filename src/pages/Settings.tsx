@@ -335,6 +335,31 @@ const Settings = () => {
           </AccordionItem>
         </Accordion>
       </div>
+
+      <AlertDialog open={gpsConsentOpen} onOpenChange={setGpsConsentOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Use your device's GPS?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Enabling precise location lets Avante Maps center the map on your exact position when you tap the locate button.
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Your browser will ask for location permission the first time.</li>
+                  <li>Coordinates are used only to move the map view on your device.</li>
+                  <li>We do <strong>not</strong> store, transmit, or share your GPS coordinates.</li>
+                  <li>You can turn this off any time in Settings.</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => persistGpsPref(false)}>Not now</AlertDialogCancel>
+            <AlertDialogAction onClick={() => persistGpsPref(true)}>I agree, enable GPS</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };
