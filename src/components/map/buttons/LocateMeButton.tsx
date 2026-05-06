@@ -68,9 +68,29 @@ const fetchIpLocation = async (): Promise<{ lat: number; lng: number } | null> =
   return null;
 };
 
+const readUseLocationPref = () => {
+  try {
+    return localStorage.getItem('use_location_focus') !== '0';
+  } catch {
+    return true;
+  }
+};
+
 const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
   const [loading, setLoading] = useState(false);
+  const [enabled, setEnabled] = useState<boolean>(readUseLocationPref);
 
+  React.useEffect(() => {
+    const sync = () => setEnabled(readUseLocationPref());
+    window.addEventListener('storage', sync);
+    window.addEventListener('use_location_focus_changed', sync as EventListener);
+    return () => {
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('use_location_focus_changed', sync as EventListener);
+    };
+  }, []);
+
+  if (!enabled) return null;
   const useIpFallback = async () => {
     toast.loading('Resolving your approximate location…', {
       id: TOAST_ID,
