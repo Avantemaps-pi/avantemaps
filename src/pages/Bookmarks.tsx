@@ -124,9 +124,16 @@ const Bookmarks = () => {
               </Button>
             </CardContent>
           </Card>
+        ) : filteredPlaces.length === 0 ? (
+          <Card className="w-full py-8 material-card max-w-lg mx-auto">
+            <CardContent className="text-center flex flex-col items-center space-y-3">
+              <p className="text-muted-foreground">No bookmarks match "{query}".</p>
+              <Button variant="outline" size="sm" onClick={() => setQuery('')}>Clear search</Button>
+            </CardContent>
+          </Card>
         ) : (
           <div className="flex flex-col max-w-lg mx-auto divide-y divide-border">
-            {bookmarkedPlaces.map((place, index) => (
+            {filteredPlaces.map((place, index) => (
               <div
                 key={place.id}
                 style={{ animationDelay: `${index * 0.05}s` }}
