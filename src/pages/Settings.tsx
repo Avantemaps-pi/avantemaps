@@ -41,6 +41,8 @@ const Settings = () => {
   // Deterministic SSR default: opt-in (true). Real value is hydrated from
   // localStorage after mount to keep server and first client render identical.
   const [useLocation, setUseLocation] = useState<boolean>(true);
+  const [useDeviceGps, setUseDeviceGps] = useState<boolean>(false);
+  const [gpsConsentOpen, setGpsConsentOpen] = useState(false);
 
   // Hydrate from localStorage on mount (client-only)
   useEffect(() => {
@@ -48,6 +50,8 @@ const Settings = () => {
     try {
       const stored = window.localStorage?.getItem('use_location_focus');
       if (stored === '0') setUseLocation(false);
+      const gps = window.localStorage?.getItem('use_device_gps');
+      if (gps === '1') setUseDeviceGps(true);
     } catch {
       // ignore — storage unavailable (private mode, disabled, etc.)
     }
