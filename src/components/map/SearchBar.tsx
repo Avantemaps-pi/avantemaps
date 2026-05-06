@@ -96,7 +96,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const debouncedBusinessAutocomplete = useCallback(
     debounce((value: string) => {
       searchBusinesses(value);
-    }, 200),
+    }, 250),
     [searchBusinesses]
   );
 
@@ -109,6 +109,15 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }, 300),
     [onSearch]
   );
+
+  // Cancel any pending debounced calls on unmount or when handlers change
+  useEffect(() => {
+    return () => {
+      debouncedAddressAutocomplete.cancel();
+      debouncedBusinessAutocomplete.cancel();
+      debouncedSearch.cancel();
+    };
+  }, [debouncedAddressAutocomplete, debouncedBusinessAutocomplete, debouncedSearch]);
 
   // Effect to cycle through placeholders
   useEffect(() => {
