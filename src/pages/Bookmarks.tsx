@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,9 +17,15 @@ const Bookmarks = () => {
   const { bookmarkedPlaces, isLoading } = useBookmarkedBusinesses();
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 250);
+    return () => clearTimeout(t);
+  }, [query]);
 
   const filteredPlaces = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = debouncedQuery.trim().toLowerCase();
     if (!q) return bookmarkedPlaces;
     return bookmarkedPlaces.filter((p) => {
       const haystack = [
@@ -40,7 +46,7 @@ const Bookmarks = () => {
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [bookmarkedPlaces, query]);
+  }, [bookmarkedPlaces, debouncedQuery]);
 
   const handleRemoveBookmark = async (id: string) => {
     await removeBookmark(id);
