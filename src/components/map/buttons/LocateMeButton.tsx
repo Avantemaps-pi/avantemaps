@@ -128,7 +128,7 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
           }
           resolve(false);
         },
-        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60_000 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
     });
 
