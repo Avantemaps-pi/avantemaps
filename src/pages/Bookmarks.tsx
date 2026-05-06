@@ -46,7 +46,7 @@ const Bookmarks = () => {
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [bookmarkedPlaces, query]);
+  }, [bookmarkedPlaces, debouncedQuery]);
 
   const handleRemoveBookmark = async (id: string) => {
     await removeBookmark(id);
