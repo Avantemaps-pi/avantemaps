@@ -3,6 +3,7 @@ import React from 'react';
 import { CircleCheck, Shield, Clock, XCircle } from 'lucide-react';
 import { CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import HighlightText from './HighlightText';
 
 interface PlaceCardTitleProps {
   name: string;
@@ -10,6 +11,7 @@ interface PlaceCardTitleProps {
   isVerified?: boolean;
   isCertified?: boolean;
   verificationStatus?: 'pending' | 'verified' | 'rejected' | null;
+  highlightQuery?: string;
 }
 
 const PlaceCardTitle: React.FC<PlaceCardTitleProps> = ({ 
@@ -17,7 +19,8 @@ const PlaceCardTitle: React.FC<PlaceCardTitleProps> = ({
   onClick, 
   isVerified = false,
   isCertified = false,
-  verificationStatus = null
+  verificationStatus = null,
+  highlightQuery,
 }) => {
   // Determine verification status display
   const getStatusIndicator = () => {
