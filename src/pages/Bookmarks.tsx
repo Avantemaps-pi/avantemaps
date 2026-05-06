@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import PlaceCard from '@/components/business/PlaceCard';
 import { useNavigate } from 'react-router-dom';
-import { BookmarkX } from 'lucide-react';
+import { BookmarkX, Search, X } from 'lucide-react';
 import { useBusinessBookmarks } from '@/hooks/useBusinessBookmarks';
 import { useBookmarkedBusinesses } from '@/hooks/useBookmarkedBusinesses';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,6 +16,31 @@ const Bookmarks = () => {
   const { removeBookmark } = useBusinessBookmarks();
   const { bookmarkedPlaces, isLoading } = useBookmarkedBusinesses();
   const queryClient = useQueryClient();
+  const [query, setQuery] = useState('');
+
+  const filteredPlaces = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return bookmarkedPlaces;
+    return bookmarkedPlaces.filter((p) => {
+      const haystack = [
+        p.name,
+        p.address,
+        p.city,
+        p.state,
+        p.country,
+        p.streetAddress,
+        p.postalCode,
+        p.category,
+        p.description,
+        ...(p.keywords || []),
+        ...(p.business_types || []),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [bookmarkedPlaces, query]);
 
   const handleRemoveBookmark = async (id: string) => {
     await removeBookmark(id);
@@ -35,6 +61,30 @@ const Bookmarks = () => {
           <h1 className="text-3xl font-bold">My Bookmarks</h1>
           <p className="text-muted-foreground">Your saved Pi-accepting businesses.</p>
         </div>
+
+        {!isLoading && bookmarkedPlaces.length > 0 && (
+          <div className="relative max-w-lg mx-auto w-full">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search bookmarks by name, address, keyword..."
+              className="pl-11 pr-10"
+              aria-label="Search bookmarks"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex flex-col gap-4 max-w-lg mx-auto">
@@ -74,9 +124,16 @@ const Bookmarks = () => {
               </Button>
             </CardContent>
           </Card>
+        ) : filteredPlaces.length === 0 ? (
+          <Card className="w-full py-8 material-card max-w-lg mx-auto">
+            <CardContent className="text-center flex flex-col items-center space-y-3">
+              <p className="text-muted-foreground">No bookmarks match "{query}".</p>
+              <Button variant="outline" size="sm" onClick={() => setQuery('')}>Clear search</Button>
+            </CardContent>
+          </Card>
         ) : (
           <div className="flex flex-col max-w-lg mx-auto divide-y divide-border">
-            {bookmarkedPlaces.map((place, index) => (
+            {filteredPlaces.map((place, index) => (
               <div
                 key={place.id}
                 style={{ animationDelay: `${index * 0.05}s` }}
