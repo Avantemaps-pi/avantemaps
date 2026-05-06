@@ -23,32 +23,46 @@ const dispatchCenter = (lat: number, lng: number, zoom = 14) => {
 
 // CORS-friendly IP fallback (ipwho.is free plan blocks CORS)
 const fetchIpLocation = async (): Promise<{ lat: number; lng: number } | null> => {
-  const endpoints = [
-    async () => {
-      const r = await fetch('https://ipapi.co/json/');
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const d = await r.json();
-      if (typeof d.latitude === 'number' && typeof d.longitude === 'number') {
-        return { lat: d.latitude, lng: d.longitude };
-      }
-      return null;
+  const endpoints: Array<{ name: string; fn: () => Promise<{ lat: number; lng: number } | null> }> = [
+    {
+      name: 'ipapi.co',
+      fn: async () => {
+        const r = await fetch('https://ipapi.co/json/');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        if (typeof d.latitude === 'number' && typeof d.longitude === 'number') {
+          return { lat: d.latitude, lng: d.longitude };
+        }
+        return null;
+      },
     },
-    async () => {
-      const r = await fetch('https://get.geojs.io/v1/ip/geo.json');
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const d = await r.json();
-      const lat = parseFloat(d.latitude);
-      const lng = parseFloat(d.longitude);
-      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
-      return null;
+    {
+      name: 'geojs.io',
+      fn: async () => {
+        const r = await fetch('https://get.geojs.io/v1/ip/geo.json');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        const lat = parseFloat(d.latitude);
+        const lng = parseFloat(d.longitude);
+        if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+        return null;
+      },
     },
   ];
-  for (const fn of endpoints) {
+  for (const { name, fn } of endpoints) {
     try {
       const res = await fn();
-      if (res) return res;
-    } catch {
-      // try next
+      if (res) {
+        secureLog.info('LocateMe: IP fallback succeeded', { provider: name, ...logCtx() });
+        return res;
+      }
+      secureLog.warn('LocateMe: IP fallback returned no coords', { provider: name, ...logCtx() });
+    } catch (err: any) {
+      secureLog.warn('LocateMe: IP fallback provider failed', {
+        provider: name,
+        error: err?.message || String(err),
+        ...logCtx(),
+      });
     }
   }
   return null;
