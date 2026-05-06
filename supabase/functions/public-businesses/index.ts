@@ -84,8 +84,8 @@ Deno.serve(async (req) => {
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
-          // Cache 5 min at CDN, allow stale-while-revalidate for 10 min
-          'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+          // Cache 2 min in browsers, 5 min at CDN, allow stale-while-revalidate for 10 min
+          'Cache-Control': 'public, max-age=120, s-maxage=300, stale-while-revalidate=600',
         },
       },
     );
