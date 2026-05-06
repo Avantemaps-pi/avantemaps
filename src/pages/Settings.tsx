@@ -58,6 +58,7 @@ const Settings = () => {
     if (typeof window === 'undefined') return;
     try {
       window.localStorage?.setItem('use_location_focus', value ? '1' : '0');
+      window.dispatchEvent(new Event('use_location_focus_changed'));
       if (!value) {
         // Clear cached IP focus so disabling takes immediate effect on next login
         window.sessionStorage?.removeItem('ip_location_focused');
