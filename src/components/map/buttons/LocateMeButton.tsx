@@ -93,17 +93,33 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
   const usePreciseLocation = () =>
     new Promise<boolean>((resolve) => {
       if (!('geolocation' in navigator)) {
+        secureLog.warn('LocateMe: geolocation API unavailable', logCtx());
         resolve(false);
         return;
       }
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
+          secureLog.info('LocateMe: precise geolocation succeeded', {
+            accuracy: pos.coords.accuracy,
+            ...logCtx(),
+          });
           dispatchCenter(latitude, longitude, 15);
           toast.success('Centered on your location', { id: TOAST_ID });
           resolve(true);
         },
         (err) => {
+          const codeName =
+            err.code === err.PERMISSION_DENIED ? 'PERMISSION_DENIED'
+            : err.code === err.POSITION_UNAVAILABLE ? 'POSITION_UNAVAILABLE'
+            : err.code === err.TIMEOUT ? 'TIMEOUT'
+            : `UNKNOWN_${err.code}`;
+          secureLog.warn('LocateMe: precise geolocation failed', {
+            code: err.code,
+            codeName,
+            message: err.message,
+            ...logCtx(),
+          });
           if (err.code === err.PERMISSION_DENIED) {
             toast.message('Location permission denied', {
               id: TOAST_ID,
