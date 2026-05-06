@@ -10,6 +10,11 @@ import { getUnreadNotificationsCount } from '@/utils/notificationUtils';
 
 export const navItems = [
   {
+    to: '/notifications',
+    icon: Bell,
+    label: 'Notifications',
+  },
+  {
     to: '/registered-business',
     icon: Building,
     label: 'Registered Business',

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Map, LayoutGrid, Bookmark, Bell, Settings } from 'lucide-react';
+import { Map, LayoutGrid, Bookmark, Wallet, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const navItems = [
   { to: '/', icon: Map, label: 'Map' },
-  { to: '/recommendations', icon: LayoutGrid, label: 'Explore' },
+  { to: '/recommendations', icon: LayoutGrid, label: 'Discover' },
   { to: '/bookmarks', icon: Bookmark, label: 'Saved' },
-  { to: '/notifications', icon: Bell, label: 'Alerts' },
+  { to: '/wallet', icon: Wallet, label: 'Wallet' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 

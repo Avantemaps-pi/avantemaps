@@ -36,6 +36,7 @@ const Review = lazy(() => import("./pages/Review"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const NotificationAdmin = lazy(() => import("./pages/NotificationAdmin"));
+const Wallet = lazy(() => import("./pages/Wallet"));
 
 // Cache query results across route navigations so revisiting a page
 // renders instantly from cache instead of refetching every time.
@@ -166,6 +167,7 @@ const App = () => {
                       <Route path="/pricing" element={<Pricing />} />
                       <Route path="/analytics" element={<Analytics />} />
                       <Route path="/notification-admin" element={<NotificationAdmin />} />
+                      <Route path="/wallet" element={<Wallet />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </Suspense>

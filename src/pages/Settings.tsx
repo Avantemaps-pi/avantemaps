@@ -4,11 +4,10 @@ import AppLayout from '@/components/layout/AppLayout';
 import ProfileSettings from '@/components/settings/ProfileSettings';
 import AppPreferences from '@/components/settings/AppPreferences';
 import DangerZone from '@/components/settings/DangerZone';
-import PaymentHistory from '@/components/settings/PaymentHistory';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/auth';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
-import { User, Settings as SettingsIcon, AlertTriangle, Receipt } from 'lucide-react';
+import { User, Settings as SettingsIcon, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -278,21 +277,6 @@ const Settings = () => {
                 useLocation={useLocation}
                 onUseLocationChange={handleUseLocationChange}
               />
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="payments" className="border rounded-lg overflow-hidden">
-            <AccordionTrigger className="px-4 sm:px-6 py-3 hover:no-underline hover:bg-muted/50">
-              <div className="flex items-start gap-3 text-left">
-                <Receipt className="h-5 w-5 mt-0.5 flex-shrink-0 text-primary" />
-                <div className="flex flex-col items-start">
-                  <span className="font-semibold text-base sm:text-lg">Payment history</span>
-                  <span className="text-xs sm:text-sm text-muted-foreground">Recent Pi payment states and timestamps</span>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 sm:px-6 pt-2 pb-4">
-              <PaymentHistory />
             </AccordionContent>
           </AccordionItem>
 
