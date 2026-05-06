@@ -114,6 +114,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
             isVerified={place.isVerified} 
             isCertified={place.isCertified}
             verificationStatus={place.verificationStatus}
+            highlightQuery={highlightQuery}
           />
           {!disableBookmark && (
             <BookmarkButton 
