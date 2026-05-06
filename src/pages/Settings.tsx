@@ -72,6 +72,33 @@ const Settings = () => {
     }
   };
 
+  const persistGpsPref = (value: boolean) => {
+    setUseDeviceGps(value);
+    try {
+      window.localStorage?.setItem('use_device_gps', value ? '1' : '0');
+      window.dispatchEvent(new Event('use_device_gps_changed'));
+    } catch {
+      // ignore
+    }
+    if (value) {
+      toast.success('Device GPS enabled', {
+        description: "Tap the locate button on the map — your browser will ask for permission.",
+      });
+    } else {
+      toast.message('Device GPS disabled', {
+        description: 'Falling back to approximate IP-based location.',
+      });
+    }
+  };
+
+  const handleUseDeviceGpsChange = (value: boolean) => {
+    if (value) {
+      // Require explicit consent before enabling
+      setGpsConsentOpen(true);
+    } else {
+      persistGpsPref(false);
+    }
+  };
   // Sync the toggle across tabs/windows via the storage event
   useEffect(() => {
     if (typeof window === 'undefined') return;
