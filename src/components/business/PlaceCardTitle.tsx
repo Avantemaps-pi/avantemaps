@@ -65,7 +65,7 @@ const PlaceCardTitle: React.FC<PlaceCardTitleProps> = ({
         className="text-base font-bold cursor-pointer hover:text-primary transition-colors line-clamp-1 flex-1"
         onClick={onClick}
       >
-        {name}
+        <HighlightText text={name} query={highlightQuery} />
       </CardTitle>
       {getStatusIndicator()}
     </div>
