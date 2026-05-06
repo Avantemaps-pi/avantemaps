@@ -16,6 +16,31 @@ const Bookmarks = () => {
   const { removeBookmark } = useBusinessBookmarks();
   const { bookmarkedPlaces, isLoading } = useBookmarkedBusinesses();
   const queryClient = useQueryClient();
+  const [query, setQuery] = useState('');
+
+  const filteredPlaces = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return bookmarkedPlaces;
+    return bookmarkedPlaces.filter((p) => {
+      const haystack = [
+        p.name,
+        p.address,
+        p.city,
+        p.state,
+        p.country,
+        p.streetAddress,
+        p.postalCode,
+        p.category,
+        p.description,
+        ...(p.keywords || []),
+        ...(p.business_types || []),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [bookmarkedPlaces, query]);
 
   const handleRemoveBookmark = async (id: string) => {
     await removeBookmark(id);
