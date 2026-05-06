@@ -137,6 +137,8 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
     setLoading(true);
 
     try {
+      secureLog.info('LocateMe: clicked', logCtx());
+
       // Check permission state first
       let permissionState: PermissionState | 'unknown' = 'unknown';
       try {
@@ -144,8 +146,13 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
           const status = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
           permissionState = status.state;
         }
-      } catch {
-        // some browsers throw — ignore
+      } catch (err: any) {
+        secureLog.debug('LocateMe: permissions.query threw', { error: err?.message });
+      }
+      secureLog.info('LocateMe: permission state', { permissionState, ...logCtx() });
+
+      if (permissionState === 'denied') {
+        secureLog.warn('LocateMe: geolocation permission denied — using IP fallback', logCtx());
       }
 
       if (permissionState !== 'denied' && 'geolocation' in navigator) {
