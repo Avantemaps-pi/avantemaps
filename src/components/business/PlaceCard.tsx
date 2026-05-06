@@ -30,6 +30,7 @@ interface PlaceCardProps {
   disableBookmark?: boolean;
   singleImageOnly?: boolean;
   hideGalleryIndicators?: boolean;
+  highlightQuery?: string;
 }
 
 const PlaceCard: React.FC<PlaceCardProps> = ({ 
@@ -43,7 +44,8 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   disableRating = false,
   disableBookmark = false,
   singleImageOnly = false,
-  hideGalleryIndicators = false
+  hideGalleryIndicators = false,
+  highlightQuery,
 }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
