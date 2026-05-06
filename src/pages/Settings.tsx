@@ -308,6 +308,8 @@ const Settings = () => {
                 onColorSchemeChange={handleColorSchemeChange} 
                 useLocation={useLocation}
                 onUseLocationChange={handleUseLocationChange}
+                useDeviceGps={useDeviceGps}
+                onUseDeviceGpsChange={handleUseDeviceGpsChange}
               />
             </AccordionContent>
           </AccordionItem>
