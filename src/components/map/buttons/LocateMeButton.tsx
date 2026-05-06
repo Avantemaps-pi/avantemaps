@@ -2,6 +2,14 @@ import React, { useState } from 'react';
 import { LocateFixed, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { secureLog } from '@/utils/secureLogger';
+
+const isPiBrowser = () => typeof window !== 'undefined' && !!(window as any).Pi;
+const logCtx = () => ({
+  isPiBrowser: isPiBrowser(),
+  userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+  online: typeof navigator !== 'undefined' ? navigator.onLine : null,
+});
 
 const CACHE_KEY = 'ip_location_cache_v1';
 const TTL_MS = 24 * 60 * 60 * 1000;
