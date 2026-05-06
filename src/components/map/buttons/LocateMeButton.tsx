@@ -171,31 +171,34 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
     setLoading(true);
 
     try {
-      secureLog.info('LocateMe: clicked', logCtx());
+      secureLog.info('LocateMe: clicked', { gpsOptIn, ...logCtx() });
 
-      // Check permission state first
-      let permissionState: PermissionState | 'unknown' = 'unknown';
-      try {
-        if (navigator.permissions?.query) {
-          const status = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
-          permissionState = status.state;
+      // Only use precise device GPS when the user has explicitly opted in
+      if (gpsOptIn) {
+        // Check permission state first
+        let permissionState: PermissionState | 'unknown' = 'unknown';
+        try {
+          if (navigator.permissions?.query) {
+            const status = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+            permissionState = status.state;
+          }
+        } catch (err: any) {
+          secureLog.debug('LocateMe: permissions.query threw', { error: err?.message });
         }
-      } catch (err: any) {
-        secureLog.debug('LocateMe: permissions.query threw', { error: err?.message });
-      }
-      secureLog.info('LocateMe: permission state', { permissionState, ...logCtx() });
+        secureLog.info('LocateMe: permission state', { permissionState, ...logCtx() });
 
-      if (permissionState === 'denied') {
-        secureLog.warn('LocateMe: geolocation permission denied — using IP fallback', logCtx());
-      }
+        if (permissionState === 'denied') {
+          secureLog.warn('LocateMe: geolocation permission denied — using IP fallback', logCtx());
+        }
 
-      if (permissionState !== 'denied' && 'geolocation' in navigator) {
-        toast.loading(
-          permissionState === 'granted' ? 'Getting your location…' : 'Requesting location permission…',
-          { id: TOAST_ID, description: permissionState === 'prompt' ? 'Please allow location access in the prompt.' : undefined }
-        );
-        const ok = await usePreciseLocation();
-        if (ok) return;
+        if (permissionState !== 'denied' && 'geolocation' in navigator) {
+          toast.loading(
+            permissionState === 'granted' ? 'Getting your location…' : 'Requesting location permission…',
+            { id: TOAST_ID, description: permissionState === 'prompt' ? 'Please allow location access in the prompt.' : undefined }
+          );
+          const ok = await usePreciseLocation();
+          if (ok) return;
+        }
       }
 
       // Fallback: cached IP location
