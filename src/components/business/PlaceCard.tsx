@@ -30,6 +30,7 @@ interface PlaceCardProps {
   disableBookmark?: boolean;
   singleImageOnly?: boolean;
   hideGalleryIndicators?: boolean;
+  highlightQuery?: string;
 }
 
 const PlaceCard: React.FC<PlaceCardProps> = ({ 
@@ -43,7 +44,8 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   disableRating = false,
   disableBookmark = false,
   singleImageOnly = false,
-  hideGalleryIndicators = false
+  hideGalleryIndicators = false,
+  highlightQuery,
 }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -112,6 +114,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
             isVerified={place.isVerified} 
             isCertified={place.isCertified}
             verificationStatus={place.verificationStatus}
+            highlightQuery={highlightQuery}
           />
           {!disableBookmark && (
             <BookmarkButton 
@@ -155,11 +158,11 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
       
       <CardContent className="pt-3 px-3 space-y-3">
         <div className={previewMode ? 'pointer-events-none select-none' : ''}>
-          <PlaceCardAddress address={place.address} onClick={previewMode ? undefined : handleAddressClick} />
+          <PlaceCardAddress address={place.address} onClick={previewMode ? undefined : handleAddressClick} highlightQuery={highlightQuery} />
         </div>
 
         <div className={`relative h-20 overflow-hidden ${previewMode ? 'select-none' : ''}`}>
-          <ExpandableDescription text={place.description} maxLines={4} />
+          <ExpandableDescription text={place.description} maxLines={4} highlightQuery={highlightQuery} />
           <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
         </div>
 

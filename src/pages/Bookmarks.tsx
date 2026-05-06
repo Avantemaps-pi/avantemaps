@@ -153,6 +153,7 @@ const Bookmarks = () => {
                   isBookmarked={true}
                   className="w-full"
                   hideGalleryIndicators
+                  highlightQuery={debouncedQuery}
                 />
               </div>
             ))}
