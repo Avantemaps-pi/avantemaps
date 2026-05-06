@@ -76,17 +76,31 @@ const readUseLocationPref = () => {
   }
 };
 
+const readUseDeviceGps = () => {
+  try {
+    return localStorage.getItem('use_device_gps') === '1';
+  } catch {
+    return false;
+  }
+};
+
 const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
   const [loading, setLoading] = useState(false);
   const [enabled, setEnabled] = useState<boolean>(readUseLocationPref);
+  const [gpsOptIn, setGpsOptIn] = useState<boolean>(readUseDeviceGps);
 
   React.useEffect(() => {
-    const sync = () => setEnabled(readUseLocationPref());
+    const sync = () => {
+      setEnabled(readUseLocationPref());
+      setGpsOptIn(readUseDeviceGps());
+    };
     window.addEventListener('storage', sync);
     window.addEventListener('use_location_focus_changed', sync as EventListener);
+    window.addEventListener('use_device_gps_changed', sync as EventListener);
     return () => {
       window.removeEventListener('storage', sync);
       window.removeEventListener('use_location_focus_changed', sync as EventListener);
+      window.removeEventListener('use_device_gps_changed', sync as EventListener);
     };
   }, []);
 
