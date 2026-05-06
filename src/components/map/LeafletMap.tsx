@@ -106,18 +106,34 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
     };
   }, [displayPlaces]);
 
-  const handleMarkerClick = (id: string) => {
+  // Throttle marker clicks to prevent rapid repeated UI events when users
+  // click multiple markers in quick succession.
+  const MARKER_CLICK_THROTTLE_MS = 250;
+  const lastMarkerClickRef = useRef<{ id: string | null; ts: number }>({ id: null, ts: 0 });
+
+  const handleMarkerClick = useCallback((id: string) => {
+    const now = Date.now();
+    const last = lastMarkerClickRef.current;
+    // Drop the event if the same marker was clicked within the throttle window,
+    // OR if any marker was clicked very recently (prevents UI thrashing).
+    if (now - last.ts < MARKER_CLICK_THROTTLE_MS) {
+      if (last.id === id) return; // exact duplicate — ignore
+      // different marker but within window — still ignore to debounce
+      return;
+    }
+    lastMarkerClickRef.current = { id, ts: now };
+
     if (suppressOverlay) {
       if (onMarkerClick) onMarkerClick(id);
       return;
     }
     setActiveMarker(id);
     setShowPopover(true);
-    
+
     if (onMarkerClick) {
       onMarkerClick(id);
     }
-  };
+  }, [onMarkerClick, suppressOverlay]);
 
   const handleOverlayClick = () => {
     setActiveMarker(null);
