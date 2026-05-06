@@ -71,6 +71,30 @@ const Index = () => {
     handleSearch(term);
   };
 
+  // When the search results update, sync the map viewport to the best match
+  // (the first item in filteredPlaces — useBusinessData orders by relevance).
+  const lastCenteredKeyRef = React.useRef<string>('');
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      lastCenteredKeyRef.current = '';
+      return;
+    }
+    const best = filteredPlaces[0];
+    if (!best) return;
+    const lat = best.position?.lat ?? best.location?.lat;
+    const lng = best.position?.lng ?? best.location?.lng;
+    if (lat == null || lng == null) return;
+
+    const key = `${searchTerm}::${best.id}`;
+    if (lastCenteredKeyRef.current === key) return;
+    lastCenteredKeyRef.current = key;
+
+    setSelectedPlace(best.id);
+    window.dispatchEvent(new CustomEvent('centerMap', {
+      detail: { lat, lng, zoom: 14 },
+    }));
+  }, [searchTerm, filteredPlaces]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
