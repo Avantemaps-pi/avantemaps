@@ -46,13 +46,19 @@ export interface GeocodingOptions {
 export const useLocationIQAutocomplete = () => {
   const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  // Monotonic request id — only the latest in-flight request is allowed to update state.
+  const latestRequestIdRef = useRef(0);
 
   const getSuggestions = useCallback(async (input: string, options?: GeocodingOptions): Promise<void> => {
     if (!input.trim() || input.length < 3) {
+      // Cancel any pending stale responses by bumping the id, then clear.
+      latestRequestIdRef.current += 1;
       setPredictions([]);
+      setIsLoading(false);
       return;
     }
 
+    const requestId = ++latestRequestIdRef.current;
     setIsLoading(true);
 
     try {
@@ -78,6 +84,9 @@ export const useLocationIQAutocomplete = () => {
       const { data, error } = await supabase.functions.invoke('geocode-address', {
         body: requestBody
       });
+
+      // Drop the response if a newer request has been issued in the meantime.
+      if (requestId !== latestRequestIdRef.current) return;
 
       setIsLoading(false);
 
@@ -133,6 +142,7 @@ export const useLocationIQAutocomplete = () => {
         setPredictions([]);
       }
     } catch (error) {
+      if (requestId !== latestRequestIdRef.current) return;
       console.error('Error fetching autocomplete predictions:', error);
       setIsLoading(false);
       setPredictions([]);
