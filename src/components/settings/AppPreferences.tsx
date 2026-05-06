@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Monitor, Sun, Moon, MapPin } from 'lucide-react';
+import { Monitor, Sun, Moon, MapPin, Crosshair } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
@@ -11,6 +11,8 @@ interface AppPreferencesProps {
   onColorSchemeChange: (scheme: 'system' | 'light' | 'dark') => void;
   useLocation: boolean;
   onUseLocationChange: (value: boolean) => void;
+  useDeviceGps: boolean;
+  onUseDeviceGpsChange: (value: boolean) => void;
 }
 
 const AppPreferences = ({
@@ -18,6 +20,8 @@ const AppPreferences = ({
   onColorSchemeChange,
   useLocation,
   onUseLocationChange,
+  useDeviceGps,
+  onUseDeviceGpsChange,
 }: AppPreferencesProps) => {
   return (
     <Card className="overflow-hidden">
@@ -73,6 +77,24 @@ const AppPreferences = ({
             checked={useLocation}
             onCheckedChange={onUseLocationChange}
             aria-label="Use my location"
+          />
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pt-2 border-t">
+          <div className="space-y-0.5">
+            <Label htmlFor="use-device-gps" className="flex items-center gap-2">
+              <Crosshair className="h-4 w-4" />
+              Use device GPS (precise)
+            </Label>
+            <p className="text-muted-foreground text-sm">
+              Opt in to use your device's GPS for accurate location. Your browser will ask for permission. Coordinates stay on your device — they aren't sent to our servers.
+            </p>
+          </div>
+          <Switch
+            id="use-device-gps"
+            checked={useDeviceGps}
+            onCheckedChange={onUseDeviceGpsChange}
+            aria-label="Use device GPS"
           />
         </div>
       </CardContent>
