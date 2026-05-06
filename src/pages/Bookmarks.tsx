@@ -62,6 +62,30 @@ const Bookmarks = () => {
           <p className="text-muted-foreground">Your saved Pi-accepting businesses.</p>
         </div>
 
+        {!isLoading && bookmarkedPlaces.length > 0 && (
+          <div className="relative max-w-lg mx-auto w-full">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search bookmarks by name, address, keyword..."
+              className="pl-11 pr-10"
+              aria-label="Search bookmarks"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        )}
+
         {isLoading ? (
           <div className="flex flex-col gap-4 max-w-lg mx-auto">
             {[1, 2, 3].map((i) => (
