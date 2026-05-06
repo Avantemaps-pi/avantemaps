@@ -82,6 +82,7 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
       dispatchCenter(res.lat, res.lng, 12);
       toast.success('Centered on your approximate location', { id: TOAST_ID });
     } else {
+      secureLog.error('LocateMe: all IP fallback providers failed', logCtx());
       toast.error("Couldn't determine your location", {
         id: TOAST_ID,
         description: 'Network or service error. Check your connection and try again.',
