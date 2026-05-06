@@ -16,12 +16,13 @@ const HighlightText: React.FC<HighlightTextProps> = ({ text, query }) => {
   if (tokens.length === 0) return <>{text}</>;
 
   const re = new RegExp(`(${tokens.join('|')})`, 'gi');
+  const testRe = new RegExp(`^(?:${tokens.join('|')})$`, 'i');
   const parts = text.split(re);
 
   return (
     <>
       {parts.map((part, i) =>
-        re.test(part) ? (
+        testRe.test(part) ? (
           <mark
             key={i}
             className="bg-primary/20 text-foreground rounded-sm px-0.5"
