@@ -2,6 +2,14 @@ import React, { useState } from 'react';
 import { LocateFixed, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { secureLog } from '@/utils/secureLogger';
+
+const isPiBrowser = () => typeof window !== 'undefined' && !!(window as any).Pi;
+const logCtx = () => ({
+  isPiBrowser: isPiBrowser(),
+  userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+  online: typeof navigator !== 'undefined' ? navigator.onLine : null,
+});
 
 const CACHE_KEY = 'ip_location_cache_v1';
 const TTL_MS = 24 * 60 * 60 * 1000;
@@ -15,32 +23,46 @@ const dispatchCenter = (lat: number, lng: number, zoom = 14) => {
 
 // CORS-friendly IP fallback (ipwho.is free plan blocks CORS)
 const fetchIpLocation = async (): Promise<{ lat: number; lng: number } | null> => {
-  const endpoints = [
-    async () => {
-      const r = await fetch('https://ipapi.co/json/');
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const d = await r.json();
-      if (typeof d.latitude === 'number' && typeof d.longitude === 'number') {
-        return { lat: d.latitude, lng: d.longitude };
-      }
-      return null;
+  const endpoints: Array<{ name: string; fn: () => Promise<{ lat: number; lng: number } | null> }> = [
+    {
+      name: 'ipapi.co',
+      fn: async () => {
+        const r = await fetch('https://ipapi.co/json/');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        if (typeof d.latitude === 'number' && typeof d.longitude === 'number') {
+          return { lat: d.latitude, lng: d.longitude };
+        }
+        return null;
+      },
     },
-    async () => {
-      const r = await fetch('https://get.geojs.io/v1/ip/geo.json');
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const d = await r.json();
-      const lat = parseFloat(d.latitude);
-      const lng = parseFloat(d.longitude);
-      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
-      return null;
+    {
+      name: 'geojs.io',
+      fn: async () => {
+        const r = await fetch('https://get.geojs.io/v1/ip/geo.json');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        const lat = parseFloat(d.latitude);
+        const lng = parseFloat(d.longitude);
+        if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+        return null;
+      },
     },
   ];
-  for (const fn of endpoints) {
+  for (const { name, fn } of endpoints) {
     try {
       const res = await fn();
-      if (res) return res;
-    } catch {
-      // try next
+      if (res) {
+        secureLog.info('LocateMe: IP fallback succeeded', { provider: name, ...logCtx() });
+        return res;
+      }
+      secureLog.warn('LocateMe: IP fallback returned no coords', { provider: name, ...logCtx() });
+    } catch (err: any) {
+      secureLog.warn('LocateMe: IP fallback provider failed', {
+        provider: name,
+        error: err?.message || String(err),
+        ...logCtx(),
+      });
     }
   }
   return null;
@@ -60,6 +82,7 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
       dispatchCenter(res.lat, res.lng, 12);
       toast.success('Centered on your approximate location', { id: TOAST_ID });
     } else {
+      secureLog.error('LocateMe: all IP fallback providers failed', logCtx());
       toast.error("Couldn't determine your location", {
         id: TOAST_ID,
         description: 'Network or service error. Check your connection and try again.',
@@ -70,17 +93,33 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
   const usePreciseLocation = () =>
     new Promise<boolean>((resolve) => {
       if (!('geolocation' in navigator)) {
+        secureLog.warn('LocateMe: geolocation API unavailable', logCtx());
         resolve(false);
         return;
       }
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
+          secureLog.info('LocateMe: precise geolocation succeeded', {
+            accuracy: pos.coords.accuracy,
+            ...logCtx(),
+          });
           dispatchCenter(latitude, longitude, 15);
           toast.success('Centered on your location', { id: TOAST_ID });
           resolve(true);
         },
         (err) => {
+          const codeName =
+            err.code === err.PERMISSION_DENIED ? 'PERMISSION_DENIED'
+            : err.code === err.POSITION_UNAVAILABLE ? 'POSITION_UNAVAILABLE'
+            : err.code === err.TIMEOUT ? 'TIMEOUT'
+            : `UNKNOWN_${err.code}`;
+          secureLog.warn('LocateMe: precise geolocation failed', {
+            code: err.code,
+            codeName,
+            message: err.message,
+            ...logCtx(),
+          });
           if (err.code === err.PERMISSION_DENIED) {
             toast.message('Location permission denied', {
               id: TOAST_ID,
@@ -98,6 +137,8 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
     setLoading(true);
 
     try {
+      secureLog.info('LocateMe: clicked', logCtx());
+
       // Check permission state first
       let permissionState: PermissionState | 'unknown' = 'unknown';
       try {
@@ -105,8 +146,13 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
           const status = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
           permissionState = status.state;
         }
-      } catch {
-        // some browsers throw — ignore
+      } catch (err: any) {
+        secureLog.debug('LocateMe: permissions.query threw', { error: err?.message });
+      }
+      secureLog.info('LocateMe: permission state', { permissionState, ...logCtx() });
+
+      if (permissionState === 'denied') {
+        secureLog.warn('LocateMe: geolocation permission denied — using IP fallback', logCtx());
       }
 
       if (permissionState !== 'denied' && 'geolocation' in navigator) {
