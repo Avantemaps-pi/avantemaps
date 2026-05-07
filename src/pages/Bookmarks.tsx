@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PlaceCard from '@/components/business/PlaceCard';
 import { useNavigate } from 'react-router-dom';
-import { BookmarkX, Search, X } from 'lucide-react';
+import { BookmarkX, Loader2, Search, X } from 'lucide-react';
 import { useBusinessBookmarks } from '@/hooks/useBusinessBookmarks';
 import { useBookmarkedBusinesses } from '@/hooks/useBookmarkedBusinesses';
 import { Skeleton } from '@/components/ui/skeleton';
