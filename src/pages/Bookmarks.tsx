@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PlaceCard from '@/components/business/PlaceCard';
 import { useNavigate } from 'react-router-dom';
-import { BookmarkX, Search, X } from 'lucide-react';
+import { BookmarkX, Loader2, Search, X } from 'lucide-react';
 import { useBusinessBookmarks } from '@/hooks/useBusinessBookmarks';
 import { useBookmarkedBusinesses } from '@/hooks/useBookmarkedBusinesses';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -79,7 +79,9 @@ const Bookmarks = () => {
               className="pl-11 pr-10"
               aria-label="Search bookmarks"
             />
-            {query && (
+            {query !== debouncedQuery ? (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" aria-label="Searching" />
+            ) : query ? (
               <button
                 type="button"
                 onClick={() => setQuery('')}
@@ -88,8 +90,12 @@ const Bookmarks = () => {
               >
                 <X className="h-4 w-4" />
               </button>
-            )}
+            ) : null}
           </div>
+        )}
+
+        {query && query !== debouncedQuery && (
+          <p className="text-xs text-muted-foreground text-center -mt-2" aria-live="polite">Searching…</p>
         )}
 
         {isLoading ? (
