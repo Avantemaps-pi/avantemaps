@@ -43,6 +43,7 @@ const BottomNavBar: React.FC = () => {
       <div className="flex items-center justify-around h-14">
         {navItems.map(({ to, icon: Icon, label }) => {
           const isActive = location.pathname === to;
+          const isMap = to === '/';
           return (
             <Link
               key={to}
@@ -54,7 +55,16 @@ const BottomNavBar: React.FC = () => {
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+              {isMap ? (
+                <span className={cn(
+                  'flex items-center justify-center h-11 w-11 rounded-full border-2 -mt-5 bg-background shadow-md',
+                  isActive ? 'border-primary' : 'border-border'
+                )}>
+                  <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+                </span>
+              ) : (
+                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+              )}
               <span>{label}</span>
             </Link>
           );
