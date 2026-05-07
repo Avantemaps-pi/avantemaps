@@ -57,7 +57,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             />
           )}
           
-          <main className={`flex-1 w-full min-w-0 overflow-x-hidden overflow-y-auto animate-fade-in ${isMobile ? 'pb-16' : ''}`}>
+          <main
+            className={`flex-1 w-full min-w-0 overflow-x-hidden overflow-y-auto animate-fade-in ${isMobile ? 'pb-24' : ''}`}
+            style={isMobile ? { paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' } : undefined}
+          >
             {children}
           </main>
           
