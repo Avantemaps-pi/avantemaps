@@ -88,19 +88,24 @@ const transformToPlace = (b: BookmarkedBusiness): Place => {
 };
 
 export const useBookmarkedBusinesses = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   const { data: bookmarkedPlaces = [], isLoading } = useQuery({
-    queryKey: ['bookmarked-businesses', user?.uid],
+    queryKey: ['bookmarked-businesses'],
     queryFn: async () => {
-      if (!user?.uid) return [];
+      // Resolve the actual Supabase session user id (auth.uid()), since the
+      // auth-context `user.uid` may differ (e.g. Pi UID) and bookmarks are
+      // stored against the Supabase session UUID.
+      const { data: { user: sessionUser }, error: sessionErr } = await supabase.auth.getUser();
+      if (sessionErr || !sessionUser) return [];
+
       const { data, error } = await supabase.rpc('get_bookmarked_businesses', {
-        p_user_id: user.uid,
+        p_user_id: sessionUser.id,
       });
       if (error) throw error;
       return (data as BookmarkedBusiness[]).map(transformToPlace);
     },
-    enabled: !!user?.uid && isAuthenticated,
+    enabled: isAuthenticated,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
