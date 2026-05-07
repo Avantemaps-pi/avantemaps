@@ -5,9 +5,9 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const navItems = [
-  { to: '/', icon: Map, label: 'Map' },
   { to: '/recommendations', icon: LayoutGrid, label: 'Discover' },
   { to: '/bookmarks', icon: Bookmark, label: 'Saved' },
+  { to: '/', icon: Map, label: 'Map' },
   { to: '/wallet', icon: Wallet, label: 'Wallet' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
