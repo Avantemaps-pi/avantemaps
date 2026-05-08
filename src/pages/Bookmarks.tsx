@@ -77,9 +77,21 @@ const Bookmarks = () => {
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold">My Bookmarks</h1>
-          <p className="text-muted-foreground">Your saved Pi-accepting businesses.</p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold">My Bookmarks</h1>
+            <p className="text-muted-foreground">Your saved Pi-accepting businesses.</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSync}
+            disabled={isSyncing || isLoading}
+            aria-label="Sync bookmarks"
+          >
+            <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Syncing…' : 'Sync bookmarks'}
+          </Button>
         </div>
 
         {!isLoading && bookmarkedPlaces.length > 0 && (
