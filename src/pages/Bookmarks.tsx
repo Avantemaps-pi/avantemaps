@@ -125,7 +125,11 @@ const Bookmarks = () => {
         )}
 
         {isLoading ? (
-          <div className="flex flex-col gap-4 max-w-lg mx-auto">
+          <div className="flex flex-col gap-4 max-w-lg mx-auto" aria-busy="true" aria-live="polite">
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading your bookmarks from the database…</span>
+            </div>
             {[1, 2, 3].map((i) => (
               <div key={i} className="rounded-xl border border-border bg-card p-4 space-y-3 animate-pulse">
                 <div className="flex items-center justify-between">
@@ -150,16 +154,23 @@ const Bookmarks = () => {
             ))}
           </div>
         ) : bookmarkedPlaces.length === 0 ? (
-          <Card className="w-full py-12 material-card">
+          <Card className="w-full py-12 material-card" aria-live="polite">
             <CardContent className="text-center flex flex-col items-center space-y-4">
               <div className="p-3 bg-muted rounded-full">
                 <BookmarkX className="h-6 w-6 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-medium">No Bookmarks Yet</h3>
-              <p className="text-muted-foreground max-w-md">You don't have any bookmarked places yet. Explore the map to find and save businesses.</p>
-              <Button className="mt-4" onClick={() => navigate('/')}>
-                Explore Map
-              </Button>
+              <h3 className="text-lg font-medium">No bookmarks yet</h3>
+              <p className="text-muted-foreground max-w-md">
+                We checked the database and didn't find any saved businesses on your account.
+                Tap the bookmark icon on any place to save it here.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+                <Button onClick={() => navigate('/')}>Explore Map</Button>
+                <Button variant="outline" onClick={handleSync} disabled={isSyncing}>
+                  <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                  {isSyncing ? 'Checking…' : 'Check again'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : filteredPlaces.length === 0 ? (
