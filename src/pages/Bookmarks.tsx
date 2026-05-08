@@ -19,6 +19,19 @@ const Bookmarks = () => {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await queryClient.refetchQueries({ queryKey: ['bookmarked-businesses'] });
+      toast.success('Bookmarks synced');
+    } catch (e) {
+      toast.error('Failed to sync bookmarks');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), 250);
