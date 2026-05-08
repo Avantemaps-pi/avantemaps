@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PlaceCard from '@/components/business/PlaceCard';
 import { useNavigate } from 'react-router-dom';
-import { BookmarkX, Loader2, Search, X } from 'lucide-react';
+import { BookmarkX, Loader2, RefreshCw, Search, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { useBusinessBookmarks } from '@/hooks/useBusinessBookmarks';
 import { useBookmarkedBusinesses } from '@/hooks/useBookmarkedBusinesses';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,6 +19,19 @@ const Bookmarks = () => {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await queryClient.refetchQueries({ queryKey: ['bookmarked-businesses'] });
+      toast.success('Bookmarks synced');
+    } catch (e) {
+      toast.error('Failed to sync bookmarks');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), 250);
@@ -63,9 +77,21 @@ const Bookmarks = () => {
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold">My Bookmarks</h1>
-          <p className="text-muted-foreground">Your saved Pi-accepting businesses.</p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold">My Bookmarks</h1>
+            <p className="text-muted-foreground">Your saved Pi-accepting businesses.</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSync}
+            disabled={isSyncing || isLoading}
+            aria-label="Sync bookmarks"
+          >
+            <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Syncing…' : 'Sync bookmarks'}
+          </Button>
         </div>
 
         {!isLoading && bookmarkedPlaces.length > 0 && (
