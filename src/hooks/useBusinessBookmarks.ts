@@ -3,11 +3,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import type { Place } from '@/types/business';
 
 export const useBusinessBookmarks = () => {
   const { user, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const BOOKMARKS_QUERY_KEY = ['bookmarked-businesses'] as const;
 
   const getSessionUserId = useCallback(async (): Promise<string | null> => {
     const { data: { user: sessionUser }, error } = await supabase.auth.getUser();
@@ -93,6 +98,9 @@ export const useBusinessBookmarks = () => {
 
       console.log('📌 Adding bookmark:', { userId: sessionUserId, businessId: businessIdInt });
       
+      // Optimistic UI: add to local set immediately
+      setBookmarks(prev => prev.includes(businessId) ? prev : [...prev, businessId]);
+
       const { data, error } = await supabase
         .from('bookmarks')
         .insert({
@@ -105,22 +113,25 @@ export const useBusinessBookmarks = () => {
         console.error('❌ Bookmark insert error:', error);
         console.error('Error details:', { code: error.code, message: error.message, hint: error.hint });
         toast.error(`Failed to add bookmark: ${error.message}`);
+        // Rollback
+        setBookmarks(prev => prev.filter(id => id !== businessId));
         return false;
       }
 
       console.log('✅ Bookmark added successfully:', data);
-      
-      // Update local state
-      setBookmarks(prev => [...prev, businessId]);
+
+      // Refresh the bookmarked-businesses query so /bookmarks reflects the new entry
+      queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY });
       return true;
     } catch (error) {
       console.error('❌ Error adding bookmark:', error);
       toast.error('Failed to add bookmark');
+      setBookmarks(prev => prev.filter(id => id !== businessId));
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAuthenticated, bookmarks, getSessionUserId]);
+  }, [user, isAuthenticated, bookmarks, getSessionUserId, queryClient]);
 
   // Remove a bookmark
   const removeBookmark = useCallback(async (businessId: string) => {
@@ -128,12 +139,27 @@ export const useBusinessBookmarks = () => {
       return false;
     }
 
+    // Snapshot for rollback
+    const previousList = queryClient.getQueryData<Place[]>(BOOKMARKS_QUERY_KEY);
+    const wasBookmarked = bookmarks.includes(businessId);
+
+    // Optimistic UI: remove from local id set + cached list immediately
+    setBookmarks(prev => prev.filter(id => id !== businessId));
+    if (previousList) {
+      queryClient.setQueryData<Place[]>(
+        BOOKMARKS_QUERY_KEY,
+        previousList.filter(p => p.id !== businessId),
+      );
+    }
+
     try {
       setIsLoading(true);
-      
+
       const sessionUserId = await getSessionUserId();
       if (!sessionUserId) {
         toast.error('Session expired. Please sign in again.');
+        if (wasBookmarked) setBookmarks(prev => prev.includes(businessId) ? prev : [...prev, businessId]);
+        if (previousList) queryClient.setQueryData(BOOKMARKS_QUERY_KEY, previousList);
         return false;
       }
 
@@ -147,17 +173,18 @@ export const useBusinessBookmarks = () => {
         throw error;
       }
 
-      // Update local state
-      setBookmarks(prev => prev.filter(id => id !== businessId));
+      queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY });
       return true;
     } catch (error) {
       console.error('Error removing bookmark:', error);
       toast.error('Failed to remove bookmark');
+      if (wasBookmarked) setBookmarks(prev => prev.includes(businessId) ? prev : [...prev, businessId]);
+      if (previousList) queryClient.setQueryData(BOOKMARKS_QUERY_KEY, previousList);
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAuthenticated, getSessionUserId]);
+  }, [user, isAuthenticated, bookmarks, getSessionUserId, queryClient]);
 
   // Toggle bookmark status
   const toggleBookmark = useCallback(async (businessId: string) => {
