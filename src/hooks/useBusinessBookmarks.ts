@@ -98,6 +98,9 @@ export const useBusinessBookmarks = () => {
 
       console.log('📌 Adding bookmark:', { userId: sessionUserId, businessId: businessIdInt });
       
+      // Optimistic UI: add to local set immediately
+      setBookmarks(prev => prev.includes(businessId) ? prev : [...prev, businessId]);
+
       const { data, error } = await supabase
         .from('bookmarks')
         .insert({
@@ -110,17 +113,20 @@ export const useBusinessBookmarks = () => {
         console.error('❌ Bookmark insert error:', error);
         console.error('Error details:', { code: error.code, message: error.message, hint: error.hint });
         toast.error(`Failed to add bookmark: ${error.message}`);
+        // Rollback
+        setBookmarks(prev => prev.filter(id => id !== businessId));
         return false;
       }
 
       console.log('✅ Bookmark added successfully:', data);
-      
-      // Update local state
-      setBookmarks(prev => [...prev, businessId]);
+
+      // Refresh the bookmarked-businesses query so /bookmarks reflects the new entry
+      queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY });
       return true;
     } catch (error) {
       console.error('❌ Error adding bookmark:', error);
       toast.error('Failed to add bookmark');
+      setBookmarks(prev => prev.filter(id => id !== businessId));
       return false;
     } finally {
       setIsLoading(false);
