@@ -8,8 +8,11 @@ import type { Place } from '@/types/business';
 
 export const useBusinessBookmarks = () => {
   const { user, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const BOOKMARKS_QUERY_KEY = ['bookmarked-businesses'] as const;
 
   const getSessionUserId = useCallback(async (): Promise<string | null> => {
     const { data: { user: sessionUser }, error } = await supabase.auth.getUser();
