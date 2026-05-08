@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import type { Place } from '@/types/business';
 
 export const useBusinessBookmarks = () => {
   const { user, isAuthenticated } = useAuth();
