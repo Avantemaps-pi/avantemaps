@@ -131,7 +131,7 @@ export const useBusinessBookmarks = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAuthenticated, bookmarks, getSessionUserId]);
+  }, [user, isAuthenticated, bookmarks, getSessionUserId, queryClient]);
 
   // Remove a bookmark
   const removeBookmark = useCallback(async (businessId: string) => {
@@ -139,12 +139,27 @@ export const useBusinessBookmarks = () => {
       return false;
     }
 
+    // Snapshot for rollback
+    const previousList = queryClient.getQueryData<Place[]>(BOOKMARKS_QUERY_KEY);
+    const wasBookmarked = bookmarks.includes(businessId);
+
+    // Optimistic UI: remove from local id set + cached list immediately
+    setBookmarks(prev => prev.filter(id => id !== businessId));
+    if (previousList) {
+      queryClient.setQueryData<Place[]>(
+        BOOKMARKS_QUERY_KEY,
+        previousList.filter(p => p.id !== businessId),
+      );
+    }
+
     try {
       setIsLoading(true);
-      
+
       const sessionUserId = await getSessionUserId();
       if (!sessionUserId) {
         toast.error('Session expired. Please sign in again.');
+        if (wasBookmarked) setBookmarks(prev => prev.includes(businessId) ? prev : [...prev, businessId]);
+        if (previousList) queryClient.setQueryData(BOOKMARKS_QUERY_KEY, previousList);
         return false;
       }
 
@@ -158,17 +173,18 @@ export const useBusinessBookmarks = () => {
         throw error;
       }
 
-      // Update local state
-      setBookmarks(prev => prev.filter(id => id !== businessId));
+      queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY });
       return true;
     } catch (error) {
       console.error('Error removing bookmark:', error);
       toast.error('Failed to remove bookmark');
+      if (wasBookmarked) setBookmarks(prev => prev.includes(businessId) ? prev : [...prev, businessId]);
+      if (previousList) queryClient.setQueryData(BOOKMARKS_QUERY_KEY, previousList);
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAuthenticated, getSessionUserId]);
+  }, [user, isAuthenticated, bookmarks, getSessionUserId, queryClient]);
 
   // Toggle bookmark status
   const toggleBookmark = useCallback(async (businessId: string) => {
