@@ -77,17 +77,22 @@ export const useBusinessBookmarks = () => {
 
     try {
       setIsLoading(true);
-      
-      // Check if already bookmarked
-      if (bookmarks.includes(businessId)) {
-        return true;
-      }
-      
+
       const businessIdInt = parseInt(businessId);
       if (isNaN(businessIdInt)) {
         console.error('Invalid business ID:', businessId);
         toast.error('Invalid business ID');
         return false;
+      }
+
+      // Dedupe: check local id set AND the cached bookmarked-businesses list
+      const cachedList = queryClient.getQueryData<Place[]>(BOOKMARKS_QUERY_KEY);
+      const alreadyInCache = cachedList?.some(p => p.id === businessId) ?? false;
+      if (bookmarks.includes(businessId) || alreadyInCache) {
+        console.log('📌 Bookmark already present (local/cache), skipping insert');
+        // Ensure local set is in sync
+        setBookmarks(prev => prev.includes(businessId) ? prev : [...prev, businessId]);
+        return true;
       }
 
       const sessionUserId = await getSessionUserId();
@@ -96,31 +101,47 @@ export const useBusinessBookmarks = () => {
         return false;
       }
 
+      // Server-side dedupe guard: re-check the row exists for this user
+      const { data: existing, error: existingErr } = await supabase
+        .from('bookmarks')
+        .select('id')
+        .eq('user_id', sessionUserId)
+        .eq('business_id', businessIdInt)
+        .maybeSingle();
+
+      if (existingErr) {
+        console.warn('Bookmark pre-check failed, will rely on unique constraint:', existingErr);
+      }
+      if (existing) {
+        setBookmarks(prev => prev.includes(businessId) ? prev : [...prev, businessId]);
+        queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY });
+        return true;
+      }
+
       console.log('📌 Adding bookmark:', { userId: sessionUserId, businessId: businessIdInt });
-      
+
       // Optimistic UI: add to local set immediately
       setBookmarks(prev => prev.includes(businessId) ? prev : [...prev, businessId]);
 
+      // Upsert with ignoreDuplicates so the unique (user_id, business_id) constraint
+      // makes the operation idempotent — no duplicate rows even on rapid double-taps.
       const { data, error } = await supabase
         .from('bookmarks')
-        .insert({
-          user_id: sessionUserId,
-          business_id: businessIdInt,
-        })
+        .upsert(
+          { user_id: sessionUserId, business_id: businessIdInt },
+          { onConflict: 'user_id,business_id', ignoreDuplicates: true },
+        )
         .select();
 
       if (error) {
-        console.error('❌ Bookmark insert error:', error);
-        console.error('Error details:', { code: error.code, message: error.message, hint: error.hint });
+        console.error('❌ Bookmark upsert error:', error);
         toast.error(`Failed to add bookmark: ${error.message}`);
-        // Rollback
         setBookmarks(prev => prev.filter(id => id !== businessId));
         return false;
       }
 
-      console.log('✅ Bookmark added successfully:', data);
+      console.log('✅ Bookmark added (upsert):', data);
 
-      // Refresh the bookmarked-businesses query so /bookmarks reflects the new entry
       queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY });
       return true;
     } catch (error) {
