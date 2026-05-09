@@ -52,7 +52,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   const [detailsOverlayOpen, setDetailsOverlayOpen] = useState(false);
   
   // Use our custom hooks
-  const { isBookmarked, handleBookmarkToggle } = useBookmark({
+  const { isBookmarked, handleBookmarkToggle, isLoading: isBookmarkLoading } = useBookmark({
     initialIsBookmarked,
     onRemove,
     id: place.id
@@ -120,6 +120,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
             <BookmarkButton 
               isBookmarked={isBookmarked} 
               onToggle={handleBookmarkToggle}
+              isLoading={isBookmarkLoading}
             />
           )}
         </div>
