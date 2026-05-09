@@ -120,6 +120,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
             <BookmarkButton 
               isBookmarked={isBookmarked} 
               onToggle={handleBookmarkToggle}
+              isLoading={isBookmarkLoading}
             />
           )}
         </div>
