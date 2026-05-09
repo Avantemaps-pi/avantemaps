@@ -1,16 +1,19 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PlaceCard from '@/components/business/PlaceCard';
 import { useNavigate } from 'react-router-dom';
-import { BookmarkX, Loader2, RefreshCw, Search, X } from 'lucide-react';
+import { ArrowDown, BookmarkX, Loader2, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useBusinessBookmarks } from '@/hooks/useBusinessBookmarks';
 import { useBookmarkedBusinesses } from '@/hooks/useBookmarkedBusinesses';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQueryClient } from '@tanstack/react-query';
+
+const PULL_TRIGGER = 70; // px to trigger refresh
+const PULL_MAX = 110;    // px max visual pull
 
 const Bookmarks = () => {
   const navigate = useNavigate();
@@ -21,7 +24,14 @@ const Bookmarks = () => {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Pull-to-refresh state
+  const [pullDistance, setPullDistance] = useState(0);
+  const pullingRef = useRef(false);
+  const startYRef = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const handleSync = async () => {
+    if (isSyncing) return;
     setIsSyncing(true);
     try {
       await queryClient.refetchQueries({ queryKey: ['bookmarked-businesses'] });
@@ -32,6 +42,54 @@ const Bookmarks = () => {
       setIsSyncing(false);
     }
   };
+
+  // Pull-to-refresh touch handlers
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      // Only start a pull when scrolled to the top of the page
+      if (window.scrollY > 0) return;
+      pullingRef.current = true;
+      startYRef.current = e.touches[0].clientY;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!pullingRef.current) return;
+      const dy = e.touches[0].clientY - startYRef.current;
+      if (dy <= 0) {
+        setPullDistance(0);
+        return;
+      }
+      // Resistance curve
+      const resisted = Math.min(PULL_MAX, dy * 0.5);
+      setPullDistance(resisted);
+      if (resisted > 8) e.preventDefault();
+    };
+
+    const onTouchEnd = () => {
+      if (!pullingRef.current) return;
+      pullingRef.current = false;
+      const shouldRefresh = pullDistance >= PULL_TRIGGER;
+      setPullDistance(0);
+      if (shouldRefresh) handleSync();
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd);
+    el.addEventListener('touchcancel', onTouchEnd);
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('touchcancel', onTouchEnd);
+    };
+    // pullDistance intentionally read at touchend via closure — re-attach when it changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pullDistance]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), 250);
@@ -64,34 +122,54 @@ const Bookmarks = () => {
 
   const handleRemoveBookmark = async (id: string) => {
     await removeBookmark(id);
-    // Invalidate the bookmarked businesses cache
     queryClient.invalidateQueries({ queryKey: ['bookmarked-businesses'] });
   };
 
   const handlePlaceClick = (placeId: string) => {
-    navigate('/', {
-      state: { selectedPlaceId: placeId },
-    });
+    navigate('/', { state: { selectedPlaceId: placeId } });
   };
+
+  const indicatorVisible = isSyncing || pullDistance > 0;
+  const indicatorTranslate = isSyncing ? 56 : pullDistance;
+  const willTrigger = pullDistance >= PULL_TRIGGER;
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold">My Bookmarks</h1>
-            <p className="text-muted-foreground">Your saved Pi-accepting businesses.</p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSync}
-            disabled={isSyncing || isLoading}
-            aria-label="Sync bookmarks"
-          >
-            <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? 'Syncing…' : 'Sync bookmarks'}
-          </Button>
+      <div
+        ref={containerRef}
+        className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 relative touch-pan-y"
+        style={{
+          transform: `translateY(${indicatorVisible ? Math.min(indicatorTranslate, PULL_MAX) : 0}px)`,
+          transition: pullingRef.current ? 'none' : 'transform 220ms ease',
+        }}
+      >
+        {/* Pull-to-refresh indicator */}
+        <div
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-12 flex items-center gap-2 text-xs text-muted-foreground"
+          aria-live="polite"
+          aria-hidden={!indicatorVisible}
+          style={{ opacity: indicatorVisible ? 1 : 0, transition: 'opacity 150ms ease' }}
+        >
+          {isSyncing ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Syncing bookmarks…</span>
+            </>
+          ) : (
+            <>
+              <ArrowDown
+                className={`h-4 w-4 transition-transform ${willTrigger ? 'rotate-180' : ''}`}
+              />
+              <span>{willTrigger ? 'Release to sync' : 'Pull to sync'}</span>
+            </>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">My Bookmarks</h1>
+          <p className="text-muted-foreground">
+            Your saved Pi-accepting businesses. Pull down to sync.
+          </p>
         </div>
 
         {!isLoading && bookmarkedPlaces.length > 0 && (
@@ -162,14 +240,10 @@ const Bookmarks = () => {
               <h3 className="text-lg font-medium">No bookmarks yet</h3>
               <p className="text-muted-foreground max-w-md">
                 We checked the database and didn't find any saved businesses on your account.
-                Tap the bookmark icon on any place to save it here.
+                Tap the bookmark icon on any place to save it here, or pull down to sync.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
                 <Button onClick={() => navigate('/')}>Explore Map</Button>
-                <Button variant="outline" onClick={handleSync} disabled={isSyncing}>
-                  <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                  {isSyncing ? 'Checking…' : 'Check again'}
-                </Button>
               </div>
             </CardContent>
           </Card>
