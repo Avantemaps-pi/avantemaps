@@ -89,8 +89,12 @@ export const useBusinessBookmarks = () => {
 
   // Load bookmarks when user changes
   useEffect(() => {
+    if (!isAuthenticated) {
+      setBookmarks([]);
+      return;
+    }
     fetchBookmarks();
-  }, [fetchBookmarks]);
+  }, [fetchBookmarks, isAuthenticated]);
 
   // Check if a business is bookmarked
   const isBookmarked = useCallback((businessId: string) => {
