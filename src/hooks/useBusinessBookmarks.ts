@@ -6,13 +6,42 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Place } from '@/types/business';
 
+const BOOKMARK_IDS_LS_KEY = 'bookmark-ids';
+
+const readPersistedBookmarkIds = (): string[] => {
+  try {
+    const raw = localStorage.getItem(BOOKMARK_IDS_LS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+};
+
+const writePersistedBookmarkIds = (ids: string[]) => {
+  try {
+    localStorage.setItem(BOOKMARK_IDS_LS_KEY, JSON.stringify(ids));
+  } catch {
+    // ignore quota / privacy mode
+  }
+};
+
 export const useBusinessBookmarks = () => {
   const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-  const [bookmarks, setBookmarks] = useState<string[]>([]);
+  // Rehydrate ids synchronously from localStorage so bookmark icons render
+  // in their correct state immediately on first paint, before the network
+  // sync completes.
+  const [bookmarks, setBookmarks] = useState<string[]>(() => readPersistedBookmarkIds());
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const BOOKMARKS_QUERY_KEY = ['bookmarked-businesses'] as const;
+
+  // Persist any change to the id list so the next page load can rehydrate.
+  useEffect(() => {
+    writePersistedBookmarkIds(bookmarks);
+  }, [bookmarks]);
 
   const getSessionUserId = useCallback(async (): Promise<string | null> => {
     const { data: { user: sessionUser }, error } = await supabase.auth.getUser();
