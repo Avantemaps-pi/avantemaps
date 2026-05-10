@@ -165,13 +165,6 @@ const Bookmarks = () => {
           )}
         </div>
 
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold">My Bookmarks</h1>
-          <p className="text-muted-foreground">
-            Your saved Pi-accepting businesses. Pull down to sync.
-          </p>
-        </div>
-
         {!isLoading && bookmarkedPlaces.length > 0 && (
           <div className="relative max-w-lg mx-auto w-full">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
