@@ -14,11 +14,6 @@ const About = () => {
   return (
     <AppLayout title="About Us">
       <div className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 animate-fade-in">
-        <div className="space-y-4">
-          <h1 className="text-3xl font-bold tracking-tight">About Avante Maps</h1>
-          <p className="text-muted-foreground">Discover the mission behind our platform for Pi cryptocurrency adoption.</p>
-        </div>
-
         <Card className="material-card">
           <CardHeader>
            <CardTitle className="text-xl font-semibold flex items-center gap-2">
