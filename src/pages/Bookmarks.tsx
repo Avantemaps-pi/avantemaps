@@ -135,8 +135,9 @@ const Bookmarks = () => {
 
   return (
     <AppLayout>
-      <div
+      <section
         ref={containerRef}
+        aria-labelledby="page-title"
         className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 relative touch-pan-y"
         style={{
           transform: `translateY(${indicatorVisible ? Math.min(indicatorTranslate, PULL_MAX) : 0}px)`,
