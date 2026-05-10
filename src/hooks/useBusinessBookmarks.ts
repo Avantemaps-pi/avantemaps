@@ -200,10 +200,15 @@ export const useBusinessBookmarks = () => {
     // Optimistic UI: remove from local id set + cached list immediately
     setBookmarks(prev => prev.filter(id => id !== businessId));
     if (previousList) {
-      queryClient.setQueryData<Place[]>(
-        BOOKMARKS_QUERY_KEY,
-        previousList.filter(p => p.id !== businessId),
-      );
+      const trimmed = previousList.filter(p => p.id !== businessId);
+      queryClient.setQueryData<Place[]>(BOOKMARKS_QUERY_KEY, trimmed);
+      // Mirror the optimistic update into localStorage so a reload before the
+      // network confirms still shows the bookmark as removed.
+      try {
+        localStorage.setItem('bookmark-places', JSON.stringify(trimmed));
+      } catch {
+        // ignore
+      }
     }
 
     try {
