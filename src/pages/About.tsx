@@ -13,7 +13,7 @@ const About = () => {
 
   return (
     <AppLayout title="About Us">
-      <div className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 animate-fade-in">
+      <div className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 animate-fade-in" role="region" aria-labelledby="page-title">
         <Card className="material-card">
           <CardHeader>
            <CardTitle className="text-xl font-semibold flex items-center gap-2">
