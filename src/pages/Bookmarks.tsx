@@ -164,7 +164,7 @@ const Bookmarks = () => {
               <span>{willTrigger ? 'Release to sync' : 'Pull to sync'}</span>
             </>
           )}
-      </div>
+      </section>
 
         {!isLoading && bookmarkedPlaces.length > 0 && (
           <div className="relative max-w-lg mx-auto w-full">
