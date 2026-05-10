@@ -6,13 +6,42 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Place } from '@/types/business';
 
+const BOOKMARK_IDS_LS_KEY = 'bookmark-ids';
+
+const readPersistedBookmarkIds = (): string[] => {
+  try {
+    const raw = localStorage.getItem(BOOKMARK_IDS_LS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+};
+
+const writePersistedBookmarkIds = (ids: string[]) => {
+  try {
+    localStorage.setItem(BOOKMARK_IDS_LS_KEY, JSON.stringify(ids));
+  } catch {
+    // ignore quota / privacy mode
+  }
+};
+
 export const useBusinessBookmarks = () => {
   const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-  const [bookmarks, setBookmarks] = useState<string[]>([]);
+  // Rehydrate ids synchronously from localStorage so bookmark icons render
+  // in their correct state immediately on first paint, before the network
+  // sync completes.
+  const [bookmarks, setBookmarks] = useState<string[]>(() => readPersistedBookmarkIds());
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const BOOKMARKS_QUERY_KEY = ['bookmarked-businesses'] as const;
+
+  // Persist any change to the id list so the next page load can rehydrate.
+  useEffect(() => {
+    writePersistedBookmarkIds(bookmarks);
+  }, [bookmarks]);
 
   const getSessionUserId = useCallback(async (): Promise<string | null> => {
     const { data: { user: sessionUser }, error } = await supabase.auth.getUser();
@@ -60,8 +89,12 @@ export const useBusinessBookmarks = () => {
 
   // Load bookmarks when user changes
   useEffect(() => {
+    if (!isAuthenticated) {
+      setBookmarks([]);
+      return;
+    }
     fetchBookmarks();
-  }, [fetchBookmarks]);
+  }, [fetchBookmarks, isAuthenticated]);
 
   // Check if a business is bookmarked
   const isBookmarked = useCallback((businessId: string) => {
@@ -167,10 +200,15 @@ export const useBusinessBookmarks = () => {
     // Optimistic UI: remove from local id set + cached list immediately
     setBookmarks(prev => prev.filter(id => id !== businessId));
     if (previousList) {
-      queryClient.setQueryData<Place[]>(
-        BOOKMARKS_QUERY_KEY,
-        previousList.filter(p => p.id !== businessId),
-      );
+      const trimmed = previousList.filter(p => p.id !== businessId);
+      queryClient.setQueryData<Place[]>(BOOKMARKS_QUERY_KEY, trimmed);
+      // Mirror the optimistic update into localStorage so a reload before the
+      // network confirms still shows the bookmark as removed.
+      try {
+        localStorage.setItem('bookmark-places', JSON.stringify(trimmed));
+      } catch {
+        // ignore
+      }
     }
 
     try {
