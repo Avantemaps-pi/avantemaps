@@ -87,15 +87,33 @@ const transformToPlace = (b: BookmarkedBusiness): Place => {
   };
 };
 
+const BOOKMARK_PLACES_LS_KEY = 'bookmark-places';
+
+const readPersistedPlaces = (): Place[] | undefined => {
+  try {
+    const raw = localStorage.getItem(BOOKMARK_PLACES_LS_KEY);
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as Place[]) : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const writePersistedPlaces = (places: Place[]) => {
+  try {
+    localStorage.setItem(BOOKMARK_PLACES_LS_KEY, JSON.stringify(places));
+  } catch {
+    // ignore quota / privacy mode
+  }
+};
+
 export const useBookmarkedBusinesses = () => {
   const { isAuthenticated } = useAuth();
 
   const { data: bookmarkedPlaces = [], isLoading } = useQuery({
     queryKey: ['bookmarked-businesses'],
     queryFn: async () => {
-      // Resolve the actual Supabase session user id (auth.uid()), since the
-      // auth-context `user.uid` may differ (e.g. Pi UID) and bookmarks are
-      // stored against the Supabase session UUID.
       const { data: { user: sessionUser }, error: sessionErr } = await supabase.auth.getUser();
       if (sessionErr || !sessionUser) return [];
 
@@ -103,9 +121,17 @@ export const useBookmarkedBusinesses = () => {
         p_user_id: sessionUser.id,
       });
       if (error) throw error;
-      return (data as BookmarkedBusiness[]).map(transformToPlace);
+      const places = (data as BookmarkedBusiness[]).map(transformToPlace);
+      // Persist the freshly fetched list so the next page load can rehydrate
+      // instantly from localStorage before the next network sync.
+      writePersistedPlaces(places);
+      return places;
     },
     enabled: isAuthenticated,
+    // Rehydrate from localStorage synchronously for instant first paint.
+    initialData: () => readPersistedPlaces(),
+    // Mark the rehydrated data as stale so a fresh network sync runs.
+    initialDataUpdatedAt: 0,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
