@@ -84,6 +84,17 @@ const readUseDeviceGps = () => {
   }
 };
 
+// Tracks whether we've ever surfaced the browser's geolocation prompt to the
+// user. We only show it once — either the first time they ever use the
+// feature, or after they re-enable a location setting that had been turned
+// off. Subsequent clicks silently fall back to IP-based location.
+const PROMPTED_KEY = 'geolocation_prompted';
+const hasPrompted = () => {
+  try { return localStorage.getItem(PROMPTED_KEY) === '1'; } catch { return false; }
+};
+const markPrompted = () => {
+  try { localStorage.setItem(PROMPTED_KEY, '1'); } catch { /* ignore */ }
+};
 const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
   const [loading, setLoading] = useState(false);
   const [enabled, setEnabled] = useState<boolean>(readUseLocationPref);
