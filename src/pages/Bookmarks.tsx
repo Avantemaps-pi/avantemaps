@@ -133,8 +133,44 @@ const Bookmarks = () => {
   const indicatorTranslate = isSyncing ? 56 : pullDistance;
   const willTrigger = pullDistance >= PULL_TRIGGER;
 
+  // Announce discrete state changes to assistive tech without spamming
+  // every pixel of pull movement.
+  const [srStatus, setSrStatus] = useState('');
+  useEffect(() => {
+    if (isSyncing) {
+      setSrStatus('Syncing bookmarks');
+      return;
+    }
+    if (pullDistance === 0) {
+      // Cleared after a sync completes
+      setSrStatus((prev) => (prev === 'Syncing bookmarks' ? 'Bookmarks synced' : ''));
+      return;
+    }
+    setSrStatus(willTrigger ? 'Release to sync bookmarks' : 'Pull down to sync bookmarks');
+  }, [isSyncing, willTrigger, pullDistance]);
+
   return (
     <AppLayout>
+      {/* Keyboard / AT-accessible sync trigger — visually hidden until focused.
+          Pull-to-refresh is a touch gesture, so this provides an equivalent
+          control for keyboard and screen reader users. */}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={handleSync}
+        disabled={isSyncing}
+        className="sr-only focus:not-sr-only focus:fixed focus:top-20 focus:left-1/2 focus:-translate-x-1/2 focus:z-50"
+      >
+        {isSyncing ? 'Syncing bookmarks…' : 'Sync bookmarks'}
+      </Button>
+
+      {/* Polite live region for screen readers — separate from the visual
+          indicator so we can announce discrete state transitions only. */}
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {srStatus}
+      </div>
+
       <section
         ref={containerRef}
         aria-labelledby="page-title"
@@ -144,11 +180,11 @@ const Bookmarks = () => {
           transition: pullingRef.current ? 'none' : 'transform 220ms ease',
         }}
       >
-        {/* Pull-to-refresh indicator */}
+        {/* Visual pull-to-refresh indicator. Hidden from assistive tech —
+            the sr-only live region above provides the accessible announcement. */}
         <div
           className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-12 flex items-center gap-2 text-xs text-muted-foreground"
-          aria-live="polite"
-          aria-hidden={!indicatorVisible}
+          aria-hidden="true"
           style={{ opacity: indicatorVisible ? 1 : 0, transition: 'opacity 150ms ease' }}
         >
           {isSyncing ? (
