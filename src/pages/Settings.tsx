@@ -90,7 +90,14 @@ const Settings = () => {
   };
 
   const persistGpsPref = (value: boolean) => {
-    setUseDeviceGps(value);
+    setUseDeviceGps((prev) => {
+      // Re-arm the one-time browser geolocation prompt when turning Device
+      // GPS on from off, so we ask the user again exactly once.
+      if (!prev && value) {
+        try { window.localStorage?.removeItem('geolocation_prompted'); } catch { /* ignore */ }
+      }
+      return value;
+    });
     try {
       window.localStorage?.setItem('use_device_gps', value ? '1' : '0');
       window.dispatchEvent(new Event('use_device_gps_changed'));
@@ -99,7 +106,7 @@ const Settings = () => {
     }
     if (value) {
       toast.success('Device GPS enabled', {
-        description: "Tap the locate button on the map — your browser will ask for permission.",
+        description: "Tap the locate button on the map — your browser will ask for permission once.",
       });
     } else {
       toast.message('Device GPS disabled', {
