@@ -138,7 +138,7 @@ const Bookmarks = () => {
       <section
         ref={containerRef}
         aria-labelledby="page-title"
-        className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 relative touch-pan-y"
+        className="max-w-6xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-4 sm:pb-6 space-y-4 sm:space-y-5 relative touch-pan-y"
         style={{
           transform: `translateY(${indicatorVisible ? Math.min(indicatorTranslate, PULL_MAX) : 0}px)`,
           transition: pullingRef.current ? 'none' : 'transform 220ms ease',
