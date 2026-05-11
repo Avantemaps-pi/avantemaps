@@ -68,7 +68,14 @@ const Settings = () => {
   }, []);
 
   const handleUseLocationChange = (value: boolean) => {
-    setUseLocation(value);
+    setUseLocation((prev) => {
+      // Re-arm the one-time geolocation prompt when toggling from off → on
+      // so the user is asked exactly once after re-enabling the setting.
+      if (!prev && value) {
+        try { window.localStorage?.removeItem('geolocation_prompted'); } catch { /* ignore */ }
+      }
+      return value;
+    });
     if (typeof window === 'undefined') return;
     try {
       window.localStorage?.setItem('use_location_focus', value ? '1' : '0');
