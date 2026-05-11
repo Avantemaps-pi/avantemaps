@@ -202,13 +202,25 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
           secureLog.warn('LocateMe: geolocation permission denied — using IP fallback', logCtx());
         }
 
-        if (permissionState !== 'denied' && 'geolocation' in navigator) {
+        // Show the browser prompt only when:
+        //   - permission is already 'granted' (no prompt actually shown), OR
+        //   - permission is 'prompt' AND we have never asked before / the
+        //     user just re-enabled the setting (flag cleared by Settings).
+        const shouldRequest =
+          permissionState === 'granted' ||
+          (permissionState === 'prompt' && !hasPrompted()) ||
+          (permissionState !== 'denied' && permissionState !== 'prompt' && !hasPrompted());
+
+        if (shouldRequest && 'geolocation' in navigator) {
           toast.loading(
             permissionState === 'granted' ? 'Getting your location…' : 'Requesting location permission…',
             { id: TOAST_ID, description: permissionState === 'prompt' ? 'Please allow location access in the prompt.' : undefined }
           );
+          if (permissionState !== 'granted') markPrompted();
           const ok = await usePreciseLocation();
           if (ok) return;
+        } else if (permissionState === 'prompt' && hasPrompted()) {
+          secureLog.info('LocateMe: skipping repeat geolocation prompt — using IP fallback', logCtx());
         }
       }
 
