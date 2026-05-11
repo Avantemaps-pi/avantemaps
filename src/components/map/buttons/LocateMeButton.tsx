@@ -84,6 +84,17 @@ const readUseDeviceGps = () => {
   }
 };
 
+// Tracks whether we've ever surfaced the browser's geolocation prompt to the
+// user. We only show it once — either the first time they ever use the
+// feature, or after they re-enable a location setting that had been turned
+// off. Subsequent clicks silently fall back to IP-based location.
+const PROMPTED_KEY = 'geolocation_prompted';
+const hasPrompted = () => {
+  try { return localStorage.getItem(PROMPTED_KEY) === '1'; } catch { return false; }
+};
+const markPrompted = () => {
+  try { localStorage.setItem(PROMPTED_KEY, '1'); } catch { /* ignore */ }
+};
 const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
   const [loading, setLoading] = useState(false);
   const [enabled, setEnabled] = useState<boolean>(readUseLocationPref);
@@ -191,13 +202,25 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
           secureLog.warn('LocateMe: geolocation permission denied — using IP fallback', logCtx());
         }
 
-        if (permissionState !== 'denied' && 'geolocation' in navigator) {
+        // Show the browser prompt only when:
+        //   - permission is already 'granted' (no prompt actually shown), OR
+        //   - permission is 'prompt' AND we have never asked before / the
+        //     user just re-enabled the setting (flag cleared by Settings).
+        const shouldRequest =
+          permissionState === 'granted' ||
+          (permissionState === 'prompt' && !hasPrompted()) ||
+          (permissionState !== 'denied' && permissionState !== 'prompt' && !hasPrompted());
+
+        if (shouldRequest && 'geolocation' in navigator) {
           toast.loading(
             permissionState === 'granted' ? 'Getting your location…' : 'Requesting location permission…',
             { id: TOAST_ID, description: permissionState === 'prompt' ? 'Please allow location access in the prompt.' : undefined }
           );
+          if (permissionState !== 'granted') markPrompted();
           const ok = await usePreciseLocation();
           if (ok) return;
+        } else if (permissionState === 'prompt' && hasPrompted()) {
+          secureLog.info('LocateMe: skipping repeat geolocation prompt — using IP fallback', logCtx());
         }
       }
 
