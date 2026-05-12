@@ -48,6 +48,11 @@ const Pricing = () => {
         },
       });
     }
+    if (location.state?.fromLiveChat || location.state?.focusTier === 'organization') {
+      setTimeout(() => {
+        document.getElementById('tier-organization')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 250);
+    }
   }, [location.state]);
 
   // Handle individual plan selection
