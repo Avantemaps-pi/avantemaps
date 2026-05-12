@@ -425,13 +425,7 @@ export function useChatState() {
 
   const handleChatModeChange = (value: string) => {
     if (value && value !== chatMode) {
-      if (value === "live") {
-        // Redirect to pricing page when switching to LIVE chat
-        // Pass state to indicate we're coming from live chat and should scroll to organization tier
-        navigate("/pricing", { state: { fromLiveChat: true } });
-      } else {
-        setChatMode(value as ChatMode);
-      }
+      setChatMode(value as ChatMode);
     }
   };
 
