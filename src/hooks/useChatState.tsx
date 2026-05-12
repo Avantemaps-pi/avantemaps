@@ -8,7 +8,7 @@ import { ChatMode } from '@/components/chat/ChatInterface';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
 
-const CHAT_STORAGE_KEY = 'avante-chat-messages';
+const CHAT_STORAGE_KEY = 'avante-chat-messages-v2';
 
 type ChatMessage = {
   id: number;
