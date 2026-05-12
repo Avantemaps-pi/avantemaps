@@ -124,6 +124,7 @@ const Pricing = () => {
           disabled: isPaymentLocked,
         }))}
         frequencies={["monthly", "yearly"]}
+        organizationTierId={location.state?.focusTier === 'organization' || location.state?.fromLiveChat ? 'organization' : undefined}
         onFrequencyChange={handleBillingChange}
       />
       
