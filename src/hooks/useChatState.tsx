@@ -282,12 +282,12 @@ export function useChatState() {
 
       // Handle verification confirmation responses
       if (awaitingVerificationConfirmation) {
-        if (message.toLowerCase().includes('yes') || message.toLowerCase() === 'y') {
+        if (rawText.toLowerCase().includes('yes') || rawText.toLowerCase() === 'y') {
           sendVerificationRequest('verification');
           setAwaitingVerificationConfirmation(false);
           setMessage("");
           return;
-        } else if (message.toLowerCase().includes('no') || message.toLowerCase() === 'n') {
+        } else if (rawText.toLowerCase().includes('no') || rawText.toLowerCase() === 'n') {
           const cancelMessage = {
             id: messages.length + 1,
             text: "Verification request cancelled.",
@@ -304,7 +304,7 @@ export function useChatState() {
       // Handle business selection for certification
       if (awaitingBusinessSelection) {
         // Mock business selection logic
-        const businessName = message.trim();
+        const businessName = rawText;
         const selectionMessage = {
           id: messages.length + 1,
           text: `Selected business: ${businessName}`,
@@ -330,13 +330,13 @@ export function useChatState() {
       }
       
       // Check for special commands
-      if (message.includes('/verification')) {
+      if (rawText.includes('/verification')) {
         await triggerVerificationFlow('verification');
         setMessage("");
         return;
       }
       
-      if (message.includes('/certification')) {
+      if (rawText.includes('/certification')) {
         // Show business selection for certification
         const businesses = await fetchUserBusinesses();
         
@@ -373,7 +373,7 @@ export function useChatState() {
         return;
       }
       
-      if (message.includes('/attach')) {
+      if (rawText.includes('/attach')) {
         // Handle attachment request - show options
         const systemMessage = {
           id: messages.length + 1,
