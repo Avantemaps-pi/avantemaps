@@ -35,15 +35,21 @@ const ChatModeToggle: React.FC<ChatModeToggleProps> = ({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem 
-              value="live" 
-              aria-disabled={!hasLiveChatAccess}
-              className={`px-3 py-1 text-xs ${chatMode === "live" ? "bg-red-500 text-white hover:bg-red-600" : ""} ${!hasLiveChatAccess ? "opacity-60" : ""}`}
-            >
-              <Radio className="h-4 w-4 mr-1" />
-              LIVE
-              {!hasLiveChatAccess && <Lock className="h-3 w-3 ml-1" />}
-            </ToggleGroupItem>
+            <div className="relative">
+              <ToggleGroupItem 
+                value="live" 
+                aria-disabled={!hasLiveChatAccess}
+                className={`px-3 py-1 text-xs ${chatMode === "live" ? "bg-red-500 text-white hover:bg-red-600" : ""} ${!hasLiveChatAccess ? "opacity-60" : ""}`}
+              >
+                <Radio className="h-4 w-4 mr-1" />
+                LIVE
+                {!hasLiveChatAccess && <Lock className="h-3 w-3 ml-1" />}
+              </ToggleGroupItem>
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 rounded-md backdrop-blur-sm bg-background/40 cursor-not-allowed"
+              />
+            </div>
           </TooltipTrigger>
           {!hasLiveChatAccess && (
             <TooltipContent>
