@@ -22,8 +22,12 @@ type ChatMessage = {
 };
 
 const getDefaultMessages = (): ChatMessage[] => [
-  { id: 1, text: "Welcome to Avante Maps!", sender: "system", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-  { id: 2, text: "Hi there! How can I help with Avante Maps today?", sender: "support", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+  {
+    id: 1,
+    text: "Hi! I can help you check your business verification status, certification status, or answer questions about your listing. What would you like to know?",
+    sender: "ai",
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  },
 ];
 
 const loadMessagesFromStorage = (): ChatMessage[] => {
