@@ -251,11 +251,12 @@ export function useChatState() {
     }
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (message.trim()) {
+  const handleSendMessage = async (e?: React.FormEvent | null, textOverride?: string) => {
+    if (e && typeof (e as any).preventDefault === 'function') e.preventDefault();
+    const rawText = (textOverride ?? message).trim();
+    if (rawText) {
       // Filter and validate message for AI mode
-      if (chatMode === "ai" && !isSafeForAI(message.trim())) {
+      if (chatMode === "ai" && !isSafeForAI(rawText)) {
         toast({
           title: "Message blocked",
           description: "Your message contains inappropriate content or patterns. Please rephrase.",
@@ -264,7 +265,7 @@ export function useChatState() {
         return;
       }
 
-      const filteredMessage = chatMode === "ai" ? filterInappropriateContent(message.trim()) : message.trim();
+      const filteredMessage = chatMode === "ai" ? filterInappropriateContent(rawText) : rawText;
 
       // Handle business selection for verification - now handled by button clicks
       if (awaitingVerificationBusinessSelection) {
