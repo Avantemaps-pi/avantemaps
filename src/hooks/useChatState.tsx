@@ -8,7 +8,7 @@ import { ChatMode } from '@/components/chat/ChatInterface';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
 
-const CHAT_STORAGE_KEY = 'avante-chat-messages';
+const CHAT_STORAGE_KEY = 'avante-chat-messages-v2';
 
 type ChatMessage = {
   id: number;
@@ -22,8 +22,12 @@ type ChatMessage = {
 };
 
 const getDefaultMessages = (): ChatMessage[] => [
-  { id: 1, text: "Welcome to Avante Maps!", sender: "system", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-  { id: 2, text: "Hi there! How can I help with Avante Maps today?", sender: "support", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+  {
+    id: 1,
+    text: "Hi! I can help you check your business verification status, certification status, or answer questions about your listing. What would you like to know?",
+    sender: "ai",
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  },
 ];
 
 const loadMessagesFromStorage = (): ChatMessage[] => {
@@ -247,11 +251,12 @@ export function useChatState() {
     }
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (message.trim()) {
+  const handleSendMessage = async (e?: React.FormEvent | null, textOverride?: string) => {
+    if (e && typeof (e as any).preventDefault === 'function') e.preventDefault();
+    const rawText = (textOverride ?? message).trim();
+    if (rawText) {
       // Filter and validate message for AI mode
-      if (chatMode === "ai" && !isSafeForAI(message.trim())) {
+      if (chatMode === "ai" && !isSafeForAI(rawText)) {
         toast({
           title: "Message blocked",
           description: "Your message contains inappropriate content or patterns. Please rephrase.",
@@ -260,7 +265,7 @@ export function useChatState() {
         return;
       }
 
-      const filteredMessage = chatMode === "ai" ? filterInappropriateContent(message.trim()) : message.trim();
+      const filteredMessage = chatMode === "ai" ? filterInappropriateContent(rawText) : rawText;
 
       // Handle business selection for verification - now handled by button clicks
       if (awaitingVerificationBusinessSelection) {
@@ -277,12 +282,12 @@ export function useChatState() {
 
       // Handle verification confirmation responses
       if (awaitingVerificationConfirmation) {
-        if (message.toLowerCase().includes('yes') || message.toLowerCase() === 'y') {
+        if (rawText.toLowerCase().includes('yes') || rawText.toLowerCase() === 'y') {
           sendVerificationRequest('verification');
           setAwaitingVerificationConfirmation(false);
           setMessage("");
           return;
-        } else if (message.toLowerCase().includes('no') || message.toLowerCase() === 'n') {
+        } else if (rawText.toLowerCase().includes('no') || rawText.toLowerCase() === 'n') {
           const cancelMessage = {
             id: messages.length + 1,
             text: "Verification request cancelled.",
@@ -299,7 +304,7 @@ export function useChatState() {
       // Handle business selection for certification
       if (awaitingBusinessSelection) {
         // Mock business selection logic
-        const businessName = message.trim();
+        const businessName = rawText;
         const selectionMessage = {
           id: messages.length + 1,
           text: `Selected business: ${businessName}`,
@@ -325,13 +330,13 @@ export function useChatState() {
       }
       
       // Check for special commands
-      if (message.includes('/verification')) {
+      if (rawText.includes('/verification')) {
         await triggerVerificationFlow('verification');
         setMessage("");
         return;
       }
       
-      if (message.includes('/certification')) {
+      if (rawText.includes('/certification')) {
         // Show business selection for certification
         const businesses = await fetchUserBusinesses();
         
@@ -368,7 +373,7 @@ export function useChatState() {
         return;
       }
       
-      if (message.includes('/attach')) {
+      if (rawText.includes('/attach')) {
         // Handle attachment request - show options
         const systemMessage = {
           id: messages.length + 1,
@@ -420,13 +425,7 @@ export function useChatState() {
 
   const handleChatModeChange = (value: string) => {
     if (value && value !== chatMode) {
-      if (value === "live") {
-        // Redirect to pricing page when switching to LIVE chat
-        // Pass state to indicate we're coming from live chat and should scroll to organization tier
-        navigate("/pricing", { state: { fromLiveChat: true } });
-      } else {
-        setChatMode(value as ChatMode);
-      }
+      setChatMode(value as ChatMode);
     }
   };
 

@@ -1,24 +1,14 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import UserProfileCard from '@/components/chat/UserProfileCard';
 import ChatInterface from '@/components/chat/ChatInterface';
 import { useChatState } from '@/hooks/useChatState';
-import { useFeatureAccess } from '@/hooks/useFeatureAccess';
-import { SubscriptionTier } from '@/utils/piNetwork';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 const Communicon = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
-  const { hasPermission, isLoading } = useFeatureAccess(
-    SubscriptionTier.ORGANIZATION,
-    { redirectTo: '' } // We'll handle redirection within the component
-  );
-  
+
   const {
     message,
     setMessage,
@@ -27,7 +17,6 @@ const Communicon = () => {
     chatMode,
     handleChatModeChange,
     handleSendMessage,
-    handleAttachmentOption,
     sendVerificationRequest,
     handleBusinessSelection,
     triggerVerificationFlow,
@@ -40,7 +29,6 @@ const Communicon = () => {
       window.sendVerificationRequest = sendVerificationRequest;
       window.handleBusinessSelection = handleBusinessSelection;
     }
-    
     return () => {
       if (window) {
         window.sendVerificationRequest = undefined;
@@ -49,149 +37,44 @@ const Communicon = () => {
     };
   }, [sendVerificationRequest, handleBusinessSelection]);
 
-  // Guard to prevent double-triggering verification flow
   const hasTriggeredVerification = useRef(false);
 
-  // Handle verification trigger from navigation state
   useEffect(() => {
     if (location.state?.triggerVerification && !hasTriggeredVerification.current) {
       hasTriggeredVerification.current = true;
       const verificationType = location.state.verificationType || 'verification';
-      
-      // Use navigate with replace to properly clear state in React Router
       navigate(location.pathname, { replace: true, state: {} });
-      
-      // Trigger verification flow
       triggerVerificationFlow(verificationType);
     }
   }, [location.state, triggerVerificationFlow, navigate, location.pathname]);
 
-  // Create wrapper function to match expected signature
   const handleSendMessageWrapper = () => {
     const event = new Event('submit') as unknown as React.FormEvent;
     handleSendMessage(event);
   };
-  
-  // Create a wrapper for handleAttachmentOption that shows attachment options
-  const handleAttachmentOptionWrapper = () => {
-    // Add a system message showing attachment options
-    const systemMessage = {
-      id: messages.length + 1,
-      text: "Please select an attachment type:",
-      sender: "system",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    
-    const optionsMessage = {
-      id: messages.length + 2,
-      text: "[Image] [Video]",
-      sender: "attachment-options",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    
-    setMessages([...messages, systemMessage, optionsMessage]);
-    
-    // For demo purposes, we'll set a message that shows the user what would happen
-    setTimeout(() => {
-      const responseMessage = {
-        id: messages.length + 3,
-        text: "Attachment options are shown for demonstration. In a full implementation, clicking these options would open a file picker.",
-        sender: "system",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, responseMessage]);
-    }, 1000);
-  };
 
-  // Handle the chat mode change
-  const handleCustomChatModeChange = (value: string) => {
-    // If trying to switch to LIVE chat
-    if (value === 'live') {
-      // Wait for permission check to complete before deciding
-      if (isLoading) {
-        return; // Don't do anything while loading
-      }
-      // Only show upgrade prompt if explicitly denied (false, not null)
-      if (hasPermission === false) {
-        navigate('/pricing', { state: { fromLiveChat: true, focusTier: 'organization' } });
-        return;
-      }
-    }
-    // Proceed with normal chat mode change
-    handleChatModeChange(value);
-  };
-
-  const closeUpgradePrompt = () => {
-    setShowUpgradePrompt(false);
+  const handleQuickReply = (text: string) => {
+    handleSendMessage(null, text);
   };
 
   return (
-    <AppLayout title="Avante Maps" showFooter={false}>
+    <AppLayout title="CommuniCon" showFooter={false}>
       <div className="max-w-4xl mx-auto mt-6">
         <UserProfileCard />
-        <ChatInterface 
+        <ChatInterface
           chatMode={chatMode}
-          onChatModeChange={handleCustomChatModeChange}
+          onChatModeChange={handleChatModeChange}
           messages={messages}
           message={message}
           setMessage={setMessage}
           handleSendMessage={handleSendMessageWrapper}
-          handleAttachmentOption={handleAttachmentOptionWrapper}
-          showAttachmentIcon={true}
-          hasLiveChatAccess={hasPermission}
+          handleQuickReply={handleQuickReply}
+          showAttachmentIcon={false}
+          hasLiveChatAccess={true}
           onSendContactOTP={sendContactOTP}
           onVerifyContactOTP={verifyContactOTP}
         />
       </div>
-
-      <Dialog 
-        open={showUpgradePrompt} 
-        onOpenChange={setShowUpgradePrompt}
-      >
-        <DialogContent 
-          className="sm:max-w-md max-h-[90vh] overflow-y-auto z-[100]"
-          container={document.getElementById('root')}
-        >
-          <div className="p-6 flex flex-col items-center space-y-6">
-            <div className="bg-primary/10 p-4 rounded-full">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-8 w-8 text-primary"
-              >
-                <path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"></path>
-                <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"></path>
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-center">LIVE Chat Support Available with Organization Subscription</h2>
-            <p className="text-muted-foreground text-center">
-              Access direct LIVE chat support with our team by upgrading to our Organization plan.
-            </p>
-            <div className="flex space-x-4">
-              <Button 
-                variant="outline" 
-                onClick={closeUpgradePrompt}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => {
-                  navigate('/pricing', { state: { fromLiveChat: true } });
-                }}
-              >
-                Upgrade Now
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </AppLayout>
   );
 };
