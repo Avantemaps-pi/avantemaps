@@ -61,9 +61,11 @@ const LandingPage: React.FC = () => {
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-            <MapPin className="h-5 w-5 text-primary" />
-          </div>
+          <img
+            src="/lovable-uploads/Avante%20maps%20icon.png"
+            alt="Avante Maps logo"
+            className="h-9 w-9 rounded-full object-contain"
+          />
           <span className="font-bold text-lg text-foreground">Avante Maps</span>
         </div>
         <div className="w-9" />
