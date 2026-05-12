@@ -113,7 +113,7 @@ const Communicon = () => {
       }
       // Only show upgrade prompt if explicitly denied (false, not null)
       if (hasPermission === false) {
-        setShowUpgradePrompt(true);
+        navigate('/pricing', { state: { fromLiveChat: true, focusTier: 'organization' } });
         return;
       }
     }
