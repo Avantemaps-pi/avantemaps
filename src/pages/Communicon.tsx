@@ -20,6 +20,8 @@ const Communicon = () => {
     sendVerificationRequest,
     handleBusinessSelection,
     triggerVerificationFlow,
+    triggerCertificationFlow,
+    showMyListings,
     sendContactOTP,
     verifyContactOTP,
   } = useChatState();
