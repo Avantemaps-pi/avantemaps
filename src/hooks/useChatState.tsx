@@ -810,6 +810,8 @@ export function useChatState() {
     sendVerificationRequest,
     handleBusinessSelection,
     triggerVerificationFlow,
+    triggerCertificationFlow,
+    showMyListings,
     sendContactOTP,
     verifyContactOTP,
   };
