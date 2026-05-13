@@ -33,9 +33,9 @@ const getDefaultMessages = (): ChatMessage[] => [
   },
 ];
 
-const loadMessagesFromStorage = (): ChatMessage[] => {
+const loadMessagesFromStorage = (key: string): ChatMessage[] => {
   try {
-    const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+    const stored = localStorage.getItem(key);
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -48,9 +48,9 @@ const loadMessagesFromStorage = (): ChatMessage[] => {
   return getDefaultMessages();
 };
 
-const saveMessagesToStorage = (messages: ChatMessage[]) => {
+const saveMessagesToStorage = (key: string, messages: ChatMessage[]) => {
   try {
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    localStorage.setItem(key, JSON.stringify(messages));
   } catch (error) {
     console.error('Error saving chat messages to storage:', error);
   }
