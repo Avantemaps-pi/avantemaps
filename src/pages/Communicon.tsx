@@ -20,6 +20,8 @@ const Communicon = () => {
     sendVerificationRequest,
     handleBusinessSelection,
     triggerVerificationFlow,
+    triggerCertificationFlow,
+    showMyListings,
     sendContactOTP,
     verifyContactOTP,
   } = useChatState();
@@ -54,6 +56,18 @@ const Communicon = () => {
   };
 
   const handleQuickReply = (text: string) => {
+    if (text === 'Check verification status') {
+      triggerVerificationFlow('verification');
+      return;
+    }
+    if (text === 'Check certification status') {
+      triggerCertificationFlow();
+      return;
+    }
+    if (text === 'My listings') {
+      showMyListings();
+      return;
+    }
     handleSendMessage(null, text);
   };
 

@@ -678,6 +678,70 @@ export function useChatState() {
     }
   }, [awaitingVerificationBusinessSelection, updateVerificationStatus, logVerificationRequest, toast]);
 
+  // Show certification "coming soon" message
+  const triggerCertificationFlow = useCallback(() => {
+    const userMessage: ChatMessage = {
+      id: Date.now(),
+      text: "Check certification status",
+      sender: "user",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    const replyMessage: ChatMessage = {
+      id: Date.now() + 1,
+      text: "Business certification is coming soon. Once it launches, you'll be able to request and check certification status right here in CommuniCon.",
+      sender: "support",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages(prev => [...prev, userMessage, replyMessage]);
+  }, []);
+
+  // Show user's listings with statuses
+  const showMyListings = useCallback(async () => {
+    const userMessage: ChatMessage = {
+      id: Date.now(),
+      text: "My listings",
+      sender: "user",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages(prev => [...prev, userMessage]);
+
+    const businesses = await fetchUserBusinesses();
+
+    if (businesses.length === 0) {
+      const noneMessage: ChatMessage = {
+        id: Date.now() + 1,
+        text: "You don't have any registered businesses yet. Tap below to register one.",
+        sender: "support",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages(prev => [...prev, noneMessage]);
+      setTimeout(() => navigate('/registration'), 1500);
+      return;
+    }
+
+    const lines = businesses.map(b => {
+      const verified = b.is_verified || b.verification_status === 'verified';
+      const status = verified ? '✓ Verified' : (b.verification_status ? `• ${b.verification_status}` : '• Not verified');
+      return `• ${b.business_name} — ${status}`;
+    }).join('\n');
+
+    const summaryMessage: ChatMessage = {
+      id: Date.now() + 1,
+      text: `Here are your listings:\n${lines}\n\nSelect one below to request or recheck verification:`,
+      sender: "support",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    const selectionMessage: ChatMessage = {
+      id: Date.now() + 2,
+      text: "Select your business:",
+      sender: "business-selection",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      businesses,
+    };
+    setMessages(prev => [...prev, summaryMessage, selectionMessage]);
+    setAwaitingVerificationBusinessSelection(true);
+  }, [fetchUserBusinesses, navigate]);
+
   const sendContactOTP = useCallback(async (email: string): Promise<boolean> => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -746,6 +810,8 @@ export function useChatState() {
     sendVerificationRequest,
     handleBusinessSelection,
     triggerVerificationFlow,
+    triggerCertificationFlow,
+    showMyListings,
     sendContactOTP,
     verifyContactOTP,
   };
