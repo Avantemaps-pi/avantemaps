@@ -61,7 +61,8 @@ export function useChatState() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>(loadMessagesFromStorage);
+  const storageKey = getChatStorageKey(user?.uid);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => loadMessagesFromStorage(storageKey));
   const [chatMode, setChatMode] = useState<ChatMode>("ai");
   const [awaitingVerificationConfirmation, setAwaitingVerificationConfirmation] = useState(false);
   const [awaitingBusinessSelection, setAwaitingBusinessSelection] = useState(false);
@@ -69,10 +70,15 @@ export function useChatState() {
   const [selectedBusinessForVerification, setSelectedBusinessForVerification] = useState<any>(null);
   const [userBusinesses, setUserBusinesses] = useState<any[]>([]);
 
+  // Reload messages when the active user changes (login/logout/switch account)
+  useEffect(() => {
+    setMessages(loadMessagesFromStorage(storageKey));
+  }, [storageKey]);
+
   // Persist messages to localStorage whenever they change
   useEffect(() => {
-    saveMessagesToStorage(messages);
-  }, [messages]);
+    saveMessagesToStorage(storageKey, messages);
+  }, [messages, storageKey]);
 
   // Fetch user's businesses from Supabase
   const fetchUserBusinesses = useCallback(async () => {
