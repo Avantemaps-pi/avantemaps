@@ -8,7 +8,10 @@ import { ChatMode } from '@/components/chat/ChatInterface';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
 
-const CHAT_STORAGE_KEY = 'avante-chat-messages-v2';
+const CHAT_STORAGE_PREFIX = 'avante-chat-messages-v2';
+const GUEST_CHAT_KEY = `${CHAT_STORAGE_PREFIX}:guest`;
+const getChatStorageKey = (uid?: string | null) =>
+  uid ? `${CHAT_STORAGE_PREFIX}:${uid}` : GUEST_CHAT_KEY;
 
 type ChatMessage = {
   id: number;
@@ -30,9 +33,9 @@ const getDefaultMessages = (): ChatMessage[] => [
   },
 ];
 
-const loadMessagesFromStorage = (): ChatMessage[] => {
+const loadMessagesFromStorage = (key: string): ChatMessage[] => {
   try {
-    const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+    const stored = localStorage.getItem(key);
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -45,9 +48,9 @@ const loadMessagesFromStorage = (): ChatMessage[] => {
   return getDefaultMessages();
 };
 
-const saveMessagesToStorage = (messages: ChatMessage[]) => {
+const saveMessagesToStorage = (key: string, messages: ChatMessage[]) => {
   try {
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    localStorage.setItem(key, JSON.stringify(messages));
   } catch (error) {
     console.error('Error saving chat messages to storage:', error);
   }
@@ -58,7 +61,8 @@ export function useChatState() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>(loadMessagesFromStorage);
+  const storageKey = getChatStorageKey(user?.uid);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => loadMessagesFromStorage(storageKey));
   const [chatMode, setChatMode] = useState<ChatMode>("ai");
   const [awaitingVerificationConfirmation, setAwaitingVerificationConfirmation] = useState(false);
   const [awaitingBusinessSelection, setAwaitingBusinessSelection] = useState(false);
@@ -66,10 +70,15 @@ export function useChatState() {
   const [selectedBusinessForVerification, setSelectedBusinessForVerification] = useState<any>(null);
   const [userBusinesses, setUserBusinesses] = useState<any[]>([]);
 
+  // Reload messages when the active user changes (login/logout/switch account)
+  useEffect(() => {
+    setMessages(loadMessagesFromStorage(storageKey));
+  }, [storageKey]);
+
   // Persist messages to localStorage whenever they change
   useEffect(() => {
-    saveMessagesToStorage(messages);
-  }, [messages]);
+    saveMessagesToStorage(storageKey, messages);
+  }, [messages, storageKey]);
 
   // Fetch user's businesses from Supabase
   const fetchUserBusinesses = useCallback(async () => {
