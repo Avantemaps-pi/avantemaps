@@ -336,6 +336,39 @@ export type Database = {
         }
         Relationships: []
       }
+      conversations: {
+        Row: {
+          business_id: number
+          business_unread: number
+          created_at: string
+          customer_id: string
+          customer_unread: number
+          id: string
+          last_message_at: string
+          last_message_preview: string | null
+        }
+        Insert: {
+          business_id: number
+          business_unread?: number
+          created_at?: string
+          customer_id: string
+          customer_unread?: number
+          id?: string
+          last_message_at?: string
+          last_message_preview?: string | null
+        }
+        Update: {
+          business_id?: number
+          business_unread?: number
+          created_at?: string
+          customer_id?: string
+          customer_unread?: number
+          id?: string
+          last_message_at?: string
+          last_message_preview?: string | null
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           created_at: string | null
@@ -359,6 +392,44 @@ export type Database = {
           user_agent?: string | null
         }
         Relationships: []
+      }
+      messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_id: string
+          sender_role: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id: string
+          sender_role: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+          sender_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notification_ab_tests: {
         Row: {
@@ -1386,11 +1457,19 @@ export type Database = {
         }
         Returns: undefined
       }
+      has_active_paid_subscription: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_business_owner: {
+        Args: { _business_id: number; _user_id: string }
         Returns: boolean
       }
       longtransactionsenabled: { Args: never; Returns: boolean }
