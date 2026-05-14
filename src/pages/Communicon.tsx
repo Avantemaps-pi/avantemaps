@@ -50,6 +50,14 @@ const Communicon = () => {
     }
   }, [location.state, triggerVerificationFlow, navigate, location.pathname]);
 
+  // Honor incoming chatMode (e.g. 'live' from PlaceCard "Message" button)
+  useEffect(() => {
+    if (location.state?.chatMode && location.state.chatMode !== chatMode) {
+      handleChatModeChange(location.state.chatMode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.chatMode]);
+
   const handleSendMessageWrapper = () => {
     const event = new Event('submit') as unknown as React.FormEvent;
     handleSendMessage(event);
