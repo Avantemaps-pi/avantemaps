@@ -61,6 +61,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
+  const location = useLocation();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: isInitialMount.current ? 'instant' : 'smooth' });
