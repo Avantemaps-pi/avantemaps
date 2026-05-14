@@ -82,8 +82,8 @@ const MetaTags: React.FC<MetaTagsProps> = ({
         <meta key={index} name="author" content={author.name} />
       ))}
       
-      {/* Canonical URL */}
-      {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+      {/* Canonical URL (self-referencing by default) */}
+      {finalCanonical && <link rel="canonical" href={finalCanonical} />}
       
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={ogType} />
