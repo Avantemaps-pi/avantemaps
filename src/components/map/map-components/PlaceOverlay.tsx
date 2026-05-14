@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Place } from '@/types/business';
-import { CircleCheck, Info, Shield, X } from 'lucide-react';
+import { CircleCheck, Info, Shield, X, MessageSquare } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/auth';
+import { useMessages } from '@/hooks/useMessages';
+import { toast } from 'sonner';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import CategoryBadge from '@/components/business/CategoryBadge';
 import ExpandableDescription from '@/components/business/ExpandableDescription';
