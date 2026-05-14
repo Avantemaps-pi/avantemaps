@@ -4,6 +4,8 @@ import ChatModeToggle from './ChatModeToggle';
 import ChatMessage from './ChatMessage';
 import BusinessSelectionButtons from './BusinessSelectionButtons';
 import VerificationResultCard, { VerificationMetrics } from './VerificationResultCard';
+import MessagesPanel from '@/components/messages/MessagesPanel';
+import { useLocation } from 'react-router-dom';
 import { Send, Image, Video, MessagesSquare, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -59,6 +61,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
+  const location = useLocation();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: isInitialMount.current ? 'instant' : 'smooth' });
@@ -127,17 +130,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
 
         {chatMode === 'live' ? (
-          <div className="flex-1 flex items-center justify-center p-8 min-h-[400px] max-h-[60vh]">
-            <div className="text-center max-w-sm space-y-3">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <MessagesSquare className="h-7 w-7" />
-              </div>
-              <h4 className="text-lg font-semibold">Business Messaging Coming Soon</h4>
-              <p className="text-sm text-muted-foreground">
-                Connect directly with businesses on Avante Maps. Stay tuned!
-              </p>
-            </div>
-          </div>
+          <MessagesPanel
+            initialConversationId={(location.state as any)?.openConversationId ?? null}
+            initialInboxBusinessId={(location.state as any)?.inboxBusinessId ?? null}
+          />
         ) : (
           <>
             <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[60vh] min-h-[400px]">

@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Place } from '@/types/business';
-import { CircleCheck, Info, Shield, X } from 'lucide-react';
+import { CircleCheck, Info, Shield, X, MessageSquare } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/auth';
+import { useMessages } from '@/hooks/useMessages';
+import { toast } from 'sonner';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import CategoryBadge from '@/components/business/CategoryBadge';
 import ExpandableDescription from '@/components/business/ExpandableDescription';
@@ -152,7 +156,49 @@ const PlaceOverlayContent: React.FC<{ place: Place; detailCardRef?: React.RefObj
           </div>
         </div>
       </div>
+
+      <MessageBusinessButton place={place} />
     </div>
+  );
+};
+
+const MessageBusinessButton: React.FC<{ place: Place }> = ({ place }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { startConversationWithBusiness } = useMessages(
+    user?.uid ? { kind: 'customer' } : null,
+  );
+  const [pending, setPending] = useState(false);
+
+  const businessId = parseInt(place.id, 10);
+  if (Number.isNaN(businessId)) return null;
+
+  const handleClick = async () => {
+    if (!user?.uid) {
+      toast.error('Sign in to message businesses');
+      return;
+    }
+    setPending(true);
+    const convId = await startConversationWithBusiness(businessId);
+    setPending(false);
+    if (convId) {
+      navigate('/communicon', {
+        state: { openConversationId: convId, chatMode: 'live' },
+      });
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleClick}
+      disabled={pending}
+      variant="outline"
+      size="sm"
+      className="w-full mt-2"
+    >
+      <MessageSquare className="h-4 w-4 mr-2" />
+      {pending ? 'Opening…' : 'Message this business'}
+    </Button>
   );
 };
 
