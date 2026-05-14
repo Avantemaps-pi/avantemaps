@@ -57,7 +57,9 @@ const MetaTags: React.FC<MetaTagsProps> = ({
   const finalTitle = `${title} | Avante Maps`;
   const finalOgTitle = ogTitle || title;
   const finalOgDescription = ogDescription || description;
-  const finalOgUrl = ogUrl || (typeof window !== 'undefined' ? window.location.href : '');
+  const currentUrl = typeof window !== 'undefined' ? window.location.href.split('?')[0].split('#')[0] : '';
+  const finalOgUrl = ogUrl || currentUrl;
+  const finalCanonical = canonicalUrl || currentUrl;
   
   const defaultTwitter: TwitterMetadata = {
     card: 'summary_large_image',
@@ -80,8 +82,8 @@ const MetaTags: React.FC<MetaTagsProps> = ({
         <meta key={index} name="author" content={author.name} />
       ))}
       
-      {/* Canonical URL */}
-      {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+      {/* Canonical URL (self-referencing by default) */}
+      {finalCanonical && <link rel="canonical" href={finalCanonical} />}
       
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={ogType} />

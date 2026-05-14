@@ -66,8 +66,8 @@
     <meta property="og:url" content="https://avantemaps.com/" />
     <meta property="og:title" content="Avante Maps - Discover Local Businesses" />
     <meta property="og:description" content="Find local businesses and pay with Pi Network cryptocurrency. Join the Pi business community." />
-    <meta property="og:image" content="/og-image.png" />
-    <meta property="og:image:secure_url" content="/og-image.png" />
+    <meta property="og:image" content="https://avantemaps.lovable.app/og-image.png" />
+    <meta property="og:image:secure_url" content="https://avantemaps.lovable.app/og-image.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -81,7 +81,7 @@
     <meta name="twitter:creator" content="@AvanteMap" />
     <meta name="twitter:title" content="Avante Maps - Discover Local Businesses" />
     <meta name="twitter:description" content="Find local businesses and pay with Pi Network cryptocurrency" />
-    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:image" content="https://avantemaps.lovable.app/og-image.png" />
     <meta name="twitter:image:alt" content="Avante Maps Preview" />
 
     <!-- Leaflet Maps - Non-blocking CSS with print media swap -->
@@ -98,6 +98,31 @@
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       type="module"
     ></script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Avante Maps",
+        "url": "https://avantemaps.lovable.app",
+        "logo": "https://avantemaps.lovable.app/lovable-uploads/Avante-Maps-icon.svg",
+        "description": "Discover local and online businesses that accept Pi Network cryptocurrency.",
+        "sameAs": ["https://twitter.com/AvanteMap"]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Avante Maps",
+        "url": "https://avantemaps.lovable.app",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://avantemaps.lovable.app/recommendations?search={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
   </head>
 
   <body>

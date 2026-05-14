@@ -9,6 +9,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import MetaTags from '@/components/seo/MetaTags';
+
+const FAQS = [
+  {
+    q: 'What is Avante Maps?',
+    a: 'Avante Maps is a platform that helps users find businesses that accept Pi cryptocurrency as payment.',
+  },
+  {
+    q: 'How do I register my business?',
+    a: 'You can register your business by clicking on the "Register Business" option in the navigation menu and following the steps.',
+  },
+  {
+    q: 'Is Avante Maps affiliated with Pi Network?',
+    a: 'Avante Maps is an independent platform created by a Pi Network enthusiast to support the Pi ecosystem.',
+  },
+];
 
 const Contact = () => {
   const location = useLocation();
@@ -40,6 +56,21 @@ const Contact = () => {
   };
 
   return <AppLayout title="Contact Us">
+      <MetaTags
+        title="Contact Avante Maps"
+        description="Contact the Avante Maps team — email, phone and office address. Reach out for support, partnerships, business listings or general inquiries."
+        keywords={['contact avante maps', 'support', 'partnerships', 'pi network help']}
+        ogType="website"
+        structuredData={{
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: FAQS.map(({ q, a }) => ({
+            '@type': 'Question',
+            name: q,
+            acceptedAnswer: { '@type': 'Answer', text: a },
+          })),
+        }}
+      />
       <div className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 animate-fade-in">
         <div className="space-y-4">
           <p className="text-muted-foreground">Have questions or feedback? We'd love to hear from you.</p>
@@ -138,24 +169,12 @@ const Contact = () => {
           </CardHeader>
           <CardContent>
             <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="item-1">
-                <AccordionTrigger>What is Avante Maps?</AccordionTrigger>
-                <AccordionContent>
-                  Avante Maps is a platform that helps users find businesses that accept Pi cryptocurrency as payment.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-2">
-                <AccordionTrigger>How do I register my business?</AccordionTrigger>
-                <AccordionContent>
-                  You can register your business by clicking on the "Register Business" option in the navigation menu and following the steps.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-3">
-                <AccordionTrigger>Is Avante Maps affiliated with Pi Network?</AccordionTrigger>
-                <AccordionContent>
-                  Avante Maps is an independent platform created by a Pi Network enthusiast to support the Pi ecosystem.
-                </AccordionContent>
-              </AccordionItem>
+              {FAQS.map(({ q, a }, i) => (
+                <AccordionItem key={i} value={`item-${i + 1}`}>
+                  <AccordionTrigger>{q}</AccordionTrigger>
+                  <AccordionContent>{a}</AccordionContent>
+                </AccordionItem>
+              ))}
             </Accordion>
           </CardContent>
         </Card>
