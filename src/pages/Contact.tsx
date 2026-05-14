@@ -9,6 +9,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import MetaTags from '@/components/seo/MetaTags';
+
+const FAQS = [
+  {
+    q: 'What is Avante Maps?',
+    a: 'Avante Maps is a platform that helps users find businesses that accept Pi cryptocurrency as payment.',
+  },
+  {
+    q: 'How do I register my business?',
+    a: 'You can register your business by clicking on the "Register Business" option in the navigation menu and following the steps.',
+  },
+  {
+    q: 'Is Avante Maps affiliated with Pi Network?',
+    a: 'Avante Maps is an independent platform created by a Pi Network enthusiast to support the Pi ecosystem.',
+  },
+];
 
 const Contact = () => {
   const location = useLocation();

@@ -7,12 +7,19 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { MessageCircle, Facebook, Twitter } from 'lucide-react';
+import MetaTags from '@/components/seo/MetaTags';
 
 const About = () => {
   const navigate = useNavigate();
 
   return (
     <AppLayout title="About Us">
+      <MetaTags
+        title="About Avante Maps"
+        description="Learn about Avante Maps — an independent platform mapping businesses that accept Pi Network cryptocurrency, built to grow the Pi ecosystem."
+        keywords={['about avante maps', 'pi network', 'pi cryptocurrency', 'pi ecosystem']}
+        ogType="website"
+      />
       <div className="max-w-5xl mx-auto space-y-6 px-4 sm:px-6 pt-3 sm:pt-4 pb-6 animate-fade-in" role="region" aria-labelledby="page-title">
         <Card className="material-card">
           <CardHeader>
