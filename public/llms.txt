@@ -1,0 +1,24 @@
+# Avante Maps
+
+> Discover local and online businesses that accept Pi Network cryptocurrency. Register your business, find places to spend Pi, and connect with the Pi business community.
+
+Avante Maps is an independent platform built to accelerate Pi Network adoption by mapping businesses that accept Pi as payment. Customers can search, bookmark, review and message businesses; owners can register, manage listings, view analytics, and respond to customers (with a paid plan).
+
+## Pages
+
+- [Home / Map](/): Interactive map of businesses that accept Pi.
+- [Recommendations](/recommendations): Curated and top-rated Pi-accepting businesses.
+- [Bookmarks](/bookmarks): Your saved favorite businesses.
+- [Pricing](/pricing): Subscription plans (Individual, Small Business, Organization) paid in Pi.
+- [Register Business](/registration): List your business on Avante Maps.
+- [CommuniCon](/communicon): AI assistant and direct messaging with businesses.
+- [Notifications](/notifications): Account, business and system notifications.
+- [Verification Info](/verification-info): How business verification and certification work.
+- [About](/about): Mission, team and the Pi ecosystem.
+- [Contact](/contact): Email, phone and contact form.
+
+## Optional
+
+- [Terms of Service](/terms)
+- [Privacy Policy](/privacy)
+- [Cookie Policy](/cookies)
