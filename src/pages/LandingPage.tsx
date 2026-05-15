@@ -9,6 +9,8 @@ import { useAuth } from '@/context/auth/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessData } from '@/hooks/useBusinessData';
 import LoginDialog from '@/components/auth/LoginDialog';
+import avanteIcon72 from '@/assets/avante-icon-72.webp';
+import avanteIcon144 from '@/assets/avante-icon-144.webp';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
 
@@ -62,8 +64,8 @@ const LandingPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <img
-            src="/lovable-uploads/avante-icon-72.webp"
-            srcSet="/lovable-uploads/avante-icon-72.webp 1x, /lovable-uploads/avante-icon-144.webp 2x"
+            src={avanteIcon72}
+            srcSet={`${avanteIcon72} 1x, ${avanteIcon144} 2x`}
             alt="Avante Maps logo"
             width={36}
             height={36}
