@@ -9,6 +9,8 @@ import { useAuth } from '@/context/auth/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessData } from '@/hooks/useBusinessData';
 import LoginDialog from '@/components/auth/LoginDialog';
+import avanteIcon72 from '@/assets/avante-icon-72.webp';
+import avanteIcon144 from '@/assets/avante-icon-144.webp';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
 
