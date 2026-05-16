@@ -33,6 +33,12 @@
       fetchpriority="high"
     />
 
+    <!-- Preload main entry JS/CSS. Vite rewrites /src/main.tsx to the hashed entry chunk
+         at build time and auto-injects <link rel="modulepreload"> for its static imports
+         plus <link rel="stylesheet"> for any CSS the entry depends on. This explicit hint
+         ensures the entry module starts fetching as early as possible on first load. -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+
     <title>Avante Maps - Discover Local Businesses with Pi Network</title>
 
     <!-- Load Pi SDK -->
