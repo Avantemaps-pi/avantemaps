@@ -65,7 +65,8 @@ const LandingPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <img
             src={avanteIcon72}
-            srcSet={`${avanteIcon72} 1x, ${avanteIcon144} 2x`}
+            srcSet={`${avanteIcon72} 72w, ${avanteIcon144} 144w`}
+            sizes="36px"
             alt="Avante Maps logo"
             width={36}
             height={36}
