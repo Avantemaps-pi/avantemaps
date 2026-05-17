@@ -165,9 +165,9 @@ const PlaceOverlayContent: React.FC<{ place: Place; detailCardRef?: React.RefObj
 const MessageBusinessButton: React.FC<{ place: Place }> = ({ place }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { startConversationWithBusiness } = useMessages(
-    user?.uid ? { kind: 'customer' } : null,
-  );
+  // Pass null inbox so this hook instance doesn't also fetch the conversation
+  // list (MessagesPanel owns that). We only need startConversationWithBusiness.
+  const { startConversationWithBusiness } = useMessages(null);
   const [pending, setPending] = useState(false);
 
   const businessId = parseInt(place.id, 10);
