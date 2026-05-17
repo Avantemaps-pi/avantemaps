@@ -160,13 +160,50 @@ export function useMessages(inbox: Inbox | null) {
   );
 
   const startConversationWithBusiness = useCallback(
-    async (businessId: number): Promise<string | null> => {
-      const ctxBase = { businessId, localUid: uid ?? null };
+    async (businessId: number, isRetry = false): Promise<string | null> => {
+      const ctxBase = { businessId, localUid: uid ?? null, isRetry };
       if (!uid) {
         console.warn('[startConversationWithBusiness] no local uid', ctxBase);
         toast.error('Please sign in first');
         return null;
       }
+
+      // Helper: prompt re-auth, then retry once.
+      const reAuthAndRetry = async (
+        reason: string,
+      ): Promise<string | null> => {
+        if (isRetry) {
+          console.error(
+            '[startConversationWithBusiness] retry after re-auth still failing',
+            { ...ctxBase, reason },
+          );
+          toast.error('Still signed out after re-auth. Please try again.');
+          return null;
+        }
+        const toastId = toast.loading('Signing you back in…');
+        try {
+          await login();
+        } catch (err) {
+          console.error('[startConversationWithBusiness] re-auth failed', {
+            ...ctxBase,
+            reason,
+            err,
+          });
+          toast.error('Sign-in failed. Please try again.', { id: toastId });
+          return null;
+        }
+        // Confirm a session is now active before retrying.
+        const { data: refreshed } = await supabase.auth.getSession();
+        if (!refreshed?.session?.user?.id) {
+          toast.error('Sign-in didn\'t complete. Please try again.', {
+            id: toastId,
+          });
+          return null;
+        }
+        toast.success('Signed back in — resuming…', { id: toastId });
+        return startConversationWithBusiness(businessId, true);
+      };
+
       // Ensure a live Supabase auth session exists, otherwise RLS
       // (customer_id = auth.uid()) will reject the insert.
       const { data: sessionData, error: sessionError } =
@@ -175,20 +212,14 @@ export function useMessages(inbox: Inbox | null) {
       const ctx = { ...ctxBase, authUid, sessionError: sessionError?.message };
       if (!authUid) {
         console.warn('[startConversationWithBusiness] no Supabase session', ctx);
-        toast.error('Your session has expired. Please sign in again.');
-        return null;
+        return reAuthAndRetry('missing-session');
       }
       if (authUid !== uid) {
-        // Stored Pi user uid and active Supabase session uid disagree — RLS will
-        // reject either the select or the insert. Surface this clearly.
         console.error(
           '[startConversationWithBusiness] uid mismatch between local user and Supabase session',
           ctx,
         );
-        toast.error(
-          `Identity mismatch (local ${uid.slice(0, 8)}… vs session ${authUid.slice(0, 8)}…). Please sign out and back in.`,
-        );
-        return null;
+        return reAuthAndRetry('uid-mismatch');
       }
 
       // Try to find existing
@@ -216,13 +247,14 @@ export function useMessages(inbox: Inbox | null) {
         .select('id')
         .single();
       if (error) {
+        const code = (error as any).code;
         console.error(
           '[startConversationWithBusiness] insert failed',
           {
             ...ctx,
             pgError: {
               message: error.message,
-              code: (error as any).code,
+              code,
               details: (error as any).details,
               hint: (error as any).hint,
             },
@@ -230,19 +262,21 @@ export function useMessages(inbox: Inbox | null) {
         );
         const isRls =
           error.message?.toLowerCase().includes('row-level security') ||
-          (error as any).code === '42501';
+          code === '42501';
+        // RLS rejection usually means the JWT for auth.uid() is stale even
+        // though getSession() returned one. Treat it as a re-auth trigger.
+        if (isRls) return reAuthAndRetry('rls-rejected');
         toast.error(
-          isRls
-            ? `RLS rejected insert into conversations (business ${businessId}, customer ${authUid.slice(0, 8)}…). Check that the active session uid matches customer_id.`
-            : `Could not start conversation: ${error.message} (code ${(error as any).code ?? 'n/a'})`,
+          `Could not start conversation: ${error.message} (code ${code ?? 'n/a'})`,
         );
         return null;
       }
       await loadConversations();
       return data.id;
     },
-    [uid, loadConversations],
+    [uid, login, loadConversations],
   );
+
 
 
   const sendMessage = useCallback(
