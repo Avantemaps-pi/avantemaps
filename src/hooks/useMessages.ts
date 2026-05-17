@@ -165,22 +165,31 @@ export function useMessages(inbox: Inbox | null) {
         toast.error('Please sign in first');
         return null;
       }
+      // Ensure a live Supabase auth session exists, otherwise RLS
+      // (customer_id = auth.uid()) will reject the insert.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const authUid = sessionData?.session?.user?.id;
+      if (!authUid) {
+        toast.error('Your session has expired. Please sign in again.');
+        return null;
+      }
       // Try to find existing
       const { data: existing } = await supabase
         .from('conversations')
         .select('id')
         .eq('business_id', businessId)
-        .eq('customer_id', uid)
+        .eq('customer_id', authUid)
         .maybeSingle();
       if (existing?.id) return existing.id;
 
       const { data, error } = await supabase
         .from('conversations')
-        .insert({ business_id: businessId, customer_id: uid })
+        .insert({ business_id: businessId, customer_id: authUid })
         .select('id')
         .single();
       if (error) {
-        toast.error('Could not start conversation');
+        console.error('startConversationWithBusiness insert failed:', error);
+        toast.error(error.message || 'Could not start conversation');
         return null;
       }
       await loadConversations();
