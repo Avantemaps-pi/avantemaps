@@ -161,25 +161,53 @@ export function useMessages(inbox: Inbox | null) {
 
   const startConversationWithBusiness = useCallback(
     async (businessId: number): Promise<string | null> => {
+      const ctxBase = { businessId, localUid: uid ?? null };
       if (!uid) {
+        console.warn('[startConversationWithBusiness] no local uid', ctxBase);
         toast.error('Please sign in first');
         return null;
       }
       // Ensure a live Supabase auth session exists, otherwise RLS
       // (customer_id = auth.uid()) will reject the insert.
-      const { data: sessionData } = await supabase.auth.getSession();
-      const authUid = sessionData?.session?.user?.id;
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
+      const authUid = sessionData?.session?.user?.id ?? null;
+      const ctx = { ...ctxBase, authUid, sessionError: sessionError?.message };
       if (!authUid) {
+        console.warn('[startConversationWithBusiness] no Supabase session', ctx);
         toast.error('Your session has expired. Please sign in again.');
         return null;
       }
+      if (authUid !== uid) {
+        // Stored Pi user uid and active Supabase session uid disagree — RLS will
+        // reject either the select or the insert. Surface this clearly.
+        console.error(
+          '[startConversationWithBusiness] uid mismatch between local user and Supabase session',
+          ctx,
+        );
+        toast.error(
+          `Identity mismatch (local ${uid.slice(0, 8)}… vs session ${authUid.slice(0, 8)}…). Please sign out and back in.`,
+        );
+        return null;
+      }
+
       // Try to find existing
-      const { data: existing } = await supabase
+      const { data: existing, error: existingError } = await supabase
         .from('conversations')
         .select('id')
         .eq('business_id', businessId)
         .eq('customer_id', authUid)
         .maybeSingle();
+      if (existingError) {
+        console.error(
+          '[startConversationWithBusiness] lookup failed',
+          { ...ctx, pgError: existingError },
+        );
+        toast.error(
+          `Conversation lookup failed: ${existingError.message} (code ${existingError.code ?? 'n/a'})`,
+        );
+        return null;
+      }
       if (existing?.id) return existing.id;
 
       const { data, error } = await supabase
@@ -188,8 +216,26 @@ export function useMessages(inbox: Inbox | null) {
         .select('id')
         .single();
       if (error) {
-        console.error('startConversationWithBusiness insert failed:', error);
-        toast.error(error.message || 'Could not start conversation');
+        console.error(
+          '[startConversationWithBusiness] insert failed',
+          {
+            ...ctx,
+            pgError: {
+              message: error.message,
+              code: (error as any).code,
+              details: (error as any).details,
+              hint: (error as any).hint,
+            },
+          },
+        );
+        const isRls =
+          error.message?.toLowerCase().includes('row-level security') ||
+          (error as any).code === '42501';
+        toast.error(
+          isRls
+            ? `RLS rejected insert into conversations (business ${businessId}, customer ${authUid.slice(0, 8)}…). Check that the active session uid matches customer_id.`
+            : `Could not start conversation: ${error.message} (code ${(error as any).code ?? 'n/a'})`,
+        );
         return null;
       }
       await loadConversations();
@@ -197,6 +243,7 @@ export function useMessages(inbox: Inbox | null) {
     },
     [uid, loadConversations],
   );
+
 
   const sendMessage = useCallback(
     async (body: string): Promise<boolean> => {
