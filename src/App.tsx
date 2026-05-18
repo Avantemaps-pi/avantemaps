@@ -144,6 +144,7 @@ const App = () => {
                 <SidebarProvider>
                   <SessionRestoration />
                   <SessionManager />
+                  <PendingConversationDispatcher />
                   <Toaster />
                   <Sonner />
                   <Suspense fallback={<PageLoader />}>
