@@ -10,6 +10,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/context/auth";
 import { useSessionRestoration } from "@/hooks/useSessionRestoration";
 import { SessionManager } from "@/components/session/SessionManager";
+import { PendingConversationDispatcher } from "@/components/session/PendingConversationDispatcher";
 import AuthenticatingOverlay from "@/components/auth/AuthenticatingOverlay";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
