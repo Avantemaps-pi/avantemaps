@@ -279,6 +279,26 @@ export function useMessages(inbox: Inbox | null) {
     [uid, login, loadConversations],
   );
 
+  // Keep a stable ref to the latest startConversationWithBusiness so the
+  // global PendingConversationDispatcher can invoke it (in retry mode)
+  // without re-registering on every render.
+  const startRef = useRef(startConversationWithBusiness);
+  useEffect(() => {
+    startRef.current = startConversationWithBusiness;
+  }, [startConversationWithBusiness]);
+
+  useEffect(() => {
+    // Only register a runner when this hook instance actually has a uid;
+    // the dispatcher will use it after a successful re-auth.
+    if (!uid) return;
+    setConversationRunner((businessId) => startRef.current(businessId, true));
+    return () => {
+      setConversationRunner(null);
+    };
+  }, [uid]);
+
+
+
 
 
   const sendMessage = useCallback(
