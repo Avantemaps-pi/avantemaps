@@ -172,7 +172,9 @@ export function useMessages(inbox: Inbox | null) {
         return null;
       }
 
-      // Helper: prompt re-auth, then retry once.
+      // Helper: trigger re-auth and hand the request to the global
+      // PendingConversationDispatcher, which will retry it as soon as
+      // onAuthStateChange reports a fresh session.
       const reAuthAndRetry = async (
         reason: string,
       ): Promise<string | null> => {
@@ -185,28 +187,24 @@ export function useMessages(inbox: Inbox | null) {
           return null;
         }
         const toastId = toast.loading('Signing you back in…');
-        try {
-          await login();
-        } catch (err) {
-          console.error('[startConversationWithBusiness] re-auth failed', {
-            ...ctxBase,
-            reason,
-            err,
+        // Queue the request *before* kicking off login so the dispatcher
+        // picks it up the moment SIGNED_IN / TOKEN_REFRESHED fires.
+        const pending = enqueuePendingConversation(businessId);
+        login()
+          .then(() => {
+            toast.success('Signed back in — resuming…', { id: toastId });
+          })
+          .catch((err) => {
+            console.error('[startConversationWithBusiness] re-auth failed', {
+              ...ctxBase,
+              reason,
+              err,
+            });
+            toast.error('Sign-in failed. Please try again.', { id: toastId });
           });
-          toast.error('Sign-in failed. Please try again.', { id: toastId });
-          return null;
-        }
-        // Confirm a session is now active before retrying.
-        const { data: refreshed } = await supabase.auth.getSession();
-        if (!refreshed?.session?.user?.id) {
-          toast.error('Sign-in didn\'t complete. Please try again.', {
-            id: toastId,
-          });
-          return null;
-        }
-        toast.success('Signed back in — resuming…', { id: toastId });
-        return startConversationWithBusiness(businessId, true);
+        return pending;
       };
+
 
       // Ensure a live Supabase auth session exists, otherwise RLS
       // (customer_id = auth.uid()) will reject the insert.
