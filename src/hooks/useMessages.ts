@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
 import { toast } from 'sonner';
+import {
+  enqueuePendingConversation,
+  setConversationRunner,
+} from '@/lib/pendingConversationQueue';
 
 export interface Conversation {
   id: string;
