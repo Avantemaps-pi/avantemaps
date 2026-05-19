@@ -6,6 +6,11 @@ import {
   enqueuePendingConversation,
   setConversationRunner,
 } from '@/lib/pendingConversationQueue';
+import { useVerifiedSender } from '@/hooks/useVerifiedSender';
+import { useMessageFee } from '@/hooks/useMessageFee';
+import { startPayment } from '@/utils/piPayment/payments';
+import { approvePayment, completePayment } from '@/api/payments';
+import { generateLifecycleId } from '@/utils/correlation';
 
 export interface Conversation {
   id: string;
