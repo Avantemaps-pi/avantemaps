@@ -232,6 +232,46 @@ Deno.serve(async (req) => {
         terminalReason: 'completed',
       });
 
+      if (paymentRequest.metadata?.kind === 'message_fee') {
+        try {
+          const md = paymentRequest.metadata as any;
+          let feeUsd = 0;
+          try {
+            const { data: priceRow } = await supabaseClient
+              .from('pi_price').select('price_usd').limit(1).maybeSingle();
+            feeUsd = Number(priceRow?.price_usd ?? 0) * Number(md.feePi ?? paymentRequest.amount);
+          } catch (_) { /* non-fatal */ }
+          const { error: feeError } = await supabaseClient
+            .from('message_fees')
+            .insert({
+              conversation_id: md.conversationId,
+              sender_id: paymentRequest.userId,
+              business_id: md.businessId,
+              fee_pi: md.feePi ?? paymentRequest.amount,
+              fee_usd: feeUsd,
+              payment_id: paymentRequest.paymentId,
+              platform_share_pi: md.feePi ?? paymentRequest.amount,
+              business_share_pi: 0,
+              status: 'paid',
+            });
+          if (feeError) {
+            log.warn(`${FN}.message_fee.insert_error`, {
+              stage: 'db_write', message: feeError.message,
+            });
+          } else {
+            log.info(`${FN}.message_fee.recorded`, {
+              stage: 'db_write', conversationId: md.conversationId,
+            });
+          }
+        } catch (feeErr) {
+          log.error(`${FN}.message_fee.exception`, {
+            stage: 'error',
+            message: feeErr instanceof Error ? feeErr.message : String(feeErr),
+          });
+        }
+      }
+
+
       if (paymentRequest.metadata?.subscriptionTier) {
         try {
           const metadata = paymentRequest.metadata as any;
