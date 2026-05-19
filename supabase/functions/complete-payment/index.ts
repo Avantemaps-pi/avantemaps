@@ -25,9 +25,13 @@ const PaymentRequestSchema = z.object({
     val.replace(/[<>]/g, '')
   ).optional(),
   metadata: z.object({
+    kind: z.enum(['subscription', 'message_fee']).optional(),
     subscriptionTier: z.enum(['individual', 'small-business', 'organization']).optional(),
     frequency: z.enum(['monthly', 'annual']).optional(),
     duration: z.number().int().positive().max(365).optional(),
+    conversationId: z.string().uuid().optional(),
+    businessId: z.number().int().positive().optional(),
+    feePi: z.number().positive().max(100).optional(),
   }).strict(),
 });
 
