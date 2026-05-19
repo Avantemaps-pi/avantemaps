@@ -241,9 +241,13 @@ Deno.serve(async (req) => {
               .from('pi_price').select('price_usd').limit(1).maybeSingle();
             feeUsd = Number(priceRow?.price_usd ?? 0) * Number(md.feePi ?? paymentRequest.amount);
           } catch (_) { /* non-fatal */ }
+          // Idempotent insert: payment_id is UNIQUE, so a duplicate
+          // completion callback for the same Pi payment cannot create
+          // two fee rows. ignoreDuplicates avoids overwriting a row
+          // that may already have message_id attached.
           const { error: feeError } = await supabaseClient
             .from('message_fees')
-            .insert({
+            .upsert({
               conversation_id: md.conversationId,
               sender_id: paymentRequest.userId,
               business_id: md.businessId,
@@ -253,7 +257,7 @@ Deno.serve(async (req) => {
               platform_share_pi: md.feePi ?? paymentRequest.amount,
               business_share_pi: 0,
               status: 'paid',
-            });
+            }, { onConflict: 'payment_id', ignoreDuplicates: true });
           if (feeError) {
             log.warn(`${FN}.message_fee.insert_error`, {
               stage: 'db_write', message: feeError.message,
