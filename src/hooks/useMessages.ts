@@ -320,6 +320,71 @@ export function useMessages(inbox: Inbox | null) {
         toast.error('Upgrade your plan to reply to customer messages');
         return false;
       }
+
+      // Unverified customers must pay a per-message fee before the insert.
+      if (sender_role === 'customer' && !isVerifiedSender) {
+        const conv = conversations.find((c) => c.id === activeConvId);
+        if (!conv) {
+          toast.error('Conversation not found');
+          return false;
+        }
+        if (paying) return false;
+        setPaying(true);
+        const toastId = toast.loading(
+          `Charging π ${feePi} message fee…`,
+        );
+        try {
+          const lifecycleId = generateLifecycleId('msgfee');
+          const memo = `Message fee to business #${conv.business_id}`;
+          const metadata = {
+            kind: 'message_fee' as const,
+            conversationId: activeConvId,
+            businessId: conv.business_id,
+            feePi,
+          };
+          const paid = await new Promise<boolean>((resolve) => {
+            startPayment(
+              { amount: feePi, memo, metadata },
+              {
+                onReadyForServerApproval: async (paymentId) => {
+                  try {
+                    await approvePayment(
+                      { paymentId, userId: uid, amount: feePi, memo, metadata },
+                      { lifecycleId },
+                    );
+                  } catch (e) {
+                    console.error('[sendMessage] approve fee error', e);
+                    resolve(false);
+                  }
+                },
+                onReadyForServerCompletion: async (paymentId, txid) => {
+                  try {
+                    const res = await completePayment(
+                      { paymentId, userId: uid, amount: feePi, memo, metadata, txid },
+                      { lifecycleId },
+                    );
+                    resolve(!!res?.success);
+                  } catch (e) {
+                    console.error('[sendMessage] complete fee error', e);
+                    resolve(false);
+                  }
+                },
+                onCancel: () => resolve(false),
+                onError: () => resolve(false),
+              },
+            ).catch(() => resolve(false));
+          });
+
+          if (!paid) {
+            toast.error('Message fee payment was not completed', { id: toastId });
+            return false;
+          }
+          toast.success('Fee paid — sending…', { id: toastId });
+        } finally {
+          setPaying(false);
+        }
+      }
+
       const { error } = await supabase.from('messages').insert({
         conversation_id: activeConvId,
         sender_id: uid,
@@ -332,7 +397,7 @@ export function useMessages(inbox: Inbox | null) {
       }
       return true;
     },
-    [uid, activeConvId, inbox, hasPaidSub],
+    [uid, activeConvId, inbox, hasPaidSub, isVerifiedSender, feePi, conversations, paying],
   );
 
   const totalUnread = useMemo(
