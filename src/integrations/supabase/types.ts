@@ -118,6 +118,7 @@ export type Database = {
           coordinates: string | null
           country: string | null
           created_at: string | null
+          custom_message_fee_pi: number | null
           hours: Json | null
           id: number
           images: string[] | null
@@ -146,6 +147,7 @@ export type Database = {
           coordinates?: string | null
           country?: string | null
           created_at?: string | null
+          custom_message_fee_pi?: number | null
           hours?: Json | null
           id?: number
           images?: string[] | null
@@ -174,6 +176,7 @@ export type Database = {
           coordinates?: string | null
           country?: string | null
           created_at?: string | null
+          custom_message_fee_pi?: number | null
           hours?: Json | null
           id?: number
           images?: string[] | null
@@ -390,6 +393,51 @@ export type Database = {
           message?: string | null
           stack_trace?: string | null
           user_agent?: string | null
+        }
+        Relationships: []
+      }
+      message_fees: {
+        Row: {
+          business_id: number
+          business_share_pi: number
+          conversation_id: string
+          created_at: string
+          fee_pi: number
+          fee_usd: number
+          id: string
+          message_id: string | null
+          payment_id: string
+          platform_share_pi: number
+          sender_id: string
+          status: string
+        }
+        Insert: {
+          business_id: number
+          business_share_pi?: number
+          conversation_id: string
+          created_at?: string
+          fee_pi: number
+          fee_usd?: number
+          id?: string
+          message_id?: string | null
+          payment_id: string
+          platform_share_pi: number
+          sender_id: string
+          status?: string
+        }
+        Update: {
+          business_id?: number
+          business_share_pi?: number
+          conversation_id?: string
+          created_at?: string
+          fee_pi?: number
+          fee_usd?: number
+          id?: string
+          message_id?: string | null
+          payment_id?: string
+          platform_share_pi?: number
+          sender_id?: string
+          status?: string
         }
         Relationships: []
       }
@@ -729,6 +777,24 @@ export type Database = {
           id?: number
           price_usd?: number
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
         }
         Relationships: []
       }
@@ -1472,6 +1538,7 @@ export type Database = {
         Args: { _business_id: number; _user_id: string }
         Returns: boolean
       }
+      is_verified_sender: { Args: { _uid: string }; Returns: boolean }
       longtransactionsenabled: { Args: never; Returns: boolean }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
@@ -1513,6 +1580,10 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      resolve_message_fee_pi: {
+        Args: { _business_id: number }
+        Returns: number
+      }
       search_businesses_by_location: {
         Args: {
           limit_count?: number
