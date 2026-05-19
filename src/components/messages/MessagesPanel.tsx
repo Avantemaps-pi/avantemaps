@@ -72,6 +72,10 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
     loadingConvs,
     loadingMsgs,
     hasPaidSub,
+    isVerifiedSender,
+    feePi,
+    feeUsd,
+    paying,
     openConversation,
     sendMessage,
   } = useMessages(inbox);
