@@ -334,56 +334,93 @@ export function useMessages(inbox: Inbox | null) {
           `Charging π ${feePi} message fee…`,
         );
         try {
-          const lifecycleId = generateLifecycleId('msgfee');
-          const memo = `Message fee to business #${conv.business_id}`;
-          const metadata = {
-            kind: 'message_fee' as const,
-            conversationId: activeConvId,
-            businessId: conv.business_id,
-            feePi,
-          };
-          const paid = await new Promise<boolean>((resolve) => {
-            startPayment(
-              { amount: feePi, memo, metadata },
-              {
-                onReadyForServerApproval: async (paymentId) => {
-                  try {
-                    await approvePayment(
-                      { paymentId, userId: uid, amount: feePi, memo, metadata },
-                      { lifecycleId },
-                    );
-                  } catch (e) {
-                    console.error('[sendMessage] approve fee error', e);
-                    resolve(false);
-                  }
-                },
-                onReadyForServerCompletion: async (paymentId, txid) => {
-                  try {
-                    const res = await completePayment(
-                      { paymentId, userId: uid, amount: feePi, memo, metadata, txid },
-                      { lifecycleId },
-                    );
-                    resolve(!!res?.success);
-                  } catch (e) {
-                    console.error('[sendMessage] complete fee error', e);
-                    resolve(false);
-                  }
-                },
-                onCancel: () => resolve(false),
-                onError: () => resolve(false),
-              },
-            ).catch(() => resolve(false));
-          });
+          // Idempotency pre-check: if a paid, unattached fee already
+          // exists for this sender/conversation within the RLS 60s
+          // window, reuse it instead of charging again. This covers
+          // the case where the previous attempt paid but the message
+          // insert failed (network/RLS), so the user can safely retry.
+          const { data: existingFee } = await supabase
+            .from('message_fees')
+            .select('id')
+            .eq('conversation_id', activeConvId)
+            .eq('sender_id', uid)
+            .eq('status', 'paid')
+            .is('message_id', null)
+            .gt('created_at', new Date(Date.now() - 55_000).toISOString())
+            .limit(1)
+            .maybeSingle();
 
-          if (!paid) {
-            toast.error('Message fee payment was not completed', { id: toastId });
-            return false;
+          if (existingFee?.id) {
+            toast.success('Reusing existing paid fee — sending…', { id: toastId });
+          } else {
+            const lifecycleId = generateLifecycleId('msgfee');
+            const memo = `Message fee to business #${conv.business_id}`;
+            const metadata = {
+              kind: 'message_fee' as const,
+              conversationId: activeConvId,
+              businessId: conv.business_id,
+              feePi,
+            };
+            // Guard against Pi SDK firing the same callback twice for
+            // the same paymentId. Each callback is only acted on once;
+            // the server-side completePayment is also idempotent
+            // (payments row + message_fees.payment_id UNIQUE).
+            const approvedIds = new Set<string>();
+            const completedIds = new Set<string>();
+            let settled = false;
+            const settle = (resolve: (v: boolean) => void, v: boolean) => {
+              if (settled) return;
+              settled = true;
+              resolve(v);
+            };
+            const paid = await new Promise<boolean>((resolve) => {
+              startPayment(
+                { amount: feePi, memo, metadata },
+                {
+                  onReadyForServerApproval: async (paymentId) => {
+                    if (approvedIds.has(paymentId)) return;
+                    approvedIds.add(paymentId);
+                    try {
+                      await approvePayment(
+                        { paymentId, userId: uid, amount: feePi, memo, metadata },
+                        { lifecycleId },
+                      );
+                    } catch (e) {
+                      console.error('[sendMessage] approve fee error', e);
+                      settle(resolve, false);
+                    }
+                  },
+                  onReadyForServerCompletion: async (paymentId, txid) => {
+                    if (completedIds.has(paymentId)) return;
+                    completedIds.add(paymentId);
+                    try {
+                      const res = await completePayment(
+                        { paymentId, userId: uid, amount: feePi, memo, metadata, txid },
+                        { lifecycleId },
+                      );
+                      settle(resolve, !!res?.success);
+                    } catch (e) {
+                      console.error('[sendMessage] complete fee error', e);
+                      settle(resolve, false);
+                    }
+                  },
+                  onCancel: () => settle(resolve, false),
+                  onError: () => settle(resolve, false),
+                },
+              ).catch(() => settle(resolve, false));
+            });
+
+            if (!paid) {
+              toast.error('Message fee payment was not completed', { id: toastId });
+              return false;
+            }
+            toast.success('Fee paid — sending…', { id: toastId });
           }
-          toast.success('Fee paid — sending…', { id: toastId });
         } finally {
           setPaying(false);
         }
       }
+
 
       const { error } = await supabase.from('messages').insert({
         conversation_id: activeConvId,
