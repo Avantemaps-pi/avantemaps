@@ -264,7 +264,17 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
               </Button>
             </div>
           ) : (
-            <div className="border-t p-3">
+            <div className="border-t p-3 space-y-2">
+              {!isBusinessInbox && !isVerifiedSender && (
+                <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-amber-500/10 border border-amber-500/20 rounded-md px-2.5 py-1.5">
+                  <Lock className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                  <span className="flex-1">
+                    Sending costs <span className="font-medium text-foreground">π {feePi}</span>
+                    {feeUsd > 0 && <> (~${feeUsd.toFixed(2)})</>} per message.
+                    Verify or certify a business to message for free.
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-2 bg-muted/50 rounded-full px-4 py-2">
                 <Input
                   value={draft}
@@ -277,10 +287,11 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
                   }}
                   placeholder={isBusinessInbox ? 'Reply as your business...' : 'Type a message...'}
                   className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  disabled={paying}
                 />
                 <button
                   onClick={handleSend}
-                  disabled={!draft.trim()}
+                  disabled={!draft.trim() || paying}
                   className="text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send size={20} className="transform rotate-45" />
