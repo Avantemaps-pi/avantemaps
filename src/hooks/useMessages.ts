@@ -52,6 +52,10 @@ export function useMessages(inbox: Inbox | null) {
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [hasPaidSub, setHasPaidSub] = useState(false);
   const channelRef = useRef<any>(null);
+  const { isVerifiedSender } = useVerifiedSender();
+  const { feePi, feeUsd } = useMessageFee();
+  const [paying, setPaying] = useState(false);
+
 
   // Check subscription (for business reply gating UI)
   useEffect(() => {
