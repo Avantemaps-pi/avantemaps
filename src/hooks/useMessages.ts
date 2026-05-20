@@ -201,7 +201,7 @@ export function useMessages(inbox: Inbox | null) {
         const pending = enqueuePendingConversation(businessId);
         login()
           .then(() => {
-            toast.success('Signed back in — resuming…', { id: toastId });
+            toast.success('Signed back in — resuming…', { id: toastId, duration: 4000 });
           })
           .catch((err) => {
             console.error('[startConversationWithBusiness] re-auth failed', {
@@ -209,7 +209,7 @@ export function useMessages(inbox: Inbox | null) {
               reason,
               err,
             });
-            toast.error('Sign-in failed. Please try again.', { id: toastId });
+            toast.error('Sign-in failed. Please try again.', { id: toastId, duration: 4000 });
           });
         return pending;
       };
@@ -385,7 +385,7 @@ export function useMessages(inbox: Inbox | null) {
             });
             toast.success(
               `Reusing your previous π ${feePi} payment — no new charge.`,
-              { id: toastId, description: `Fee ID: ${existingFee.id.slice(0, 8)}` },
+              { id: toastId, description: `Fee ID: ${existingFee.id.slice(0, 8)}`, duration: 4000 },
             );
           } else {
             logFee('new_payment_start', { outcome: 'new' });
@@ -475,13 +475,13 @@ export function useMessages(inbox: Inbox | null) {
               logFee('payment_failed', { outcome: 'failed' });
               toast.error(
                 `Message fee payment was not completed. No charge was made.`,
-                { id: toastId },
+                { id: toastId, duration: 4000 },
               );
               return false;
             }
             logFee('new_payment_success', { outcome: 'charged' });
             toast.success(`Charged π ${feePi} — sending your message…`, {
-              id: toastId,
+              id: toastId, duration: 4000,
             });
           }
 
