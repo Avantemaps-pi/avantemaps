@@ -514,7 +514,7 @@ export function useMessages(inbox: Inbox | null) {
       // a fee attached.
       if (sender_role === 'customer') {
         try {
-          const { error: attachError } = await supabase.rpc(
+          const { error: attachError } = await (supabase as any).rpc(
             'attach_message_fee',
             { _conversation_id: activeConvId, _message_id: inserted.id },
           );
