@@ -330,8 +330,30 @@ export function useMessages(inbox: Inbox | null) {
         }
         if (paying) return false;
         setPaying(true);
+        const feeLifecycleId = generateLifecycleId('msgfee');
+        const logFee = (
+          stage: string,
+          extra: Record<string, unknown> = {},
+        ) => {
+          console.log(
+            JSON.stringify({
+              ts: new Date().toISOString(),
+              level: 'info',
+              event: `client.message_fee.${stage}`,
+              fn: 'useMessages.sendMessage',
+              stage,
+              lifecycleId: feeLifecycleId,
+              conversationId: activeConvId,
+              senderId: uid,
+              businessId: conv.business_id,
+              feePi,
+              ...extra,
+            }),
+          );
+        };
+        logFee('start', { idempotencyCheck: 'pending' });
         const toastId = toast.loading(
-          `Charging π ${feePi} message fee…`,
+          `Checking for previous payment…`,
         );
         try {
           // Idempotency pre-check: if a paid, unattached fee already
@@ -339,9 +361,9 @@ export function useMessages(inbox: Inbox | null) {
           // window, reuse it instead of charging again. This covers
           // the case where the previous attempt paid but the message
           // insert failed (network/RLS), so the user can safely retry.
-          const { data: existingFee } = await supabase
+          const { data: existingFee, error: precheckError } = await supabase
             .from('message_fees')
-            .select('id')
+            .select('id,payment_id,created_at')
             .eq('conversation_id', activeConvId)
             .eq('sender_id', uid)
             .eq('status', 'paid')
@@ -350,10 +372,25 @@ export function useMessages(inbox: Inbox | null) {
             .limit(1)
             .maybeSingle();
 
+          if (precheckError) {
+            logFee('precheck_error', { error: precheckError.message });
+          }
+
           if (existingFee?.id) {
-            toast.success('Reusing existing paid fee — sending…', { id: toastId });
+            logFee('reused_existing_fee', {
+              outcome: 'reused',
+              feeId: existingFee.id,
+              paymentId: existingFee.payment_id,
+              feeCreatedAt: existingFee.created_at,
+            });
+            toast.success(
+              `Reusing your previous π ${feePi} payment — no new charge.`,
+              { id: toastId, description: `Fee ID: ${existingFee.id.slice(0, 8)}` },
+            );
           } else {
-            const lifecycleId = generateLifecycleId('msgfee');
+            logFee('new_payment_start', { outcome: 'new' });
+            toast.loading(`Charging π ${feePi} message fee…`, { id: toastId });
+            const lifecycleId = feeLifecycleId;
             const memo = `Message fee to business #${conv.business_id}`;
             const metadata = {
               kind: 'message_fee' as const,
@@ -378,44 +415,76 @@ export function useMessages(inbox: Inbox | null) {
                 { amount: feePi, memo, metadata },
                 {
                   onReadyForServerApproval: async (paymentId) => {
-                    if (approvedIds.has(paymentId)) return;
+                    if (approvedIds.has(paymentId)) {
+                      logFee('approve_duplicate_callback', { paymentId });
+                      return;
+                    }
                     approvedIds.add(paymentId);
+                    logFee('approve', { paymentId });
                     try {
                       await approvePayment(
                         { paymentId, userId: uid, amount: feePi, memo, metadata },
                         { lifecycleId },
                       );
                     } catch (e) {
+                      logFee('approve_error', { paymentId, error: String(e) });
                       console.error('[sendMessage] approve fee error', e);
                       settle(resolve, false);
                     }
                   },
                   onReadyForServerCompletion: async (paymentId, txid) => {
-                    if (completedIds.has(paymentId)) return;
+                    if (completedIds.has(paymentId)) {
+                      logFee('complete_duplicate_callback', { paymentId, txid });
+                      return;
+                    }
                     completedIds.add(paymentId);
+                    logFee('complete', { paymentId, txid });
                     try {
                       const res = await completePayment(
                         { paymentId, userId: uid, amount: feePi, memo, metadata, txid },
                         { lifecycleId },
                       );
+                      logFee('complete_done', {
+                        paymentId,
+                        txid,
+                        success: !!res?.success,
+                      });
                       settle(resolve, !!res?.success);
                     } catch (e) {
+                      logFee('complete_error', { paymentId, error: String(e) });
                       console.error('[sendMessage] complete fee error', e);
                       settle(resolve, false);
                     }
                   },
-                  onCancel: () => settle(resolve, false),
-                  onError: () => settle(resolve, false),
+                  onCancel: () => {
+                    logFee('cancelled', {});
+                    settle(resolve, false);
+                  },
+                  onError: () => {
+                    logFee('sdk_error', {});
+                    settle(resolve, false);
+                  },
                 },
-              ).catch(() => settle(resolve, false));
+              ).catch((e) => {
+                logFee('start_error', { error: String(e) });
+                settle(resolve, false);
+              });
             });
 
             if (!paid) {
-              toast.error('Message fee payment was not completed', { id: toastId });
+              logFee('payment_failed', { outcome: 'failed' });
+              toast.error(
+                `Message fee payment was not completed. No charge was made.`,
+                { id: toastId },
+              );
               return false;
             }
-            toast.success('Fee paid — sending…', { id: toastId });
+            logFee('new_payment_success', { outcome: 'charged' });
+            toast.success(`Charged π ${feePi} — sending your message…`, {
+              id: toastId,
+            });
           }
+
         } finally {
           setPaying(false);
         }
