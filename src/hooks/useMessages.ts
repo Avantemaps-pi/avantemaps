@@ -491,16 +491,44 @@ export function useMessages(inbox: Inbox | null) {
       }
 
 
-      const { error } = await supabase.from('messages').insert({
-        conversation_id: activeConvId,
-        sender_id: uid,
-        sender_role,
-        body: trimmed,
-      });
-      if (error) {
-        toast.error(error.message || 'Failed to send');
+      const { data: inserted, error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: activeConvId,
+          sender_id: uid,
+          sender_role,
+          body: trimmed,
+        })
+        .select('id')
+        .single();
+      if (error || !inserted) {
+        toast.error(error?.message || 'Failed to send');
         return false;
       }
+
+      // Idempotently link the paid fee row to this message. Safe to call
+      // unconditionally for customer sends: verified senders simply have no
+      // unattached fee row, so the RPC returns null. Retries are no-ops
+      // thanks to the partial UNIQUE index on message_fees.message_id and
+      // the early-return in the SQL function when the message already has
+      // a fee attached.
+      if (sender_role === 'customer') {
+        try {
+          const { error: attachError } = await (supabase as any).rpc(
+            'attach_message_fee',
+            { _conversation_id: activeConvId, _message_id: inserted.id },
+          );
+          if (attachError) {
+            console.warn(
+              '[sendMessage] attach_message_fee failed',
+              attachError.message,
+            );
+          }
+        } catch (e) {
+          console.warn('[sendMessage] attach_message_fee exception', e);
+        }
+      }
+
       return true;
     },
     [uid, activeConvId, inbox, hasPaidSub, isVerifiedSender, feePi, conversations, paying],

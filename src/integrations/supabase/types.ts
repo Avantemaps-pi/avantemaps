@@ -1291,6 +1291,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: undefined
       }
+      attach_message_fee: {
+        Args: { _conversation_id: string; _message_id: string }
+        Returns: string
+      }
       check_frequency_cap: {
         Args: {
           p_notification_type: string
