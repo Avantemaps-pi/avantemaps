@@ -330,8 +330,30 @@ export function useMessages(inbox: Inbox | null) {
         }
         if (paying) return false;
         setPaying(true);
+        const feeLifecycleId = generateLifecycleId('msgfee');
+        const logFee = (
+          stage: string,
+          extra: Record<string, unknown> = {},
+        ) => {
+          console.log(
+            JSON.stringify({
+              ts: new Date().toISOString(),
+              level: 'info',
+              event: `client.message_fee.${stage}`,
+              fn: 'useMessages.sendMessage',
+              stage,
+              lifecycleId: feeLifecycleId,
+              conversationId: activeConvId,
+              senderId: uid,
+              businessId: conv.business_id,
+              feePi,
+              ...extra,
+            }),
+          );
+        };
+        logFee('start', { idempotencyCheck: 'pending' });
         const toastId = toast.loading(
-          `Charging π ${feePi} message fee…`,
+          `Checking for previous payment…`,
         );
         try {
           // Idempotency pre-check: if a paid, unattached fee already
