@@ -148,7 +148,7 @@ export function useMessages(inbox: Inbox | null) {
       .eq('conversation_id', convId)
       .order('created_at', { ascending: true });
     if (error) {
-      toast.error('Failed to load messages');
+      toast.error('Failed to load messages', { id: 'msg:load-msgs-failed', duration: 4000 });
       setLoadingMsgs(false);
       return;
     }
@@ -192,7 +192,7 @@ export function useMessages(inbox: Inbox | null) {
             '[startConversationWithBusiness] retry after re-auth still failing',
             { ...ctxBase, reason },
           );
-          toast.error('Still signed out after re-auth. Please try again.');
+          toast.error('Still signed out after re-auth. Please try again.', { id: 'msg:re-auth-failed', duration: 4000 });
           return null;
         }
         const toastId = toast.loading('Signing you back in…');
