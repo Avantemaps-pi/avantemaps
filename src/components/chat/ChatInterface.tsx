@@ -70,7 +70,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleValidatedSendMessage = () => {
     if (!isSafeForAI(message)) {
-      toast.error('Message contains inappropriate content or suspicious patterns.');
+      toast.error('Message contains inappropriate content or suspicious patterns.', { id: 'chat:content-filter', duration: 4000 });
       return;
     }
     handleSendMessage();

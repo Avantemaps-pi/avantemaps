@@ -53,29 +53,29 @@ export const handlePiError = async (error: any): Promise<boolean> => {
   
   switch (errorDetails.type) {
     case 'pending_payment':
-      toast.error('Pending payment detected. Attempting automatic resolution...');
+      toast.error('Pending payment detected. Attempting automatic resolution...', { id: 'payment:pending', duration: 4000 });
       
       // Attempt automatic cleanup
       const resolved = await forceResolvePendingPayments();
       
       if (resolved) {
-        toast.success('Payment issue resolved! Please try your transaction again.');
+        toast.success('Payment issue resolved! Please try your transaction again.', { id: 'payment:resolved', duration: 4000 });
         return true;
       } else {
-        toast.error('Could not resolve pending payment automatically. Please contact support.');
+        toast.error('Could not resolve pending payment automatically. Please contact support.', { id: 'payment:resolve-failed', duration: 4000 });
         return false;
       }
       
     case 'user_cancelled':
-      toast.info('Payment was cancelled by user');
+      toast.info('Payment was cancelled by user', { id: 'payment:cancelled', duration: 4000 });
       return false;
       
     case 'network_error':
-      toast.error('Network error occurred. Please check your connection and try again.');
+      toast.error('Network error occurred. Please check your connection and try again.', { id: 'payment:network-error', duration: 4000 });
       return false;
       
     default:
-      toast.error(`Payment error: ${errorDetails.message}`);
+      toast.error(`Payment error: ${errorDetails.message}`, { id: 'payment:error', duration: 4000 });
       return false;
   }
 };
@@ -94,7 +94,7 @@ export const withPiErrorHandling = async <T>(
     
     if (wasResolved) {
       // If error was resolved, suggest user retry
-      toast.info('Please try your payment again now.');
+      toast.info('Please try your payment again now.', { id: 'payment:retry', duration: 4000 });
     }
     
     return null;
