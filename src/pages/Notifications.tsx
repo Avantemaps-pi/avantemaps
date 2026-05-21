@@ -80,7 +80,7 @@ const Notifications = () => {
 
             setNotifications(prev => [newNotification, ...prev]);
             window.dispatchEvent(notificationUpdateEvent);
-            toast.success('New notification received');
+            toast.success('New notification received', { id: 'notif:new', duration: 4000 });
           }
         )
         .subscribe();
@@ -111,7 +111,7 @@ const Notifications = () => {
   const markAllAsRead = async () => {
     await markAllNotificationsAsRead();
     await loadNotifications();
-    toast.success('All notifications marked as read');
+    toast.success('All notifications marked as read', { id: 'notif:mark-all-read', duration: 4000 });
     window.dispatchEvent(notificationUpdateEvent);
   };
 
@@ -163,7 +163,7 @@ const Notifications = () => {
 
     await loadNotifications();
     window.dispatchEvent(notificationUpdateEvent);
-    toast.success('Notifications refreshed');
+    toast.success('Notifications refreshed', { id: 'notif:refreshed', duration: 4000 });
   };
 
   const filteredNotifications = getNotificationsByCategory(notifications, activeCategory);

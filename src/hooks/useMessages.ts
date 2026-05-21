@@ -93,7 +93,7 @@ export function useMessages(inbox: Inbox | null) {
     const { data, error } = await query;
     if (error) {
       console.error(error);
-      toast.error('Failed to load conversations');
+      toast.error('Failed to load conversations', { id: 'msg:load-convs-failed', duration: 4000 });
       setLoadingConvs(false);
       return;
     }
@@ -148,7 +148,7 @@ export function useMessages(inbox: Inbox | null) {
       .eq('conversation_id', convId)
       .order('created_at', { ascending: true });
     if (error) {
-      toast.error('Failed to load messages');
+      toast.error('Failed to load messages', { id: 'msg:load-msgs-failed', duration: 4000 });
       setLoadingMsgs(false);
       return;
     }
@@ -177,7 +177,7 @@ export function useMessages(inbox: Inbox | null) {
       const ctxBase = { businessId, localUid: uid ?? null, isRetry };
       if (!uid) {
         console.warn('[startConversationWithBusiness] no local uid', ctxBase);
-        toast.error('Please sign in first');
+        toast.error('Please sign in first', { id: 'msg:auth-required', duration: 4000 });
         return null;
       }
 
@@ -192,7 +192,7 @@ export function useMessages(inbox: Inbox | null) {
             '[startConversationWithBusiness] retry after re-auth still failing',
             { ...ctxBase, reason },
           );
-          toast.error('Still signed out after re-auth. Please try again.');
+          toast.error('Still signed out after re-auth. Please try again.', { id: 'msg:re-auth-failed', duration: 4000 });
           return null;
         }
         const toastId = toast.loading('Signing you back in…');
@@ -247,6 +247,7 @@ export function useMessages(inbox: Inbox | null) {
         );
         toast.error(
           `Conversation lookup failed: ${existingError.message} (code ${existingError.code ?? 'n/a'})`,
+          { id: 'msg:conv-lookup-failed', duration: 4000 },
         );
         return null;
       }
@@ -279,6 +280,7 @@ export function useMessages(inbox: Inbox | null) {
         if (isRls) return reAuthAndRetry('rls-rejected');
         toast.error(
           `Could not start conversation: ${error.message} (code ${code ?? 'n/a'})`,
+          { id: 'msg:start-conv-failed', duration: 4000 },
         );
         return null;
       }
@@ -317,7 +319,7 @@ export function useMessages(inbox: Inbox | null) {
       if (!trimmed) return false;
       const sender_role = inbox.kind === 'customer' ? 'customer' : 'business';
       if (sender_role === 'business' && !hasPaidSub) {
-        toast.error('Upgrade your plan to reply to customer messages');
+        toast.error('Upgrade your plan to reply to customer messages', { id: 'msg:biz-reply-gated', duration: 4000 });
         return false;
       }
 
@@ -325,7 +327,7 @@ export function useMessages(inbox: Inbox | null) {
       if (sender_role === 'customer' && !isVerifiedSender) {
         const conv = conversations.find((c) => c.id === activeConvId);
         if (!conv) {
-          toast.error('Conversation not found');
+          toast.error('Conversation not found', { id: 'msg:conv-not-found', duration: 4000 });
           return false;
         }
         if (paying) return false;
@@ -502,7 +504,7 @@ export function useMessages(inbox: Inbox | null) {
         .select('id')
         .single();
       if (error || !inserted) {
-        toast.error(error?.message || 'Failed to send');
+        toast.error(error?.message || 'Failed to send', { id: 'msg:send-failed', duration: 4000 });
         return false;
       }
 
