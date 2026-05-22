@@ -33,6 +33,7 @@ export function PricingHeader({
               <Tab
                 key={freq}
                 text={label}
+                value={freq}
                 selected={selectedFrequency === freq}
                 setSelected={onFrequencyChange}
                 discount={freq === "yearly"}
