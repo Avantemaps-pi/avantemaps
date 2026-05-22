@@ -39,7 +39,7 @@ export function PricingSection({
     }
   };
 
-  const filteredFrequencies = frequencies.filter(freq => freq === 'monthly' || freq === 'yearly');
+  const filteredFrequencies = frequencies.filter(freq => freq === 'monthly' || freq === 'annually');
 
   return (
     <section className="sm:py-32 py-[20px]">

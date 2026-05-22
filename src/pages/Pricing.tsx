@@ -128,7 +128,7 @@ const Pricing = () => {
           isLoading: isProcessingPayment || (paymentPolling.isPolling && !paymentPolling.isTerminal),
           disabled: isPaymentLocked,
         }))}
-        frequencies={["monthly", "yearly"]}
+        frequencies={["monthly", "annually"]}
         organizationTierId={location.state?.focusTier === 'organization' || location.state?.fromLiveChat ? 'organization' : undefined}
         onFrequencyChange={handleBillingChange}
       />
