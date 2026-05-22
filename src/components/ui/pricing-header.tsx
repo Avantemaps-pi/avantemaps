@@ -33,7 +33,7 @@ export function PricingHeader({
               text={freq.charAt(0).toUpperCase() + freq.slice(1)}
               selected={selectedFrequency === freq}
               setSelected={onFrequencyChange}
-              discount={freq === "annually"}
+              discount={freq === "yearly"}
               discountAmount="20%"
             />
           ))}
