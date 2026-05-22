@@ -27,16 +27,19 @@ export function PricingHeader({
       </p>
       <div className="mt-8 flex justify-center">
         <div className="flex rounded-full bg-gray-100 p-1">
-          {frequencies.map((freq) => (
-            <Tab
-              key={freq}
-              text={freq.charAt(0).toUpperCase() + freq.slice(1)}
-              selected={selectedFrequency === freq}
-              setSelected={onFrequencyChange}
-              discount={freq === "yearly"}
-              discountAmount="20%"
-            />
-          ))}
+          {frequencies.map((freq) => {
+            const label = freq === "yearly" ? "Annually" : freq.charAt(0).toUpperCase() + freq.slice(1);
+            return (
+              <Tab
+                key={freq}
+                text={label}
+                selected={selectedFrequency === freq}
+                setSelected={onFrequencyChange}
+                discount={freq === "yearly"}
+                discountAmount="20%"
+              />
+            );
+          })}
         </div>
       </div>
     </div>
