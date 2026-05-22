@@ -32,21 +32,24 @@ export const clearLocalPaymentData = (): void => {
  * incomplete payments should be handled automatically by the SDK
  */
 export const forceResolvePendingPayments = async (): Promise<boolean> => {
+  const TOAST_ID = 'payment:cleanup';
   try {
     console.log('Starting payment cleanup process...');
-    
+
     // Step 1: Clear local storage
     clearLocalPaymentData();
+
+    toast.loading('Resolving pending payments…', { id: TOAST_ID });
 
     // Step 2: Get authenticated user
     let authResult = getPiAuthResult();
     if (!authResult) {
-      toast.info('Authenticating to resolve payment issues...');
+      toast.loading('Authenticating to resolve payment issues…', { id: TOAST_ID });
       try {
         authResult = await authenticateUser();
       } catch (error) {
         console.error('Authentication failed during cleanup:', error);
-        toast.error('Unable to authenticate for payment cleanup');
+        toast.error('Unable to authenticate for payment cleanup', { id: TOAST_ID, duration: 4000 });
         return false;
       }
     }
@@ -57,21 +60,22 @@ export const forceResolvePendingPayments = async (): Promise<boolean> => {
 
     if (cleanupResult.success) {
       if (cleanupResult.cleanedCount && cleanupResult.cleanedCount > 0) {
-        toast.success(`Resolved ${cleanupResult.cleanedCount} pending payment(s)`);
+        toast.success(`Resolved ${cleanupResult.cleanedCount} pending payment(s)`, { id: TOAST_ID, duration: 4000 });
       } else {
-        toast.success('No pending payments found to clean up');
+        toast.success('No pending payments found to clean up', { id: TOAST_ID, duration: 4000 });
       }
       return true;
     } else {
-      toast.error(`Cleanup failed: ${cleanupResult.message}`);
+      toast.error(`Cleanup failed: ${cleanupResult.message}`, { id: TOAST_ID, duration: 4000 });
       return false;
     }
   } catch (error) {
     console.error('Error in payment cleanup:', error);
-    toast.error('Failed to resolve pending payments');
+    toast.error('Failed to resolve pending payments', { id: 'payment:cleanup', duration: 4000 });
     return false;
   }
 };
+
 
 /**
  * Check if we can proceed with a new payment
