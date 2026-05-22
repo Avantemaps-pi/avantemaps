@@ -81,7 +81,7 @@ export function PricingCard({
               {!isCustom && (
                 <span className="text-2xl font-medium text-gray-600 leading-none mt-1 sm:mt-1">
                   (${price} USD)
-                  {paymentFrequency === 'yearly' && typeof tier.price.monthly === 'number' && tier.price.monthly > 1 && (
+                  {paymentFrequency === 'annually' && typeof tier.price.monthly === 'number' && tier.price.monthly > 1 && (
                     <span className="ml-2 text-lg text-gray-400 line-through">
                       (${(tier.price.monthly as number) * 12} USD)
                     </span>
