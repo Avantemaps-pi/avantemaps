@@ -53,18 +53,19 @@ export const handlePiError = async (error: any): Promise<boolean> => {
   
   switch (errorDetails.type) {
     case 'pending_payment':
-      toast.error('Pending payment detected. Attempting automatic resolution...', { id: 'payment:pending', duration: 4000 });
-      
+      toast.loading('Pending payment detected. Attempting automatic resolution…', { id: 'payment:pending' });
+
       // Attempt automatic cleanup
       const resolved = await forceResolvePendingPayments();
-      
+
       if (resolved) {
-        toast.success('Payment issue resolved! Please try your transaction again.', { id: 'payment:resolved', duration: 4000 });
+        toast.success('Payment issue resolved! Please try your transaction again.', { id: 'payment:pending', duration: 4000 });
         return true;
       } else {
-        toast.error('Could not resolve pending payment automatically. Please contact support.', { id: 'payment:resolve-failed', duration: 4000 });
+        toast.error('Could not resolve pending payment automatically. Please contact support.', { id: 'payment:pending', duration: 4000 });
         return false;
       }
+
       
     case 'user_cancelled':
       toast.info('Payment was cancelled by user', { id: 'payment:cancelled', duration: 4000 });
