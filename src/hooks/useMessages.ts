@@ -11,6 +11,7 @@ import { useMessageFee } from '@/hooks/useMessageFee';
 import { startPayment } from '@/utils/piPayment/payments';
 import { approvePayment, completePayment } from '@/api/payments';
 import { generateLifecycleId } from '@/utils/correlation';
+import { recordReauthEvent } from '@/utils/telemetry/reauthTelemetry';
 
 export interface Conversation {
   id: string;
@@ -186,15 +187,28 @@ export function useMessages(inbox: Inbox | null) {
       // onAuthStateChange reports a fresh session.
       const reAuthAndRetry = async (
         reason: string,
+        authUid: string | null = null,
       ): Promise<string | null> => {
+        const telemetryCtx = {
+          businessId,
+          localUid: uid ?? null,
+          authUid,
+          retryReason: reason,
+          isRetry,
+        };
         if (isRetry) {
           console.error(
             '[startConversationWithBusiness] retry after re-auth still failing',
             { ...ctxBase, reason },
           );
+          recordReauthEvent('reauth_retry_exhausted', {
+            ...telemetryCtx,
+            message: 'retry after re-auth still failing',
+          });
           toast.error('Still signed out after re-auth. Please try again.', { id: 'msg:re-auth-failed', duration: 4000 });
           return null;
         }
+        recordReauthEvent('reauth_triggered', telemetryCtx);
         const toastId = toast.loading('Signing you back in…');
         // Queue the request *before* kicking off login so the dispatcher
         // picks it up the moment SIGNED_IN / TOKEN_REFRESHED fires.
@@ -209,6 +223,11 @@ export function useMessages(inbox: Inbox | null) {
               reason,
               err,
             });
+            recordReauthEvent(
+              'reauth_failed',
+              { ...telemetryCtx, message: 'login() rejected' },
+              err,
+            );
             toast.error('Sign-in failed. Please try again.', { id: toastId, duration: 4000 });
           });
         return pending;
@@ -223,14 +242,14 @@ export function useMessages(inbox: Inbox | null) {
       const ctx = { ...ctxBase, authUid, sessionError: sessionError?.message };
       if (!authUid) {
         console.warn('[startConversationWithBusiness] no Supabase session', ctx);
-        return reAuthAndRetry('missing-session');
+        return reAuthAndRetry('missing-session', authUid);
       }
       if (authUid !== uid) {
         console.error(
           '[startConversationWithBusiness] uid mismatch between local user and Supabase session',
           ctx,
         );
-        return reAuthAndRetry('uid-mismatch');
+        return reAuthAndRetry('uid-mismatch', authUid);
       }
 
       // Try to find existing
@@ -277,7 +296,7 @@ export function useMessages(inbox: Inbox | null) {
           code === '42501';
         // RLS rejection usually means the JWT for auth.uid() is stale even
         // though getSession() returned one. Treat it as a re-auth trigger.
-        if (isRls) return reAuthAndRetry('rls-rejected');
+        if (isRls) return reAuthAndRetry('rls-rejected', authUid);
         toast.error(
           `Could not start conversation: ${error.message} (code ${code ?? 'n/a'})`,
           { id: 'msg:start-conv-failed', duration: 4000 },
