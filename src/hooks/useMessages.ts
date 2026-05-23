@@ -187,15 +187,28 @@ export function useMessages(inbox: Inbox | null) {
       // onAuthStateChange reports a fresh session.
       const reAuthAndRetry = async (
         reason: string,
+        authUid: string | null = null,
       ): Promise<string | null> => {
+        const telemetryCtx = {
+          businessId,
+          localUid: uid ?? null,
+          authUid,
+          retryReason: reason,
+          isRetry,
+        };
         if (isRetry) {
           console.error(
             '[startConversationWithBusiness] retry after re-auth still failing',
             { ...ctxBase, reason },
           );
+          recordReauthEvent('reauth_retry_exhausted', {
+            ...telemetryCtx,
+            message: 'retry after re-auth still failing',
+          });
           toast.error('Still signed out after re-auth. Please try again.', { id: 'msg:re-auth-failed', duration: 4000 });
           return null;
         }
+        recordReauthEvent('reauth_triggered', telemetryCtx);
         const toastId = toast.loading('Signing you back in…');
         // Queue the request *before* kicking off login so the dispatcher
         // picks it up the moment SIGNED_IN / TOKEN_REFRESHED fires.
@@ -210,6 +223,11 @@ export function useMessages(inbox: Inbox | null) {
               reason,
               err,
             });
+            recordReauthEvent(
+              'reauth_failed',
+              { ...telemetryCtx, message: 'login() rejected' },
+              err,
+            );
             toast.error('Sign-in failed. Please try again.', { id: toastId, duration: 4000 });
           });
         return pending;
