@@ -798,6 +798,51 @@ export type Database = {
         }
         Relationships: []
       }
+      reauth_telemetry: {
+        Row: {
+          auth_uid: string | null
+          business_id: number | null
+          created_at: string
+          event_type: string
+          id: string
+          is_retry: boolean
+          local_uid: string | null
+          message: string | null
+          metadata: Json
+          retry_reason: string | null
+          url: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          auth_uid?: string | null
+          business_id?: number | null
+          created_at?: string
+          event_type: string
+          id?: string
+          is_retry?: boolean
+          local_uid?: string | null
+          message?: string | null
+          metadata?: Json
+          retry_reason?: string | null
+          url?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          auth_uid?: string | null
+          business_id?: number | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          is_retry?: boolean
+          local_uid?: string | null
+          message?: string | null
+          metadata?: Json
+          retry_reason?: string | null
+          url?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           business_id: number
