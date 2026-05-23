@@ -69,7 +69,7 @@ export const recordReauthEvent = (
   try {
     void supabase
       .from('reauth_telemetry')
-      .insert([payload])
+      .insert([payload as any])
       .then(({ error }) => {
         if (error) {
           // eslint-disable-next-line no-console
