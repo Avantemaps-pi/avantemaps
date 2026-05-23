@@ -296,7 +296,7 @@ export function useMessages(inbox: Inbox | null) {
           code === '42501';
         // RLS rejection usually means the JWT for auth.uid() is stale even
         // though getSession() returned one. Treat it as a re-auth trigger.
-        if (isRls) return reAuthAndRetry('rls-rejected');
+        if (isRls) return reAuthAndRetry('rls-rejected', authUid);
         toast.error(
           `Could not start conversation: ${error.message} (code ${code ?? 'n/a'})`,
           { id: 'msg:start-conv-failed', duration: 4000 },
