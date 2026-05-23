@@ -242,14 +242,14 @@ export function useMessages(inbox: Inbox | null) {
       const ctx = { ...ctxBase, authUid, sessionError: sessionError?.message };
       if (!authUid) {
         console.warn('[startConversationWithBusiness] no Supabase session', ctx);
-        return reAuthAndRetry('missing-session');
+        return reAuthAndRetry('missing-session', authUid);
       }
       if (authUid !== uid) {
         console.error(
           '[startConversationWithBusiness] uid mismatch between local user and Supabase session',
           ctx,
         );
-        return reAuthAndRetry('uid-mismatch');
+        return reAuthAndRetry('uid-mismatch', authUid);
       }
 
       // Try to find existing
