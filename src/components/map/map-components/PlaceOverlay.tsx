@@ -178,13 +178,17 @@ const MessageBusinessButton: React.FC<{ place: Place }> = ({ place }) => {
       toast.error('Sign in to message businesses');
       return;
     }
+    if (pending) return;
     setPending(true);
-    const convId = await startConversationWithBusiness(businessId);
-    setPending(false);
-    if (convId) {
-      navigate('/communicon', {
-        state: { openConversationId: convId, chatMode: 'live' },
-      });
+    try {
+      const convId = await startConversationWithBusiness(businessId);
+      if (convId) {
+        navigate('/communicon', {
+          state: { openConversationId: convId, chatMode: 'live' },
+        });
+      }
+    } finally {
+      setPending(false);
     }
   };
 
