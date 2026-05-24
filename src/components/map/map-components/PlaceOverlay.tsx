@@ -200,8 +200,17 @@ const MessageBusinessButton: React.FC<{ place: Place }> = ({ place }) => {
       size="sm"
       className="w-full mt-2"
     >
-      <MessageSquare className="h-4 w-4 mr-2" />
-      {pending ? 'Opening…' : 'Message this business'}
+      {pending ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Messaging…
+        </>
+      ) : (
+        <>
+          <MessageSquare className="h-4 w-4 mr-2" />
+          Message this business
+        </>
+      )}
     </Button>
   );
 };
