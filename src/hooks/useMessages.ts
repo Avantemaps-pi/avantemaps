@@ -56,6 +56,8 @@ export function useMessages(inbox: Inbox | null) {
   const { isVerifiedSender } = useVerifiedSender();
   const { feePi, feeUsd } = useMessageFee();
   const [paying, setPaying] = useState(false);
+  // Deduplicate in-flight startConversationWithBusiness calls per businessId
+  const inFlightRef = useRef<Map<number, Promise<string | null>>>(new Map());
 
 
   // Check subscription (for business reply gating UI)
