@@ -177,136 +177,149 @@ export function useMessages(inbox: Inbox | null) {
 
   const startConversationWithBusiness = useCallback(
     async (businessId: number, isRetry = false): Promise<string | null> => {
-      const ctxBase = { businessId, localUid: uid ?? null, isRetry };
-      if (!uid) {
-        console.warn('[startConversationWithBusiness] no local uid', ctxBase);
-        toast.error('Please sign in first', { id: 'msg:auth-required', duration: 4000 });
-        return null;
+      // Deduplicate: if a call for this businessId is already in flight, return its promise.
+      const inFlight = inFlightRef.current;
+      if (inFlight.has(businessId)) {
+        return inFlight.get(businessId)!;
       }
 
-      // Helper: trigger re-auth and hand the request to the global
-      // PendingConversationDispatcher, which will retry it as soon as
-      // onAuthStateChange reports a fresh session.
-      const reAuthAndRetry = async (
-        reason: string,
-        authUid: string | null = null,
-      ): Promise<string | null> => {
-        const telemetryCtx = {
-          businessId,
-          localUid: uid ?? null,
-          authUid,
-          retryReason: reason,
-          isRetry,
-        };
-        if (isRetry) {
-          console.error(
-            '[startConversationWithBusiness] retry after re-auth still failing',
-            { ...ctxBase, reason },
-          );
-          recordReauthEvent('reauth_retry_exhausted', {
-            ...telemetryCtx,
-            message: 'retry after re-auth still failing',
-          });
-          toast.error('Still signed out after re-auth. Please try again.', { id: 'msg:re-auth-failed', duration: 4000 });
+      const run = async (): Promise<string | null> => {
+        const ctxBase = { businessId, localUid: uid ?? null, isRetry };
+        if (!uid) {
+          console.warn('[startConversationWithBusiness] no local uid', ctxBase);
+          toast.error('Please sign in first', { id: 'msg:auth-required', duration: 4000 });
           return null;
         }
-        recordReauthEvent('reauth_triggered', telemetryCtx);
-        const toastId = toast.loading('Signing you back in…');
-        // Queue the request *before* kicking off login so the dispatcher
-        // picks it up the moment SIGNED_IN / TOKEN_REFRESHED fires.
-        const pending = enqueuePendingConversation(businessId);
-        login()
-          .then(() => {
-            toast.success('Signed back in — resuming…', { id: toastId, duration: 4000 });
-          })
-          .catch((err) => {
-            console.error('[startConversationWithBusiness] re-auth failed', {
-              ...ctxBase,
-              reason,
-              err,
-            });
-            recordReauthEvent(
-              'reauth_failed',
-              { ...telemetryCtx, message: 'login() rejected' },
-              err,
+
+        // Helper: trigger re-auth and hand the request to the global
+        // PendingConversationDispatcher, which will retry it as soon as
+        // onAuthStateChange reports a fresh session.
+        const reAuthAndRetry = async (
+          reason: string,
+          authUid: string | null = null,
+        ): Promise<string | null> => {
+          const telemetryCtx = {
+            businessId,
+            localUid: uid ?? null,
+            authUid,
+            retryReason: reason,
+            isRetry,
+          };
+          if (isRetry) {
+            console.error(
+              '[startConversationWithBusiness] retry after re-auth still failing',
+              { ...ctxBase, reason },
             );
-            toast.error('Sign-in failed. Please try again.', { id: toastId, duration: 4000 });
-          });
-        return pending;
+            recordReauthEvent('reauth_retry_exhausted', {
+              ...telemetryCtx,
+              message: 'retry after re-auth still failing',
+            });
+            toast.error('Still signed out after re-auth. Please try again.', { id: 'msg:re-auth-failed', duration: 4000 });
+            return null;
+          }
+          recordReauthEvent('reauth_triggered', telemetryCtx);
+          const toastId = toast.loading('Signing you back in…');
+          // Queue the request *before* kicking off login so the dispatcher
+          // picks it up the moment SIGNED_IN / TOKEN_REFRESHED fires.
+          const pending = enqueuePendingConversation(businessId);
+          login()
+            .then(() => {
+              toast.success('Signed back in — resuming…', { id: toastId, duration: 4000 });
+            })
+            .catch((err) => {
+              console.error('[startConversationWithBusiness] re-auth failed', {
+                ...ctxBase,
+                reason,
+                err,
+              });
+              recordReauthEvent(
+                'reauth_failed',
+                { ...telemetryCtx, message: 'login() rejected' },
+                err,
+              );
+              toast.error('Sign-in failed. Please try again.', { id: toastId, duration: 4000 });
+            });
+          return pending;
+        };
+
+
+        // Ensure a live Supabase auth session exists, otherwise RLS
+        // (customer_id = auth.uid()) will reject the insert.
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
+        const authUid = sessionData?.session?.user?.id ?? null;
+        const ctx = { ...ctxBase, authUid, sessionError: sessionError?.message };
+        if (!authUid) {
+          console.warn('[startConversationWithBusiness] no Supabase session', ctx);
+          return reAuthAndRetry('missing-session', authUid);
+        }
+        if (authUid !== uid) {
+          console.error(
+            '[startConversationWithBusiness] uid mismatch between local user and Supabase session',
+            ctx,
+          );
+          return reAuthAndRetry('uid-mismatch', authUid);
+        }
+
+        // Try to find existing
+        const { data: existing, error: existingError } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('business_id', businessId)
+          .eq('customer_id', authUid)
+          .maybeSingle();
+        if (existingError) {
+          console.error(
+            '[startConversationWithBusiness] lookup failed',
+            { ...ctx, pgError: existingError },
+          );
+          toast.error(
+            `Conversation lookup failed: ${existingError.message} (code ${existingError.code ?? 'n/a'})`,
+            { id: 'msg:conv-lookup-failed', duration: 4000 },
+          );
+          return null;
+        }
+        if (existing?.id) return existing.id;
+
+        const { data, error } = await supabase
+          .from('conversations')
+          .insert({ business_id: businessId, customer_id: authUid })
+          .select('id')
+          .single();
+        if (error) {
+          const code = (error as any).code;
+          console.error(
+            '[startConversationWithBusiness] insert failed',
+            {
+              ...ctx,
+              pgError: {
+                message: error.message,
+                code,
+                details: (error as any).details,
+                hint: (error as any).hint,
+              },
+            },
+          );
+          const isRls =
+            error.message?.toLowerCase().includes('row-level security') ||
+            code === '42501';
+          // RLS rejection usually means the JWT for auth.uid() is stale even
+          // though getSession() returned one. Treat it as a re-auth trigger.
+          if (isRls) return reAuthAndRetry('rls-rejected', authUid);
+          toast.error(
+            `Could not start conversation: ${error.message} (code ${code ?? 'n/a'})`,
+            { id: 'msg:start-conv-failed', duration: 4000 },
+          );
+          return null;
+        }
+        await loadConversations();
+        return data.id;
       };
 
-
-      // Ensure a live Supabase auth session exists, otherwise RLS
-      // (customer_id = auth.uid()) will reject the insert.
-      const { data: sessionData, error: sessionError } =
-        await supabase.auth.getSession();
-      const authUid = sessionData?.session?.user?.id ?? null;
-      const ctx = { ...ctxBase, authUid, sessionError: sessionError?.message };
-      if (!authUid) {
-        console.warn('[startConversationWithBusiness] no Supabase session', ctx);
-        return reAuthAndRetry('missing-session', authUid);
-      }
-      if (authUid !== uid) {
-        console.error(
-          '[startConversationWithBusiness] uid mismatch between local user and Supabase session',
-          ctx,
-        );
-        return reAuthAndRetry('uid-mismatch', authUid);
-      }
-
-      // Try to find existing
-      const { data: existing, error: existingError } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('business_id', businessId)
-        .eq('customer_id', authUid)
-        .maybeSingle();
-      if (existingError) {
-        console.error(
-          '[startConversationWithBusiness] lookup failed',
-          { ...ctx, pgError: existingError },
-        );
-        toast.error(
-          `Conversation lookup failed: ${existingError.message} (code ${existingError.code ?? 'n/a'})`,
-          { id: 'msg:conv-lookup-failed', duration: 4000 },
-        );
-        return null;
-      }
-      if (existing?.id) return existing.id;
-
-      const { data, error } = await supabase
-        .from('conversations')
-        .insert({ business_id: businessId, customer_id: authUid })
-        .select('id')
-        .single();
-      if (error) {
-        const code = (error as any).code;
-        console.error(
-          '[startConversationWithBusiness] insert failed',
-          {
-            ...ctx,
-            pgError: {
-              message: error.message,
-              code,
-              details: (error as any).details,
-              hint: (error as any).hint,
-            },
-          },
-        );
-        const isRls =
-          error.message?.toLowerCase().includes('row-level security') ||
-          code === '42501';
-        // RLS rejection usually means the JWT for auth.uid() is stale even
-        // though getSession() returned one. Treat it as a re-auth trigger.
-        if (isRls) return reAuthAndRetry('rls-rejected', authUid);
-        toast.error(
-          `Could not start conversation: ${error.message} (code ${code ?? 'n/a'})`,
-          { id: 'msg:start-conv-failed', duration: 4000 },
-        );
-        return null;
-      }
-      await loadConversations();
-      return data.id;
+      const promise = run();
+      inFlight.set(businessId, promise);
+      promise.then(() => inFlight.delete(businessId)).catch(() => inFlight.delete(businessId));
+      return promise;
     },
     [uid, login, loadConversations],
   );
