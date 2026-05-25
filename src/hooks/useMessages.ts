@@ -324,7 +324,7 @@ export function useMessages(inbox: Inbox | null) {
           );
           return null;
         }
-        await loadConversations();
+        if (mountedRef.current) await loadConversations();
         return data.id;
       };
 
