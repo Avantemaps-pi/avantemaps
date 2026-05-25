@@ -56,9 +56,14 @@ export function useMessages(inbox: Inbox | null) {
   const { isVerifiedSender } = useVerifiedSender();
   const { feePi, feeUsd } = useMessageFee();
   const [paying, setPaying] = useState(false);
-  // Deduplicate in-flight startConversationWithBusiness calls per businessId
+  // Deduplicate in-flight startConversationWithBusiness calls per businessId.
+  // Recently-resolved promises are also kept for a short TTL so rapid repeat
+  // clicks reuse the prior result instead of issuing a new request.
   const inFlightRef = useRef<Map<number, Promise<string | null>>>(new Map());
+  const dedupeTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
   const mountedRef = useRef(true);
+  // Time window (ms) during which a completed call is reused for the same businessId.
+  const DEDUPE_TTL_MS = 4000;
 
   // Clear in-flight deduplication on unmount to avoid memory leaks
   useEffect(() => {
@@ -66,6 +71,8 @@ export function useMessages(inbox: Inbox | null) {
     return () => {
       mountedRef.current = false;
       inFlightRef.current.clear();
+      dedupeTimersRef.current.forEach((t) => clearTimeout(t));
+      dedupeTimersRef.current.clear();
     };
   }, []);
 
