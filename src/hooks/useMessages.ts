@@ -64,6 +64,8 @@ export function useMessages(inbox: Inbox | null) {
   const mountedRef = useRef(true);
   // Time window (ms) during which a completed call is reused for the same businessId.
   const DEDUPE_TTL_MS = 4000;
+  // Hard timeout (ms) after which a hung in-flight call resolves to null.
+  const INFLIGHT_TIMEOUT_MS = 15000;
 
   // Clear in-flight deduplication on unmount to avoid memory leaks
   useEffect(() => {
