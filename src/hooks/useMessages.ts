@@ -337,7 +337,17 @@ export function useMessages(inbox: Inbox | null) {
 
       const promise = run();
       inFlight.set(businessId, promise);
-      promise.then(() => inFlight.delete(businessId)).catch(() => inFlight.delete(businessId));
+      const scheduleEviction = () => {
+        const timers = dedupeTimersRef.current;
+        const prev = timers.get(businessId);
+        if (prev) clearTimeout(prev);
+        const handle = setTimeout(() => {
+          inFlight.delete(businessId);
+          timers.delete(businessId);
+        }, DEDUPE_TTL_MS);
+        timers.set(businessId, handle);
+      };
+      promise.then(scheduleEviction, scheduleEviction);
       return promise;
     },
     [uid, login, loadConversations],
