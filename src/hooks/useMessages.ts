@@ -58,6 +58,18 @@ export function useMessages(inbox: Inbox | null) {
   const [paying, setPaying] = useState(false);
   // Deduplicate in-flight startConversationWithBusiness calls per businessId
   const inFlightRef = useRef<Map<number, Promise<string | null>>>(new Map());
+  const mountedRef = useRef(true);
+
+  // Clear in-flight deduplication on unmount to avoid memory leaks
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      inFlightRef.current.clear();
+    };
+  }, []);
+
+
 
 
   // Check subscription (for business reply gating UI)
