@@ -337,7 +337,18 @@ export function useMessages(inbox: Inbox | null) {
         return data.id;
       };
 
-      const promise = run();
+      const promise = Promise.race<string | null>([
+        run(),
+        new Promise<string | null>((resolve) => {
+          setTimeout(() => {
+            console.warn(
+              '[startConversationWithBusiness] in-flight timeout exceeded',
+              { businessId, timeoutMs: INFLIGHT_TIMEOUT_MS },
+            );
+            resolve(null);
+          }, INFLIGHT_TIMEOUT_MS);
+        }),
+      ]);
       inFlight.set(businessId, promise);
       const scheduleEviction = () => {
         const timers = dedupeTimersRef.current;
