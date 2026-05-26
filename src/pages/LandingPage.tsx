@@ -212,10 +212,73 @@ const LandingPage: React.FC = () => {
         </div>
         {/* Search Bar + Hero text overlaid on map */}
         <div className="relative z-10 px-4 pt-2 pointer-events-none space-y-2">
-          <div className="max-w-2xl mx-auto w-full">
-            <div className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border border-border text-muted-foreground text-sm md:text-base text-left shadow-sm pointer-events-auto">
-              <Search className="h-4 w-4 flex-shrink-0" />
-              <span>Search for businesses nearby...</span>
+          <div className="max-w-2xl mx-auto w-full" ref={searchContainerRef}>
+            <div className="relative pointer-events-auto">
+              <div className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border border-border text-sm md:text-base shadow-sm">
+                <Search className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onFocus={() => {
+                    if (suggestions.length > 0) setShowSuggestions(true);
+                  }}
+                  placeholder="Search businesses, categories, or keywords..."
+                  className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
+                  aria-label="Search businesses"
+                  autoComplete="off"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      clearSuggestions();
+                      setShowSuggestions(false);
+                    }}
+                    aria-label="Clear search"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute left-0 right-0 mt-2 rounded-xl bg-popover border border-border shadow-lg overflow-hidden z-30">
+                  <ul className="max-h-72 overflow-y-auto py-1">
+                    {suggestions.map((s) => (
+                      <li key={s.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowSuggestions(false);
+                            setSearchQuery(s.name);
+                            showWithBackoff({ id: s.id, name: s.name });
+                          }}
+                          className="w-full text-left px-4 py-2 flex items-start gap-2 hover:bg-accent hover:text-accent-foreground transition-colors"
+                        >
+                          <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-medium text-foreground truncate">{s.name}</span>
+                              {s.isVerified && <BadgeCheck className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {s.category}
+                              {s.city ? ` • ${s.city}${s.country ? `, ${s.country}` : ''}` : ''}
+                            </div>
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {showSuggestions && searchQuery.trim().length >= 2 && suggestions.length === 0 && (
+                <div className="absolute left-0 right-0 mt-2 rounded-xl bg-popover border border-border shadow-lg px-4 py-3 text-sm text-muted-foreground z-30">
+                  No businesses match "{searchQuery}".
+                </div>
+              )}
             </div>
           </div>
           <h6 className="text-xs md:text-sm font-medium text-foreground text-center drop-shadow-sm">
