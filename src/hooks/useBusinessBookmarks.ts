@@ -7,6 +7,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { Place } from '@/types/business';
 
 const BOOKMARK_IDS_LS_KEY = 'bookmark-ids';
+const BOOKMARK_SYNC_CHANNEL = 'bookmarks-sync';
+
+type BookmarkSyncMessage =
+  | { type: 'added'; businessId: string; userId: string }
+  | { type: 'removed'; businessId: string; userId: string }
+  | { type: 'refresh'; userId: string };
 
 const readPersistedBookmarkIds = (): string[] => {
   try {
@@ -24,6 +30,27 @@ const writePersistedBookmarkIds = (ids: string[]) => {
     localStorage.setItem(BOOKMARK_IDS_LS_KEY, JSON.stringify(ids));
   } catch {
     // ignore quota / privacy mode
+  }
+};
+
+// Singleton BroadcastChannel so all hook instances in the same tab share one
+// subscription and we don't open redundant channels.
+let bookmarkChannel: BroadcastChannel | null = null;
+const getBookmarkChannel = (): BroadcastChannel | null => {
+  if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') {
+    return null;
+  }
+  if (!bookmarkChannel) {
+    bookmarkChannel = new BroadcastChannel(BOOKMARK_SYNC_CHANNEL);
+  }
+  return bookmarkChannel;
+};
+
+const broadcastBookmarkChange = (message: BookmarkSyncMessage) => {
+  try {
+    getBookmarkChannel()?.postMessage(message);
+  } catch (e) {
+    console.warn('Bookmark broadcast failed:', e);
   }
 };
 
