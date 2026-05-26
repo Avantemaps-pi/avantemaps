@@ -319,11 +319,7 @@ export const useBusinessBookmarks = () => {
       queryClient.setQueryData<Place[]>(BOOKMARKS_QUERY_KEY, trimmed);
       // Mirror the optimistic update into localStorage so a reload before the
       // network confirms still shows the bookmark as removed.
-      try {
-        localStorage.setItem('bookmark-places', JSON.stringify(trimmed));
-      } catch {
-        // ignore
-      }
+      writePersistedPlaces(trimmed);
     }
 
     try {
