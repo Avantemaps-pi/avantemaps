@@ -199,6 +199,16 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
 
   const selectedPlace = activeMarker ? displayPlaces.find(place => place.id === activeMarker) : null;
 
+  const totalInView = useMemo(() => {
+    if (!viewportBounds) return places.length;
+    return places.filter(
+      (p) => p.position && isInBox(p.position.lat, p.position.lng, viewportBounds)
+    ).length;
+  }, [places, viewportBounds]);
+
+  const showSearchHereButton =
+    !isLoading && viewportBounds && !boxesEqual(viewportBounds, searchBounds);
+
   return (
     <div className="w-full h-full relative">
       {isLoading && <LoadingOverlay />}
@@ -221,11 +231,40 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         <MapViewUpdater center={mapCenter} zoom={zoom} />
         <CountryClickFocus />
         <CountryZoomControl />
+        <ViewportTracker onChange={setViewportBounds} />
         
         <MarkerClusterGroup>
           <MapMarkers places={displayPlaces} activeMarkerId={activeMarker} onMarkerClick={handleMarkerClick} />
         </MarkerClusterGroup>
       </MapContainer>
+
+      {/* Search this area / clear filter controls */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-2 pointer-events-none">
+        {showSearchHereButton && (
+          <Button
+            size="sm"
+            onClick={() => viewportBounds && setSearchBounds(viewportBounds)}
+            className="pointer-events-auto shadow-md gap-1.5"
+          >
+            <Search className="h-3.5 w-3.5" />
+            Search this area
+            {totalInView > 0 && (
+              <span className="ml-1 text-xs opacity-80">({totalInView})</span>
+            )}
+          </Button>
+        )}
+        {searchBounds && (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => setSearchBounds(null)}
+            className="pointer-events-auto shadow-md gap-1.5"
+          >
+            <X className="h-3.5 w-3.5" />
+            Clear area filter
+          </Button>
+        )}
+      </div>
       
       {!suppressOverlay && (
         <PlaceOverlay 
