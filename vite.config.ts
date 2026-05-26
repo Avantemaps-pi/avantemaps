@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import viteCompression from "vite-plugin-compression";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -12,6 +13,24 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
+    // Pre-compress static assets at build time. Hosts that support
+    // pre-compressed files (e.g. Lovable's CDN, Netlify, Vercel) will
+    // serve the .br / .gz variants automatically when the client sends
+    // the matching Accept-Encoding header.
+    mode !== "development" &&
+      viteCompression({
+        algorithm: "gzip",
+        ext: ".gz",
+        threshold: 1024,
+        deleteOriginFile: false,
+      }),
+    mode !== "development" &&
+      viteCompression({
+        algorithm: "brotliCompress",
+        ext: ".br",
+        threshold: 1024,
+        deleteOriginFile: false,
+      }),
   ].filter(Boolean),
 
   resolve: {
