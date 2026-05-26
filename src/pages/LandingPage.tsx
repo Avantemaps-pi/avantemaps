@@ -43,6 +43,14 @@ const LandingPage: React.FC = () => {
     fetchStats();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (showTimeoutRef.current) {
+        clearTimeout(showTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Exponential backoff for restricted-marker clicks
   const showWithBackoff = (place: { id: string; name: string }) => {
     if (showTimeoutRef.current) {
