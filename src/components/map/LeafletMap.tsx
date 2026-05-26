@@ -169,7 +169,17 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         <CountryClickFocus />
         <CountryZoomControl />
         
-        <MarkerClusterGroup>
+        <MarkerClusterGroup
+          chunkedLoading
+          chunkInterval={200}
+          chunkDelay={50}
+          maxClusterRadius={60}
+          spiderfyOnMaxZoom
+          showCoverageOnHover={false}
+          removeOutsideVisibleBounds
+          disableClusteringAtZoom={17}
+          animate={displayPlaces.length < 500}
+        >
           <MapMarkers places={displayPlaces} activeMarkerId={activeMarker} onMarkerClick={handleMarkerClick} />
         </MarkerClusterGroup>
       </MapContainer>
