@@ -174,11 +174,27 @@ const MessageBusinessButton: React.FC<{ place: Place }> = ({ place }) => {
   if (Number.isNaN(businessId)) return null;
 
   const handleClick = async () => {
+    if (pending) {
+      // Structured telemetry: user tapped the button while a previous
+      // conversation-start request is still in-flight.
+      console.warn(
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          level: 'warn',
+          event: 'message_business_button.click_while_pending',
+          fn: 'PlaceOverlay.MessageBusinessButton',
+          businessId,
+          authState: user?.uid ? 'authenticated' : 'anonymous',
+          userId: user?.uid ?? null,
+          placeName: place.name ?? null,
+        }),
+      );
+      return;
+    }
     if (!user?.uid) {
       toast.error('Sign in to message businesses');
       return;
     }
-    if (pending) return;
     setPending(true);
     try {
       const convId = await startConversationWithBusiness(businessId);
@@ -195,10 +211,11 @@ const MessageBusinessButton: React.FC<{ place: Place }> = ({ place }) => {
   return (
     <Button
       onClick={handleClick}
-      disabled={pending}
+      aria-disabled={pending}
+      data-pending={pending ? 'true' : 'false'}
       variant="outline"
       size="sm"
-      className="w-full mt-2"
+      className={`w-full mt-2 ${pending ? 'opacity-60 cursor-not-allowed' : ''}`}
     >
       {pending ? (
         <>
@@ -212,6 +229,7 @@ const MessageBusinessButton: React.FC<{ place: Place }> = ({ place }) => {
         </>
       )}
     </Button>
+
   );
 };
 
