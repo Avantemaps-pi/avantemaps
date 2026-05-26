@@ -257,6 +257,7 @@ export const useBusinessBookmarks = () => {
       console.log('✅ Bookmark added (upsert):', data);
 
       queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
+      broadcastBookmarkChange({ type: 'added', businessId, userId: user.uid });
       return true;
     } catch (error) {
       console.error('❌ Error adding bookmark:', error);
