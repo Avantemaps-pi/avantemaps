@@ -1161,48 +1161,6 @@ export type Database = {
         }
         Relationships: []
       }
-      spatial_ref_sys_public: {
-        Row: {
-          auth_name: string | null
-          auth_srid: string | null
-          srid: number | null
-        }
-        Insert: {
-          auth_name?: string | null
-          auth_srid?: string | null
-          srid?: number | null
-        }
-        Update: {
-          auth_name?: string | null
-          auth_srid?: string | null
-          srid?: number | null
-        }
-        Relationships: []
-      }
-      spatial_ref_sys_public_v2: {
-        Row: {
-          auth_name: string | null
-          auth_srid: number | null
-          proj4text: string | null
-          srid: number | null
-          srtext: string | null
-        }
-        Insert: {
-          auth_name?: string | null
-          auth_srid?: number | null
-          proj4text?: string | null
-          srid?: number | null
-          srtext?: string | null
-        }
-        Update: {
-          auth_name?: string | null
-          auth_srid?: number | null
-          proj4text?: string | null
-          srid?: number | null
-          srtext?: string | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
       _postgis_deprecate: {
