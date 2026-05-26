@@ -7,6 +7,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { Place } from '@/types/business';
 
 const BOOKMARK_IDS_LS_KEY = 'bookmark-ids';
+const BOOKMARK_SYNC_CHANNEL = 'bookmarks-sync';
+
+type BookmarkSyncMessage =
+  | { type: 'added'; businessId: string; userId: string }
+  | { type: 'removed'; businessId: string; userId: string }
+  | { type: 'refresh'; userId: string };
 
 const readPersistedBookmarkIds = (): string[] => {
   try {
@@ -24,6 +30,27 @@ const writePersistedBookmarkIds = (ids: string[]) => {
     localStorage.setItem(BOOKMARK_IDS_LS_KEY, JSON.stringify(ids));
   } catch {
     // ignore quota / privacy mode
+  }
+};
+
+// Singleton BroadcastChannel so all hook instances in the same tab share one
+// subscription and we don't open redundant channels.
+let bookmarkChannel: BroadcastChannel | null = null;
+const getBookmarkChannel = (): BroadcastChannel | null => {
+  if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') {
+    return null;
+  }
+  if (!bookmarkChannel) {
+    bookmarkChannel = new BroadcastChannel(BOOKMARK_SYNC_CHANNEL);
+  }
+  return bookmarkChannel;
+};
+
+const broadcastBookmarkChange = (message: BookmarkSyncMessage) => {
+  try {
+    getBookmarkChannel()?.postMessage(message);
+  } catch (e) {
+    console.warn('Bookmark broadcast failed:', e);
   }
 };
 
@@ -96,6 +123,59 @@ export const useBusinessBookmarks = () => {
     fetchBookmarks();
   }, [fetchBookmarks, isAuthenticated]);
 
+  // Cross-tab sync: listen for bookmark changes from other tabs (same user)
+  // and reconcile local state + react-query cache without forcing a refetch
+  // when we can apply the delta directly.
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    const channel = getBookmarkChannel();
+    if (!channel) return;
+
+    const handleMessage = (event: MessageEvent<BookmarkSyncMessage>) => {
+      const msg = event.data;
+      if (!msg || msg.userId !== user.uid) return;
+
+      if (msg.type === 'added') {
+        setBookmarks(prev => prev.includes(msg.businessId) ? prev : [...prev, msg.businessId]);
+        queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
+      } else if (msg.type === 'removed') {
+        setBookmarks(prev => prev.filter(id => id !== msg.businessId));
+        const cached = queryClient.getQueryData<Place[]>(BOOKMARKS_QUERY_KEY);
+        if (cached) {
+          queryClient.setQueryData<Place[]>(
+            BOOKMARKS_QUERY_KEY,
+            cached.filter(p => p.id !== msg.businessId),
+          );
+        }
+        queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
+      } else if (msg.type === 'refresh') {
+        fetchBookmarks();
+        queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
+      }
+    };
+
+    channel.addEventListener('message', handleMessage);
+
+    // Fallback for browsers without BroadcastChannel parity: storage events
+    // fire across tabs whenever localStorage changes.
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key !== BOOKMARK_IDS_LS_KEY) return;
+      const next = readPersistedBookmarkIds();
+      setBookmarks(prev => {
+        const same = prev.length === next.length && prev.every((id, i) => id === next[i]);
+        return same ? prev : next;
+      });
+      queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      channel.removeEventListener('message', handleMessage);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [isAuthenticated, user, queryClient, fetchBookmarks]);
+
   // Check if a business is bookmarked
   const isBookmarked = useCallback((businessId: string) => {
     return bookmarks.includes(businessId);
@@ -148,6 +228,7 @@ export const useBusinessBookmarks = () => {
       if (existing) {
         setBookmarks(prev => prev.includes(businessId) ? prev : [...prev, businessId]);
         queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
+        broadcastBookmarkChange({ type: 'added', businessId, userId: user.uid });
         return true;
       }
 
@@ -176,6 +257,7 @@ export const useBusinessBookmarks = () => {
       console.log('✅ Bookmark added (upsert):', data);
 
       queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
+      broadcastBookmarkChange({ type: 'added', businessId, userId: user.uid });
       return true;
     } catch (error) {
       console.error('❌ Error adding bookmark:', error);
@@ -233,6 +315,7 @@ export const useBusinessBookmarks = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
+      broadcastBookmarkChange({ type: 'removed', businessId, userId: user.uid });
       return true;
     } catch (error) {
       console.error('Error removing bookmark:', error);
