@@ -134,7 +134,7 @@ export const useBusinessBookmarks = () => {
 
     const handleMessage = (event: MessageEvent<BookmarkSyncMessage>) => {
       const msg = event.data;
-      if (!msg || msg.userId !== user.id) return;
+      if (!msg || msg.userId !== user.uid) return;
 
       if (msg.type === 'added') {
         setBookmarks(prev => prev.includes(msg.businessId) ? prev : [...prev, msg.businessId]);
