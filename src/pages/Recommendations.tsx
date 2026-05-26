@@ -190,19 +190,35 @@ const Recommendations = () => {
                 ? 'No businesses match your selected categories.'
                 : 'No recommendations available yet.'
             }
-          ].map(({ title, data, key, icon, emptyMessage }) => (
+          ].map(({ title, data, key, icon, emptyMessage }) => {
+            const isExpanded = !!expandedSections[key];
+            return (
             <section
               key={key}
+              id={`section-${key}`}
               ref={key === 'recommendedForYou' ? recommendedForYouRef : undefined}
               onMouseEnter={() => handleMouseEnter(key)}
               onMouseLeave={handleMouseLeave}
               onTouchStart={() => handleMouseEnter(key)}
-              className="relative w-full overflow-x-hidden"
+              className="relative w-full overflow-x-hidden scroll-mt-20"
             >
               <div className="flex items-center justify-between mb-4 px-4 md:px-[15px]">
                 <h2 className="text-xl font-semibold flex items-center">
                   <span className="bg-primary h-4 w-1 rounded-full mr-2"></span>
                   {title}
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(key)}
+                    aria-label={isExpanded ? `Collapse ${title}` : `View all ${title}`}
+                    aria-expanded={isExpanded}
+                    className="ml-2 inline-flex items-center justify-center h-7 w-7 rounded-full text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    {isExpanded ? (
+                      <ArrowLeft className="h-4 w-4" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4" />
+                    )}
+                  </button>
                 </h2>
                 {key === 'avanteTopChoice' && categories.length > 0 && (
                   <DropdownMenu>
@@ -237,21 +253,15 @@ const Recommendations = () => {
                 )}
               </div>
 
-              {/* Horizontal Scroll Snap Slider for Place Cards Only */}
-              <div className="relative overflow-x-hidden">
-                <div
-                  style={{
-                    paddingLeft: isMobile ? '1rem' : '0',
-                    paddingRight: isMobile ? '1rem' : '0'
-                  }}
-                  className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide px-0 mx-[15px]"
-                >
+              {isExpanded ? (
+                /* Vertical grid showing all matches, scrollable up/down with the page */
+                <div className="px-4 md:px-[15px]">
                   {isLoading ? (
-                    <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <RecommendationSkeleton />
                       <RecommendationSkeleton />
                       <RecommendationSkeleton />
-                    </>
+                    </div>
                   ) : data.length === 0 ? (
                     <EmptyRecommendationSection
                       title={title}
@@ -259,22 +269,62 @@ const Recommendations = () => {
                       icon={icon}
                     />
                   ) : (
-                    data.map(place => (
-                      <div key={place.id} className="flex-none w-80 snap-start">
-                        <PlaceCard
-                          place={place}
-                          onPlaceClick={handlePlaceClick}
-                          className="w-full h-full"
-                          showDetails={true}
-                          hideGalleryIndicators
-                        />
-                      </div>
-                    ))
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {data.map(place => (
+                        <div key={place.id} className="w-full">
+                          <PlaceCard
+                            place={place}
+                            onPlaceClick={handlePlaceClick}
+                            className="w-full h-full"
+                            showDetails={true}
+                            hideGalleryIndicators
+                          />
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
-              </div>
+              ) : (
+                /* Horizontal Scroll Snap Slider for Place Cards Only */
+                <div className="relative overflow-x-hidden">
+                  <div
+                    style={{
+                      paddingLeft: isMobile ? '1rem' : '0',
+                      paddingRight: isMobile ? '1rem' : '0'
+                    }}
+                    className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide px-0 mx-[15px]"
+                  >
+                    {isLoading ? (
+                      <>
+                        <RecommendationSkeleton />
+                        <RecommendationSkeleton />
+                        <RecommendationSkeleton />
+                      </>
+                    ) : data.length === 0 ? (
+                      <EmptyRecommendationSection
+                        title={title}
+                        message={emptyMessage}
+                        icon={icon}
+                      />
+                    ) : (
+                      data.map(place => (
+                        <div key={place.id} className="flex-none w-80 snap-start">
+                          <PlaceCard
+                            place={place}
+                            onPlaceClick={handlePlaceClick}
+                            className="w-full h-full"
+                            showDetails={true}
+                            hideGalleryIndicators
+                          />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </section>
-          ))}
+            );
+          })}
         </div>
       </div>
       )}
