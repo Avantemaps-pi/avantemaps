@@ -1,12 +1,13 @@
 
-import React, { useEffect, useState, useRef, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useRef, lazy, Suspense, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, Search, MapPin, Users, Globe, User, Loader2, Bookmark, ChevronDown, X, LogIn } from 'lucide-react';
+import { Store, Search, MapPin, Users, Globe, User, Loader2, Bookmark, ChevronDown, X, LogIn, BadgeCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessData } from '@/hooks/useBusinessData';
+import { useBusinessAutocomplete } from '@/hooks/useBusinessAutocomplete';
 import LoginDialog from '@/components/auth/LoginDialog';
 import avanteIcon72 from '@/assets/avante-icon-72.webp';
 import avanteIcon144 from '@/assets/avante-icon-144.webp';
