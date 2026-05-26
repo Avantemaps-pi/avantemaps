@@ -58,43 +58,40 @@ const Review = () => {
       // If no state and we have a businessId, fetch from database
       if (businessId) {
         try {
-          const { data, error } = await supabase
-            .from('businesses')
-            .select('*')
-            .eq('id', parseInt(businessId))
-            .single();
+          // Use the SECURITY DEFINER RPC so sensitive fields (pi_wallet_address)
+          // are never exposed; this also works for non-owners viewing the page.
+          const { data: rows, error } = await supabase
+            .rpc('get_public_business_info', { user_uuid: user?.uid ?? null });
 
           if (error) throw error;
+          const data = (rows ?? []).find((r: any) => r.id === parseInt(businessId));
 
           if (data) {
-            // Extract contact info
             const contactInfo = data.contact_info as { phone?: string; website?: string } | null;
-            
-            // Build address from components
+
             const addressParts = [
               data.street_address,
               data.city,
               data.state,
-              data.zip_code,
+              data.postal_code,
               data.country
             ].filter(Boolean);
             const fullAddress = addressParts.join(', ') || data.location || '';
 
-            // Transform database record to Place type
             const place: Place = {
               id: data.id.toString(),
-              name: data.business_name,
-              position: { lat: data.lat || 0, lng: data.lng || 0 },
+              name: data.name,
+              position: { lat: data.latitude || 0, lng: data.longitude || 0 },
               address: fullAddress,
               streetAddress: data.street_address || undefined,
               city: data.city || undefined,
               state: data.state || undefined,
-              postalCode: data.zip_code || undefined,
+              postalCode: data.postal_code || undefined,
               country: data.country || undefined,
-              rating: 0, // Will be calculated from reviews
+              rating: 0,
               totalReviews: 0,
               category: data.business_types?.join(', ') || data.category || '',
-              description: data.business_description || '',
+              description: data.description || '',
               image: data.images?.[0] || undefined,
               images: data.images || undefined,
               phone: contactInfo?.phone || undefined,
