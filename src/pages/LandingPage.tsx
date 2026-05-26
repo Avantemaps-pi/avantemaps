@@ -43,6 +43,46 @@ const LandingPage: React.FC = () => {
     fetchStats();
   }, []);
 
+  // Exponential backoff for restricted-marker clicks
+  const showWithBackoff = (place: { id: string; name: string }) => {
+    if (showTimeoutRef.current) {
+      clearTimeout(showTimeoutRef.current);
+      showTimeoutRef.current = null;
+    }
+
+    const now = Date.now();
+    const inactivityWindow = 60_000; // reset counter after 60s of inactivity
+    if (lastDismissedAtRef.current && now - lastDismissedAt.current > inactivityWindow) {
+      dismissCountRef.current = 0;
+    }
+
+    if (restrictedPlace) {
+      // Already visible — just update the business
+      setRestrictedPlace(place);
+      return;
+    }
+
+    const delay = Math.min(1000 * Math.pow(2, dismissCountRef.current), 16000); // max 16s
+    if (delay === 0) {
+      setRestrictedPlace(place);
+    } else {
+      showTimeoutRef.current = setTimeout(() => {
+        setRestrictedPlace(place);
+        showTimeoutRef.current = null;
+      }, delay);
+    }
+  };
+
+  const dismissRestricted = () => {
+    if (showTimeoutRef.current) {
+      clearTimeout(showTimeoutRef.current);
+      showTimeoutRef.current = null;
+    }
+    dismissCountRef.current += 1;
+    lastDismissedAtRef.current = Date.now();
+    setRestrictedPlace(null);
+  };
+
   const handleLoginWithPi = async () => {
     setLoginLoading(true);
     try {
