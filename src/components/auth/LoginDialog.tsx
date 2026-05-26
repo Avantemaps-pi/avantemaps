@@ -444,9 +444,15 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
               ? `Retry in ${formatCooldown(cooldownRemaining)}`
               : isLoading
                 ? "Connecting..."
-                : !sdkAvailable
-                  ? "Pi Network Not Available"
-                  : "Connect with Pi Network"
+                : preflight.status === 'checking'
+                  ? "Checking Pi Network…"
+                  : preflight.status === 'offline'
+                    ? "Offline — reconnect to sign in"
+                    : preflight.status === 'not-pi-browser'
+                      ? "Open in Pi Browser to sign in"
+                      : preflight.status === 'sdk-missing' || preflight.status === 'sdk-not-ready'
+                        ? "Waiting for Pi SDK…"
+                        : "Connect with Pi Network"
             }
           </Button>
           
