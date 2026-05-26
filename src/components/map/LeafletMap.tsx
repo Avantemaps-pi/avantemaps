@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Place } from '@/types/business';
 import { toast } from 'sonner';
@@ -11,9 +11,57 @@ import CountryZoomControl from './map-components/CountryZoomControl';
 import PlaceOverlay from './map-components/PlaceOverlay';
 import LoadingOverlay from './map-components/LoadingOverlay';
 import EmptyMapState from './EmptyMapState';
-import { LatLngTuple } from 'leaflet';
+import { LatLngTuple, LatLngBounds } from 'leaflet';
 import '@/lib/fix-leaflet-icons';
 import MarkerClusterGroup from 'react-leaflet-cluster';
+import { Button } from '@/components/ui/button';
+import { Search, X } from 'lucide-react';
+
+interface BoundsBox {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
+const boundsToBox = (b: LatLngBounds): BoundsBox => ({
+  north: b.getNorth(),
+  south: b.getSouth(),
+  east: b.getEast(),
+  west: b.getWest(),
+});
+
+const boxesEqual = (a: BoundsBox | null, b: BoundsBox | null) => {
+  if (!a || !b) return a === b;
+  const eps = 1e-5;
+  return (
+    Math.abs(a.north - b.north) < eps &&
+    Math.abs(a.south - b.south) < eps &&
+    Math.abs(a.east - b.east) < eps &&
+    Math.abs(a.west - b.west) < eps
+  );
+};
+
+const isInBox = (lat: number, lng: number, b: BoundsBox) => {
+  if (lat > b.north || lat < b.south) return false;
+  // handle antimeridian crossing
+  if (b.west <= b.east) {
+    return lng >= b.west && lng <= b.east;
+  }
+  return lng >= b.west || lng <= b.east;
+};
+
+const ViewportTracker: React.FC<{ onChange: (b: BoundsBox) => void }> = ({ onChange }) => {
+  const map = useMapEvents({
+    moveend: () => onChange(boundsToBox(map.getBounds())),
+    zoomend: () => onChange(boundsToBox(map.getBounds())),
+  });
+  useEffect(() => {
+    onChange(boundsToBox(map.getBounds()));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+};
 
 interface LeafletMapProps {
   places?: Place[]; 
