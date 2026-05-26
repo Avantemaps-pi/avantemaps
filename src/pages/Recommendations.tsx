@@ -203,22 +203,24 @@ const Recommendations = () => {
               className="relative w-full overflow-x-hidden scroll-mt-20"
             >
               <div className="flex items-center justify-between mb-4 px-4 md:px-[15px]">
-                <h2 className="text-xl font-semibold flex items-center">
-                  <span className="bg-primary h-4 w-1 rounded-full mr-2"></span>
-                  {title}
-                  <button
-                    type="button"
-                    onClick={() => toggleExpanded(key)}
-                    aria-label={isExpanded ? `Collapse ${title}` : `View all ${title}`}
-                    aria-expanded={isExpanded}
-                    className="ml-2 inline-flex items-center justify-center h-7 w-7 rounded-full text-primary hover:bg-primary/10 transition-colors"
-                  >
-                    {isExpanded ? (
-                      <ArrowLeft className="h-4 w-4" />
-                    ) : (
-                      <ArrowRight className="h-4 w-4" />
-                    )}
-                  </button>
+                <h2 className="text-xl font-semibold flex items-start min-w-0 flex-1 mr-2">
+                  <span className="bg-primary h-4 w-1 rounded-full mr-2 mt-2 flex-shrink-0"></span>
+                  <span className="min-w-0 whitespace-nowrap">
+                    {title}
+                    <button
+                      type="button"
+                      onClick={() => toggleExpanded(key)}
+                      aria-label={isExpanded ? `Collapse ${title}` : `View all ${title}`}
+                      aria-expanded={isExpanded}
+                      className="ml-1.5 inline-flex items-center justify-center h-6 w-6 rounded-full text-primary hover:bg-primary/10 transition-colors align-middle"
+                    >
+                      {isExpanded ? (
+                        <ArrowLeft className="h-4 w-4" />
+                      ) : (
+                        <ArrowRight className="h-4 w-4" />
+                      )}
+                    </button>
+                  </span>
                 </h2>
                 {key === 'avanteTopChoice' && categories.length > 0 && (
                   <DropdownMenu>
