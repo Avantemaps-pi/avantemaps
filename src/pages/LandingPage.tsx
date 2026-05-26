@@ -32,6 +32,37 @@ const LandingPage: React.FC = () => {
   const lastDismissedAtRef = useRef<number | null>(null);
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
+  const { suggestions, searchBusinesses, clearSuggestions } = useBusinessAutocomplete(places);
+
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchQuery(value);
+      if (value.trim().length >= 2) {
+        searchBusinesses(value);
+        setShowSuggestions(true);
+      } else {
+        clearSuggestions();
+        setShowSuggestions(false);
+      }
+    },
+    [searchBusinesses, clearSuggestions]
+  );
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    if (!showSuggestions) return;
+    const handler = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showSuggestions]);
+
   const BACKOFF_KEY = 'avante_backoff_state';
 
   useEffect(() => {
