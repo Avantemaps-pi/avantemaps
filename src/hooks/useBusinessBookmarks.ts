@@ -147,7 +147,7 @@ export const useBusinessBookmarks = () => {
       }
       if (existing) {
         setBookmarks(prev => prev.includes(businessId) ? prev : [...prev, businessId]);
-        queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
         return true;
       }
 
@@ -175,7 +175,7 @@ export const useBusinessBookmarks = () => {
 
       console.log('✅ Bookmark added (upsert):', data);
 
-      queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
       return true;
     } catch (error) {
       console.error('❌ Error adding bookmark:', error);
@@ -232,7 +232,7 @@ export const useBusinessBookmarks = () => {
         throw error;
       }
 
-      queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
       return true;
     } catch (error) {
       console.error('Error removing bookmark:', error);
