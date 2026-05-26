@@ -34,7 +34,7 @@ const Bookmarks = () => {
     if (isSyncing) return;
     setIsSyncing(true);
     try {
-      await queryClient.refetchQueries({ queryKey: ['bookmarked-businesses'] });
+      await queryClient.invalidateQueries({ queryKey: ['bookmarked-businesses'], exact: true });
       toast.success('Bookmarks synced');
     } catch (e) {
       toast.error('Failed to sync bookmarks');
@@ -122,7 +122,7 @@ const Bookmarks = () => {
 
   const handleRemoveBookmark = async (id: string) => {
     await removeBookmark(id);
-    queryClient.invalidateQueries({ queryKey: ['bookmarked-businesses'] });
+    queryClient.invalidateQueries({ queryKey: ['bookmarked-businesses'], exact: true });
   };
 
   const handlePlaceClick = (placeId: string) => {
