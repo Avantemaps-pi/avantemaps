@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Store, Search, MapPin, Users, Globe, User, Loader2, Bookmark, ChevronDown, X, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,9 @@ const LandingPage: React.FC = () => {
   const [loginLoading, setLoginLoading] = useState(false);
   const { places = [], isLoading: placesLoading } = useBusinessData();
   const [restrictedPlace, setRestrictedPlace] = useState<{ id: string; name: string } | null>(null);
+  const dismissCountRef = useRef(0);
+  const lastDismissedAtRef = useRef<number | null>(null);
+  const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -39,6 +42,54 @@ const LandingPage: React.FC = () => {
     };
     fetchStats();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (showTimeoutRef.current) {
+        clearTimeout(showTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Exponential backoff for restricted-marker clicks
+  const showWithBackoff = (place: { id: string; name: string }) => {
+    if (showTimeoutRef.current) {
+      clearTimeout(showTimeoutRef.current);
+      showTimeoutRef.current = null;
+    }
+
+    const now = Date.now();
+    const inactivityWindow = 60_000; // reset counter after 60s of inactivity
+    if (lastDismissedAtRef.current && now - lastDismissedAtRef.current > inactivityWindow) {
+      dismissCountRef.current = 0;
+    }
+
+    if (restrictedPlace) {
+      // Already visible — just update the business
+      setRestrictedPlace(place);
+      return;
+    }
+
+    const delay = Math.min(1000 * Math.pow(2, dismissCountRef.current), 16000); // max 16s
+    if (delay === 0) {
+      setRestrictedPlace(place);
+    } else {
+      showTimeoutRef.current = setTimeout(() => {
+        setRestrictedPlace(place);
+        showTimeoutRef.current = null;
+      }, delay);
+    }
+  };
+
+  const dismissRestricted = () => {
+    if (showTimeoutRef.current) {
+      clearTimeout(showTimeoutRef.current);
+      showTimeoutRef.current = null;
+    }
+    dismissCountRef.current += 1;
+    lastDismissedAtRef.current = Date.now();
+    setRestrictedPlace(null);
+  };
 
   const handleLoginWithPi = async () => {
     setLoginLoading(true);
@@ -87,7 +138,7 @@ const LandingPage: React.FC = () => {
               selectedPlaceId={null}
               onMarkerClick={(placeId) => {
                 const p = places.find((pl) => pl.id === placeId);
-                setRestrictedPlace(p ? { id: p.id, name: p.name } : { id: placeId, name: 'this business' });
+                showWithBackoff(p ? { id: p.id, name: p.name } : { id: placeId, name: 'this business' });
               }}
               isLoading={placesLoading}
               suppressOverlay
@@ -138,7 +189,7 @@ const LandingPage: React.FC = () => {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => setRestrictedPlace(null)}
+                      onClick={dismissRestricted}
                       className="h-8"
                     >
                       Dismiss
@@ -148,7 +199,7 @@ const LandingPage: React.FC = () => {
                 <button
                   type="button"
                   aria-label="Close"
-                  onClick={() => setRestrictedPlace(null)}
+                  onClick={dismissRestricted}
                   className="p-1 -m-1 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <X className="h-4 w-4" />
