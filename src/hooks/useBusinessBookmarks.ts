@@ -228,6 +228,7 @@ export const useBusinessBookmarks = () => {
       if (existing) {
         setBookmarks(prev => prev.includes(businessId) ? prev : [...prev, businessId]);
         queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
+        broadcastBookmarkChange({ type: 'added', businessId, userId: user.uid });
         return true;
       }
 
