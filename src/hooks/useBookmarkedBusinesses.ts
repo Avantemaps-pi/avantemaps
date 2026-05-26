@@ -90,12 +90,27 @@ const transformToPlace = (b: BookmarkedBusiness): Place => {
 
 const BOOKMARK_PLACES_LS_KEY = 'bookmark-places';
 
+interface VersionedBookmarkPlaces {
+  v: number;
+  places: Place[];
+}
+
 const readPersistedPlaces = (): Place[] | undefined => {
   try {
     const raw = localStorage.getItem(BOOKMARK_PLACES_LS_KEY);
     if (!raw) return undefined;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as Place[]) : undefined;
+    const parsed = JSON.parse(raw) as VersionedBookmarkPlaces | Place[];
+    // Legacy: plain array (unversioned)
+    if (Array.isArray(parsed)) {
+      localStorage.removeItem(BOOKMARK_PLACES_LS_KEY);
+      return undefined;
+    }
+    if (typeof parsed === 'object' && parsed.v === BOOKMARK_DATA_VERSION) {
+      return Array.isArray(parsed.places) ? (parsed.places as Place[]) : undefined;
+    }
+    // Version mismatch or unknown shape → purge stale data
+    localStorage.removeItem(BOOKMARK_PLACES_LS_KEY);
+    return undefined;
   } catch {
     return undefined;
   }
@@ -103,7 +118,8 @@ const readPersistedPlaces = (): Place[] | undefined => {
 
 const writePersistedPlaces = (places: Place[]) => {
   try {
-    localStorage.setItem(BOOKMARK_PLACES_LS_KEY, JSON.stringify(places));
+    const payload: VersionedBookmarkPlaces = { v: BOOKMARK_DATA_VERSION, places };
+    localStorage.setItem(BOOKMARK_PLACES_LS_KEY, JSON.stringify(payload));
   } catch {
     // ignore quota / privacy mode
   }
