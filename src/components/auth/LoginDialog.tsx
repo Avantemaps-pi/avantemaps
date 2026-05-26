@@ -1,14 +1,113 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X, AlertCircle, HelpCircle, RefreshCw } from "lucide-react";
+import { X, AlertCircle, HelpCircle, RefreshCw, ExternalLink, WifiOff, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from '@/context/auth';
-import { isPiNetworkAvailable } from '@/utils/piNetwork';
+import { isPiNetworkAvailable, isPiBrowser } from '@/utils/piNetwork';
 import AuthTroubleshooting from './AuthTroubleshooting';
 import { secureLog } from '@/utils/secureLogger';
 import { toast } from 'sonner';
+
+// Preflight statuses for Pi Browser / SDK availability.
+// Order matters: the first failing check wins so we show the most
+// actionable guidance to the user.
+type PreflightStatus =
+  | 'ok'                // SDK present, initialized, ready to authenticate
+  | 'test-mode'         // preview/dev — login allowed without real SDK
+  | 'offline'           // navigator.onLine === false
+  | 'not-pi-browser'    // user is on a regular browser
+  | 'sdk-missing'       // Pi Browser but window.Pi has not loaded
+  | 'sdk-not-ready'     // window.Pi present but authenticate / init missing
+  | 'checking';         // still running initial checks
+
+interface PreflightResult {
+  status: PreflightStatus;
+  title: string;
+  message: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  canAttemptLogin: boolean;
+}
+
+const PI_BROWSER_URL = 'https://minepi.com/download';
+
+const runPreflight = (allowTestMode: boolean): PreflightResult => {
+  if (typeof window === 'undefined') {
+    return {
+      status: 'checking',
+      title: 'Checking Pi Network availability…',
+      message: 'Please wait while we verify your environment.',
+      canAttemptLogin: false,
+    };
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return {
+      status: 'offline',
+      title: "You're offline",
+      message:
+        "We can't reach Pi Network without an internet connection. Reconnect and try again.",
+      canAttemptLogin: false,
+    };
+  }
+
+  if (allowTestMode && isPiNetworkAvailable()) {
+    return {
+      status: 'test-mode',
+      title: 'Preview test mode',
+      message:
+        'Pi Browser is not required in this preview environment. You can sign in with a test account.',
+      canAttemptLogin: true,
+    };
+  }
+
+  const inPiBrowser = isPiBrowser();
+  const pi = (window as any).Pi;
+  const sdkInitialized = !!(window as any).__piInitialized;
+  const hasAuthFn = !!(pi && typeof pi.authenticate === 'function');
+
+  if (!inPiBrowser) {
+    return {
+      status: 'not-pi-browser',
+      title: 'Open Avante Maps in the Pi Browser',
+      message:
+        'Sign-in uses Pi Network authentication, which only works inside the official Pi Browser app. Install it, then open this site from the Pi Browser to continue.',
+      ctaLabel: 'Get the Pi Browser',
+      ctaHref: PI_BROWSER_URL,
+      canAttemptLogin: false,
+    };
+  }
+
+  if (!pi) {
+    return {
+      status: 'sdk-missing',
+      title: 'Pi Network SDK is still loading',
+      message:
+        "We detected the Pi Browser, but the Pi Network SDK hasn't loaded yet. Check your connection and tap Retry — or fully close and reopen the Pi Browser.",
+      canAttemptLogin: false,
+    };
+  }
+
+  if (!hasAuthFn || !sdkInitialized) {
+    return {
+      status: 'sdk-not-ready',
+      title: 'Pi Network SDK is not ready',
+      message:
+        "The Pi SDK loaded but isn't fully initialized. This is usually temporary — wait a moment and tap Retry.",
+      canAttemptLogin: false,
+    };
+  }
+
+  return {
+    status: 'ok',
+    title: 'Ready to sign in',
+    message: 'Tap Connect with Pi Network to continue.',
+    canAttemptLogin: true,
+  };
+};
+
 
 // Map raw errors to friendly, actionable messages for end users
 const friendlyAuthError = (err: unknown): string => {
