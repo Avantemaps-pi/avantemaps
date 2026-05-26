@@ -84,12 +84,17 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const [showPopover, setShowPopover] = useState(false);
   const [mapCenter, setMapCenter] = useState<LatLngTuple>([defaultCenter.lat, defaultCenter.lng]); // San Francisco by default
   const [zoom, setZoom] = useState(defaultZoom);
+  const [viewportBounds, setViewportBounds] = useState<BoundsBox | null>(null);
+  const [searchBounds, setSearchBounds] = useState<BoundsBox | null>(null);
 
   // Use provided places - memoized to prevent infinite re-renders
   const displayPlaces = useMemo(() => {
     if (isLoading) return [];
-    return places;
-  }, [places, isLoading]);
+    if (!searchBounds) return places;
+    return places.filter(
+      (p) => p.position && isInBox(p.position.lat, p.position.lng, searchBounds)
+    );
+  }, [places, isLoading, searchBounds]);
 
   // Signal that the map is ready
   useEffect(() => {
