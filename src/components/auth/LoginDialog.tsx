@@ -1,14 +1,113 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X, AlertCircle, HelpCircle, RefreshCw } from "lucide-react";
+import { X, AlertCircle, HelpCircle, RefreshCw, ExternalLink, WifiOff, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from '@/context/auth';
-import { isPiNetworkAvailable } from '@/utils/piNetwork';
+import { isPiNetworkAvailable, isPiBrowser } from '@/utils/piNetwork';
 import AuthTroubleshooting from './AuthTroubleshooting';
 import { secureLog } from '@/utils/secureLogger';
 import { toast } from 'sonner';
+
+// Preflight statuses for Pi Browser / SDK availability.
+// Order matters: the first failing check wins so we show the most
+// actionable guidance to the user.
+type PreflightStatus =
+  | 'ok'                // SDK present, initialized, ready to authenticate
+  | 'test-mode'         // preview/dev — login allowed without real SDK
+  | 'offline'           // navigator.onLine === false
+  | 'not-pi-browser'    // user is on a regular browser
+  | 'sdk-missing'       // Pi Browser but window.Pi has not loaded
+  | 'sdk-not-ready'     // window.Pi present but authenticate / init missing
+  | 'checking';         // still running initial checks
+
+interface PreflightResult {
+  status: PreflightStatus;
+  title: string;
+  message: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  canAttemptLogin: boolean;
+}
+
+const PI_BROWSER_URL = 'https://minepi.com/download';
+
+const runPreflight = (allowTestMode: boolean): PreflightResult => {
+  if (typeof window === 'undefined') {
+    return {
+      status: 'checking',
+      title: 'Checking Pi Network availability…',
+      message: 'Please wait while we verify your environment.',
+      canAttemptLogin: false,
+    };
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return {
+      status: 'offline',
+      title: "You're offline",
+      message:
+        "We can't reach Pi Network without an internet connection. Reconnect and try again.",
+      canAttemptLogin: false,
+    };
+  }
+
+  if (allowTestMode && isPiNetworkAvailable()) {
+    return {
+      status: 'test-mode',
+      title: 'Preview test mode',
+      message:
+        'Pi Browser is not required in this preview environment. You can sign in with a test account.',
+      canAttemptLogin: true,
+    };
+  }
+
+  const inPiBrowser = isPiBrowser();
+  const pi = (window as any).Pi;
+  const sdkInitialized = !!(window as any).__piInitialized;
+  const hasAuthFn = !!(pi && typeof pi.authenticate === 'function');
+
+  if (!inPiBrowser) {
+    return {
+      status: 'not-pi-browser',
+      title: 'Open Avante Maps in the Pi Browser',
+      message:
+        'Sign-in uses Pi Network authentication, which only works inside the official Pi Browser app. Install it, then open this site from the Pi Browser to continue.',
+      ctaLabel: 'Get the Pi Browser',
+      ctaHref: PI_BROWSER_URL,
+      canAttemptLogin: false,
+    };
+  }
+
+  if (!pi) {
+    return {
+      status: 'sdk-missing',
+      title: 'Pi Network SDK is still loading',
+      message:
+        "We detected the Pi Browser, but the Pi Network SDK hasn't loaded yet. Check your connection and tap Retry — or fully close and reopen the Pi Browser.",
+      canAttemptLogin: false,
+    };
+  }
+
+  if (!hasAuthFn || !sdkInitialized) {
+    return {
+      status: 'sdk-not-ready',
+      title: 'Pi Network SDK is not ready',
+      message:
+        "The Pi SDK loaded but isn't fully initialized. This is usually temporary — wait a moment and tap Retry.",
+      canAttemptLogin: false,
+    };
+  }
+
+  return {
+    status: 'ok',
+    title: 'Ready to sign in',
+    message: 'Tap Connect with Pi Network to continue.',
+    canAttemptLogin: true,
+  };
+};
+
 
 // Map raw errors to friendly, actionable messages for end users
 const friendlyAuthError = (err: unknown): string => {
@@ -72,8 +171,6 @@ const computeCooldownSeconds = (failures: number): number => {
 
 const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const { login, isLoading, authError } = useAuth();
-  const [sdkAvailable, setSdkAvailable] = useState<boolean>(false);
-  const [retryCount, setRetryCount] = useState<number>(0);
   const [showTroubleshooting, setShowTroubleshooting] = useState<boolean>(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [attemptCount, setAttemptCount] = useState<number>(0);
@@ -81,6 +178,19 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const [cooldownRemaining, setCooldownRemaining] = useState<number>(() =>
     Math.max(0, Math.ceil((persistentCooldownUntil - Date.now()) / 1000))
   );
+  const [preflight, setPreflight] = useState<PreflightResult>(() => ({
+    status: 'checking',
+    title: 'Checking Pi Network availability…',
+    message: 'Please wait while we verify your environment.',
+    canAttemptLogin: false,
+  }));
+
+  const allowTestMode = useMemo(() => isPreviewOrDev(), []);
+  const sdkAvailable = preflight.canAttemptLogin;
+
+  const refreshPreflight = useCallback(() => {
+    setPreflight(runPreflight(allowTestMode));
+  }, [allowTestMode]);
 
   // Reset transient UI state when dialog re-opens, but keep persistent
   // failure/cooldown state so users can't bypass by closing the dialog.
@@ -90,8 +200,9 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
       setAttemptCount(0);
       setFailureCount(persistentFailureCount);
       setCooldownRemaining(Math.max(0, Math.ceil((persistentCooldownUntil - Date.now()) / 1000)));
+      refreshPreflight();
     }
-  }, [open]);
+  }, [open, refreshPreflight]);
 
   // Tick down the cooldown every second while active and dialog is open
   useEffect(() => {
@@ -103,45 +214,43 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
     return () => clearInterval(id);
   }, [open, cooldownRemaining]);
 
+  // Continuous preflight polling while dialog is open — the SDK can load
+  // asynchronously after the user opens the dialog.
   useEffect(() => {
-    // In preview/dev environments, allow login even without SDK
-    const allowTestMode = isPreviewOrDev();
-    setSdkAvailable(allowTestMode || isPiNetworkAvailable());
-    
-    // More frequent checks when dialog is open
-    const checkInterval = setInterval(() => {
-      const available = allowTestMode || isPiNetworkAvailable();
-      setSdkAvailable(available);
-      
-      // If dialog is open and SDK becomes available, increment retry count
-      if (open && available && retryCount === 0) {
-        setRetryCount(1);
-      }
-    }, 1000);
-    
-    return () => clearInterval(checkInterval);
-  }, [open, retryCount]);
-  
-  useEffect(() => {
-    // Auto-retry SDK detection once when dialog opens
-    const allowTestMode = isPreviewOrDev();
-    if (open && !sdkAvailable && retryCount === 0) {
-      const timer = setTimeout(() => {
-        setRetryCount(1);
-        setSdkAvailable(allowTestMode || isPiNetworkAvailable());
-      }, 2000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [open, sdkAvailable, retryCount]);
+    if (!open) return;
+    refreshPreflight();
+    const checkInterval = setInterval(refreshPreflight, 1000);
+
+    const onlineHandler = () => refreshPreflight();
+    window.addEventListener('online', onlineHandler);
+    window.addEventListener('offline', onlineHandler);
+
+    return () => {
+      clearInterval(checkInterval);
+      window.removeEventListener('online', onlineHandler);
+      window.removeEventListener('offline', onlineHandler);
+    };
+  }, [open, refreshPreflight]);
 
   const handleLogin = async () => {
     if (cooldownRemaining > 0) {
       toast.error(`Please wait ${cooldownRemaining}s before retrying.`);
       return;
     }
+    // Re-run preflight at the moment of click so stale state can't
+    // let us call login() against a missing/uninitialized SDK.
+    const fresh = runPreflight(allowTestMode);
+    setPreflight(fresh);
+    if (!fresh.canAttemptLogin) {
+      const msg = `${fresh.title}. ${fresh.message}`;
+      setLocalError(msg);
+      toast.error(fresh.title);
+      secureLog.warn('Login blocked by preflight', { status: fresh.status });
+      return;
+    }
     setLocalError(null);
     setAttemptCount((c) => c + 1);
+
     try {
       secureLog.info("Starting Pi authentication...");
       await login();
@@ -202,15 +311,61 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
             Sign in to <span className="bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">Avante Maps</span>
           </DialogTitle>
           
-          {!sdkAvailable && (
-            <div className="w-full bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300 p-3 rounded-md mb-4 flex items-start">
-              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-semibold mb-1">Pi Network SDK not detected</p>
-                <p>Please ensure you're using the official Pi Browser app. This application requires Pi Network authentication to function properly.</p>
-              </div>
-            </div>
+          {preflight.status !== 'ok' && preflight.status !== 'test-mode' && (
+            (() => {
+              const tone =
+                preflight.status === 'offline' || preflight.status === 'not-pi-browser'
+                  ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
+                  : 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300';
+              const Icon =
+                preflight.status === 'offline'
+                  ? WifiOff
+                  : preflight.status === 'checking' || preflight.status === 'sdk-missing' || preflight.status === 'sdk-not-ready'
+                    ? Loader2
+                    : AlertCircle;
+              const spin = preflight.status === 'checking' || preflight.status === 'sdk-missing' || preflight.status === 'sdk-not-ready';
+              return (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  data-preflight-status={preflight.status}
+                  className={`w-full border p-3 rounded-md mb-4 flex items-start ${tone}`}
+                >
+                  <Icon className={`h-5 w-5 mr-2 flex-shrink-0 mt-0.5 ${spin ? 'animate-spin' : ''}`} />
+                  <div className="text-sm flex-1">
+                    <p className="font-semibold mb-1">{preflight.title}</p>
+                    <p>{preflight.message}</p>
+                    <div className="mt-3 flex flex-wrap gap-2 items-center">
+                      {preflight.ctaHref && (
+                        <a
+                          href={preflight.ctaHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-xs font-medium underline underline-offset-2"
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          {preflight.ctaLabel ?? 'Learn more'}
+                        </a>
+                      )}
+                      {preflight.status !== 'not-pi-browser' && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs"
+                          onClick={refreshPreflight}
+                        >
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Re-check
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()
           )}
+
           
           {displayError && (
             <div
@@ -289,9 +444,15 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
               ? `Retry in ${formatCooldown(cooldownRemaining)}`
               : isLoading
                 ? "Connecting..."
-                : !sdkAvailable
-                  ? "Pi Network Not Available"
-                  : "Connect with Pi Network"
+                : preflight.status === 'checking'
+                  ? "Checking Pi Network…"
+                  : preflight.status === 'offline'
+                    ? "Offline — reconnect to sign in"
+                    : preflight.status === 'not-pi-browser'
+                      ? "Open in Pi Browser to sign in"
+                      : preflight.status === 'sdk-missing' || preflight.status === 'sdk-not-ready'
+                        ? "Waiting for Pi SDK…"
+                        : "Connect with Pi Network"
             }
           </Button>
           
