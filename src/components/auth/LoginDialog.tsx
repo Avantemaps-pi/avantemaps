@@ -171,15 +171,19 @@ const computeCooldownSeconds = (failures: number): number => {
 
 const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const { login, isLoading, authError } = useAuth();
-  const [sdkAvailable, setSdkAvailable] = useState<boolean>(false);
-  const [retryCount, setRetryCount] = useState<number>(0);
-  const [showTroubleshooting, setShowTroubleshooting] = useState<boolean>(false);
-  const [localError, setLocalError] = useState<string | null>(null);
-  const [attemptCount, setAttemptCount] = useState<number>(0);
-  const [failureCount, setFailureCount] = useState<number>(persistentFailureCount);
-  const [cooldownRemaining, setCooldownRemaining] = useState<number>(() =>
-    Math.max(0, Math.ceil((persistentCooldownUntil - Date.now()) / 1000))
-  );
+  const [preflight, setPreflight] = useState<PreflightResult>(() => ({
+    status: 'checking',
+    title: 'Checking Pi Network availability…',
+    message: 'Please wait while we verify your environment.',
+    canAttemptLogin: false,
+  }));
+
+  const allowTestMode = useMemo(() => isPreviewOrDev(), []);
+  const sdkAvailable = preflight.canAttemptLogin;
+
+  const refreshPreflight = useCallback(() => {
+    setPreflight(runPreflight(allowTestMode));
+  }, [allowTestMode]);
 
   // Reset transient UI state when dialog re-opens, but keep persistent
   // failure/cooldown state so users can't bypass by closing the dialog.
@@ -189,8 +193,9 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
       setAttemptCount(0);
       setFailureCount(persistentFailureCount);
       setCooldownRemaining(Math.max(0, Math.ceil((persistentCooldownUntil - Date.now()) / 1000)));
+      refreshPreflight();
     }
-  }, [open]);
+  }, [open, refreshPreflight]);
 
   // Tick down the cooldown every second while active and dialog is open
   useEffect(() => {
@@ -202,45 +207,43 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
     return () => clearInterval(id);
   }, [open, cooldownRemaining]);
 
+  // Continuous preflight polling while dialog is open — the SDK can load
+  // asynchronously after the user opens the dialog.
   useEffect(() => {
-    // In preview/dev environments, allow login even without SDK
-    const allowTestMode = isPreviewOrDev();
-    setSdkAvailable(allowTestMode || isPiNetworkAvailable());
-    
-    // More frequent checks when dialog is open
-    const checkInterval = setInterval(() => {
-      const available = allowTestMode || isPiNetworkAvailable();
-      setSdkAvailable(available);
-      
-      // If dialog is open and SDK becomes available, increment retry count
-      if (open && available && retryCount === 0) {
-        setRetryCount(1);
-      }
-    }, 1000);
-    
-    return () => clearInterval(checkInterval);
-  }, [open, retryCount]);
-  
-  useEffect(() => {
-    // Auto-retry SDK detection once when dialog opens
-    const allowTestMode = isPreviewOrDev();
-    if (open && !sdkAvailable && retryCount === 0) {
-      const timer = setTimeout(() => {
-        setRetryCount(1);
-        setSdkAvailable(allowTestMode || isPiNetworkAvailable());
-      }, 2000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [open, sdkAvailable, retryCount]);
+    if (!open) return;
+    refreshPreflight();
+    const checkInterval = setInterval(refreshPreflight, 1000);
+
+    const onlineHandler = () => refreshPreflight();
+    window.addEventListener('online', onlineHandler);
+    window.addEventListener('offline', onlineHandler);
+
+    return () => {
+      clearInterval(checkInterval);
+      window.removeEventListener('online', onlineHandler);
+      window.removeEventListener('offline', onlineHandler);
+    };
+  }, [open, refreshPreflight]);
 
   const handleLogin = async () => {
     if (cooldownRemaining > 0) {
       toast.error(`Please wait ${cooldownRemaining}s before retrying.`);
       return;
     }
+    // Re-run preflight at the moment of click so stale state can't
+    // let us call login() against a missing/uninitialized SDK.
+    const fresh = runPreflight(allowTestMode);
+    setPreflight(fresh);
+    if (!fresh.canAttemptLogin) {
+      const msg = `${fresh.title}. ${fresh.message}`;
+      setLocalError(msg);
+      toast.error(fresh.title);
+      secureLog.warn('Login blocked by preflight', { status: fresh.status });
+      return;
+    }
     setLocalError(null);
     setAttemptCount((c) => c + 1);
+
     try {
       secureLog.info("Starting Pi authentication...");
       await login();
