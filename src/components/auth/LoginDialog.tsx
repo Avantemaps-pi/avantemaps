@@ -311,15 +311,61 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
             Sign in to <span className="bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">Avante Maps</span>
           </DialogTitle>
           
-          {!sdkAvailable && (
-            <div className="w-full bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300 p-3 rounded-md mb-4 flex items-start">
-              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-semibold mb-1">Pi Network SDK not detected</p>
-                <p>Please ensure you're using the official Pi Browser app. This application requires Pi Network authentication to function properly.</p>
-              </div>
-            </div>
+          {preflight.status !== 'ok' && preflight.status !== 'test-mode' && (
+            (() => {
+              const tone =
+                preflight.status === 'offline' || preflight.status === 'not-pi-browser'
+                  ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
+                  : 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300';
+              const Icon =
+                preflight.status === 'offline'
+                  ? WifiOff
+                  : preflight.status === 'checking' || preflight.status === 'sdk-missing' || preflight.status === 'sdk-not-ready'
+                    ? Loader2
+                    : AlertCircle;
+              const spin = preflight.status === 'checking' || preflight.status === 'sdk-missing' || preflight.status === 'sdk-not-ready';
+              return (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  data-preflight-status={preflight.status}
+                  className={`w-full border p-3 rounded-md mb-4 flex items-start ${tone}`}
+                >
+                  <Icon className={`h-5 w-5 mr-2 flex-shrink-0 mt-0.5 ${spin ? 'animate-spin' : ''}`} />
+                  <div className="text-sm flex-1">
+                    <p className="font-semibold mb-1">{preflight.title}</p>
+                    <p>{preflight.message}</p>
+                    <div className="mt-3 flex flex-wrap gap-2 items-center">
+                      {preflight.ctaHref && (
+                        <a
+                          href={preflight.ctaHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-xs font-medium underline underline-offset-2"
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          {preflight.ctaLabel ?? 'Learn more'}
+                        </a>
+                      )}
+                      {preflight.status !== 'not-pi-browser' && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs"
+                          onClick={refreshPreflight}
+                        >
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Re-check
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()
           )}
+
           
           {displayError && (
             <div
