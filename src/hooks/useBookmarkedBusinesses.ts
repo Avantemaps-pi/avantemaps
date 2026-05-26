@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Place } from '@/types/business';
 import { useAuth } from '@/context/auth';
+import { BOOKMARK_DATA_VERSION } from '@/hooks/useBusinessBookmarks';
 
 interface BookmarkedBusiness {
   id: number;
