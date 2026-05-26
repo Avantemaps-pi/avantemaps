@@ -1482,6 +1482,35 @@ export type Database = {
         }[]
       }
       get_landing_stats: { Args: never; Returns: Json }
+      get_public_business_detail: {
+        Args: { business_id: number }
+        Returns: {
+          business_types: string[]
+          category: string
+          city: string
+          contact_info: Json
+          coordinates: string
+          country: string
+          created_at: string
+          description: string
+          hours: Json
+          id: number
+          images: string[]
+          is_certified: boolean
+          is_verified: boolean
+          keywords: string[]
+          latitude: number
+          location: string
+          longitude: number
+          name: string
+          postal_code: string
+          rating: number
+          state: string
+          street_address: string
+          total_reviews: number
+          verification_status: string
+        }[]
+      }
       get_public_business_info: {
         Args: { user_uuid?: string }
         Returns: {
