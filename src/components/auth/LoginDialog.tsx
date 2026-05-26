@@ -171,6 +171,13 @@ const computeCooldownSeconds = (failures: number): number => {
 
 const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const { login, isLoading, authError } = useAuth();
+  const [showTroubleshooting, setShowTroubleshooting] = useState<boolean>(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [attemptCount, setAttemptCount] = useState<number>(0);
+  const [failureCount, setFailureCount] = useState<number>(persistentFailureCount);
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(() =>
+    Math.max(0, Math.ceil((persistentCooldownUntil - Date.now()) / 1000))
+  );
   const [preflight, setPreflight] = useState<PreflightResult>(() => ({
     status: 'checking',
     title: 'Checking Pi Network availability…',
