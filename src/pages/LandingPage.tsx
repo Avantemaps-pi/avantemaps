@@ -113,6 +113,50 @@ const LandingPage: React.FC = () => {
             <ChevronDown className="h-5 w-5 text-primary" />
           </div>
         </div>
+        {/* Inline login CTA when a restricted marker is clicked */}
+        {restrictedPlace && (
+          <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-auto px-4 pb-4">
+            <Card className="max-w-2xl mx-auto p-4 border border-border bg-card/95 backdrop-blur-md shadow-lg rounded-2xl">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-primary/10 flex-shrink-0">
+                  <MapPin className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-foreground truncate">{restrictedPlace.name}</h3>
+                  <p className="text-xs text-muted-foreground leading-snug mt-0.5">
+                    Sign in with Pi Network to view full business details.
+                  </p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => setShowLogin(true)}
+                      className="h-8 gap-1.5"
+                    >
+                      <LogIn className="h-3.5 w-3.5" />
+                      Sign in
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setRestrictedPlace(null)}
+                      className="h-8"
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={() => setRestrictedPlace(null)}
+                  className="p-1 -m-1 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </Card>
+          </div>
+        )}
         {/* Feature cards anchored to bottom of map */}
         <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-auto">
           <div className="bg-gradient-to-t from-background via-background/95 to-transparent pt-16 pb-4 px-4">
