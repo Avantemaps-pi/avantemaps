@@ -52,7 +52,7 @@ const LandingPage: React.FC = () => {
 
     const now = Date.now();
     const inactivityWindow = 60_000; // reset counter after 60s of inactivity
-    if (lastDismissedAtRef.current && now - lastDismissedAt.current > inactivityWindow) {
+    if (lastDismissedAtRef.current && now - lastDismissedAtRef.current > inactivityWindow) {
       dismissCountRef.current = 0;
     }
 
