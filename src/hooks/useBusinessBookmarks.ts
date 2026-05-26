@@ -315,6 +315,7 @@ export const useBusinessBookmarks = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
+      broadcastBookmarkChange({ type: 'removed', businessId, userId: user.uid });
       return true;
     } catch (error) {
       console.error('Error removing bookmark:', error);
