@@ -27,6 +27,9 @@ const LandingPage: React.FC = () => {
   const [loginLoading, setLoginLoading] = useState(false);
   const { places = [], isLoading: placesLoading } = useBusinessData();
   const [restrictedPlace, setRestrictedPlace] = useState<{ id: string; name: string } | null>(null);
+  const dismissCountRef = useRef(0);
+  const lastDismissedAtRef = useRef<number | null>(null);
+  const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
