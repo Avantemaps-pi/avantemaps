@@ -191,7 +191,7 @@ const LandingPage: React.FC = () => {
                 <button
                   type="button"
                   aria-label="Close"
-                  onClick={() => setRestrictedPlace(null)}
+                  onClick={dismissRestricted}
                   className="p-1 -m-1 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <X className="h-4 w-4" />
