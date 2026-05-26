@@ -27,6 +27,21 @@ const Recommendations = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
+  const toggleExpanded = (key: string) => {
+    setExpandedSections(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      // Scroll the section into view when expanding so users see the vertical list
+      if (next[key]) {
+        requestAnimationFrame(() => {
+          const el = document.getElementById(`section-${key}`);
+          el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+      return next;
+    });
+  };
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'rating'>('rating');
