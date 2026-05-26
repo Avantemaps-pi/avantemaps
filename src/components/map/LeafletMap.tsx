@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Place } from '@/types/business';
 import { toast } from 'sonner';
@@ -11,9 +11,57 @@ import CountryZoomControl from './map-components/CountryZoomControl';
 import PlaceOverlay from './map-components/PlaceOverlay';
 import LoadingOverlay from './map-components/LoadingOverlay';
 import EmptyMapState from './EmptyMapState';
-import { LatLngTuple } from 'leaflet';
+import { LatLngTuple, LatLngBounds } from 'leaflet';
 import '@/lib/fix-leaflet-icons';
 import MarkerClusterGroup from 'react-leaflet-cluster';
+import { Button } from '@/components/ui/button';
+import { Search, X } from 'lucide-react';
+
+interface BoundsBox {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
+const boundsToBox = (b: LatLngBounds): BoundsBox => ({
+  north: b.getNorth(),
+  south: b.getSouth(),
+  east: b.getEast(),
+  west: b.getWest(),
+});
+
+const boxesEqual = (a: BoundsBox | null, b: BoundsBox | null) => {
+  if (!a || !b) return a === b;
+  const eps = 1e-5;
+  return (
+    Math.abs(a.north - b.north) < eps &&
+    Math.abs(a.south - b.south) < eps &&
+    Math.abs(a.east - b.east) < eps &&
+    Math.abs(a.west - b.west) < eps
+  );
+};
+
+const isInBox = (lat: number, lng: number, b: BoundsBox) => {
+  if (lat > b.north || lat < b.south) return false;
+  // handle antimeridian crossing
+  if (b.west <= b.east) {
+    return lng >= b.west && lng <= b.east;
+  }
+  return lng >= b.west || lng <= b.east;
+};
+
+const ViewportTracker: React.FC<{ onChange: (b: BoundsBox) => void }> = ({ onChange }) => {
+  const map = useMapEvents({
+    moveend: () => onChange(boundsToBox(map.getBounds())),
+    zoomend: () => onChange(boundsToBox(map.getBounds())),
+  });
+  useEffect(() => {
+    onChange(boundsToBox(map.getBounds()));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+};
 
 interface LeafletMapProps {
   places?: Place[]; 
@@ -36,12 +84,17 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const [showPopover, setShowPopover] = useState(false);
   const [mapCenter, setMapCenter] = useState<LatLngTuple>([defaultCenter.lat, defaultCenter.lng]); // San Francisco by default
   const [zoom, setZoom] = useState(defaultZoom);
+  const [viewportBounds, setViewportBounds] = useState<BoundsBox | null>(null);
+  const [searchBounds, setSearchBounds] = useState<BoundsBox | null>(null);
 
   // Use provided places - memoized to prevent infinite re-renders
   const displayPlaces = useMemo(() => {
     if (isLoading) return [];
-    return places;
-  }, [places, isLoading]);
+    if (!searchBounds) return places;
+    return places.filter(
+      (p) => p.position && isInBox(p.position.lat, p.position.lng, searchBounds)
+    );
+  }, [places, isLoading, searchBounds]);
 
   // Signal that the map is ready
   useEffect(() => {
@@ -146,6 +199,16 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
 
   const selectedPlace = activeMarker ? displayPlaces.find(place => place.id === activeMarker) : null;
 
+  const totalInView = useMemo(() => {
+    if (!viewportBounds) return places.length;
+    return places.filter(
+      (p) => p.position && isInBox(p.position.lat, p.position.lng, viewportBounds)
+    ).length;
+  }, [places, viewportBounds]);
+
+  const showSearchHereButton =
+    !isLoading && viewportBounds && !boxesEqual(viewportBounds, searchBounds);
+
   return (
     <div className="w-full h-full relative">
       {isLoading && <LoadingOverlay />}
@@ -168,11 +231,40 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         <MapViewUpdater center={mapCenter} zoom={zoom} />
         <CountryClickFocus />
         <CountryZoomControl />
+        <ViewportTracker onChange={setViewportBounds} />
         
         <MarkerClusterGroup>
           <MapMarkers places={displayPlaces} activeMarkerId={activeMarker} onMarkerClick={handleMarkerClick} />
         </MarkerClusterGroup>
       </MapContainer>
+
+      {/* Search this area / clear filter controls */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-2 pointer-events-none">
+        {showSearchHereButton && (
+          <Button
+            size="sm"
+            onClick={() => viewportBounds && setSearchBounds(viewportBounds)}
+            className="pointer-events-auto shadow-md gap-1.5"
+          >
+            <Search className="h-3.5 w-3.5" />
+            Search this area
+            {totalInView > 0 && (
+              <span className="ml-1 text-xs opacity-80">({totalInView})</span>
+            )}
+          </Button>
+        )}
+        {searchBounds && (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => setSearchBounds(null)}
+            className="pointer-events-auto shadow-md gap-1.5"
+          >
+            <X className="h-3.5 w-3.5" />
+            Clear area filter
+          </Button>
+        )}
+      </div>
       
       {!suppressOverlay && (
         <PlaceOverlay 
