@@ -181,7 +181,7 @@ const LandingPage: React.FC = () => {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => setRestrictedPlace(null)}
+                      onClick={dismissRestricted}
                       className="h-8"
                     >
                       Dismiss
