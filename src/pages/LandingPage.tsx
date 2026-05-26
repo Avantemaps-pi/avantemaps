@@ -85,14 +85,9 @@ const LandingPage: React.FC = () => {
             <LeafletMap
               places={places}
               selectedPlaceId={null}
-              onMarkerClick={() => {
-                const now = Date.now();
-                if (now - lastLoginToastRef.current < 4000) return;
-                lastLoginToastRef.current = now;
-                toast.info('Please log in to view business details', {
-                  id: 'landing-login-required',
-                  description: 'Sign in with Pi Network to see full information.',
-                });
+              onMarkerClick={(placeId) => {
+                const p = places.find((pl) => pl.id === placeId);
+                setRestrictedPlace(p ? { id: p.id, name: p.name } : { id: placeId, name: 'this business' });
               }}
               isLoading={placesLoading}
               suppressOverlay
