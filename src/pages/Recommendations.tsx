@@ -7,7 +7,7 @@ import RecommendationsSEO from '@/components/seo/RecommendationsSEO';
 import { useRecommendations } from '@/hooks/useRecommendations';
 import RecommendationSkeleton from '@/components/recommendations/RecommendationSkeleton';
 import EmptyRecommendationSection from '@/components/recommendations/EmptyRecommendationSection';
-import { Award, Star, ChevronDown, Check, Lock } from 'lucide-react';
+import { Award, Star, ChevronDown, Check, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
 import MetaTags from '@/components/seo/MetaTags';
 import { Badge } from '@/components/ui/badge';
 import {
