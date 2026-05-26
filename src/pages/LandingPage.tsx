@@ -130,7 +130,7 @@ const LandingPage: React.FC = () => {
               selectedPlaceId={null}
               onMarkerClick={(placeId) => {
                 const p = places.find((pl) => pl.id === placeId);
-                setRestrictedPlace(p ? { id: p.id, name: p.name } : { id: placeId, name: 'this business' });
+                showWithBackoff(p ? { id: p.id, name: p.name } : { id: placeId, name: 'this business' });
               }}
               isLoading={placesLoading}
               suppressOverlay
