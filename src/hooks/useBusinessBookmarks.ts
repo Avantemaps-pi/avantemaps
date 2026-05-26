@@ -21,6 +21,11 @@ interface VersionedBookmarkIds {
   ids: string[];
 }
 
+interface VersionedBookmarkPlaces {
+  v: number;
+  places: Place[];
+}
+
 const readPersistedBookmarkIds = (): string[] => {
   try {
     const raw = localStorage.getItem(BOOKMARK_IDS_LS_KEY);
@@ -47,6 +52,15 @@ const writePersistedBookmarkIds = (ids: string[]) => {
   try {
     const payload: VersionedBookmarkIds = { v: BOOKMARK_DATA_VERSION, ids };
     localStorage.setItem(BOOKMARK_IDS_LS_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore quota / privacy mode
+  }
+};
+
+const writePersistedPlaces = (places: Place[]) => {
+  try {
+    const payload: VersionedBookmarkPlaces = { v: BOOKMARK_DATA_VERSION, places };
+    localStorage.setItem(BOOKMARK_PLACES_LS_KEY, JSON.stringify(payload));
   } catch {
     // ignore quota / privacy mode
   }
