@@ -7,19 +7,37 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { Place } from '@/types/business';
 
 const BOOKMARK_IDS_LS_KEY = 'bookmark-ids';
+const BOOKMARK_PLACES_LS_KEY = 'bookmark-places';
 const BOOKMARK_SYNC_CHANNEL = 'bookmarks-sync';
+const BOOKMARK_DATA_VERSION = 1;
 
 type BookmarkSyncMessage =
   | { type: 'added'; businessId: string; userId: string }
   | { type: 'removed'; businessId: string; userId: string }
   | { type: 'refresh'; userId: string };
 
+interface VersionedBookmarkIds {
+  v: number;
+  ids: string[];
+}
+
 const readPersistedBookmarkIds = (): string[] => {
   try {
     const raw = localStorage.getItem(BOOKMARK_IDS_LS_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.map(String) : [];
+    const parsed = JSON.parse(raw) as VersionedBookmarkIds | string[];
+    // Legacy: plain array (unversioned)
+    if (Array.isArray(parsed)) {
+      localStorage.removeItem(BOOKMARK_IDS_LS_KEY);
+      return [];
+    }
+    if (typeof parsed === 'object' && parsed.v === BOOKMARK_DATA_VERSION) {
+      return Array.isArray(parsed.ids) ? parsed.ids.map(String) : [];
+    }
+    // Version mismatch or unknown shape → purge stale data
+    localStorage.removeItem(BOOKMARK_IDS_LS_KEY);
+    localStorage.removeItem(BOOKMARK_PLACES_LS_KEY);
+    return [];
   } catch {
     return [];
   }
@@ -27,7 +45,8 @@ const readPersistedBookmarkIds = (): string[] => {
 
 const writePersistedBookmarkIds = (ids: string[]) => {
   try {
-    localStorage.setItem(BOOKMARK_IDS_LS_KEY, JSON.stringify(ids));
+    const payload: VersionedBookmarkIds = { v: BOOKMARK_DATA_VERSION, ids };
+    localStorage.setItem(BOOKMARK_IDS_LS_KEY, JSON.stringify(payload));
   } catch {
     // ignore quota / privacy mode
   }
