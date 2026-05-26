@@ -205,7 +205,7 @@ const Recommendations = () => {
               <div className="flex items-center justify-between mb-4 px-4 md:px-[15px]">
                 <h2 className="text-xl font-semibold flex items-start min-w-0 flex-1 mr-2">
                   <span className="bg-primary h-4 w-1 rounded-full mr-2 mt-2 flex-shrink-0"></span>
-                  <span className="min-w-0">
+                  <span className="min-w-0 whitespace-nowrap">
                     {title}
                     <button
                       type="button"
