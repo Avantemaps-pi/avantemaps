@@ -9,7 +9,7 @@ import type { Place } from '@/types/business';
 const BOOKMARK_IDS_LS_KEY = 'bookmark-ids';
 const BOOKMARK_PLACES_LS_KEY = 'bookmark-places';
 const BOOKMARK_SYNC_CHANNEL = 'bookmarks-sync';
-const BOOKMARK_DATA_VERSION = 1;
+export const BOOKMARK_DATA_VERSION = 1;
 
 type BookmarkSyncMessage =
   | { type: 'added'; businessId: string; userId: string }
