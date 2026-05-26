@@ -31,6 +31,8 @@ const LandingPage: React.FC = () => {
   const lastDismissedAtRef = useRef<number | null>(null);
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const BACKOFF_KEY = 'avante_backoff_state';
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -42,6 +44,34 @@ const LandingPage: React.FC = () => {
     };
     fetchStats();
   }, []);
+
+  // Hydrate backoff state from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(BACKOFF_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        dismissCountRef.current = typeof parsed.count === 'number' ? parsed.count : 0;
+        lastDismissedAtRef.current = typeof parsed.at === 'number' ? parsed.at : null;
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }, []);
+
+  const persistBackoff = () => {
+    try {
+      localStorage.setItem(
+        BACKOFF_KEY,
+        JSON.stringify({
+          count: dismissCountRef.current,
+          at: lastDismissedAtRef.current,
+        })
+      );
+    } catch {
+      // ignore quota errors
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -62,6 +92,8 @@ const LandingPage: React.FC = () => {
     const inactivityWindow = 60_000; // reset counter after 60s of inactivity
     if (lastDismissedAtRef.current && now - lastDismissedAtRef.current > inactivityWindow) {
       dismissCountRef.current = 0;
+      lastDismissedAtRef.current = null;
+      persistBackoff();
     }
 
     if (restrictedPlace) {
@@ -88,6 +120,7 @@ const LandingPage: React.FC = () => {
     }
     dismissCountRef.current += 1;
     lastDismissedAtRef.current = Date.now();
+    persistBackoff();
     setRestrictedPlace(null);
   };
 
