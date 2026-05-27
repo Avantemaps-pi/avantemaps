@@ -13,6 +13,7 @@ export interface PricingTier {
     yearly: number | string;
   };
   features: string[];
+  limitations?: string[];
   cta: string;
   highlighted?: boolean;
   popular?: boolean;
