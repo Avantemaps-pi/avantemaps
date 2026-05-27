@@ -93,14 +93,15 @@ export const useBusinessBookmarks = () => {
   // Rehydrate ids synchronously from localStorage so bookmark icons render
   // in their correct state immediately on first paint, before the network
   // sync completes.
-  const [bookmarks, setBookmarks] = useState<string[]>(() => readPersistedBookmarkIds());
+  const [bookmarks, setBookmarks] = useState<string[]>(() => Array.from(new Set(readPersistedBookmarkIds())));
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const BOOKMARKS_QUERY_KEY = ['bookmarked-businesses'] as const;
 
   // Persist any change to the id list so the next page load can rehydrate.
+  // Always dedupe before persisting so the stored shape is canonical.
   useEffect(() => {
-    writePersistedBookmarkIds(bookmarks);
+    writePersistedBookmarkIds(Array.from(new Set(bookmarks)));
   }, [bookmarks]);
 
   const getSessionUserId = useCallback(async (): Promise<string | null> => {
@@ -136,7 +137,7 @@ export const useBusinessBookmarks = () => {
 
       if (data) {
         // Convert business_id to string array
-        const bookmarkIds = data.map(item => String(item.business_id));
+        const bookmarkIds = Array.from(new Set(data.map(item => String(item.business_id))));
         setBookmarks(bookmarkIds);
       }
     } catch (error) {
