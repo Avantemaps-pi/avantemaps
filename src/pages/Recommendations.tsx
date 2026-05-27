@@ -7,7 +7,7 @@ import RecommendationsSEO from '@/components/seo/RecommendationsSEO';
 import { useRecommendations } from '@/hooks/useRecommendations';
 import RecommendationSkeleton from '@/components/recommendations/RecommendationSkeleton';
 import EmptyRecommendationSection from '@/components/recommendations/EmptyRecommendationSection';
-import { Award, Star, ChevronDown, Check, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Award, Star, ChevronDown, Check, Lock, ArrowRight, ArrowLeft, Inbox } from 'lucide-react';
 import MetaTags from '@/components/seo/MetaTags';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -170,6 +170,21 @@ const Recommendations = () => {
           </div>
         )}
 
+        {/* Combined empty state when both sections have no data */}
+        {!isLoading && filteredData.avanteTopChoice.length === 0 && filteredData.recommendedForYou.length === 0 && (
+          <div className="flex items-center justify-center min-h-[50vh] px-4">
+            <div className="text-center max-w-sm">
+              <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                <Inbox className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">No recommendations yet</h3>
+              <p className="text-sm text-muted-foreground">
+                Check back as more businesses join Avante Maps.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-6 pb-1 px-0 overflow-x-hidden lg:ml-[15px]">
           {[
             {
@@ -190,7 +205,7 @@ const Recommendations = () => {
                 ? 'No businesses match your selected categories.'
                 : 'No recommendations available yet.'
             }
-          ].map(({ title, data, key, icon, emptyMessage }) => {
+          ].filter(({ data }) => isLoading || data.length > 0).map(({ title, data, key, icon, emptyMessage }) => {
             const isExpanded = !!expandedSections[key];
             return (
             <section
