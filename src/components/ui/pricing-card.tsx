@@ -64,41 +64,34 @@ export function PricingCard({
         
         <div className="flex flex-col gap-1">
           {piPrice ? (
-            <div className="flex flex-col sm:flex-row sm:items-baseline sm:flex-wrap gap-x-2">
+            <div className="flex flex-col gap-1">
               <div className="flex items-baseline flex-wrap gap-x-2">
-                <div className="flex items-baseline">
-                  <span className="text-3xl text-gray-900">π</span>
-                  <span className="text-5xl font-bold tracking-tight text-gray-900 ml-1">
-                    {piPrice}
-                  </span>
-                  <span className="ml-1 text-base font-normal text-gray-500">
-                    Pi
-                  </span>
-                </div>
-                <span className="text-base font-normal text-gray-500 sm:hidden">
+                <span className="text-3xl text-foreground">$</span>
+                <span className="text-5xl font-bold tracking-tight text-foreground">
+                  {price}
+                </span>
+                <span className="ml-1 text-base font-normal text-muted-foreground">
+                  USD
+                </span>
+                <span className="text-base font-normal text-muted-foreground">
                   / {paymentFrequency}
                 </span>
+                {(() => {
+                  const monthly = tier.price.monthly;
+                  const showStrike =
+                    paymentFrequency === 'yearly' &&
+                    typeof monthly === 'number' &&
+                    Number.isFinite(monthly) &&
+                    monthly > 1;
+                  return showStrike ? (
+                    <span className="ml-2 text-lg text-muted-foreground line-through">
+                      ${monthly * 12} USD
+                    </span>
+                  ) : null;
+                })()}
               </div>
-              {!isCustom && (
-                <span className="text-2xl font-medium text-gray-600 leading-none mt-1 sm:mt-1">
-                  (${price} USD)
-                  {(() => {
-                    const monthly = tier.price.monthly;
-                    const showStrike =
-                      paymentFrequency === 'yearly' &&
-                      typeof monthly === 'number' &&
-                      Number.isFinite(monthly) &&
-                      monthly > 1;
-                    return showStrike ? (
-                      <span className="ml-2 text-lg text-gray-400 line-through">
-                        (${monthly * 12} USD)
-                      </span>
-                    ) : null;
-                  })()}
-                </span>
-              )}
-              <span className="hidden sm:inline text-base font-normal text-gray-500">
-                / {paymentFrequency}
+              <span className="text-sm text-muted-foreground">
+                ≈ π {piPrice} at current rate
               </span>
             </div>
           ) : (
