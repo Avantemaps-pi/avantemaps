@@ -340,6 +340,10 @@ const Settings = () => {
             </AccordionContent>
           </AccordionItem>
 
+          <div className="mt-6 pt-6 border-t border-border/60">
+            <p className="text-xs text-muted-foreground mb-3">Irreversible actions</p>
+          </div>
+
           <AccordionItem value="danger" className="border rounded-lg overflow-hidden border-destructive/20">
             <AccordionTrigger className="px-4 sm:px-6 py-3 hover:no-underline hover:bg-muted/50">
               <div className="flex items-start gap-3 text-left">
