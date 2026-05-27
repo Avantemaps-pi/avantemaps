@@ -56,7 +56,7 @@ export function PricingSection({
           />
         </div>
 
-        <div className="mt-16">
+        <div className="mt-6">
           <PricingGrid 
             tiers={tiers} 
             paymentFrequency={selectedFrequency} 
