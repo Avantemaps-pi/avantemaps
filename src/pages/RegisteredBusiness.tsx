@@ -243,7 +243,7 @@ const RegisteredBusiness = () => {
         <div className="max-w-5xl mx-auto py-6 px-4 sm:px-6 lg:px-8 bg-slate-50">
           <BusinessHeader 
             title="My Businesses" 
-            subtitle="Manage your Pi business" 
+            subtitle="Add and manage your businesses listed on Avante Maps."
             showButton={false}
           />
           <div className="space-y-6 mt-6">
@@ -279,7 +279,7 @@ const RegisteredBusiness = () => {
       <div className="max-w-5xl mx-auto py-6 px-4 sm:px-6 lg:px-8 bg-slate-50">
         <BusinessHeader 
           title="My Businesses" 
-          subtitle="Manage your Pi business" 
+          subtitle="Add and manage your businesses listed on Avante Maps."
           showButton={false}
         />
 
