@@ -264,13 +264,12 @@ const Bookmarks = () => {
         ) : bookmarkedPlaces.length === 0 ? (
           <Card className="w-full py-12 material-card" aria-live="polite">
             <CardContent className="text-center flex flex-col items-center space-y-4">
-              <div className="p-3 bg-muted rounded-full">
-                <BookmarkX className="h-6 w-6 text-muted-foreground" />
+              <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-primary/10">
+                <BookmarkX className="h-12 w-12 text-primary" />
               </div>
-              <h3 className="text-lg font-medium">No bookmarks yet</h3>
+              <h3 className="text-lg font-medium">No saved businesses yet</h3>
               <p className="text-muted-foreground max-w-md">
-                We checked the database and didn't find any saved businesses on your account.
-                Tap the bookmark icon on any place to save it here, or pull down to sync.
+                Tap the bookmark icon on any listing to save it here.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
                 <Button onClick={() => navigate('/')}>Explore Map</Button>

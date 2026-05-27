@@ -1,25 +1,25 @@
 import React from 'react';
-import { Bell, MessageSquare, DollarSign, ShieldCheck } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Bell } from 'lucide-react';
+
 const EmptyNotifications: React.FC = () => {
-  return <div className="py-14 px-6 text-center">
-      {/* Icon with animation */}
-      <div className="mb-4">
-        <Bell className="h-16 w-16 mx-auto text-primary/20 animate-pulse" />
+  return (
+    <div className="py-14 px-6 text-center">
+      {/* Icon with background circle */}
+      <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-primary/10">
+        <Bell className="h-12 w-12 text-primary" />
       </div>
-      
+
       {/* Heading */}
       <h3 className="text-lg font-semibold text-foreground mb-2">
-        You're all caught up!
+        Nothing here yet
       </h3>
-      
+
       {/* Subtext */}
-      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-        We'll notify you when there are updates about your businesses, reviews, payments, or account activity.
+      <p className="text-sm text-muted-foreground max-w-md mx-auto">
+        You'll be notified about reviews, messages, and business activity.
       </p>
-      
-      {/* Info badges */}
-      
-    </div>;
+    </div>
+  );
 };
+
 export default EmptyNotifications;
