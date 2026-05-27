@@ -4,7 +4,7 @@ import { useAuth } from '@/context/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Receipt } from 'lucide-react';
 
 interface PaymentStatusJson {
   approved?: boolean;
@@ -116,7 +116,15 @@ const PaymentHistory: React.FC = () => {
       ) : error ? (
         <p className="text-sm text-destructive">Failed to load payments: {error}</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No payments yet.</p>
+        <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border px-4 py-10 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <Receipt className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="text-base font-semibold text-foreground">No transactions yet</h3>
+          <p className="max-w-xs text-sm text-muted-foreground">
+            Your Pi payments to and from businesses on Avante Maps will appear here.
+          </p>
+        </div>
       ) : (
         <ul className="divide-y divide-border rounded-md border">
           {rows.map((row) => {
