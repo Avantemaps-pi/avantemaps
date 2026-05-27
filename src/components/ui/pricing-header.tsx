@@ -25,7 +25,7 @@ export function PricingHeader({
       <p className="mt-2 text-sm leading-6 text-gray-600">
         {subtitle}
       </p>
-      <div className="mt-8 flex justify-center">
+      <div className="mt-4 flex justify-center">
         <div className="flex rounded-full bg-gray-100 p-1">
           {frequencies.map((freq) => (
             <Tab
