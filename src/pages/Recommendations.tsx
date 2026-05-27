@@ -205,7 +205,7 @@ const Recommendations = () => {
                 ? 'No businesses match your selected categories.'
                 : 'No recommendations available yet.'
             }
-          ].map(({ title, data, key, icon, emptyMessage }) => {
+          ].filter(({ data }) => isLoading || data.length > 0).map(({ title, data, key, icon, emptyMessage }) => {
             const isExpanded = !!expandedSections[key];
             return (
             <section
