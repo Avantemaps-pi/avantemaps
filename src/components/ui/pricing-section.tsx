@@ -42,7 +42,7 @@ export function PricingSection({
   const filteredFrequencies = frequencies.filter(freq => freq === 'monthly' || freq === 'yearly');
 
   return (
-    <section className="sm:py-32 py-[20px]">
+    <section className="sm:py-8 py-[20px]">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
           {children}
