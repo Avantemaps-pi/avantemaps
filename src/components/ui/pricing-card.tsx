@@ -141,13 +141,13 @@ export function PricingCard({
         </ul>
       </div>
 
-      <Button 
+      <Button
+        variant={isCurrentPlan ? "outline" : "default"}
         className={cn(
-          "mt-8 w-full text-base py-6", 
-          tier.highlighted && "bg-avante-purple hover:bg-avante-purple/90",
-          tier.popular && "bg-blue-500 hover:bg-blue-600"
-        )} 
-        onClick={onSubscribe} 
+          "mt-8 w-full text-base py-6",
+          isCurrentPlan && "border-primary text-primary hover:bg-primary/10"
+        )}
+        onClick={onSubscribe}
         disabled={isSubscribing || disabled}
       >
         {isSubscribing ? "Processing..." : isCurrentPlan ? "Current Plan" : tier.cta}
