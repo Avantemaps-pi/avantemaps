@@ -1,6 +1,5 @@
 import React from 'react';
 import { Bot, MessageSquare } from 'lucide-react';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ChatMode } from './ChatInterface';
 
 interface ChatModeToggleProps {
@@ -14,29 +13,33 @@ const ChatModeToggle: React.FC<ChatModeToggleProps> = ({
   onChatModeChange,
 }) => {
   return (
-    <ToggleGroup
-      type="single"
-      variant="outline"
-      value={chatMode}
-      onValueChange={onChatModeChange}
-      className="border rounded-md"
-    >
-      <ToggleGroupItem
-        value="ai"
-        className={`px-3 py-1 text-xs ${chatMode === "ai" ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
+    <div className="flex items-center bg-muted rounded-full p-1 gap-0.5">
+      <button
+        type="button"
+        onClick={() => onChatModeChange('ai')}
+        className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+          chatMode === 'ai'
+            ? 'bg-primary text-primary-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
       >
-        <Bot className="h-4 w-4 mr-1" />
+        <Bot className="h-3.5 w-3.5" />
         Bot
-      </ToggleGroupItem>
+      </button>
 
-      <ToggleGroupItem
-        value="live"
-        className={`px-3 py-1 text-xs ${chatMode === "live" ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
+      <button
+        type="button"
+        onClick={() => onChatModeChange('live')}
+        className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+          chatMode === 'live'
+            ? 'bg-primary text-primary-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
       >
-        <MessageSquare className="h-4 w-4 mr-1" />
+        <MessageSquare className="h-3.5 w-3.5" />
         Messages
-      </ToggleGroupItem>
-    </ToggleGroup>
+      </button>
+    </div>
   );
 };
 
