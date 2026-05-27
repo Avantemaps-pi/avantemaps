@@ -7,7 +7,7 @@ import DangerZone from '@/components/settings/DangerZone';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/auth';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
-import { User, Settings as SettingsIcon, AlertTriangle } from 'lucide-react';
+import { User, Settings as SettingsIcon, AlertTriangle, Scale, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
