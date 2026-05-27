@@ -41,7 +41,7 @@ const UserProfileCard: React.FC = () => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" className="w-full flex items-center justify-center bg-gray-800 text-white hover:bg-gray-700 cursor-not-allowed opacity-70">
+                  <Button variant="outline" className="w-full flex items-center justify-center cursor-not-allowed opacity-70">
                     <LinkIcon className="h-4 w-4 mr-2" />
                     Link Fireside Forum
                   </Button>
