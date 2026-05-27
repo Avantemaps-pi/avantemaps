@@ -137,7 +137,7 @@ export const useBusinessBookmarks = () => {
 
       if (data) {
         // Convert business_id to string array
-        const bookmarkIds = data.map(item => String(item.business_id));
+        const bookmarkIds = Array.from(new Set(data.map(item => String(item.business_id))));
         setBookmarks(bookmarkIds);
       }
     } catch (error) {
