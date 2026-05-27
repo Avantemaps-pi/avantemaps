@@ -15,7 +15,6 @@ const UserProfileCard: React.FC = () => {
       <CardContent className="pt-6">
         <div className="flex flex-col items-center">
           <Avatar className="h-20 w-20 mb-4">
-            {user?.avatarUrl ? <AvatarImage src={user.avatarUrl} alt={user?.username || 'User'} /> : null}
             <AvatarFallback className="text-xl">{getInitials(user?.username)}</AvatarFallback>
           </Avatar>
           
