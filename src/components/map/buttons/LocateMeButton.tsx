@@ -245,6 +245,14 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
     }
   };
 
+  const handleClickRef = React.useRef(handleClick);
+  React.useEffect(() => { handleClickRef.current = handleClick; });
+  React.useEffect(() => {
+    const trigger = () => { handleClickRef.current?.(); };
+    window.addEventListener('trigger-locate-me', trigger as EventListener);
+    return () => window.removeEventListener('trigger-locate-me', trigger as EventListener);
+  }, []);
+
   return (
     <button
       type="button"

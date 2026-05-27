@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import SearchBar from '@/components/map/SearchBar';
 import CategoryFilter, { CATEGORY_OPTIONS } from '@/components/map/CategoryFilter';
 import LocateMeButton from '@/components/map/buttons/LocateMeButton';
+import LocationBanner from '@/components/map/LocationBanner';
 import { useSidebar } from '@/components/ui/sidebar';
 import AvanteMapLogo from '@/components/layout/header/AvanteMapLogo';
 import AppSidebar from '@/components/layout/AppSidebar';
@@ -290,6 +291,7 @@ const Index = () => {
       </Suspense>
       {/* Sits above the country zoom +/- control (which itself sits above the Add Business button). */}
       <LocateMeButton className="absolute right-6 bottom-60 sm:bottom-44 z-20" />
+      <LocationBanner className="bottom-44 sm:bottom-28" />
       <BottomNavBar />
     </div>
   );
