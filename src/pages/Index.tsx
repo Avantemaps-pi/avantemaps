@@ -291,6 +291,7 @@ const Index = () => {
       </Suspense>
       {/* Sits above the country zoom +/- control (which itself sits above the Add Business button). */}
       <LocateMeButton className="absolute right-6 bottom-60 sm:bottom-44 z-20" />
+      <LocationBanner className="bottom-44 sm:bottom-28" />
       <BottomNavBar />
     </div>
   );
