@@ -5,47 +5,51 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+    /* Pi Network-inspired palette: deep navy + warm gold */
+    --background: 0 0% 100%;
+    --foreground: 232 41% 17%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 232 41% 17%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 232 41% 17%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary = warm gold #C9A84C (used for CTAs, active states, selected chips) */
+    --primary: 45 56% 54%;
+    --primary-foreground: 232 41% 17%;
 
-    --secondary: 260 84% 60%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary = light grey surface #F5F5F5 */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 232 41% 17%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 232 15% 40%;
 
-    --accent: 168 89% 32%;
-    --accent-foreground: 210 40% 98%;
+    /* Accent = deep navy #1A1F3C (headers, bottom nav, headings) */
+    --accent: 232 41% 17%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 210 40% 98%;
+    --warning-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221 83% 53%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 45 56% 54%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222.2 84% 4.9%;
-    --sidebar-primary: 221 83% 53%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 260 84% 60%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 214.3 31.8% 91.4%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-background: 232 41% 17%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 45 56% 54%;
+    --sidebar-primary-foreground: 232 41% 17%;
+    --sidebar-accent: 45 56% 54%;
+    --sidebar-accent-foreground: 232 41% 17%;
+    --sidebar-border: 232 30% 25%;
+    --sidebar-ring: 45 56% 54%;
   }
 
   .dark {
@@ -58,17 +62,17 @@
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 240 5.9% 10%;
+    --primary: 45 56% 54%;
+    --primary-foreground: 232 41% 17%;
 
-    --secondary: 260 84% 60%;
+    --secondary: 232 30% 22%;
     --secondary-foreground: 0 0% 98%;
 
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
 
-    --accent: 168 89% 32%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 45 56% 54%;
+    --accent-foreground: 232 41% 17%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
@@ -78,16 +82,16 @@
 
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 224.3 76.3% 48%;
+    --ring: 45 56% 54%;
 
-    --sidebar-background: 240 10% 3.9%;
+    --sidebar-background: 232 41% 12%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 221 83% 53%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 260 84% 60%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 224.3 76.3% 48%;
+    --sidebar-primary: 45 56% 54%;
+    --sidebar-primary-foreground: 232 41% 17%;
+    --sidebar-accent: 45 56% 54%;
+    --sidebar-accent-foreground: 232 41% 17%;
+    --sidebar-border: 232 30% 25%;
+    --sidebar-ring: 45 56% 54%;
   }
 }
 

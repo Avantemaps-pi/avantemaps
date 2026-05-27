@@ -68,11 +68,15 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				avante: {
-					blue: '#3B82F6',
-					purple: '#8B5CF6',
-					teal: '#0D9488',
-					dark: '#1E293B',
-					light: '#F9FAFB'
+					/* Remapped to Pi-inspired palette:
+					 * gold accent + deep navy primary */
+					blue: '#C9A84C',
+					purple: '#1A1F3C',
+					teal: '#C9A84C',
+					dark: '#1A1F3C',
+					light: '#F5F5F5',
+					gold: '#C9A84C',
+					navy: '#1A1F3C'
 				}
 			},
 			borderRadius: {
