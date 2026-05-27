@@ -138,7 +138,18 @@ export const useBookmarkedBusinesses = () => {
         p_user_id: sessionUser.id,
       });
       if (error) throw error;
-      const places = (data as BookmarkedBusiness[]).map(transformToPlace);
+      // Defensive dedupe by id — the DB unique (user_id, business_id) constraint
+      // should prevent duplicates server-side, but we guard the render path too
+      // so the saved list can never visually duplicate even if the RPC returned
+      // overlapping rows.
+      const seen = new Set<string>();
+      const places = (data as BookmarkedBusiness[])
+        .map(transformToPlace)
+        .filter(p => {
+          if (seen.has(p.id)) return false;
+          seen.add(p.id);
+          return true;
+        });
       // Persist the freshly fetched list so the next page load can rehydrate
       // instantly from localStorage before the next network sync.
       writePersistedPlaces(places);
