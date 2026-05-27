@@ -15,9 +15,9 @@
     --popover: 0 0% 100%;
     --popover-foreground: 232 41% 17%;
 
-    /* Primary = deep navy #1A1F3C */
-    --primary: 232 41% 17%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary = warm gold #C9A84C (used for CTAs, active states, selected chips) */
+    --primary: 45 56% 54%;
+    --primary-foreground: 232 41% 17%;
 
     /* Secondary = light grey surface #F5F5F5 */
     --secondary: 0 0% 96%;
@@ -26,9 +26,9 @@
     --muted: 0 0% 96%;
     --muted-foreground: 232 15% 40%;
 
-    /* Accent = warm gold #C9A84C */
-    --accent: 45 56% 54%;
-    --accent-foreground: 232 41% 17%;
+    /* Accent = deep navy #1A1F3C (headers, bottom nav, headings) */
+    --accent: 232 41% 17%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
