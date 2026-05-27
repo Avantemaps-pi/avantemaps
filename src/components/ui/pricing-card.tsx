@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { usePiPrice } from "@/hooks/usePiPrice";
 
 export interface PricingTier {
@@ -13,6 +13,7 @@ export interface PricingTier {
     yearly: number | string;
   };
   features: string[];
+  limitations?: string[];
   cta: string;
   highlighted?: boolean;
   popular?: boolean;
@@ -138,6 +139,12 @@ export function PricingCard({
               </li>
             );
           })}
+          {tier.limitations?.map(limitation => (
+            <li key={limitation} className="flex items-center gap-3">
+              <X className="h-5 w-5 flex-shrink-0 text-gray-400" />
+              <span className="text-gray-400 italic">{limitation}</span>
+            </li>
+          ))}
         </ul>
       </div>
 

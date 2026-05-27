@@ -12,7 +12,9 @@ export const TIERS: PricingTier[] = [
     },
     features: [
       "Up to 1 business listing",
-      "Ads",
+    ],
+    limitations: [
+      "Includes ads",
     ],
     cta: "Get Started Free",
   },
@@ -25,7 +27,7 @@ export const TIERS: PricingTier[] = [
       yearly: 48
     },
     features: [
-      "Up to 3 business listings", 
+      "Up to 3 business listings",
       "No Ads",
       "Business analytics",
       "Prioritized business support",
@@ -43,7 +45,8 @@ export const TIERS: PricingTier[] = [
       yearly: 96
     },
     features: [
-      "Up to 5 business listings", 
+      "Up to 5 business listings",
+      "No Ads",
       "All Small Business features",
       "Advanced analytics",
       "Discord Special Access",
