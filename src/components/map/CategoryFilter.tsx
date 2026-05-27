@@ -26,9 +26,9 @@ interface CategoryFilterProps {
 
 const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategoryId, onSelect, className }) => {
   return (
-    <div className={cn('relative -mx-1', className)}>
+    <div className={cn('relative bg-background/80 backdrop-blur-sm shadow-sm rounded-xl', className)}>
       <div
-        className="flex gap-2 overflow-x-auto no-scrollbar px-1 py-1"
+        className="flex gap-2 overflow-x-auto no-scrollbar flex-nowrap scroll-smooth px-3 py-2 pb-3 pr-12"
         role="tablist"
         aria-label="Filter businesses by category"
       >
@@ -56,7 +56,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategoryId, onS
       </div>
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-background/95 to-transparent"
+        className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-background via-background/70 to-transparent"
       />
     </div>
   );
