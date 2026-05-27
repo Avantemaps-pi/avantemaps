@@ -43,35 +43,28 @@ const BottomNavBar: React.FC = () => {
       )}
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="flex items-end justify-around h-16 pt-1">
+      <div className="flex items-center justify-around h-16">
         {navItems.map(({ to, icon: Icon, label }) => {
           const isActive = location.pathname === to;
-          const isMap = to === '/';
           return (
             <Link
               key={to}
               to={to}
               aria-label={label}
               className={cn(
-                'flex flex-col items-center justify-end gap-0.5 flex-1 h-full min-h-[44px] min-w-[44px] text-[10px] font-medium transition-colors',
+                'flex flex-col items-center justify-center flex-1 h-full text-[11px] font-medium transition-colors',
                 isActive
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              {isMap ? (
-                <span className={cn(
-                  'flex items-center justify-center h-14 w-14 rounded-full border-2 -mt-6 mb-0.5 bg-background shadow-md',
-                  isActive ? 'border-primary' : 'border-border'
-                )}>
-                  <Icon className="h-6 w-6" strokeWidth={isActive ? 2.5 : 2} />
-                </span>
-              ) : (
-                <span className="flex items-center justify-center h-11 w-11 mb-0.5">
-                  <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
-                </span>
-              )}
-              <span className="leading-none pb-1">{label}</span>
+              <span className="relative flex flex-col items-center justify-center gap-0.5 px-3 py-2 rounded-xl">
+                {isActive && (
+                  <span className="absolute inset-0 bg-primary/15 rounded-xl" />
+                )}
+                <Icon className="h-5 w-5 relative z-10" strokeWidth={isActive ? 2.5 : 2} />
+                <span className="relative z-10 leading-none">{label}</span>
+              </span>
             </Link>
           );
         })}
