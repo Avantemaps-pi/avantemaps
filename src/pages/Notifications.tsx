@@ -170,7 +170,7 @@ const Notifications = () => {
   const categoryCounts = getAllCategoryCounts(notifications);
   const unreadCount = filteredNotifications.filter(notification => !notification.read).length;
   return (
-    <AppLayout title="Avante Maps">
+    <AppLayout title="Avante Maps" showFooter={false}>
       <div className="max-w-3xl mx-auto mt-2 space-y-2">
         {/* Category Tabs */}
         <div className="px-3">
