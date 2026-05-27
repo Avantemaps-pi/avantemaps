@@ -19,13 +19,13 @@ export function PricingHeader({
 }: PricingHeaderProps) {
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <h1 className="text-5xl font-bold tracking-tight text-gray-900">
+      <h1 className="text-2xl font-medium tracking-tight text-gray-900">
         {title}
       </h1>
-      <p className="mt-6 text-xl leading-8 text-gray-600">
+      <p className="mt-2 text-sm leading-6 text-gray-600">
         {subtitle}
       </p>
-      <div className="mt-8 flex justify-center">
+      <div className="mt-4 flex justify-center">
         <div className="flex rounded-full bg-gray-100 p-1">
           {frequencies.map((freq) => (
             <Tab
