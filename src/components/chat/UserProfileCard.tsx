@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Link as LinkIcon } from 'lucide-react';
 import { useAuth } from '@/context/auth';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { getInitials } from '@/lib/getInitials';
 
 const UserProfileCard: React.FC = () => {
   const { user } = useAuth();
@@ -14,8 +15,7 @@ const UserProfileCard: React.FC = () => {
       <CardContent className="pt-6">
         <div className="flex flex-col items-center">
           <Avatar className="h-20 w-20 mb-4">
-            <AvatarImage src="/placeholder.svg" alt="User" />
-            <AvatarFallback>{user?.username?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+            <AvatarFallback className="text-xl">{getInitials(user?.username)}</AvatarFallback>
           </Avatar>
           
           <h2 className="text-xl font-semibold mb-2">{user?.username || 'Guest User'}</h2>

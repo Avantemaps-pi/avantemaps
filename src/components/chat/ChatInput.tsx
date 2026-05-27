@@ -3,7 +3,9 @@ import React, { KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Paperclip } from 'lucide-react';
-import { Avatar } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useAuth } from '@/context/auth';
+import { getInitials } from '@/lib/getInitials';
 
 const ChatInput: React.FC<{
   value: string;
@@ -22,6 +24,7 @@ const ChatInput: React.FC<{
   disabled = false,
   showAttachmentIcon = true  // Changed back to true as default
 }) => {
+  const { user } = useAuth();
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -34,7 +37,7 @@ const ChatInput: React.FC<{
   return (
     <div className="flex items-end space-x-2 bg-background p-4 border-t">
       <Avatar className="hidden sm:flex h-9 w-9">
-        <img src="/placeholder.svg" alt="User" />
+        <AvatarFallback className="text-xs">{getInitials(user?.username)}</AvatarFallback>
       </Avatar>
       
       <div className="relative flex-1">

@@ -8,6 +8,7 @@ import NavItem from './NavItem';
 import { useAuth } from '@/context/auth';
 import { cn } from '@/lib/utils';
 import { legalItems } from './sidebarConfig';
+import { getInitials } from '@/lib/getInitials';
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -89,9 +90,9 @@ const MobileSidebar = ({
           <div className="p-4 flex items-center justify-between border-b border-sidebar-border">
             <div className="flex items-center gap-3 cursor-pointer" onClick={handleProfileClick}>
               <Avatar className="h-9 w-9 cursor-pointer hover:opacity-80 transition-opacity">
-                <AvatarImage src="/placeholder.svg" />
-                <AvatarFallback>
-                  <UserRound className="h-5 w-5" />
+                {(user as any)?.avatarUrl ? <AvatarImage src={(user as any).avatarUrl} /> : null}
+                <AvatarFallback className="text-xs">
+                  {isAuthenticated ? getInitials(username) : <UserRound className="h-5 w-5" />}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
