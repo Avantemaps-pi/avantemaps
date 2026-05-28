@@ -1,435 +1,231 @@
-
-import React, { useEffect, useState, useRef, lazy, Suspense, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Store, Search, MapPin, Users, Globe, User, Loader2, Bookmark, ChevronDown, X, LogIn, BadgeCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { MapPin, Bookmark, MessageCircle, Star, Mail, LifeBuoy } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { useBusinessData } from '@/hooks/useBusinessData';
-import { useBusinessAutocomplete } from '@/hooks/useBusinessAutocomplete';
 import LoginDialog from '@/components/auth/LoginDialog';
 import avanteIcon72 from '@/assets/avante-icon-72.webp';
 import avanteIcon144 from '@/assets/avante-icon-144.webp';
 
-const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
+const NAVY = '#1A1F3C';
+const GOLD = '#C9A84C';
 
-interface LandingStats {
-  business_count: number;
-  user_count: number;
-  country_count: number;
-}
+const features = [
+  { icon: MapPin, title: 'Interactive Map', desc: 'Find businesses near you on a live map, filtered by category.' },
+  { icon: Bookmark, title: 'Save Favourites', desc: 'Bookmark businesses you love and revisit them anytime.' },
+  { icon: MessageCircle, title: 'Message Directly', desc: 'Send messages to businesses and get replies in real time.' },
+  { icon: Star, title: 'Trusted Reviews', desc: 'Read and leave reviews to help the Pi community choose wisely.' },
+];
 
 const LandingPage: React.FC = () => {
-  const navigate = useNavigate();
   const { login } = useAuth();
-  const [stats, setStats] = useState<LandingStats>({ business_count: 0, user_count: 0, country_count: 0 });
   const [showLogin, setShowLogin] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
-  const { places = [], isLoading: placesLoading } = useBusinessData();
-  const [restrictedPlace, setRestrictedPlace] = useState<{ id: string; name: string } | null>(null);
-  const dismissCountRef = useRef(0);
-  const lastDismissedAtRef = useRef<number | null>(null);
-  const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const searchContainerRef = useRef<HTMLDivElement | null>(null);
-  const { suggestions, searchBusinesses, clearSuggestions } = useBusinessAutocomplete(places);
-
-  const handleSearchChange = useCallback(
-    (value: string) => {
-      setSearchQuery(value);
-      if (value.trim().length >= 2) {
-        searchBusinesses(value);
-        setShowSuggestions(true);
-      } else {
-        clearSuggestions();
-        setShowSuggestions(false);
-      }
-    },
-    [searchBusinesses, clearSuggestions]
-  );
-
-  // Close suggestions when clicking outside
-  useEffect(() => {
-    if (!showSuggestions) return;
-    const handler = (e: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showSuggestions]);
-
-  const BACKOFF_KEY = 'avante_backoff_state';
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const { data } = await supabase.rpc('get_landing_stats');
-        if (data) setStats(data as unknown as LandingStats);
-      } catch (e) {
-        console.error('Failed to fetch landing stats:', e);
-      }
-    };
-    fetchStats();
-  }, []);
-
-  // Hydrate backoff state from localStorage on mount
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(BACKOFF_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        dismissCountRef.current = typeof parsed.count === 'number' ? parsed.count : 0;
-        lastDismissedAtRef.current = typeof parsed.at === 'number' ? parsed.at : null;
-      }
-    } catch {
-      // ignore parse errors
-    }
-  }, []);
-
-  const persistBackoff = () => {
-    try {
-      localStorage.setItem(
-        BACKOFF_KEY,
-        JSON.stringify({
-          count: dismissCountRef.current,
-          at: lastDismissedAtRef.current,
-        })
-      );
-    } catch {
-      // ignore quota errors
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      if (showTimeoutRef.current) {
-        clearTimeout(showTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Exponential backoff for restricted-marker clicks
-  const showWithBackoff = (place: { id: string; name: string }) => {
-    if (showTimeoutRef.current) {
-      clearTimeout(showTimeoutRef.current);
-      showTimeoutRef.current = null;
-    }
-
-    const now = Date.now();
-    const inactivityWindow = 60_000; // reset counter after 60s of inactivity
-    if (lastDismissedAtRef.current && now - lastDismissedAtRef.current > inactivityWindow) {
-      dismissCountRef.current = 0;
-      lastDismissedAtRef.current = null;
-      persistBackoff();
-    }
-
-    if (restrictedPlace) {
-      // Already visible — just update the business
-      setRestrictedPlace(place);
-      return;
-    }
-
-    const delay = Math.min(1000 * Math.pow(2, dismissCountRef.current), 16000); // max 16s
-    if (delay === 0) {
-      setRestrictedPlace(place);
-    } else {
-      showTimeoutRef.current = setTimeout(() => {
-        setRestrictedPlace(place);
-        showTimeoutRef.current = null;
-      }, delay);
-    }
-  };
-
-  const dismissRestricted = () => {
-    if (showTimeoutRef.current) {
-      clearTimeout(showTimeoutRef.current);
-      showTimeoutRef.current = null;
-    }
-    dismissCountRef.current += 1;
-    lastDismissedAtRef.current = Date.now();
-    persistBackoff();
-    setRestrictedPlace(null);
-  };
-
-  const handleLoginWithPi = async () => {
+  const handlePiLogin = async () => {
     setLoginLoading(true);
     try {
       await login();
     } catch {
-      // User cancelled or error
+      setShowLogin(true);
     } finally {
       setLoginLoading(false);
-      setShowLogin(false);
     }
   };
 
+  const scrollToFeatures = () => {
+    document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const Logo = ({ light = false }: { light?: boolean }) => (
+    <div className="flex items-center gap-2">
+      <img
+        src={avanteIcon72}
+        srcSet={`${avanteIcon72} 72w, ${avanteIcon144} 144w`}
+        sizes="36px"
+        alt="Avante Maps logo"
+        width={36}
+        height={36}
+        decoding="async"
+        fetchPriority="high"
+        className="h-9 w-9 rounded-full object-contain"
+      />
+      <span className={`font-bold text-lg ${light ? 'text-white' : 'text-[#1A1F3C]'}`}>Avante Maps</span>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
-      {/* Top Bar */}
-      <header className="flex items-center justify-between px-4 py-1 bg-background/95 backdrop-blur-sm sticky top-0 z-40">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setShowLogin(true)} className="rounded-full">
-            <User className="h-5 w-5 text-muted-foreground" />
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Sticky Nav */}
+      <header className="sticky top-0 z-40 bg-white border-b border-black/5 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Logo />
+          <Button
+            variant="ghost"
+            onClick={() => setShowLogin(true)}
+            className="text-[#1A1F3C] hover:text-[#1A1F3C] hover:bg-[#1A1F3C]/5"
+          >
+            Sign In
           </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <img
-            src={avanteIcon72}
-            srcSet={`${avanteIcon72} 72w, ${avanteIcon144} 144w`}
-            sizes="36px"
-            alt="Avante Maps logo"
-            width={36}
-            height={36}
-            decoding="async"
-            fetchPriority="high"
-            className="h-9 w-9 rounded-full object-contain"
-          />
-          <span className="font-bold text-lg text-foreground">Avante Maps</span>
-        </div>
-        <div className="w-9" />
       </header>
 
-      {/* Map + Search overlay + Feature cards */}
-      <section className="relative w-full h-[calc(100vh-56px)]">
-        <div className="absolute inset-0">
-          <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
-            <LeafletMap
-              places={places}
-              selectedPlaceId={null}
-              onMarkerClick={(placeId) => {
-                const p = places.find((pl) => pl.id === placeId);
-                showWithBackoff(p ? { id: p.id, name: p.name } : { id: placeId, name: 'this business' });
-              }}
-              isLoading={placesLoading}
-              suppressOverlay
-            />
-          </Suspense>
-        </div>
-        {/* Search Bar + Hero text overlaid on map */}
-        <div className="relative z-10 px-4 pt-2 pointer-events-none space-y-2">
-          <div className="max-w-2xl mx-auto w-full" ref={searchContainerRef}>
-            <div className="relative pointer-events-auto">
-              <div className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border border-border text-sm md:text-base shadow-sm">
-                <Search className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  onFocus={() => {
-                    if (suggestions.length > 0) setShowSuggestions(true);
-                  }}
-                  placeholder="Search businesses, categories, or keywords..."
-                  className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
-                  aria-label="Search businesses"
-                  autoComplete="off"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery('');
-                      clearSuggestions();
-                      setShowSuggestions(false);
-                    }}
-                    aria-label="Clear search"
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-              {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute left-0 right-0 mt-2 rounded-xl bg-popover border border-border shadow-lg overflow-hidden z-30">
-                  <ul className="max-h-72 overflow-y-auto py-1">
-                    {suggestions.map((s) => (
-                      <li key={s.id}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowSuggestions(false);
-                            setSearchQuery(s.name);
-                            showWithBackoff({ id: s.id, name: s.name });
-                          }}
-                          className="w-full text-left px-4 py-2 flex items-start gap-2 hover:bg-accent hover:text-accent-foreground transition-colors"
-                        >
-                          <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-sm font-medium text-foreground truncate">{s.name}</span>
-                              {s.isVerified && <BadgeCheck className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
-                            </div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {s.category}
-                              {s.city ? ` • ${s.city}${s.country ? `, ${s.country}` : ''}` : ''}
-                            </div>
-                          </div>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {showSuggestions && searchQuery.trim().length >= 2 && suggestions.length === 0 && (
-                <div className="absolute left-0 right-0 mt-2 rounded-xl bg-popover border border-border shadow-lg px-4 py-3 text-sm text-muted-foreground z-30">
-                  No businesses match "{searchQuery}".
-                </div>
-              )}
+      {/* HERO */}
+      <section
+        className="relative overflow-hidden"
+        style={{ backgroundColor: NAVY }}
+      >
+        {/* Grid pattern overlay */}
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-[0.08] pointer-events-none"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }}
+        />
+        {/* Radial accent */}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(circle at 80% 20%, rgba(201,168,76,0.18), transparent 55%)',
+          }}
+        />
+
+        <div className="relative max-w-6xl mx-auto px-4 py-16 md:py-24">
+          <div className="max-w-2xl text-center md:text-left mx-auto md:mx-0">
+            <div className="flex justify-center md:justify-start mb-6">
+              <Logo light />
+            </div>
+            <h1 className="font-bold text-white leading-tight" style={{ fontSize: '28px' }}>
+              Discover Pi-Powered Businesses Near You
+            </h1>
+            <p
+              className="mt-4 text-white/70 leading-relaxed"
+              style={{ fontSize: '15px' }}
+            >
+              Avante Maps connects you with local businesses that accept Pi. Explore, save, and message them — all in one place.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 items-stretch md:items-start max-w-xs mx-auto md:mx-0">
+              <Button
+                onClick={handlePiLogin}
+                disabled={loginLoading}
+                className="w-full font-semibold hover:brightness-95"
+                style={{ backgroundColor: GOLD, color: NAVY }}
+                size="lg"
+              >
+                {loginLoading ? 'Connecting…' : 'Get Started with Pi'}
+              </Button>
+              <Button
+                onClick={scrollToFeatures}
+                variant="outline"
+                size="lg"
+                className="w-full bg-transparent border-white/60 text-white hover:bg-white/10 hover:text-white"
+              >
+                Learn More
+              </Button>
             </div>
           </div>
-          <h6 className="text-xs md:text-sm font-medium text-foreground text-center drop-shadow-sm">
-            Discover, Explore, and Connect with Businesses Nearby!
-          </h6>
         </div>
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-44 md:bottom-52 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 pointer-events-none">
-          <span className="text-xs text-foreground/80 font-medium drop-shadow-sm">Scroll to explore</span>
-          <div className="animate-bounce">
-            <ChevronDown className="h-5 w-5 text-primary" />
-          </div>
-        </div>
-        {/* Inline login CTA when a restricted marker is clicked */}
-        {restrictedPlace && (
-          <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-auto px-4 pb-4">
-            <Card className="max-w-2xl mx-auto p-4 border border-border bg-card/95 backdrop-blur-md shadow-lg rounded-2xl">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-xl bg-primary/10 flex-shrink-0">
-                  <MapPin className="h-5 w-5 text-primary" />
+      </section>
+
+      {/* FEATURES */}
+      <section id="features" className="bg-white py-16 px-4">
+        <div className="max-w-5xl mx-auto">
+          <h2
+            className="text-center font-bold"
+            style={{ fontSize: '20px', color: NAVY }}
+          >
+            Everything you need to find Pi businesses
+          </h2>
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+            {features.map(({ icon: Icon, title, desc }) => (
+              <div
+                key={title}
+                className="p-5 rounded-2xl border border-black/5 bg-white shadow-sm flex gap-4 items-start"
+              >
+                <div
+                  className="flex items-center justify-center rounded-full flex-shrink-0"
+                  style={{ width: 48, height: 48, backgroundColor: 'rgba(201,168,76,0.15)' }}
+                >
+                  <Icon className="h-6 w-6" style={{ color: GOLD }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-foreground truncate">{restrictedPlace.name}</h3>
-                  <p className="text-xs text-muted-foreground leading-snug mt-0.5">
-                    Sign in with Pi Network to view full business details.
-                  </p>
-                  <div className="mt-3 flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => setShowLogin(true)}
-                      className="h-8 gap-1.5"
-                    >
-                      <LogIn className="h-3.5 w-3.5" />
-                      Sign in
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={dismissRestricted}
-                      className="h-8"
-                    >
-                      Dismiss
-                    </Button>
-                  </div>
+                  <h3 className="font-bold text-base" style={{ color: NAVY }}>{title}</h3>
+                  <p className="text-sm text-muted-foreground mt-1 leading-snug">{desc}</p>
                 </div>
-                <button
-                  type="button"
-                  aria-label="Close"
-                  onClick={dismissRestricted}
-                  className="p-1 -m-1 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </Card>
-          </div>
-        )}
-        {/* Feature cards anchored to bottom of map */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-auto">
-          <div className="bg-gradient-to-t from-background via-background/95 to-transparent pt-16 pb-4 px-4">
-            <div className="max-w-4xl mx-auto grid grid-cols-2 gap-3 md:gap-4">
-              {[
-                { icon: Store, title: 'Discover Businesses', desc: 'Find local shops, services, and attractions', color: 'text-amber-500' },
-                { icon: Bookmark, title: 'Save & Share', desc: 'Bookmark favorite spots and share them with friends', color: 'text-violet-500' },
-              ].map(({ icon: Icon, title, desc, color }) => (
-                <Card
-                  key={title}
-                  className="p-4 flex flex-col items-start gap-2 border border-border bg-card/95 backdrop-blur-sm shadow-md rounded-2xl"
-                >
-                  <div className="p-2 rounded-xl bg-muted/60">
-                    <Icon className={`h-5 w-5 ${color}`} />
-                  </div>
-                  <h3 className="text-sm font-bold text-foreground leading-tight">{title}</h3>
-                  <p className="text-xs text-muted-foreground leading-snug">{desc}</p>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="px-4 pt-2 pb-6 bg-background">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-lg md:text-2xl font-bold text-foreground text-center mb-4">Our Growing Community</h2>
-          <div className="grid grid-cols-3 gap-3 md:gap-6">
-            {[
-              { icon: Store, value: stats.business_count, label: 'Businesses' },
-              { icon: Users, value: stats.user_count, label: 'Users' },
-              { icon: Globe, value: stats.country_count || 1, label: 'Countries' },
-            ].map(({ icon: Icon, value, label }) => (
-              <div key={label} className="flex flex-col items-center gap-1 p-3 md:p-5 rounded-xl bg-card border border-border">
-                <Icon className="h-5 w-5 md:h-6 md:w-6 text-primary mb-1" />
-                <span className="text-xl md:text-3xl font-bold text-foreground">{value}+</span>
-                <span className="text-xs md:text-sm text-muted-foreground">{label}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Problem Section */}
-      <section className="px-4 py-6">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-lg md:text-2xl font-bold text-foreground mb-2">The Problem</h2>
-          <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-            Pi holders struggle to find real places to spend their cryptocurrency. Businesses that accept Pi have no easy way to get discovered by potential customers.
+      {/* PI CALLOUT */}
+      <section className="py-16 px-4" style={{ backgroundColor: '#F5F5F5' }}>
+        <div className="max-w-2xl mx-auto text-center">
+          <div
+            className="mx-auto flex items-center justify-center rounded-full mb-5"
+            style={{ width: 56, height: 56, backgroundColor: GOLD }}
+          >
+            <span className="text-2xl font-bold" style={{ color: NAVY }}>π</span>
+          </div>
+          <h2 className="font-bold" style={{ fontSize: '20px', color: NAVY }}>
+            Built for the Pi Network Community
+          </h2>
+          <p className="mt-3 text-muted-foreground leading-relaxed" style={{ fontSize: '14px' }}>
+            Avante Maps is designed exclusively for Pi Network users. Verified Pi users get full access to messaging, saving, and business registration — all powered by Pi.
           </p>
+          <Button
+            onClick={handlePiLogin}
+            disabled={loginLoading}
+            className="mt-6 font-semibold hover:brightness-95"
+            style={{ backgroundColor: GOLD, color: NAVY }}
+            size="lg"
+          >
+            {loginLoading ? 'Connecting…' : 'Join with Pi'}
+          </Button>
         </div>
       </section>
 
-      {/* Solution Section */}
-      <section className="px-4 py-6 bg-muted/30">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-lg md:text-2xl font-bold text-foreground mb-4">How Avante Maps Helps</h2>
-          <div className="space-y-4 md:grid md:grid-cols-3 md:gap-6 md:space-y-0">
-            {[
-              { title: 'For Pi Holders', desc: 'Find businesses near you that accept Pi. Explore, review, and save your favorites.' },
-              { title: 'For Business Owners', desc: 'Register your business for free. Get discovered by Pi users in your area.' },
-              { title: 'For the Community', desc: 'Build a thriving Pi economy by connecting buyers and sellers in one place.' },
-            ].map(({ title, desc }) => (
-              <div key={title} className="flex gap-3 items-start md:flex-col md:items-start">
-                <div className="mt-1 h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                <div>
-                  <h3 className="text-sm md:text-base font-semibold text-foreground">{title}</h3>
-                  <p className="text-xs md:text-sm text-muted-foreground mt-0.5">{desc}</p>
-                </div>
-              </div>
-            ))}
+      {/* FOOTER */}
+      <footer className="py-12 px-4 text-white" style={{ backgroundColor: NAVY }}>
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div>
+            <Logo light />
+            <p className="mt-3 text-white/70 text-sm">Discover. Connect. Transact.</p>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-white/90">Company</h4>
+            <ul className="space-y-2 text-sm text-white/70">
+              <li><Link to="/pricing" className="hover:text-white">Pricing</Link></li>
+              <li><Link to="/privacy-policy" className="hover:text-white">Privacy Policy</Link></li>
+              <li><Link to="/terms-of-service" className="hover:text-white">Terms of Service</Link></li>
+              <li><Link to="/cookie-policy" className="hover:text-white">Cookie Policy</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-white/90">Support</h4>
+            <ul className="space-y-2 text-sm text-white/70">
+              <li>
+                <Link to="/contact" className="hover:text-white inline-flex items-center gap-2">
+                  <Mail className="h-4 w-4" /> Contact Us
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="hover:text-white inline-flex items-center gap-2">
+                  <LifeBuoy className="h-4 w-4" /> Help & Support
+                </Link>
+              </li>
+            </ul>
           </div>
         </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="px-4 py-8">
-        <div className="max-w-3xl mx-auto text-center space-y-4">
-          <h2 className="text-lg md:text-2xl font-bold text-foreground">Ready to Get Started?</h2>
-          <p className="text-sm md:text-base text-muted-foreground">Join the growing Pi business community today.</p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={handleLoginWithPi} size="lg" className="rounded-full w-full sm:w-auto">
-              Explore the Map
-            </Button>
-            <Button onClick={() => navigate('/registration')} variant="outline" size="lg" className="rounded-full w-full sm:w-auto">
-              Register Your Business
-            </Button>
-          </div>
+        <div className="max-w-6xl mx-auto mt-10 pt-6 border-t border-white/10 text-center text-xs text-white/60">
+          © 2026 Avante Maps. Built on the Pi Network.
         </div>
-      </section>
-
-      {/* Footer spacing */}
-      <div className="h-8" />
+      </footer>
 
       <LoginDialog open={showLogin} onOpenChange={setShowLogin} />
     </div>
