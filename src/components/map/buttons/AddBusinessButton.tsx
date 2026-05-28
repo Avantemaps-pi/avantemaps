@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Plus, X, MapPin, Bookmark, Store } from 'lucide-react';
+import { Plus, X, MapPin, Bookmark, Store, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth/useAuth';
 
@@ -26,6 +26,7 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
   const navigate = useNavigate();
   const [fabState, setFabState] = useState<FabState | null>(null);
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -33,10 +34,12 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
     const applyState = (hasBusiness: boolean, firstVisit: string) => {
       if (hasBusiness) {
         setFabState('hasBusiness');
+        setIsLoading(false);
         return;
       }
       const elapsed = Date.now() - new Date(firstVisit).getTime();
       setFabState(elapsed > TWENTY_FOUR_HOURS_MS ? 'collapsed' : 'expanded');
+      setIsLoading(false);
     };
 
     const determineState = async () => {
@@ -86,7 +89,8 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
           return;
         } catch (error) {
           console.warn('Failed to refresh business count, using cached/default state:', error);
-          // Cached state is already applied; nothing more to do
+          // Cached state is already applied; ensure loading is cleared
+          if (!cancelled) setIsLoading(false);
           return;
         }
       }
@@ -101,7 +105,22 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
 
   const positionClass = selectedPlace ? 'right-16 md:right-[calc(50%+200px)]' : 'right-6';
 
-  if (fabState === null) return null;
+  if (isLoading) {
+    return (
+      <div
+        data-add-business-button
+        className={`absolute bottom-20 sm:bottom-24 ${positionClass} z-20`}
+      >
+        <Button
+          disabled
+          className="h-12 w-12 p-0 rounded-full bg-primary/60 opacity-70 shadow-lg flex items-center justify-center cursor-not-allowed"
+          aria-label="Loading"
+        >
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </Button>
+      </div>
+    );
+  }
 
   // State 1: expanded pill
   if (fabState === 'expanded') {
