@@ -62,40 +62,44 @@ const AppPreferences = ({
           </Select>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pt-2 border-t">
-          <div className="space-y-0.5">
-            <Label htmlFor="use-location" className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              Use my location
-            </Label>
-            <p className="text-muted-foreground text-sm">
-              Focus the map on your approximate (IP-based) location when you sign in.
-            </p>
+        <div className="pt-2 border-t space-y-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+            <div className="space-y-0.5">
+              <Label htmlFor="use-location" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Use my location
+              </Label>
+              <p className="text-muted-foreground text-sm">
+                Focus the map on your approximate (IP-based) location when you sign in.
+              </p>
+            </div>
+            <Switch
+              id="use-location"
+              checked={useLocation}
+              onCheckedChange={onUseLocationChange}
+              aria-label="Use my location"
+            />
           </div>
-          <Switch
-            id="use-location"
-            checked={useLocation}
-            onCheckedChange={onUseLocationChange}
-            aria-label="Use my location"
-          />
-        </div>
 
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pt-2 border-t">
-          <div className="space-y-0.5">
-            <Label htmlFor="use-device-gps" className="flex items-center gap-2">
-              <Crosshair className="h-4 w-4" />
-              Use device GPS (precise)
-            </Label>
-            <p className="text-muted-foreground text-sm">
-              Opt in to use your device's GPS for accurate location. Your browser will ask for permission. Coordinates stay on your device — they aren't sent to our servers.
-            </p>
-          </div>
-          <Switch
-            id="use-device-gps"
-            checked={useDeviceGps}
-            onCheckedChange={onUseDeviceGpsChange}
-            aria-label="Use device GPS"
-          />
+          {useLocation && (
+            <div className="ml-6 pl-3 border-l flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+              <div className="space-y-0.5">
+                <Label htmlFor="use-device-gps" className="flex items-center gap-2">
+                  <Crosshair className="h-4 w-4" />
+                  Use device GPS (precise)
+                </Label>
+                <p className="text-muted-foreground text-sm">
+                  Opt in to use your device's GPS for accurate location. Your browser will ask for permission. Coordinates stay on your device — they aren't sent to our servers.
+                </p>
+              </div>
+              <Switch
+                id="use-device-gps"
+                checked={useDeviceGps}
+                onCheckedChange={onUseDeviceGpsChange}
+                aria-label="Use device GPS"
+              />
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
