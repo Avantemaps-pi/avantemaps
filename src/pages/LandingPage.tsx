@@ -145,10 +145,10 @@ const LandingPage: React.FC = () => {
                 className="p-4 sm:p-5 rounded-2xl border border-black/5 bg-white shadow-sm flex gap-3 sm:gap-4 items-start"
               >
                 <div
-                  className="flex items-center justify-center rounded-full flex-shrink-0 w-11 h-11 sm:w-12 sm:h-12"
+                  className="flex items-center justify-center rounded-full flex-shrink-0 w-12 h-12"
                   style={{ backgroundColor: 'rgba(201,168,76,0.15)' }}
                 >
-                  <Icon className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: GOLD }} />
+                  <Icon className="h-6 w-6" style={{ color: GOLD }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-base" style={{ color: NAVY }}>{title}</h3>
