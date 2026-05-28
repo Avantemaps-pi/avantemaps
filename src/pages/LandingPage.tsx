@@ -39,17 +39,19 @@ const LandingPage: React.FC = () => {
 
   const Logo = ({ light = false }: { light?: boolean }) => (
     <div className="flex items-center gap-2">
-      <img
-        src={avanteIcon72}
-        srcSet={`${avanteIcon72} 72w, ${avanteIcon144} 144w`}
-        sizes="36px"
-        alt="Avante Maps logo"
-        width={36}
-        height={36}
-        decoding="async"
-        fetchPriority="high"
-        className={`h-9 w-9 rounded-full object-contain ${light ? 'brightness-0 invert' : ''}`}
-      />
+      <div className={light ? 'bg-white rounded-full p-1 flex items-center justify-center' : ''}>
+        <img
+          src={avanteIcon72}
+          srcSet={`${avanteIcon72} 72w, ${avanteIcon144} 144w`}
+          sizes="36px"
+          alt="Avante Maps logo"
+          width={36}
+          height={36}
+          decoding="async"
+          fetchPriority="high"
+          className="h-9 w-9 rounded-full object-contain"
+        />
+      </div>
       <span className={`font-bold text-lg ${light ? 'text-white' : 'text-[#1A1F3C]'}`}>Avante Maps</span>
     </div>
   );
