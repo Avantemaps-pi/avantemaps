@@ -65,16 +65,19 @@ export function PricingCard({
         <div className="flex flex-col gap-1">
           {piPrice ? (
             <div className="flex flex-col gap-1">
+              {/* Primary: Pi amount */}
               <div className="flex items-baseline flex-wrap gap-x-2">
-                <span className="text-3xl text-foreground">$</span>
                 <span className="text-5xl font-bold tracking-tight text-foreground">
-                  {price}
-                </span>
-                <span className="ml-1 text-base font-normal text-muted-foreground">
-                  USD
+                  π {piPrice}
                 </span>
                 <span className="text-base font-normal text-muted-foreground">
                   / {paymentFrequency}
+                </span>
+              </div>
+              {/* Secondary: USD reference */}
+              <div className="flex items-baseline flex-wrap gap-x-2">
+                <span className="text-sm text-muted-foreground">
+                  ≈ ${price} USD
                 </span>
                 {(() => {
                   const monthly = tier.price.monthly;
@@ -84,15 +87,12 @@ export function PricingCard({
                     Number.isFinite(monthly) &&
                     monthly > 1;
                   return showStrike ? (
-                    <span className="ml-2 text-lg text-muted-foreground line-through">
+                    <span className="text-sm text-muted-foreground line-through">
                       ${monthly * 12} USD
                     </span>
                   ) : null;
                 })()}
               </div>
-              <span className="text-sm text-muted-foreground">
-                ≈ π {piPrice} at current rate
-              </span>
             </div>
           ) : (
             <div className="flex items-baseline">
