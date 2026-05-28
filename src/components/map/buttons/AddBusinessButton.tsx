@@ -26,6 +26,7 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
   const navigate = useNavigate();
   const [fabState, setFabState] = useState<FabState | null>(null);
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
