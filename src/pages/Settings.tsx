@@ -70,11 +70,17 @@ const Settings = () => {
   }, []);
 
   const handleUseLocationChange = (value: boolean) => {
+    let shouldAutoEnableGps = false;
     setUseLocation((prev) => {
       // Re-arm the one-time geolocation prompt when toggling from off → on
       // so the user is asked exactly once after re-enabling the setting.
       if (!prev && value) {
         try { window.localStorage?.removeItem('geolocation_prompted'); } catch { /* ignore */ }
+        try {
+          if (window.localStorage?.getItem('location_gps_autoenabled') !== '1') {
+            shouldAutoEnableGps = true;
+          }
+        } catch { /* ignore */ }
       }
       return value;
     });
@@ -88,6 +94,10 @@ const Settings = () => {
       }
     } catch {
       // ignore storage errors (private mode, quota, etc.)
+    }
+    if (shouldAutoEnableGps) {
+      try { window.localStorage?.setItem('location_gps_autoenabled', '1'); } catch { /* ignore */ }
+      persistGpsPref(true);
     }
   };
 
