@@ -105,7 +105,22 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
 
   const positionClass = selectedPlace ? 'right-16 md:right-[calc(50%+200px)]' : 'right-6';
 
-  if (fabState === null) return null;
+  if (isLoading) {
+    return (
+      <div
+        data-add-business-button
+        className={`absolute bottom-20 sm:bottom-24 ${positionClass} z-20`}
+      >
+        <Button
+          disabled
+          className="h-12 w-12 p-0 rounded-full bg-primary/60 opacity-70 shadow-lg flex items-center justify-center cursor-not-allowed"
+          aria-label="Loading"
+        >
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </Button>
+      </div>
+    );
+  }
 
   // State 1: expanded pill
   if (fabState === 'expanded') {
