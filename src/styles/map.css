@@ -35,7 +35,10 @@
   z-index: 1000;
 }
 
-/* Default Leaflet zoom controls are visible in their standard position */
+/* Hide zoom controls */
+.leaflet-control-zoom {
+  display: none !important;
+}
 
 /* Override z-indexes for better stacking */
 .leaflet-pane {

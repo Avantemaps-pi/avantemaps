@@ -167,6 +167,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         
         <MapViewUpdater center={mapCenter} zoom={zoom} />
         <CountryClickFocus />
+        <CountryZoomControl />
         
         <MarkerClusterGroup
           chunkedLoading
