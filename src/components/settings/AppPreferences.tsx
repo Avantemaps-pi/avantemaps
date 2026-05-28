@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Monitor, Sun, Moon, MapPin, Crosshair } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 
 interface AppPreferencesProps {
   colorScheme: 'system' | 'light' | 'dark';
