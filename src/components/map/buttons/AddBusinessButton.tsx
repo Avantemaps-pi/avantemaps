@@ -12,7 +12,14 @@ interface AddBusinessButtonProps {
 type FabState = 'expanded' | 'collapsed' | 'hasBusiness';
 
 const FIRST_VISIT_KEY = 'fab_first_visit';
+const BUSINESS_COUNT_CACHE_KEY = 'fab_business_count_cache';
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+interface BusinessCountCache {
+  uid: string;
+  count: number;
+  timestamp: string;
+}
 
 const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) => {
   const { user, isAuthenticated } = useAuth();
@@ -22,6 +29,16 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
 
   useEffect(() => {
     let cancelled = false;
+
+    const applyState = (hasBusiness: boolean, firstVisit: string) => {
+      if (hasBusiness) {
+        setFabState('hasBusiness');
+        return;
+      }
+      const elapsed = Date.now() - new Date(firstVisit).getTime();
+      setFabState(elapsed > TWENTY_FOUR_HOURS_MS ? 'collapsed' : 'expanded');
+    };
+
     const determineState = async () => {
       // Record first visit timestamp if missing
       let firstVisit = localStorage.getItem(FIRST_VISIT_KEY);
@@ -30,32 +47,54 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
         localStorage.setItem(FIRST_VISIT_KEY, firstVisit);
       }
 
-      // Check business ownership
       let hasBusiness = false;
+
       if (isAuthenticated && user?.uid) {
+        // Try cache first for instant state
+        try {
+          const raw = localStorage.getItem(BUSINESS_COUNT_CACHE_KEY);
+          if (raw) {
+            const cache: BusinessCountCache = JSON.parse(raw);
+            if (cache.uid === user.uid) {
+              hasBusiness = cache.count > 0;
+            }
+          }
+        } catch {
+          // ignore parse errors
+        }
+
+        // Apply cached state immediately so UI renders fast
+        if (!cancelled) applyState(hasBusiness, firstVisit);
+
+        // Background refresh from Supabase
         try {
           const { count } = await supabase
             .from('businesses')
             .select('id', { count: 'exact', head: true })
             .eq('owner_id', user.uid);
-          hasBusiness = (count ?? 0) > 0;
+          const freshHasBusiness = (count ?? 0) > 0;
+
+          // Update cache
+          const cache: BusinessCountCache = {
+            uid: user.uid,
+            count: count ?? 0,
+            timestamp: new Date().toISOString(),
+          };
+          localStorage.setItem(BUSINESS_COUNT_CACHE_KEY, JSON.stringify(cache));
+
+          if (!cancelled) applyState(freshHasBusiness, firstVisit);
+          return;
         } catch (error) {
-          console.warn('Failed to check business count, defaulting FAB to expanded:', error);
-          if (!cancelled) setFabState('expanded');
+          console.warn('Failed to refresh business count, using cached/default state:', error);
+          // Cached state is already applied; nothing more to do
           return;
         }
       }
 
-      if (cancelled) return;
-
-      if (hasBusiness) {
-        setFabState('hasBusiness');
-        return;
-      }
-
-      const elapsed = Date.now() - new Date(firstVisit).getTime();
-      setFabState(elapsed > TWENTY_FOUR_HOURS_MS ? 'collapsed' : 'expanded');
+      // Not authenticated: rely solely on first visit timing
+      if (!cancelled) applyState(false, firstVisit);
     };
+
     determineState();
     return () => { cancelled = true; };
   }, [isAuthenticated, user?.uid]);
