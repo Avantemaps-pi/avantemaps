@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 const DISMISS_KEY = 'location_banner_dismissed';
 const SESSION_FOCUS_KEY = 'ip_location_focused';
 const SETTING_KEY = 'use_location_focus';
+// Persistent flag — once the user has seen the location prompt, never show it again.
+const SEEN_KEY = 'location_banner_seen';
 
 interface Props {
   className?: string;
@@ -16,6 +18,8 @@ const LocationBanner: React.FC<Props> = ({ className }) => {
   useEffect(() => {
     const evaluate = () => {
       try {
+        // Only ever show this prompt on the user's first login.
+        if (localStorage.getItem(SEEN_KEY) === '1') return false;
         if (sessionStorage.getItem(DISMISS_KEY) === '1') return false;
         if (sessionStorage.getItem(SESSION_FOCUS_KEY) === '1') return false;
         if (localStorage.getItem(SETTING_KEY) === '0') return false;
@@ -31,8 +35,13 @@ const LocationBanner: React.FC<Props> = ({ className }) => {
 
   if (!visible) return null;
 
-  const dismiss = () => {
+  const markSeen = () => {
+    try { localStorage.setItem(SEEN_KEY, '1'); } catch { /* ignore */ }
     try { sessionStorage.setItem(DISMISS_KEY, '1'); } catch { /* ignore */ }
+  };
+
+  const dismiss = () => {
+    markSeen();
     setVisible(false);
   };
 
