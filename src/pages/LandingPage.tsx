@@ -161,24 +161,24 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* PI CALLOUT */}
-      <section className="py-16 px-4" style={{ backgroundColor: '#F5F5F5' }}>
+      <section className="py-12 sm:py-16 px-4 sm:px-6" style={{ backgroundColor: '#F5F5F5' }}>
         <div className="max-w-2xl mx-auto text-center">
           <div
-            className="mx-auto flex items-center justify-center rounded-full mb-5"
-            style={{ width: 56, height: 56, backgroundColor: GOLD }}
+            className="mx-auto flex items-center justify-center rounded-full mb-4 sm:mb-5 w-14 h-14"
+            style={{ backgroundColor: GOLD }}
           >
             <span className="text-2xl font-bold" style={{ color: NAVY }}>π</span>
           </div>
-          <h2 className="font-bold" style={{ fontSize: '20px', color: NAVY }}>
+          <h2 className="font-bold text-xl sm:text-2xl md:text-3xl" style={{ color: NAVY }}>
             Built for the Pi Network Community
           </h2>
-          <p className="mt-3 text-muted-foreground leading-relaxed" style={{ fontSize: '14px' }}>
+          <p className="mt-3 text-muted-foreground leading-relaxed text-sm sm:text-base">
             Avante Maps is designed exclusively for Pi Network users. Verified Pi users get full access to messaging, saving, and business registration — all powered by Pi.
           </p>
           <Button
             onClick={handlePiLogin}
             disabled={loginLoading}
-            className="mt-6 font-semibold hover:brightness-95"
+            className="mt-6 w-full sm:w-auto font-semibold hover:brightness-95"
             style={{ backgroundColor: GOLD, color: NAVY }}
             size="lg"
           >
@@ -188,9 +188,9 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* FOOTER */}
-      <footer className="py-12 px-4 text-white" style={{ backgroundColor: NAVY }}>
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div>
+      <footer className="py-10 sm:py-12 px-4 sm:px-6 text-white" style={{ backgroundColor: NAVY }}>
+        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 text-center sm:text-left">
+          <div className="flex flex-col items-center sm:items-start">
             <Logo light />
             <p className="mt-3 text-white/70 text-sm">Discover. Connect. Transact.</p>
           </div>
@@ -219,7 +219,7 @@ const LandingPage: React.FC = () => {
             </ul>
           </div>
         </div>
-        <div className="max-w-6xl mx-auto mt-10 pt-6 border-t border-white/10 text-center text-xs text-white/60">
+        <div className="max-w-6xl mx-auto mt-8 sm:mt-10 pt-6 border-t border-white/10 text-center text-xs text-white/60">
           © 2026 Avante Maps. Built on the Pi Network.
         </div>
       </footer>
