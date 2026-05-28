@@ -143,16 +143,63 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
   // State 2 / 3: collapsed icon with speed dial
   const registerLabel = fabState === 'hasBusiness' ? 'Add Another Business' : 'Register Business';
 
+  const handleRegisterExpand = () => {
+    setSpeedDialOpen(false);
+    setIsExpanding(true);
+    window.setTimeout(() => {
+      navigate('/registration');
+    }, 2000);
+  };
+
   const actions = [
     { icon: MapPin, label: 'Explore Map', onClick: () => navigate('/') },
     { icon: Bookmark, label: 'Save a Business', onClick: () => navigate('/bookmarks') },
-    { icon: Store, label: registerLabel, onClick: () => navigate('/registration') },
+    { icon: Store, label: registerLabel, onClick: handleRegisterExpand, isRegister: true },
   ];
 
-  const handleActionClick = (onClick: () => void) => {
+  const handleActionClick = (action: typeof actions[number]) => {
+    if (action.isRegister) {
+      action.onClick();
+      return;
+    }
     setSpeedDialOpen(false);
-    onClick();
+    action.onClick();
   };
+
+  // Expanding transition: animate collapsed icon into full pill, then navigate
+  if (isExpanding) {
+    return (
+      <div
+        data-add-business-button
+        className={`absolute bottom-20 sm:bottom-24 ${positionClass} z-30`}
+      >
+        <Button
+          disabled
+          style={{ animation: 'fab-expand 600ms ease-out forwards' }}
+          className="h-14 pl-4 pr-6 rounded-full bg-primary shadow-lg flex items-center gap-2 overflow-hidden"
+          aria-label={registerLabel}
+        >
+          <Plus className="h-6 w-6 flex-shrink-0" />
+          <span
+            style={{ animation: 'fab-label-fade 500ms ease-out 250ms forwards', opacity: 0 }}
+            className="text-sm font-medium whitespace-nowrap"
+          >
+            {registerLabel}
+          </span>
+        </Button>
+        <style>{`
+          @keyframes fab-expand {
+            from { width: 3rem; padding-left: 0; padding-right: 0; }
+            to { width: auto; padding-left: 1rem; padding-right: 1.5rem; }
+          }
+          @keyframes fab-label-fade {
+            from { opacity: 0; transform: translateX(-4px); }
+            to { opacity: 1; transform: translateX(0); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -178,7 +225,7 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
                   </span>
                   <button
                     type="button"
-                    onClick={() => handleActionClick(action.onClick)}
+                    onClick={() => handleActionClick(action)}
                     aria-label={action.label}
                     className="h-12 w-12 rounded-full bg-background hover:bg-muted shadow-lg flex items-center justify-center text-foreground transition-colors"
                   >
