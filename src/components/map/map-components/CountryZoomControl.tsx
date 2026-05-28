@@ -338,8 +338,9 @@ const CountryZoomControl: React.FC = () => {
   const plusDisabled = zoom >= mapMaxZoom;
   const minusDisabled = zoom <= mapMinZoom;
   const atCountry = zoom === COUNTRY_ZOOM;
-  const zoomIn = () => map.zoomIn();
-  const zoomOut = () => map.zoomOut();
+  const ZOOM_SKIP = 3;
+  const zoomIn = () => map.setZoom(Math.min(map.getZoom() + ZOOM_SKIP, mapMaxZoom));
+  const zoomOut = () => map.setZoom(Math.max(map.getZoom() - ZOOM_SKIP, mapMinZoom));
 
   // Pointer-move threshold: if the pointer travels more than DRAG_THRESHOLD_PX
   // between pointerdown and pointerup, treat the gesture as a drag and
