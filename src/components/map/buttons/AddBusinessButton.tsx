@@ -33,11 +33,17 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
       // Check business ownership
       let hasBusiness = false;
       if (isAuthenticated && user?.uid) {
-        const { count } = await supabase
-          .from('businesses')
-          .select('id', { count: 'exact', head: true })
-          .eq('owner_id', user.uid);
-        hasBusiness = (count ?? 0) > 0;
+        try {
+          const { count } = await supabase
+            .from('businesses')
+            .select('id', { count: 'exact', head: true })
+            .eq('owner_id', user.uid);
+          hasBusiness = (count ?? 0) > 0;
+        } catch (error) {
+          console.warn('Failed to check business count, defaulting FAB to expanded:', error);
+          if (!cancelled) setFabState('expanded');
+          return;
+        }
       }
 
       if (cancelled) return;
