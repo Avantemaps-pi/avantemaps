@@ -34,10 +34,12 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
     const applyState = (hasBusiness: boolean, firstVisit: string) => {
       if (hasBusiness) {
         setFabState('hasBusiness');
+        setIsLoading(false);
         return;
       }
       const elapsed = Date.now() - new Date(firstVisit).getTime();
       setFabState(elapsed > TWENTY_FOUR_HOURS_MS ? 'collapsed' : 'expanded');
+      setIsLoading(false);
     };
 
     const determineState = async () => {
