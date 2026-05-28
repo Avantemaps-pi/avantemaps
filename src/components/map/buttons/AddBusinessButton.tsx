@@ -89,7 +89,8 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
           return;
         } catch (error) {
           console.warn('Failed to refresh business count, using cached/default state:', error);
-          // Cached state is already applied; nothing more to do
+          // Cached state is already applied; ensure loading is cleared
+          if (!cancelled) setIsLoading(false);
           return;
         }
       }
