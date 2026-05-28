@@ -130,25 +130,25 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* FEATURES */}
-      <section id="features" className="bg-white py-16 px-4">
+      <section id="features" className="bg-white py-12 sm:py-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
           <h2
-            className="text-center font-bold"
-            style={{ fontSize: '20px', color: NAVY }}
+            className="text-center font-bold text-xl sm:text-2xl md:text-3xl"
+            style={{ color: NAVY }}
           >
             Everything you need to find Pi businesses
           </h2>
-          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+          <div className="mt-8 sm:mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
             {features.map(({ icon: Icon, title, desc }) => (
               <div
                 key={title}
-                className="p-5 rounded-2xl border border-black/5 bg-white shadow-sm flex gap-4 items-start"
+                className="p-4 sm:p-5 rounded-2xl border border-black/5 bg-white shadow-sm flex gap-3 sm:gap-4 items-start"
               >
                 <div
-                  className="flex items-center justify-center rounded-full flex-shrink-0"
-                  style={{ width: 48, height: 48, backgroundColor: 'rgba(201,168,76,0.15)' }}
+                  className="flex items-center justify-center rounded-full flex-shrink-0 w-11 h-11 sm:w-12 sm:h-12"
+                  style={{ backgroundColor: 'rgba(201,168,76,0.15)' }}
                 >
-                  <Icon className="h-6 w-6" style={{ color: GOLD }} />
+                  <Icon className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: GOLD }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-base" style={{ color: NAVY }}>{title}</h3>
