@@ -82,25 +82,27 @@ const AppPreferences = ({
             />
           </div>
 
-          {useLocation && (
-            <div className="ml-6 pl-3 border-l flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-              <div className="space-y-0.5">
-                <Label htmlFor="use-device-gps" className="flex items-center gap-2">
-                  <Crosshair className="h-4 w-4" />
-                  Use device GPS (precise)
-                </Label>
-                <p className="text-muted-foreground text-sm">
-                  Opt in to use your device's GPS for accurate location. Your browser will ask for permission. Coordinates stay on your device — they aren't sent to our servers.
-                </p>
+          <Collapsible open={useLocation}>
+            <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+              <div className="mt-4 ml-6 pl-3 border-l flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                <div className="space-y-0.5">
+                  <Label htmlFor="use-device-gps" className="flex items-center gap-2">
+                    <Crosshair className="h-4 w-4" />
+                    Use device GPS (precise)
+                  </Label>
+                  <p className="text-muted-foreground text-sm">
+                    Opt in to use your device's GPS for accurate location. Your browser will ask for permission. Coordinates stay on your device — they aren't sent to our servers.
+                  </p>
+                </div>
+                <Switch
+                  id="use-device-gps"
+                  checked={useDeviceGps}
+                  onCheckedChange={onUseDeviceGpsChange}
+                  aria-label="Use device GPS"
+                />
               </div>
-              <Switch
-                id="use-device-gps"
-                checked={useDeviceGps}
-                onCheckedChange={onUseDeviceGpsChange}
-                aria-label="Use device GPS"
-              />
-            </div>
-          )}
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </CardContent>
     </Card>
