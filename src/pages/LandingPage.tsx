@@ -48,7 +48,7 @@ const LandingPage: React.FC = () => {
         height={36}
         decoding="async"
         fetchPriority="high"
-        className="h-9 w-9 rounded-full object-contain"
+        className="h-9 w-9 rounded-full object-contain brightness-0 invert"
       />
       <span className={`font-bold text-lg ${light ? 'text-white' : 'text-[#1A1F3C]'}`}>Avante Maps</span>
     </div>
