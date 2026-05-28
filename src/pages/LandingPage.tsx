@@ -198,9 +198,9 @@ const LandingPage: React.FC = () => {
             <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-white/90">Company</h4>
             <ul className="space-y-2 text-sm text-white/70">
               <li><Link to="/pricing" className="hover:text-white">Pricing</Link></li>
-              <li><Link to="/privacy-policy" className="hover:text-white">Privacy Policy</Link></li>
-              <li><Link to="/terms-of-service" className="hover:text-white">Terms of Service</Link></li>
-              <li><Link to="/cookie-policy" className="hover:text-white">Cookie Policy</Link></li>
+              <li><Link to="/privacy" className="hover:text-white">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-white">Terms of Service</Link></li>
+              <li><Link to="/cookies" className="hover:text-white">Cookie Policy</Link></li>
             </ul>
           </div>
           <div>
