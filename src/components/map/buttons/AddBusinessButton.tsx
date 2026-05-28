@@ -27,6 +27,7 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
   const [fabState, setFabState] = useState<FabState | null>(null);
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExpanding, setIsExpanding] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
