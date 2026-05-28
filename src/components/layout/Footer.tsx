@@ -1,59 +1,97 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { legalItems } from '@/components/layout/sidebar/sidebarConfig';
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, LifeBuoy } from 'lucide-react';
+import avanteIcon72 from '@/assets/avante-icon-72.webp';
+import avanteIcon144 from '@/assets/avante-icon-144.webp';
+
+const NAVY = '#1A1F3C';
+
+const Logo: React.FC = () => (
+  <div className="flex items-center gap-2">
+    <img
+      src={avanteIcon72}
+      srcSet={`${avanteIcon72} 72w, ${avanteIcon144} 144w`}
+      sizes="36px"
+      alt="Avante Maps logo"
+      width={36}
+      height={36}
+      decoding="async"
+      className="h-9 w-9 rounded-full object-contain"
+    />
+    <span className="font-bold text-lg text-white">Avante Maps</span>
+  </div>
+);
 
 const Footer: React.FC = () => {
   return (
-    <footer className="w-full border-t border-border bg-background/95 backdrop-blur-sm py-4 px-4 mt-auto">
-      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-        {/* Legal Links */}
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <Link 
-            to="/pricing" 
-            className="hover:text-primary transition-colors font-medium"
-          >
-            Pricing
-          </Link>
-          <span className="hidden sm:inline text-border">|</span>
-          {legalItems.map((item, index) => (
-            <React.Fragment key={item.to}>
-              <Link 
-                to={item.to} 
-                className="hover:text-primary transition-colors"
-              >
-                {item.label}
-              </Link>
-              {index < legalItems.length - 1 && (
-                <span className="hidden sm:inline text-border">|</span>
-              )}
-            </React.Fragment>
-          ))}
+    <footer className="w-full text-white" style={{ backgroundColor: NAVY }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 text-center sm:text-left">
+          {/* Column 1: Logo + Tagline */}
+          <div className="flex flex-col items-center sm:items-start">
+            <Logo />
+            <p className="mt-3 text-white/70 text-sm">Discover. Connect. Transact.</p>
+          </div>
+
+          {/* Column 2: Company Links */}
+          <div>
+            <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-white/90">
+              Company
+            </h4>
+            <ul className="space-y-2 text-sm text-white/70">
+              <li>
+                <Link to="/pricing" className="hover:text-white transition-colors">
+                  Pricing
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy" className="hover:text-white transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className="hover:text-white transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link to="/cookies" className="hover:text-white transition-colors">
+                  Cookie Policy
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3: Support */}
+          <div>
+            <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-white/90">
+              Support
+            </h4>
+            <ul className="space-y-2 text-sm text-white/70">
+              <li>
+                <Link
+                  to="/contact"
+                  className="hover:text-white inline-flex items-center gap-2 transition-colors"
+                >
+                  <Mail className="h-4 w-4" /> Contact Us
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/contact"
+                  className="hover:text-white inline-flex items-center gap-2 transition-colors"
+                >
+                  <LifeBuoy className="h-4 w-4" /> Help & Support
+                </Link>
+              </li>
+            </ul>
+          </div>
         </div>
 
-        {/* Contact Info */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <a 
-            href="mailto:support@avantemaps.com" 
-            className="flex items-center gap-1 hover:text-primary transition-colors"
-          >
-            <Mail className="h-3 w-3" />
-            <span className="hidden sm:inline">support@avantemaps.com</span>
-          </a>
-          <a 
-            href="tel:+27624767535" 
-            className="flex items-center gap-1 hover:text-primary transition-colors"
-          >
-            <Phone className="h-3 w-3" />
-            <span className="hidden sm:inline">(062) 476-7535</span>
-          </a>
+        {/* Bottom bar */}
+        <div className="mt-8 sm:mt-10 pt-6 border-t border-white/10 text-center text-xs text-white/60">
+          © {new Date().getFullYear()} Avante Maps. Built on the Pi Network.
         </div>
-
-        {/* Copyright */}
-        <p className="text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Avante Maps
-        </p>
       </div>
     </footer>
   );
