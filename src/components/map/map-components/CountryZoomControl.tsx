@@ -338,7 +338,7 @@ const CountryZoomControl: React.FC = () => {
   const plusDisabled = zoom >= mapMaxZoom;
   const minusDisabled = zoom <= mapMinZoom;
   const atCountry = zoom === COUNTRY_ZOOM;
-  const ZOOM_SKIP = 3;
+  const ZOOM_SKIP = 1;
   const zoomIn = () => map.setZoom(Math.min(map.getZoom() + ZOOM_SKIP, mapMaxZoom));
   const zoomOut = () => map.setZoom(Math.max(map.getZoom() - ZOOM_SKIP, mapMinZoom));
 
