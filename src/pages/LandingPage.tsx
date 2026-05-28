@@ -95,25 +95,22 @@ const LandingPage: React.FC = () => {
           }}
         />
 
-        <div className="relative max-w-6xl mx-auto px-4 py-16 md:py-24">
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-24">
           <div className="max-w-2xl text-center md:text-left mx-auto md:mx-0">
-            <div className="flex justify-center md:justify-start mb-6">
+            <div className="flex justify-center md:justify-start mb-5 sm:mb-6">
               <Logo light />
             </div>
-            <h1 className="font-bold text-white leading-tight" style={{ fontSize: '28px' }}>
+            <h1 className="font-bold text-white leading-tight text-[28px] sm:text-4xl md:text-5xl">
               Discover Pi-Powered Businesses Near You
             </h1>
-            <p
-              className="mt-4 text-white/70 leading-relaxed"
-              style={{ fontSize: '15px' }}
-            >
+            <p className="mt-3 sm:mt-4 text-white/70 leading-relaxed text-[15px] sm:text-base md:text-lg">
               Avante Maps connects you with local businesses that accept Pi. Explore, save, and message them — all in one place.
             </p>
-            <div className="mt-8 flex flex-col gap-3 items-stretch md:items-start max-w-xs mx-auto md:mx-0">
+            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center md:justify-start max-w-xs sm:max-w-none mx-auto md:mx-0">
               <Button
                 onClick={handlePiLogin}
                 disabled={loginLoading}
-                className="w-full font-semibold hover:brightness-95"
+                className="w-full sm:w-auto font-semibold hover:brightness-95"
                 style={{ backgroundColor: GOLD, color: NAVY }}
                 size="lg"
               >
@@ -123,7 +120,7 @@ const LandingPage: React.FC = () => {
                 onClick={scrollToFeatures}
                 variant="outline"
                 size="lg"
-                className="w-full bg-transparent border-white/60 text-white hover:bg-white/10 hover:text-white"
+                className="w-full sm:w-auto bg-transparent border-white/60 text-white hover:bg-white/10 hover:text-white"
               >
                 Learn More
               </Button>
