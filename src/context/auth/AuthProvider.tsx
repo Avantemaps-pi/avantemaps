@@ -382,7 +382,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       safeSetIsLoading(true);
     }
     try {
-      await refreshUserDataService(user, safeSetUser, silent ? () => {} : safeSetIsLoading);
+      await refreshUserDataService(user, safeSetUser, silent ? () => {} : safeSetIsLoading, silent);
       secureLog.info('User data refreshed');
       setLastRefresh(now);
     } catch (error) {
