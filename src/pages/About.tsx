@@ -3,11 +3,9 @@ import avanteIcon72 from '@/assets/avante-icon-72.webp';
 import avanteIcon144 from '@/assets/avante-icon-144.webp';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Heart, Mail } from 'lucide-react';
+import { Mail, MessageCircle, Facebook, Twitter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MessageCircle, Facebook, Twitter } from 'lucide-react';
 import MetaTags from '@/components/seo/MetaTags';
 
 const About = () => {
