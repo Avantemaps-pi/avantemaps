@@ -436,7 +436,8 @@ export const performLogin = async (
 export const refreshUserData = async (
   user: PiUser | null,
   setUser: (user: PiUser) => void,
-  setIsLoading: (loading: boolean) => void
+  setIsLoading: (loading: boolean) => void,
+  silent = false
 ): Promise<void> => {
   if (!user) return;
 
@@ -464,7 +465,11 @@ export const refreshUserData = async (
     // updateUserData re-fetches roles from the database internally
     await updateUserData({ ...user, subscriptionTier }, setUser);
   } catch (error) {
-    secureLog.error("Error refreshing user data:", error);
+    if (silent) {
+      secureLog.warn("Error refreshing user data (silent):", error);
+    } else {
+      secureLog.error("Error refreshing user data:", error);
+    }
   } finally {
     setIsLoading(false);
   }
