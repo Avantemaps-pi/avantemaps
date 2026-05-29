@@ -23,15 +23,14 @@ export interface VerificationResult {
 export const verifyPiAuthentication = async (
   accessToken: string,
   uid: string,
-  username: string,
-  testMode: boolean = false
+  username: string
 ): Promise<VerificationResult> => {
   try {
     const sanitizedUid = uid.trim();
     const sanitizedUsername = username.trim();
 
     secureLog.info(
-      `Verifying Pi authentication for user: ${sanitizedUsername}${testMode ? " (TEST MODE)" : ""}`
+      `Verifying Pi authentication for user: ${sanitizedUsername}`
     );
 
     const payload = {
@@ -47,11 +46,7 @@ export const verifyPiAuthentication = async (
     let error: any = null;
 
     try {
-      const functionName = testMode
-        ? "verify-pi-auth?test=true"
-        : "verify-pi-auth";
-
-      const result = await supabase.functions.invoke(functionName, {
+      const result = await supabase.functions.invoke("verify-pi-auth", {
         body: payload,
       });
 
@@ -76,10 +71,7 @@ export const verifyPiAuthentication = async (
       secureLog.info("FALLBACK MODE: Trying direct fetch to Supabase Function...");
 
       try {
-        const baseUrl = `${getSupabaseFunctionsUrl()}/verify-pi-auth`;
-        const url = testMode ? `${baseUrl}?test=true` : baseUrl;
-        
-        const response = await fetch(url, {
+        const response = await fetch(`${getSupabaseFunctionsUrl()}/verify-pi-auth`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
