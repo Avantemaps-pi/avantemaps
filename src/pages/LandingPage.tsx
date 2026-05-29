@@ -6,6 +6,7 @@ import { useAuth } from '@/context/auth/useAuth';
 import LoginDialog from '@/components/auth/LoginDialog';
 import avanteIcon72 from '@/assets/avante-icon-72.webp';
 import avanteIcon144 from '@/assets/avante-icon-144.webp';
+import mapPreview from '@/assets/map-preview.jpg';
 
 const NAVY = '#1A1F3C';
 const GOLD = '#C9A84C';
