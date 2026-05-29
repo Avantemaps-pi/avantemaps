@@ -7,6 +7,7 @@ import LoginDialog from '@/components/auth/LoginDialog';
 import avanteIcon72 from '@/assets/avante-icon-72.webp';
 import avanteIcon144 from '@/assets/avante-icon-144.webp';
 import mapPreview from '@/assets/map-preview.jpg';
+import piNetworkLogo from '@/assets/pi-network-logo.png';
 
 const NAVY = '#1A1F3C';
 const GOLD = '#C9A84C';
