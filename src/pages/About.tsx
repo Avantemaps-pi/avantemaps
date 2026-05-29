@@ -3,11 +3,9 @@ import avanteIcon72 from '@/assets/avante-icon-72.webp';
 import avanteIcon144 from '@/assets/avante-icon-144.webp';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Heart, Mail } from 'lucide-react';
+import { Mail, MessageCircle, Facebook, Twitter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MessageCircle, Facebook, Twitter } from 'lucide-react';
 import MetaTags from '@/components/seo/MetaTags';
 
 const About = () => {
@@ -108,34 +106,22 @@ const About = () => {
 
         <div className="flex flex-col items-center justify-center space-y-4 py-8">
           <h2 className="text-2xl font-semibold">Connect With Us</h2>
-          <div className="flex space-x-4">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="rounded-full" size="icon">
-                  <Heart className="h-5 w-5" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-3" align="center">
-                <p className="text-xs text-muted-foreground mb-2 text-center">Follow us on social media</p>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" className="rounded-full hover:text-green-600" asChild>
-                    <a href="https://wa.me/27683422444" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
-                      <MessageCircle className="h-5 w-5" />
-                    </a>
-                  </Button>
-                  <Button variant="outline" size="icon" className="rounded-full hover:text-blue-500" asChild>
-                    <a href="https://x.com/Avantemaps" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
-                      <Twitter className="h-5 w-5" />
-                    </a>
-                  </Button>
-                  <Button variant="outline" size="icon" className="rounded-full hover:text-blue-600" asChild>
-                    <a href="https://web.facebook.com/profile.php?id=61570803414310" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                      <Facebook className="h-5 w-5" />
-                    </a>
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" className="rounded-full hover:text-green-600" asChild>
+              <a href="https://wa.me/27683422444" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                <MessageCircle className="h-5 w-5" />
+              </a>
+            </Button>
+            <Button variant="outline" size="icon" className="rounded-full hover:text-blue-500" asChild>
+              <a href="https://x.com/Avantemaps" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
+                <Twitter className="h-5 w-5" />
+              </a>
+            </Button>
+            <Button variant="outline" size="icon" className="rounded-full hover:text-blue-600" asChild>
+              <a href="https://web.facebook.com/profile.php?id=61570803414310" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                <Facebook className="h-5 w-5" />
+              </a>
+            </Button>
             <Button variant="outline" className="rounded-full" size="icon" onClick={() => navigate('/contact#send-message')}>
               <Mail className="h-5 w-5" />
             </Button>
