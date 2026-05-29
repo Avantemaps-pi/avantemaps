@@ -3,7 +3,7 @@ import React, { ReactNode, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import PageHeader from '@/components/layout/PageHeader';
-import Footer from '@/components/layout/Footer';
+
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AppSidebar from './AppSidebar';
 import BottomNavBar from './BottomNavBar';
@@ -21,7 +21,7 @@ interface AppLayoutProps {
   className?: string;
   backButton?: boolean;
   onBackClick?: () => void;
-  showFooter?: boolean;
+  
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ 
@@ -36,7 +36,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   className = '',
   backButton = false,
   onBackClick,
-  showFooter = true
+  
 }) => {
   const isMobile = useIsMobile();
   const location = useLocation();
@@ -89,7 +89,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({
           </main>
 
           
-          {showFooter && <Footer />}
           <BottomNavBar />
           <Toaster />
         </div>
