@@ -21,7 +21,7 @@ interface AppLayoutProps {
   className?: string;
   backButton?: boolean;
   onBackClick?: () => void;
-  showFooter?: boolean;
+  
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ 
@@ -36,7 +36,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   className = '',
   backButton = false,
   onBackClick,
-  showFooter = true
+  
 }) => {
   const isMobile = useIsMobile();
   const location = useLocation();
