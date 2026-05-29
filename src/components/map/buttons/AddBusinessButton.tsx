@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Plus, X, MapPin, Bookmark, Store, Loader2 } from 'lucide-react';
+import { Plus, X, Store, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth/useAuth';
 
@@ -152,8 +152,6 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
   };
 
   const actions = [
-    { icon: MapPin, label: 'Explore Map', onClick: () => navigate('/') },
-    { icon: Bookmark, label: 'Save a Business', onClick: () => navigate('/bookmarks') },
     { icon: Store, label: registerLabel, onClick: handleRegisterExpand, isRegister: true },
   ];
 
