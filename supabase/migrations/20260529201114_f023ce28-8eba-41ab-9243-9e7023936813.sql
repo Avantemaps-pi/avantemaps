@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.update_comment_report_counts() FROM PUBLIC, anon, authenticated;
