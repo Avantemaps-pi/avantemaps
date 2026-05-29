@@ -137,7 +137,7 @@ const About = () => {
             </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-4">
-            © 2025 Avante Maps. All rights reserved.
+            © 2026 Avante Maps. All rights reserved.
           </p>
         </div>
       </div>
