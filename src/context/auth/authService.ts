@@ -313,8 +313,6 @@ export const performLogin = async (
               });
               throw new Error('Session setup failed: missing refresh token');
             } else {
-              // Clear any existing session first to avoid mixing tokens
-              await supabase.auth.signOut();
 
               const sessionPayload: { access_token: string; refresh_token: string } = {
                 access_token: token.trim(),
