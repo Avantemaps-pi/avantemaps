@@ -1,0 +1,1 @@
+ALTER FUNCTION public.get_public_business_detail(integer) SET search_path = public;
