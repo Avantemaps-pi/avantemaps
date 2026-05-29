@@ -152,8 +152,6 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
   };
 
   const actions = [
-    { icon: MapPin, label: 'Explore Map', onClick: () => navigate('/') },
-    { icon: Bookmark, label: 'Save a Business', onClick: () => navigate('/bookmarks') },
     { icon: Store, label: registerLabel, onClick: handleRegisterExpand, isRegister: true },
   ];
 
