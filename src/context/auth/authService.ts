@@ -445,83 +445,28 @@ export const refreshUserData = async (
   try {
     setIsLoading(true);
 
-    // Ensure SDK is initialized before proceeding
-    try {
-      await initializePiNetwork();
-    } catch (error) {
-      secureLog.error("Failed to initialize Pi Network SDK during refresh:", error);
+    // Check existing Supabase session validity — do NOT re-authenticate with Pi.
+    // The Pi access token is intentionally not stored client-side, so calling
+    // window.Pi.authenticate() here would mint a new token that mismatches the
+    // current Supabase session.
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session?.access_token) {
+      secureLog.warn('Silent refresh: no valid Supabase session; skipping refresh', sessionError);
+      return;
+    }
+    const tokenExpiry = session.expires_at ? session.expires_at * 1000 : 0;
+    if (tokenExpiry && Date.now() > tokenExpiry) {
+      secureLog.warn('Silent refresh: Supabase session expired; skipping refresh');
       return;
     }
 
-    // Get user's current subscription
+    // Fetch current subscription tier from the database
     const subscriptionTier = await getUserSubscription(user.uid);
 
-    // Attempt a silent refresh only if SDK is available
-    if (isPiNetworkAvailable()) {
-      secureLog.info("Refreshing user permissions with authenticate (silent) - scopes: username, payments, wallet_address");
-      try {
-        const authResult = await window.Pi!.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
-          secureLog.info('Incomplete payment found during refresh', payment);
-          try {
-            if (window.sessionStorage) {
-              window.sessionStorage.setItem('pi_incomplete_payment', JSON.stringify(payment));
-            }
-          } catch (e) {
-            secureLog.warn('Failed to store incomplete payment during refresh', e);
-          }
-        });
-
-        if (authResult && authResult.user) {
-          // Update Pi SDK currentUser read-only (no token stored)
-          if (window.Pi) {
-            try {
-              Object.defineProperty(window.Pi, 'currentUser', {
-                value: Object.freeze({
-                  uid: authResult.user.uid,
-                  username: authResult.user.username,
-                  roles: Object.freeze((authResult.user.roles ?? []) as string[])
-                }),
-                writable: false,
-                configurable: false
-              });
-            } catch (e) {
-              secureLog.warn('Could not set window.Pi.currentUser (refresh)', e);
-            }
-          }
-
-          const walletAddress = (authResult.user as any).wallet_address;
-          const updated = {
-            ...user,
-            walletAddress: walletAddress || user.walletAddress,
-            subscriptionTier
-          };
-
-          await updateUserData(updated, setUser);
-        } else {
-          // If authResult not provided, just update subscription tier if changed
-          if (user.subscriptionTier !== subscriptionTier) {
-            await updateUserData({
-              ...user,
-              subscriptionTier
-            }, setUser);
-          }
-        }
-      } catch (err) {
-        secureLog.error("Silent refresh authenticate failed:", err);
-        // Do not surface toast on silent refresh failure
-      }
-    } else {
-      // Just update the subscription if offline or SDK not available
-      if (user.subscriptionTier !== subscriptionTier) {
-        await updateUserData({
-          ...user,
-          subscriptionTier
-        }, setUser);
-      }
-    }
+    // updateUserData re-fetches roles from the database internally
+    await updateUserData({ ...user, subscriptionTier }, setUser);
   } catch (error) {
     secureLog.error("Error refreshing user data:", error);
-    toast.error("Failed to refresh user data. Please try again.");
   } finally {
     setIsLoading(false);
   }
