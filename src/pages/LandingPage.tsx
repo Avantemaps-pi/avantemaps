@@ -7,6 +7,7 @@ import LoginDialog from '@/components/auth/LoginDialog';
 import avanteIcon72 from '@/assets/avante-icon-72.webp';
 import avanteIcon144 from '@/assets/avante-icon-144.webp';
 import mapPreview from '@/assets/map-preview.jpg';
+import piNetworkLogo from '@/assets/pi-network-logo.png';
 
 const NAVY = '#1A1F3C';
 const GOLD = '#C9A84C';
@@ -175,12 +176,13 @@ const LandingPage: React.FC = () => {
       {/* PI CALLOUT */}
       <section className="py-12 sm:py-16 px-4 sm:px-6" style={{ backgroundColor: '#F5F5F5' }}>
         <div className="max-w-2xl mx-auto text-center">
-          <div
-            className="mx-auto flex items-center justify-center rounded-full mb-4 sm:mb-5 w-14 h-14"
-            style={{ backgroundColor: GOLD }}
-          >
-            <span className="text-2xl font-bold" style={{ color: NAVY }}>π</span>
-          </div>
+          <img
+            src={piNetworkLogo}
+            alt="Pi Network"
+            className="mx-auto mb-4 sm:mb-5 w-14 h-14 rounded-full object-contain"
+            width={56}
+            height={56}
+          />
           <h2 className="font-bold text-xl sm:text-2xl md:text-3xl" style={{ color: NAVY }}>
             Built for the Pi Network Community
           </h2>
