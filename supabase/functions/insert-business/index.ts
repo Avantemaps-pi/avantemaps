@@ -145,7 +145,7 @@ Deno.serve(async (req: Request) => {
     if (currentCount >= limit) {
       return new Response(JSON.stringify({
         success: false,
-        error: `Business limit reached. Your ${body.subscription} plan allows up to ${limit} business${limit > 1 ? 'es' : ''}.`,
+        error: `Business limit reached. Your ${actualSubscription} plan allows up to ${limit} business${limit > 1 ? 'es' : ''}.`,
         traceId,
       }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
