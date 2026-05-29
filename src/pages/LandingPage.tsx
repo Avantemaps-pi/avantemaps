@@ -101,7 +101,7 @@ const LandingPage: React.FC = () => {
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-24">
           <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
             <div className="flex-1 max-w-2xl text-center md:text-left mx-auto md:mx-0">
-              <div className="flex justify-center md:justify-start mb-5 sm:mb-6">
+              <div className="hidden md:flex justify-center md:justify-start mb-5 sm:mb-6">
                 <Logo light />
               </div>
               <h1 className="font-bold text-white leading-tight text-[28px] sm:text-4xl md:text-5xl">
