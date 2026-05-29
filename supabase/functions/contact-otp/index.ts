@@ -61,6 +61,25 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // ✅ SECURITY: Require authenticated caller
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const callerToken = authHeader.replace('Bearer ', '');
+    const authClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!);
+    const { data: authData, error: authError } = await authClient.auth.getUser(callerToken);
+    if (authError || !authData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const authenticatedUserId = authData.user.id;
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body = await req.json();
     const { action, email, otp, business_id } = body;
