@@ -177,15 +177,22 @@ const LandingPage: React.FC = () => {
           <p className="mt-3 text-muted-foreground leading-relaxed text-sm sm:text-base">
             Avante Maps is designed exclusively for Pi Network users. Verified Pi users get full access to messaging, saving, and business registration — all powered by Pi.
           </p>
-          <Button
-            onClick={handlePiLogin}
-            disabled={loginLoading}
-            className="mt-6 w-full sm:w-auto font-semibold hover:brightness-95"
-            style={{ backgroundColor: GOLD, color: NAVY }}
-            size="lg"
-          >
-            {loginLoading ? 'Connecting…' : 'Join with Pi'}
-          </Button>
+          <div className="mt-6 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center max-w-xs sm:max-w-none mx-auto">
+            <Button
+              asChild
+              variant="outline"
+              className="w-full sm:w-auto font-semibold border-black/20 text-[#1A1F3C] hover:bg-black/5"
+            >
+              <Link to="/pricing">View pricing</Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              className="w-full sm:w-auto font-semibold border-black/20 text-[#1A1F3C] hover:bg-black/5"
+            >
+              <Link to="/about">Learn about us</Link>
+            </Button>
+          </div>
         </div>
       </section>
 
