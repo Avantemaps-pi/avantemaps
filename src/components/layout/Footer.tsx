@@ -16,7 +16,7 @@ const Logo: React.FC = () => (
       width={36}
       height={36}
       decoding="async"
-      className="h-9 w-9 rounded-full object-contain"
+      className="h-9 w-9 rounded-full object-contain filter brightness-0 invert"
     />
     <span className="font-bold text-lg text-white">Avante Maps</span>
   </div>
