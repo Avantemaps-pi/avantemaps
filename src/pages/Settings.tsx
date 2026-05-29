@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { legalItems } from '@/components/layout/sidebar/sidebarConfig';
 import AppLayout from '@/components/layout/AppLayout';
 import ProfileSettings from '@/components/settings/ProfileSettings';
 import AppPreferences from '@/components/settings/AppPreferences';
@@ -9,7 +8,18 @@ import DangerZone from '@/components/settings/DangerZone';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/auth';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
-import { User, Settings as SettingsIcon, AlertTriangle, Scale, ChevronRight } from 'lucide-react';
+import {
+  User,
+  Settings as SettingsIcon,
+  AlertTriangle,
+  Scale,
+  ChevronRight,
+  CreditCard,
+  Shield,
+  FileText,
+  Cookie,
+  Mail,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
