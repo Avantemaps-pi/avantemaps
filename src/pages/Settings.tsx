@@ -440,43 +440,6 @@ const Settings = () => {
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="legal" className="border rounded-lg overflow-hidden">
-            <AccordionTrigger className="px-4 sm:px-6 py-3 hover:no-underline hover:bg-muted/50">
-              <div className="flex items-start gap-3 text-left">
-                <Scale className="h-5 w-5 mt-0.5 flex-shrink-0 text-primary" />
-                <div className="flex flex-col items-start">
-                  <span className="font-semibold text-base sm:text-lg">Legal &amp; about</span>
-                  <span className="text-xs sm:text-sm text-muted-foreground">Policies and contact</span>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 sm:px-6 pt-2 pb-4">
-              <div className="space-y-1">
-                <Link
-                  to="/pricing"
-                  className="flex items-center justify-between px-3 py-3 rounded-md hover:bg-muted transition-colors text-sm"
-                >
-                  <span>Pricing</span>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </Link>
-                {legalItems.map((item) => (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className="flex items-center justify-between px-3 py-3 rounded-md hover:bg-muted transition-colors text-sm"
-                  >
-                    <span>{item.label}</span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </Link>
-                ))}
-                <div className="pt-4 pb-1 text-center">
-                  <p className="text-xs text-muted-foreground">
-                    &copy; {new Date().getFullYear()} Avante Maps
-                  </p>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
         </Accordion>
       </div>
 
