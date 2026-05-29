@@ -3,7 +3,7 @@ import React, { ReactNode, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import PageHeader from '@/components/layout/PageHeader';
-import Footer from '@/components/layout/Footer';
+
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AppSidebar from './AppSidebar';
 import BottomNavBar from './BottomNavBar';
