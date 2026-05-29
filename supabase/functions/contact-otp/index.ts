@@ -128,6 +128,19 @@ Deno.serve(async (req) => {
         });
       }
 
+      // ✅ SECURITY: Verify caller owns this business
+      const { data: ownerCheck, error: ownerError } = await supabase
+        .from('businesses')
+        .select('owner_id')
+        .eq('id', business_id)
+        .maybeSingle();
+      if (ownerError || !ownerCheck || ownerCheck.owner_id !== authenticatedUserId) {
+        return new Response(JSON.stringify({ error: 'Forbidden: not the business owner' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       const { data: stored, error: fetchError } = await supabase
         .from('contact_otps')
         .select('*')
