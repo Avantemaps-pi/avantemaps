@@ -1,4 +1,6 @@
 import React from 'react';
+import avanteIcon72 from '@/assets/avante-icon-72.webp';
+import avanteIcon144 from '@/assets/avante-icon-144.webp';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart, Mail } from 'lucide-react';
