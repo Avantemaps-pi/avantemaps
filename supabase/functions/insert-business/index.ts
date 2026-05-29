@@ -122,13 +122,30 @@ Deno.serve(async (req: Request) => {
       'organization': 5,
     };
 
-    const limit = BUSINESS_LIMITS[body.subscription] || 1;
+    // ✅ SECURITY: Read subscription from DB, never trust client-supplied value
+    const { data: userRecord, error: userLookupError } = await supabaseAdmin
+      .from('users')
+      .select('subscription')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (userLookupError) {
+      console.error(`[${traceId}] Error fetching user subscription:`, userLookupError);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Could not verify subscription',
+        traceId,
+      }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const actualSubscription = userRecord?.subscription || 'individual';
+    const limit = BUSINESS_LIMITS[actualSubscription] || 1;
     const currentCount = businessCount || 0;
 
     if (currentCount >= limit) {
       return new Response(JSON.stringify({
         success: false,
-        error: `Business limit reached. Your ${body.subscription} plan allows up to ${limit} business${limit > 1 ? 'es' : ''}.`,
+        error: `Business limit reached. Your ${actualSubscription} plan allows up to ${limit} business${limit > 1 ? 'es' : ''}.`,
         traceId,
       }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }

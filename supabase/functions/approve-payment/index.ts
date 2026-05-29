@@ -76,6 +76,18 @@ Deno.serve(async (req) => {
   log.info(`${FN}.request.received`, { stage: 'validation' });
 
   try {
+    // ✅ SECURITY: Require & verify caller JWT
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return respond({ success: false, message: 'Unauthorized' }, 401);
+    }
+    const callerToken = authHeader.replace('Bearer ', '');
+    const { data: authData, error: authError } = await supabaseClient.auth.getUser(callerToken);
+    if (authError || !authData?.user) {
+      return respond({ success: false, message: 'Unauthorized' }, 401);
+    }
+    const authenticatedUserId = authData.user.id;
+
     const rawBody = await req.json();
     const validationResult = PaymentRequestSchema.safeParse(rawBody);
 
@@ -89,6 +101,13 @@ Deno.serve(async (req) => {
     }
 
     const paymentRequest = validationResult.data;
+
+    // ✅ SECURITY: Caller must match userId in body
+    if (paymentRequest.userId !== authenticatedUserId) {
+      log.error(`${FN}.auth.user_mismatch`, { stage: 'validation', authenticatedUserId });
+      return respond({ success: false, message: 'Forbidden: user mismatch' }, 403);
+    }
+
     log.extend({ paymentId: paymentRequest.paymentId, userId: paymentRequest.userId });
     log.info(`${FN}.validation.ok`, { stage: 'validation', amount: paymentRequest.amount });
 

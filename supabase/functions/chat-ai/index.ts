@@ -121,7 +121,7 @@ serve(async (req) => {
   }
 
   try {
-    // Extract user ID from JWT
+    // Extract & VERIFY user from JWT (signature-validated)
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       return new Response(
@@ -129,10 +129,16 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    
+
     const token = authHeader.replace('Bearer ', '');
-    const jwt = JSON.parse(atob(token.split('.')[1]));
-    const userId = jwt.sub;
+    const { data: authData, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !authData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const userId = authData.user.id;
     
     // Get user subscription tier
     const { data: userData } = await supabase
