@@ -89,7 +89,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({
           </main>
 
           
-          {showFooter && <Footer />}
           <BottomNavBar />
           <Toaster />
         </div>

@@ -80,7 +80,7 @@ const Communicon = () => {
   };
 
   return (
-    <AppLayout title="CommuniCon" showFooter={false}>
+    <AppLayout title="CommuniCon">
       <div className="max-w-4xl mx-auto mt-6">
         <UserProfileCard />
         <ChatInterface

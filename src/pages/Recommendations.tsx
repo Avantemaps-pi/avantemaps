@@ -111,7 +111,7 @@ const Recommendations = () => {
   };
 
   return (
-    <AppLayout title="Recommendations" className="overflow-x-hidden" showFooter={false}>
+    <AppLayout title="Recommendations" className="overflow-x-hidden">
       <RecommendationsSEO />
       <MetaTags
         title="Discover Recommended Businesses"

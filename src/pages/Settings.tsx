@@ -296,7 +296,7 @@ const Settings = () => {
   };
 
   return (
-    <AppLayout title="" fullWidth={true} className="overflow-x-hidden" showFooter={false}>
+    <AppLayout title="" fullWidth={true} className="overflow-x-hidden">
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6 overflow-hidden">
         <div>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Manage your account preferences.</p>
