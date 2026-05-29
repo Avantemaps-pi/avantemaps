@@ -115,8 +115,8 @@ export const verifyPiAuthentication = async (
           break;
 
         case 403:
-          msg = "Authentication mismatch";
-          detail = "The credentials received from Pi were not valid.";
+          msg = "Session refresh needed";
+          detail = "Your session needs to be refreshed. Please log in again to continue.";
           break;
 
         case 502:
