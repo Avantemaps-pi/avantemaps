@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { legalItems } from '@/components/layout/sidebar/sidebarConfig';
 import AppLayout from '@/components/layout/AppLayout';
 import ProfileSettings from '@/components/settings/ProfileSettings';
 import AppPreferences from '@/components/settings/AppPreferences';
@@ -9,7 +8,18 @@ import DangerZone from '@/components/settings/DangerZone';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/auth';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
-import { User, Settings as SettingsIcon, AlertTriangle, Scale, ChevronRight } from 'lucide-react';
+import {
+  User,
+  Settings as SettingsIcon,
+  AlertTriangle,
+  Scale,
+  ChevronRight,
+  CreditCard,
+  Shield,
+  FileText,
+  Cookie,
+  Mail,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -350,6 +360,62 @@ const Settings = () => {
             </AccordionContent>
           </AccordionItem>
 
+          <AccordionItem value="legal" className="border rounded-lg overflow-hidden">
+            <AccordionTrigger className="px-4 sm:px-6 py-3 hover:no-underline hover:bg-muted/50">
+              <div className="flex items-start gap-3 text-left">
+                <Scale className="h-5 w-5 mt-0.5 flex-shrink-0 text-primary" />
+                <div className="flex flex-col items-start">
+                  <span className="font-semibold text-base sm:text-lg">Legal &amp; About</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">App information and policies</span>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 sm:px-6 pt-2 pb-4">
+              <div className="space-y-1">
+                <Link
+                  to="/pricing"
+                  className="flex items-center gap-3 px-3 py-3 rounded-md hover:bg-muted transition-colors text-sm"
+                >
+                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  <span className="flex-1">Pricing</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+                <Link
+                  to="/privacy"
+                  className="flex items-center gap-3 px-3 py-3 rounded-md hover:bg-muted transition-colors text-sm"
+                >
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <span className="flex-1">Privacy Policy</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+                <Link
+                  to="/terms"
+                  className="flex items-center gap-3 px-3 py-3 rounded-md hover:bg-muted transition-colors text-sm"
+                >
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span className="flex-1">Terms of Service</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+                <Link
+                  to="/cookies"
+                  className="flex items-center gap-3 px-3 py-3 rounded-md hover:bg-muted transition-colors text-sm"
+                >
+                  <Cookie className="h-4 w-4 text-muted-foreground" />
+                  <span className="flex-1">Cookie Policy</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+                <Link
+                  to="/contact"
+                  className="flex items-center gap-3 px-3 py-3 rounded-md hover:bg-muted transition-colors text-sm"
+                >
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="flex-1">Contact Us</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
           <div className="mt-6 pt-6 border-t border-border/60">
             <p className="text-xs text-muted-foreground mb-3">Irreversible actions</p>
           </div>
@@ -374,43 +440,6 @@ const Settings = () => {
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="legal" className="border rounded-lg overflow-hidden">
-            <AccordionTrigger className="px-4 sm:px-6 py-3 hover:no-underline hover:bg-muted/50">
-              <div className="flex items-start gap-3 text-left">
-                <Scale className="h-5 w-5 mt-0.5 flex-shrink-0 text-primary" />
-                <div className="flex flex-col items-start">
-                  <span className="font-semibold text-base sm:text-lg">Legal &amp; about</span>
-                  <span className="text-xs sm:text-sm text-muted-foreground">Policies and contact</span>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 sm:px-6 pt-2 pb-4">
-              <div className="space-y-1">
-                <Link
-                  to="/pricing"
-                  className="flex items-center justify-between px-3 py-3 rounded-md hover:bg-muted transition-colors text-sm"
-                >
-                  <span>Pricing</span>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </Link>
-                {legalItems.map((item) => (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className="flex items-center justify-between px-3 py-3 rounded-md hover:bg-muted transition-colors text-sm"
-                  >
-                    <span>{item.label}</span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </Link>
-                ))}
-                <div className="pt-4 pb-1 text-center">
-                  <p className="text-xs text-muted-foreground">
-                    &copy; {new Date().getFullYear()} Avante Maps
-                  </p>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
         </Accordion>
       </div>
 
