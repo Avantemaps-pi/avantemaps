@@ -6,6 +6,7 @@ import { useAuth } from '@/context/auth/useAuth';
 import LoginDialog from '@/components/auth/LoginDialog';
 import avanteIcon72 from '@/assets/avante-icon-72.webp';
 import avanteIcon144 from '@/assets/avante-icon-144.webp';
+import mapPreview from '@/assets/map-preview.jpg';
 
 const NAVY = '#1A1F3C';
 const GOLD = '#C9A84C';
@@ -98,34 +99,43 @@ const LandingPage: React.FC = () => {
         />
 
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-24">
-          <div className="max-w-2xl text-center md:text-left mx-auto md:mx-0">
-            <div className="flex justify-center md:justify-start mb-5 sm:mb-6">
-              <Logo light />
+          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+            <div className="flex-1 max-w-2xl text-center md:text-left mx-auto md:mx-0">
+              <div className="flex justify-center md:justify-start mb-5 sm:mb-6">
+                <Logo light />
+              </div>
+              <h1 className="font-bold text-white leading-tight text-[28px] sm:text-4xl md:text-5xl">
+                Discover Pi-Powered Businesses Near You
+              </h1>
+              <p className="mt-3 sm:mt-4 text-white/70 leading-relaxed text-[15px] sm:text-base md:text-lg">
+                Avante Maps connects you with local businesses that accept Pi. Explore, save, and message them — all in one place.
+              </p>
+              <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center md:justify-start max-w-xs sm:max-w-none mx-auto md:mx-0">
+                <Button
+                  onClick={handlePiLogin}
+                  disabled={loginLoading}
+                  className="w-full sm:w-auto font-semibold hover:brightness-95"
+                  style={{ backgroundColor: GOLD, color: NAVY }}
+                  size="lg"
+                >
+                  {loginLoading ? 'Connecting…' : 'Get Started with Pi'}
+                </Button>
+                <Button
+                  onClick={scrollToFeatures}
+                  variant="outline"
+                  size="lg"
+                  className="w-full sm:w-auto bg-transparent border-white/60 text-white hover:bg-white/10 hover:text-white"
+                >
+                  Learn More
+                </Button>
+              </div>
             </div>
-            <h1 className="font-bold text-white leading-tight text-[28px] sm:text-4xl md:text-5xl">
-              Discover Pi-Powered Businesses Near You
-            </h1>
-            <p className="mt-3 sm:mt-4 text-white/70 leading-relaxed text-[15px] sm:text-base md:text-lg">
-              Avante Maps connects you with local businesses that accept Pi. Explore, save, and message them — all in one place.
-            </p>
-            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center md:justify-start max-w-xs sm:max-w-none mx-auto md:mx-0">
-              <Button
-                onClick={handlePiLogin}
-                disabled={loginLoading}
-                className="w-full sm:w-auto font-semibold hover:brightness-95"
-                style={{ backgroundColor: GOLD, color: NAVY }}
-                size="lg"
-              >
-                {loginLoading ? 'Connecting…' : 'Get Started with Pi'}
-              </Button>
-              <Button
-                onClick={scrollToFeatures}
-                variant="outline"
-                size="lg"
-                className="w-full sm:w-auto bg-transparent border-white/60 text-white hover:bg-white/10 hover:text-white"
-              >
-                Learn More
-              </Button>
+            <div className="hidden md:block flex-1">
+              <img
+                src={mapPreview}
+                alt="Avante Maps preview"
+                className="w-full rounded-xl shadow-2xl rotate-1"
+              />
             </div>
           </div>
         </div>
