@@ -52,6 +52,7 @@ export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) =
     }
 
     // Save to Supabase using security definer function to bypass RLS
+    await new Promise(resolve => setTimeout(resolve, 400));
     const { error } = await supabase.rpc('upsert_user_profile', {
       p_user_id: updatedUserData.uid,
       p_username: updatedUserData.username,
@@ -63,16 +64,13 @@ export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) =
       // Still update localStorage so the app can function, but warn the user
       // Only show toast for unexpected errors (not auth-related or constraint violations)
       const errorMsg = error.message?.toLowerCase() || '';
-      const isAuthError = errorMsg.includes('not authenticated') || errorMsg.includes('jwt');
+      const isAuthError = errorMsg.includes('not authenticated') || errorMsg.includes('jwt') || errorMsg.includes('authentication') || errorMsg.includes('permission denied') || errorMsg.includes('policy') || errorMsg.includes('rls') || errorMsg.includes('mismatch');
       // 23505 = unique constraint, 23503 = foreign key constraint
       const isConstraintError = error.code === '23505' || error.code === '23503' || 
         errorMsg.includes('unique') || errorMsg.includes('duplicate') || errorMsg.includes('foreign key');
       
       if (!isAuthError && !isConstraintError) {
-        const { toast } = await import('sonner');
-        toast.error('Failed to sync user profile', {
-          description: 'Your profile data may not be up to date. Please try logging in again.'
-        });
+        console.warn('Failed to sync user profile silently:', error.message);
       }
       // Update localStorage anyway to keep app functional
       localStorage.setItem('avante_maps_auth', JSON.stringify(updatedUserData));
