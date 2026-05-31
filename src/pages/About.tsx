@@ -122,8 +122,10 @@ const About = () => {
                 <Facebook className="h-5 w-5" />
               </a>
             </Button>
-            <Button variant="outline" className="rounded-full" size="icon" onClick={() => navigate('/contact#send-message')}>
-              <Mail className="h-5 w-5" />
+            <Button variant="outline" className="rounded-full" size="icon" asChild>
+              <a href="mailto:inquiries@avantemaps.com" aria-label="Email">
+                <Mail className="h-5 w-5" />
+              </a>
             </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-4">

@@ -404,14 +404,14 @@ const Settings = () => {
                   <span className="flex-1">Cookie Policy</span>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </Link>
-                <Link
-                  to="/contact"
+                <a
+                  href="mailto:support@avantemaps.com"
                   className="flex items-center gap-3 px-3 py-3 rounded-md hover:bg-muted transition-colors text-sm"
                 >
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   <span className="flex-1">Contact Us</span>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </Link>
+                </a>
               </div>
             </AccordionContent>
           </AccordionItem>
