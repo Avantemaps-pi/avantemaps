@@ -77,17 +77,6 @@ const RegisteredBusiness = () => {
           return;
         }
 
-        // ✅ SECURITY: Verify session user matches the authenticated Pi user
-        if (sessionUserId !== user.uid) {
-          console.error("🚨 Security warning: Session user mismatch", {
-            sessionUserId,
-            piUserId: user.uid
-          });
-          toast.error("Authentication mismatch. Please log in again.");
-          setIsLoading(false);
-          return;
-        }
-
         // Use direct Supabase query with RLS (most secure approach)
         const { data, error } = await supabase
           .from('businesses')
