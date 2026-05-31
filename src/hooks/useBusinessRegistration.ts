@@ -396,7 +396,9 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
         }
       }
 
-      toast.success('Business registered successfully!');
+      toast.success('Business registered successfully!', {
+        description: 'Questions about your listing? Contact us at businesses@avantemaps.com'
+      });
       if (onSuccess) onSuccess();
 
       navigate('/registered-business', {
