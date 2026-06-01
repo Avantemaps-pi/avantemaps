@@ -408,6 +408,27 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       toast.success('Business registered successfully!', {
         description: 'Questions about your listing? Contact us at businesses@avantemaps.com'
       });
+
+      // Approaching-limit notification (only for tiered plans)
+      try {
+        const tier = user.subscriptionTier;
+        if (tier === 'small-business' || tier === 'organization') {
+          const planLimit = getBusinessLimit(tier);
+          const { count: newCount } = await supabase
+            .from('businesses')
+            .select('*', { count: 'exact', head: true })
+            .eq('owner_id', session.user.id);
+          if ((newCount || 0) === planLimit - 1) {
+            toast.info(`You've used ${newCount} of ${planLimit} listings on your plan.`, {
+              description: 'Upgrade to add more.',
+              action: { label: 'Upgrade', onClick: () => navigate('/pricing') }
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Approaching limit check failed:', e);
+      }
+
       if (onSuccess) onSuccess();
 
       navigate('/registered-business', {
