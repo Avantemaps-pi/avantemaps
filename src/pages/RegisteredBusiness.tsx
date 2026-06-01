@@ -20,6 +20,7 @@ const RegisteredBusiness = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, login, user, refreshUserData } = useAuth();
+  const { currentCount, limit, hasReachedLimit, isApproachingLimit } = useBusinessLimit();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBusinessId, setSelectedBusinessId] = useState<string>('all');
