@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Check, X } from "lucide-react";
+import { Check, X, Info } from "lucide-react";
 import { usePiPrice } from "@/hooks/usePiPrice";
 
 export interface PricingTier {
@@ -123,6 +123,13 @@ export function PricingCard({
             </li>
           ))}
         </ul>
+
+        {tier.id === 'individual' && (
+          <div className="flex items-start gap-2 rounded-md bg-blue-50 border border-blue-100 p-3 text-sm text-blue-800">
+            <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600" />
+            <span>Need more than 1 listing? Upgrade to Small Business for up to 3.</span>
+          </div>
+        )}
       </div>
 
       <Button

@@ -122,6 +122,7 @@ export type Database = {
           hours: Json | null
           id: number
           images: string[] | null
+          is_active: boolean
           is_certified: boolean
           is_verified: boolean
           keywords: string[] | null
@@ -151,6 +152,7 @@ export type Database = {
           hours?: Json | null
           id?: number
           images?: string[] | null
+          is_active?: boolean
           is_certified?: boolean
           is_verified?: boolean
           keywords?: string[] | null
@@ -180,6 +182,7 @@ export type Database = {
           hours?: Json | null
           id?: number
           images?: string[] | null
+          is_active?: boolean
           is_certified?: boolean
           is_verified?: boolean
           keywords?: string[] | null

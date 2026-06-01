@@ -25,7 +25,7 @@ export function PricingHeader({
       <p className="mt-1.5 sm:mt-2 text-[13px] sm:text-sm leading-5 sm:leading-6 text-gray-600">
         {subtitle}
       </p>
-      <div className="mt-3 sm:mt-4 flex justify-center">
+      <div className="mt-3 sm:mt-4 flex flex-col items-center gap-1.5">
         <div className="flex rounded-full bg-gray-100 p-1">
           {frequencies.map((freq) => (
             <Tab
@@ -38,6 +38,7 @@ export function PricingHeader({
             />
           ))}
         </div>
+        <p className="text-xs text-muted-foreground">Save 20% with yearly billing</p>
       </div>
     </div>
   )
