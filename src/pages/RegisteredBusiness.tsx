@@ -277,9 +277,51 @@ const RegisteredBusiness = () => {
           showButton={false}
         />
 
+        {/* Limit indicator */}
+        <div className="flex items-center justify-between mt-4 mb-2 text-sm">
+          <span className="text-muted-foreground">
+            {currentCount} / {limit} businesses used
+          </span>
+          {hasReachedLimit && (
+            <button
+              onClick={() => navigate('/pricing')}
+              className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
+            >
+              Upgrade Plan
+            </button>
+          )}
+        </div>
+
+        {/* Approaching limit warning */}
+        {isApproachingLimit && (
+          <div className="mb-4 flex items-start gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <span>You're approaching your plan limit. <button onClick={() => navigate('/pricing')} className="underline font-medium">Upgrade</button> to add more businesses.</span>
+          </div>
+        )}
+
         <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
           <div>
-            <Button onClick={() => navigate('/registration')}>Register New Business</Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className={hasReachedLimit ? 'inline-block cursor-not-allowed' : 'inline-block'}>
+                    <Button
+                      onClick={() => navigate('/registration')}
+                      disabled={hasReachedLimit}
+                      className={hasReachedLimit ? 'pointer-events-none' : ''}
+                    >
+                      Register New Business
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {hasReachedLimit && (
+                  <TooltipContent>
+                    <p>Upgrade your plan to register more businesses</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
             
             {businesses.length > 0 && (
               <div className="mt-4">
