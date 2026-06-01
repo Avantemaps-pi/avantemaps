@@ -22,6 +22,7 @@ export interface UseBusinessLimitReturn {
   isApproachingLimit: boolean;
   isLoading: boolean;
   subscriptionTier: string;
+  refetch: () => Promise<void>;
 }
 
 export const useBusinessLimit = (): UseBusinessLimitReturn => {
