@@ -86,6 +86,7 @@ const RegisteredBusiness = () => {
           .from('businesses')
           .select('*')
           .eq('owner_id', sessionUserId)
+          .eq('is_active', true)
           .order('created_at', { ascending: false });
 
         if (error) {
