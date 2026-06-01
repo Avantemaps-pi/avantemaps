@@ -105,10 +105,18 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       }
 
       // Check business count limit
+      const { data: { session: countSession } } = await supabase.auth.getSession();
+      const sessionOwnerId = countSession?.user?.id;
+
+      if (!sessionOwnerId) {
+        toast.error('Authentication required. Please log in and try again.');
+        return;
+      }
+
       const { count: businessCount } = await supabase
         .from('businesses')
         .select('*', { count: 'exact', head: true })
-        .eq('owner_id', user.uid);
+        .eq('owner_id', sessionOwnerId);
 
       const BUSINESS_LIMITS: Record<string, number> = {
         'individual': 1,
