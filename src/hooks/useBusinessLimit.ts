@@ -78,5 +78,6 @@ export const useBusinessLimit = (): UseBusinessLimitReturn => {
     isApproachingLimit,
     isLoading,
     subscriptionTier,
+    refetch: fetchCount,
   };
 };
