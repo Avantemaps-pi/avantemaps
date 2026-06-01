@@ -9,6 +9,7 @@ import { useAuth } from '@/context/auth';
 import { containsInappropriateContent } from '@/utils/contentFilter';
 import type { BusinessInsertPayload } from '@/types/businessPayload';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import { getBusinessLimit } from '@/hooks/useBusinessLimit';
 
 export const useBusinessRegistration = (onSuccess?: () => void) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
