@@ -220,6 +220,7 @@ export const performLogin = async (
       
       // Always verify with backend to establish Supabase session (PRODUCTION ONLY)
       let verificationSucceeded = false;
+      let verificationResult: any = null;
       
       {
         // Immediately verify with backend (do not persist token)
@@ -232,11 +233,12 @@ export const performLogin = async (
         // Attempt backend verification but don't fail authentication if it's just a network issue
         try {
           secureLog.info("🔐 Verifying authentication with backend...");
-          const verificationResult = await verifyPiAuthentication(
+          verificationResult = await verifyPiAuthentication(
             authResult.accessToken,
             authResult.user.uid,
             authResult.user.username
           );
+
 
         secureLog.info("✅ Backend verification result:", {
           verified: verificationResult.verified,
