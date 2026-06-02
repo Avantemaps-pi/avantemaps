@@ -56,14 +56,14 @@ const saveMessagesToStorage = (key: string, messages: ChatMessage[]) => {
   }
 };
 
-export function useChatState() {
+export function useChatState(initialChatMode: ChatMode = "ai") {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const [message, setMessage] = useState("");
   const storageKey = getChatStorageKey(user?.uid);
   const [messages, setMessages] = useState<ChatMessage[]>(() => loadMessagesFromStorage(storageKey));
-  const [chatMode, setChatMode] = useState<ChatMode>("ai");
+  const [chatMode, setChatMode] = useState<ChatMode>(initialChatMode);
   const [awaitingVerificationConfirmation, setAwaitingVerificationConfirmation] = useState(false);
   const [awaitingBusinessSelection, setAwaitingBusinessSelection] = useState(false);
   const [awaitingVerificationBusinessSelection, setAwaitingVerificationBusinessSelection] = useState(false);
