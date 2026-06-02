@@ -8,6 +8,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const Communicon = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const initialChatMode = (location.state as any)?.chatMode === 'live' ? 'live' : 'ai';
 
   const {
     message,
@@ -24,7 +25,7 @@ const Communicon = () => {
     showMyListings,
     sendContactOTP,
     verifyContactOTP,
-  } = useChatState();
+  } = useChatState(initialChatMode);
 
   useEffect(() => {
     if (window) {
