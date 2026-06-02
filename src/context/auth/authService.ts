@@ -220,6 +220,7 @@ export const performLogin = async (
       
       // Always verify with backend to establish Supabase session (PRODUCTION ONLY)
       let verificationSucceeded = false;
+      let verificationResult: any = null;
       
       {
         // Immediately verify with backend (do not persist token)
@@ -232,11 +233,12 @@ export const performLogin = async (
         // Attempt backend verification but don't fail authentication if it's just a network issue
         try {
           secureLog.info("🔐 Verifying authentication with backend...");
-          const verificationResult = await verifyPiAuthentication(
+          verificationResult = await verifyPiAuthentication(
             authResult.accessToken,
             authResult.user.uid,
             authResult.user.username
           );
+
 
         secureLog.info("✅ Backend verification result:", {
           verified: verificationResult.verified,
@@ -367,19 +369,32 @@ export const performLogin = async (
 
       // Build user object WITHOUT accessToken (do NOT store accessToken client-side)
       const safeRoles = (authResult.user.roles ?? []) as string[];
-      const walletAddress = (authResult.user as any).wallet_address ?? null;
+      const walletAddress =
+        verificationResult?.user?.wallet_address ??
+        (authResult.user as any).wallet_address ??
+        null;
+
+      // CRITICAL: uid MUST be the Supabase UUID (auth.uid()), not the Pi UID.
+      // RLS-protected mutations (e.g. starting a conversation) compare this
+      // against supabase.auth.getSession().user.id; a mismatch triggers a
+      // re-auth loop and prevents navigation to /communicon.
+      const supabaseUid: string =
+        verificationResult?.user?.uid ?? authResult.user.uid;
+      const piUid: string =
+        verificationResult?.user?.pi_uid ?? authResult.user.uid;
 
       let subscriptionTier: SubscriptionTier = SubscriptionTier.INDIVIDUAL;
       try {
-        subscriptionTier = await getUserSubscription(authResult.user.uid);
+        subscriptionTier = await getUserSubscription(supabaseUid);
       } catch (err) {
         secureLog.info("User not found in DB; defaulting subscription tier to INDIVIDUAL");
       }
 
       // Fetch roles from database (roles will be updated in updateUserData)
       const userData: PiUser = {
-        uid: authResult.user.uid,
-        username: authResult.user.username,
+        uid: supabaseUid,
+        pi_uid: piUid,
+        username: verificationResult?.user?.username ?? authResult.user.username,
         walletAddress,
         roles: safeRoles,
         // IMPORTANT: do NOT include accessToken here
@@ -389,6 +404,7 @@ export const performLogin = async (
 
       // Persist user meta (will fetch and set roles from database)
       await updateUserData(userData, setUser);
+
 
       toast.dismiss('auth-progress');
       toast.success(`Welcome back, ${userData.username}!`);
