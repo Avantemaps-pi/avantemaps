@@ -210,8 +210,8 @@ const LandingPage: React.FC = () => {
 
       {/* FOOTER */}
       <footer className="py-10 sm:py-12 px-4 sm:px-6 text-white" style={{ backgroundColor: NAVY }}>
-        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 text-center sm:text-left">
-          <div className="flex flex-col items-center sm:items-start">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 gap-8 text-center sm:text-left">
+          <div className="col-span-2 sm:col-span-1 flex flex-col items-center sm:items-start">
             <Logo light />
             <p className="mt-3 text-white/70 text-sm">Discover. Connect. Transact.</p>
           </div>
