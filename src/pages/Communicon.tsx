@@ -60,6 +60,25 @@ const Communicon = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state?.chatMode]);
 
+  // If we landed in live mode expecting to open a conversation but the id is missing/invalid, surface a toast
+  const missingConvNotifiedRef = useRef(false);
+  useEffect(() => {
+    if (missingConvNotifiedRef.current) return;
+    const state = location.state as any;
+    if (!state) return;
+    if (state.chatMode !== 'live') return;
+    if (state.openConversationId || state.inboxBusinessId) return;
+    const intended = state.expectConversation === true;
+    if (!intended) return;
+    missingConvNotifiedRef.current = true;
+    console.error('[Communicon] live chat opened without openConversationId', { state });
+    toast.error("Couldn't open the conversation. Please try again.", {
+      id: 'msg:open-conv-missing',
+      description: 'The conversation reference was missing or invalid.',
+      duration: 5000,
+    });
+  }, [location.state]);
+
   const handleSendMessageWrapper = () => {
     const event = new Event('submit') as unknown as React.FormEvent;
     handleSendMessage(event);
