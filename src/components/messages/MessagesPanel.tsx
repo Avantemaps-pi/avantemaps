@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Send, Lock, MessageSquare, User as UserIcon, Store } from 'lucide-react';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
 type OwnedBusiness = { id: number; business_name: string };
@@ -83,11 +84,25 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
   // Auto-open initial conversation once
   useEffect(() => {
     if (initOpenedRef.current) return;
-    if (initialConversationId && conversations.some((c) => c.id === initialConversationId)) {
+    if (!initialConversationId) return;
+    if (loadingConvs) return;
+    const match = conversations.find((c) => c.id === initialConversationId);
+    if (match) {
       initOpenedRef.current = true;
       openConversation(initialConversationId);
+    } else {
+      initOpenedRef.current = true;
+      console.error('[MessagesPanel] initialConversationId not found in conversations', {
+        initialConversationId,
+        conversationCount: conversations.length,
+      });
+      toast.error("Couldn't open the conversation. Please try again.", {
+        id: 'msg:open-conv-missing',
+        description: 'The conversation could not be found. It may have been deleted or you may not have access.',
+        duration: 5000,
+      });
     }
-  }, [initialConversationId, conversations, openConversation]);
+  }, [initialConversationId, conversations, loadingConvs, openConversation]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
