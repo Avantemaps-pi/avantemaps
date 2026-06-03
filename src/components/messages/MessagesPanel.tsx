@@ -84,11 +84,25 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
   // Auto-open initial conversation once
   useEffect(() => {
     if (initOpenedRef.current) return;
-    if (initialConversationId && conversations.some((c) => c.id === initialConversationId)) {
+    if (!initialConversationId) return;
+    if (loadingConvs) return;
+    const match = conversations.find((c) => c.id === initialConversationId);
+    if (match) {
       initOpenedRef.current = true;
       openConversation(initialConversationId);
+    } else {
+      initOpenedRef.current = true;
+      console.error('[MessagesPanel] initialConversationId not found in conversations', {
+        initialConversationId,
+        conversationCount: conversations.length,
+      });
+      toast.error("Couldn't open the conversation. Please try again.", {
+        id: 'msg:open-conv-missing',
+        description: 'The conversation could not be found. It may have been deleted or you may not have access.',
+        duration: 5000,
+      });
     }
-  }, [initialConversationId, conversations, openConversation]);
+  }, [initialConversationId, conversations, loadingConvs, openConversation]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
