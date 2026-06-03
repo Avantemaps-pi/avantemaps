@@ -5,10 +5,12 @@ import ChatInterface from '@/components/chat/ChatInterface';
 import { useChatState } from '@/hooks/useChatState';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/auth';
 
 const Communicon = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const initialChatMode = (location.state as any)?.chatMode === 'live' ? 'live' : 'ai';
 
   const {
