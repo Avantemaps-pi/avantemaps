@@ -202,7 +202,30 @@ const MessageBusinessButton: React.FC<{ place: Place }> = ({ place }) => {
         navigate('/communicon', {
           state: { openConversationId: convId, chatMode: 'live' },
         });
+      } else {
+        console.error('[MessageBusinessButton] startConversationWithBusiness returned null', {
+          businessId,
+          userId: user?.uid ?? null,
+          placeName: place.name ?? null,
+        });
+        toast.error("Couldn't open the conversation. Please try again.", {
+          id: 'msg:start-conv-null',
+          description: 'If this keeps happening, check your connection or sign out and back in.',
+          duration: 5000,
+        });
       }
+    } catch (err) {
+      console.error('[MessageBusinessButton] startConversationWithBusiness threw', {
+        businessId,
+        userId: user?.uid ?? null,
+        err,
+      });
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error('Failed to start conversation', {
+        id: 'msg:start-conv-threw',
+        description: message,
+        duration: 5000,
+      });
     } finally {
       setPending(false);
     }
