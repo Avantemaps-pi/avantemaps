@@ -71,9 +71,11 @@ const Communicon = () => {
     if (state.chatMode !== 'live') return;
     const openConversationId = state.openConversationId ?? null;
     const inboxBusinessId = state.inboxBusinessId ?? null;
-    if (openConversationId || inboxBusinessId) return;
-    const intended = state.expectConversation === true;
-    if (!intended) return;
+    const hasValidConvId =
+      typeof openConversationId === 'string' && openConversationId.trim().length > 0;
+    const hasValidInbox =
+      typeof inboxBusinessId === 'number' && Number.isFinite(inboxBusinessId);
+    if (hasValidConvId || hasValidInbox) return;
     missingConvNotifiedRef.current = true;
     const reason =
       openConversationId === null && inboxBusinessId === null
