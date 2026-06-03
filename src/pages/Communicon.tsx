@@ -5,10 +5,12 @@ import ChatInterface from '@/components/chat/ChatInterface';
 import { useChatState } from '@/hooks/useChatState';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/auth';
 
 const Communicon = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const initialChatMode = (location.state as any)?.chatMode === 'live' ? 'live' : 'ai';
 
   const {
@@ -67,17 +69,40 @@ const Communicon = () => {
     const state = location.state as any;
     if (!state) return;
     if (state.chatMode !== 'live') return;
-    if (state.openConversationId || state.inboxBusinessId) return;
+    const openConversationId = state.openConversationId ?? null;
+    const inboxBusinessId = state.inboxBusinessId ?? null;
+    if (openConversationId || inboxBusinessId) return;
     const intended = state.expectConversation === true;
     if (!intended) return;
     missingConvNotifiedRef.current = true;
-    console.error('[Communicon] live chat opened without openConversationId', { state });
+    const reason =
+      openConversationId === null && inboxBusinessId === null
+        ? 'missing_conversation_reference'
+        : typeof openConversationId === 'string' && openConversationId.length === 0
+          ? 'empty_conversation_id'
+          : 'invalid_conversation_reference';
+    console.error(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        level: 'error',
+        event: 'communicon.live_open.failed',
+        fn: 'Communicon.liveModeMissingConversationEffect',
+        reason,
+        openConversationId,
+        inboxBusinessId,
+        chatMode: state.chatMode,
+        expectConversation: state.expectConversation === true,
+        userId: user?.uid ?? null,
+        piUid: (user as any)?.pi_uid ?? null,
+        pathname: location.pathname,
+      }),
+    );
     toast.error("Couldn't open the conversation. Please try again.", {
       id: 'msg:open-conv-missing',
       description: 'The conversation reference was missing or invalid.',
       duration: 5000,
     });
-  }, [location.state]);
+  }, [location.state, location.pathname, user?.uid, user]);
 
   const handleSendMessageWrapper = () => {
     const event = new Event('submit') as unknown as React.FormEvent;
