@@ -4,6 +4,7 @@ import UserProfileCard from '@/components/chat/UserProfileCard';
 import ChatInterface from '@/components/chat/ChatInterface';
 import { useChatState } from '@/hooks/useChatState';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const Communicon = () => {
   const navigate = useNavigate();
