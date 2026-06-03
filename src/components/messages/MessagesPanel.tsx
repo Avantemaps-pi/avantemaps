@@ -92,10 +92,22 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
       openConversation(initialConversationId);
     } else {
       initOpenedRef.current = true;
-      console.error('[MessagesPanel] initialConversationId not found in conversations', {
-        initialConversationId,
-        conversationCount: conversations.length,
-      });
+      console.error(
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          level: 'error',
+          event: 'communicon.live_open.failed',
+          fn: 'MessagesPanel.autoOpenInitialConversation',
+          reason: 'conversation_not_found',
+          openConversationId: initialConversationId,
+          initialInboxBusinessId: initialInboxBusinessId ?? null,
+          userId: uid ?? null,
+          inboxKind: inbox?.kind ?? null,
+          inboxBusinessId: inbox?.kind === 'business' ? inbox.businessId : null,
+          conversationCount: conversations.length,
+          conversationIdsSample: conversations.slice(0, 5).map((c) => c.id),
+        }),
+      );
       toast.error("Couldn't open the conversation. Please try again.", {
         id: 'msg:open-conv-missing',
         description: 'The conversation could not be found. It may have been deleted or you may not have access.',
