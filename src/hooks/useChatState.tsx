@@ -69,6 +69,48 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
   const [awaitingVerificationBusinessSelection, setAwaitingVerificationBusinessSelection] = useState(false);
   const [selectedBusinessForVerification, setSelectedBusinessForVerification] = useState<any>(null);
   const [userBusinesses, setUserBusinesses] = useState<any[]>([]);
+  const [isValidatingConversation, setIsValidatingConversation] = useState(false);
+  const [conversationValidated, setConversationValidated] = useState<boolean | null>(null);
+
+  const validateConversation = useCallback(async (conversationId: string): Promise<'valid' | 'not_found' | 'access_denied' | 'missing'> => {
+    if (!conversationId || conversationId.trim() === '') return 'missing';
+    setIsValidatingConversation(true);
+    setConversationValidated(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) {
+        setConversationValidated(false);
+        return 'access_denied';
+      }
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('id', conversationId)
+        .maybeSingle();
+      if (error || data === null) {
+        setConversationValidated(false);
+        return 'not_found';
+      }
+      const { data: participantData } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('id', conversationId)
+        .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+        .maybeSingle();
+      if (!participantData) {
+        setConversationValidated(false);
+        return 'access_denied';
+      }
+      setConversationValidated(true);
+      return 'valid';
+    } catch {
+      setConversationValidated(false);
+      return 'not_found';
+    } finally {
+      setIsValidatingConversation(false);
+    }
+  }, []);
 
   // Reload messages when the active user changes (login/logout/switch account)
   useEffect(() => {
