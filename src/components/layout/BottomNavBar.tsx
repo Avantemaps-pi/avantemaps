@@ -58,7 +58,7 @@ const BottomNavBar: React.FC = () => {
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <span className="relative flex flex-col items-center justify-center gap-0.5 px-3 py-2 rounded-xl">
+              <span className="relative flex flex-col items-center justify-center gap-0.5 px-3 py-2 rounded-xl font-extrabold">
                 {isActive && (
                   <span className="absolute inset-0 bg-primary/15 rounded-xl" />
                 )}
