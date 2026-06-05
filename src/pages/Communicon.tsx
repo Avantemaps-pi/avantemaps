@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import UserProfileCard from '@/components/chat/UserProfileCard';
 import ChatInterface from '@/components/chat/ChatInterface';
@@ -6,6 +6,7 @@ import { useChatState } from '@/hooks/useChatState';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/auth';
+import { Loader2 } from 'lucide-react';
 
 const Communicon = () => {
   const navigate = useNavigate();
@@ -28,6 +29,9 @@ const Communicon = () => {
     showMyListings,
     sendContactOTP,
     verifyContactOTP,
+    isValidatingConversation,
+    conversationValidated,
+    validateConversation,
   } = useChatState(initialChatMode);
 
   useEffect(() => {
@@ -54,15 +58,74 @@ const Communicon = () => {
     }
   }, [location.state, triggerVerificationFlow, navigate, location.pathname]);
 
+  const showConversationErrorToast = (
+    result: 'not_found' | 'access_denied' | 'missing',
+    onRetry: () => void,
+  ) => {
+    if (result === 'not_found') {
+      toast.error('Conversation not found', {
+        description:
+          'This conversation does not exist or has been removed. Start a new one from the business listing.',
+        action: { label: 'Retry', onClick: onRetry },
+      });
+    } else if (result === 'access_denied') {
+      toast.error('Access denied', {
+        description:
+          "You don't have access to this conversation. Make sure you're logged into the correct account.",
+        action: { label: 'Retry', onClick: onRetry },
+      });
+    }
+  };
+
+  const retryLiveChat = useCallback(async () => {
+    const conversationId = (location.state as any)?.openConversationId;
+    if (!conversationId) return;
+    const result = await validateConversation(conversationId);
+    if (result === 'valid') {
+      handleChatModeChange('live');
+      toast.success('Connected to live chat');
+    } else {
+      showConversationErrorToast(result, retryLiveChat);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, validateConversation, handleChatModeChange]);
+
   // Honor incoming chatMode (e.g. 'live' from PlaceCard "Message" button)
   useEffect(() => {
-    if (location.state?.chatMode && location.state.chatMode !== chatMode) {
-      handleChatModeChange(location.state.chatMode);
+    const incomingMode = (location.state as any)?.chatMode;
+    if (!incomingMode || incomingMode === chatMode) return;
+
+    if (incomingMode === 'live') {
+      const openConversationId = (location.state as any)?.openConversationId;
+      if (
+        openConversationId === null ||
+        openConversationId === undefined ||
+        (typeof openConversationId === 'string' && openConversationId.trim() === '')
+      ) {
+        handleChatModeChange('ai');
+        toast.error('No conversation selected', {
+          description: 'Open a business listing and tap Message to start a live chat.',
+          action: { label: 'Go to Map', onClick: () => navigate('/map') },
+        });
+        return;
+      }
+      (async () => {
+        const result = await validateConversation(openConversationId);
+        if (result === 'valid') {
+          handleChatModeChange('live');
+        } else {
+          showConversationErrorToast(result, retryLiveChat);
+          handleChatModeChange('ai');
+        }
+      })();
+      return;
     }
+
+    handleChatModeChange(incomingMode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state?.chatMode]);
 
-  // If we landed in live mode expecting to open a conversation but the id is missing/invalid, surface a toast
+  // Structured error log for live-mode opens without a usable conversation reference
   const missingConvNotifiedRef = useRef(false);
   useEffect(() => {
     if (missingConvNotifiedRef.current) return;
@@ -99,11 +162,6 @@ const Communicon = () => {
         pathname: location.pathname,
       }),
     );
-    toast.error("Couldn't open the conversation. Please try again.", {
-      id: 'msg:open-conv-missing',
-      description: 'The conversation reference was missing or invalid.',
-      duration: 5000,
-    });
   }, [location.state, location.pathname, user?.uid, user]);
 
   const handleSendMessageWrapper = () => {
@@ -131,19 +189,26 @@ const Communicon = () => {
     <AppLayout title="CommuniCon">
       <div className="max-w-4xl mx-auto mt-6">
         <UserProfileCard />
-        <ChatInterface
-          chatMode={chatMode}
-          onChatModeChange={handleChatModeChange}
-          messages={messages}
-          message={message}
-          setMessage={setMessage}
-          handleSendMessage={handleSendMessageWrapper}
-          handleQuickReply={handleQuickReply}
-          showAttachmentIcon={false}
-          hasLiveChatAccess={true}
-          onSendContactOTP={sendContactOTP}
-          onVerifyContactOTP={verifyContactOTP}
-        />
+        {isValidatingConversation ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="mt-3 text-sm text-muted-foreground">Verifying conversation...</p>
+          </div>
+        ) : (
+          <ChatInterface
+            chatMode={chatMode}
+            onChatModeChange={handleChatModeChange}
+            messages={messages}
+            message={message}
+            setMessage={setMessage}
+            handleSendMessage={handleSendMessageWrapper}
+            handleQuickReply={handleQuickReply}
+            showAttachmentIcon={false}
+            hasLiveChatAccess={true}
+            onSendContactOTP={sendContactOTP}
+            onVerifyContactOTP={verifyContactOTP}
+          />
+        )}
       </div>
     </AppLayout>
   );

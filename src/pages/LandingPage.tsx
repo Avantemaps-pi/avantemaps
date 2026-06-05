@@ -9,8 +9,8 @@ import avanteIcon144 from '@/assets/avante-icon-144.webp';
 import mapPreview from '@/assets/map-preview.jpg';
 import piNetworkLogo from '@/assets/pi-network-logo.png';
 
-const NAVY = '#1A1F3C';
-const GOLD = '#C9A84C';
+const NAVY = '#1E3A8A';
+const GOLD = '#2563EB';
 
 const features = [
   { icon: MapPin, title: 'Interactive Map', desc: 'Find businesses near you on a live map, filtered by category.' },
@@ -54,7 +54,7 @@ const LandingPage: React.FC = () => {
           className="h-9 w-9 rounded-full object-contain"
         />
       </div>
-      <span className={`font-bold text-lg ${light ? 'text-white' : 'text-[#1A1F3C]'}`}>Avante Maps</span>
+      <span className={`font-bold text-lg ${light ? 'text-white' : 'text-[#1E3A8A]'}`}>Avante Maps</span>
     </div>
   );
 
@@ -67,7 +67,7 @@ const LandingPage: React.FC = () => {
           <Button
             variant="ghost"
             onClick={() => setShowLogin(true)}
-            className="text-[#1A1F3C] hover:text-[#1A1F3C] hover:bg-[#1A1F3C]/5"
+            className="text-[#1E3A8A] hover:text-[#1E3A8A] hover:bg-[#1E3A8A]/5"
           >
             Sign In
           </Button>
@@ -95,7 +95,7 @@ const LandingPage: React.FC = () => {
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              'radial-gradient(circle at 80% 20%, rgba(201,168,76,0.18), transparent 55%)',
+              'radial-gradient(circle at 80% 20%, rgba(37,99,235,0.18), transparent 55%)',
           }}
         />
 
@@ -116,7 +116,7 @@ const LandingPage: React.FC = () => {
                   onClick={handlePiLogin}
                   disabled={loginLoading}
                   className="w-full sm:w-auto font-semibold hover:brightness-95"
-                  style={{ backgroundColor: GOLD, color: NAVY }}
+                  style={{ backgroundColor: GOLD, color: '#FFFFFF' }}
                   size="lg"
                 >
                   {loginLoading ? 'Connecting…' : 'Get Started with Pi'}
@@ -159,7 +159,7 @@ const LandingPage: React.FC = () => {
               >
                 <div
                   className="flex items-center justify-center rounded-full flex-shrink-0 w-12 h-12"
-                  style={{ backgroundColor: 'rgba(201,168,76,0.15)' }}
+                  style={{ backgroundColor: 'rgba(37,99,235,0.15)' }}
                 >
                   <Icon className="h-6 w-6" style={{ color: GOLD }} />
                 </div>
@@ -193,14 +193,14 @@ const LandingPage: React.FC = () => {
             <Button
               asChild
               variant="outline"
-              className="w-full sm:w-auto font-semibold border-black/20 text-[#1A1F3C] hover:bg-black/5"
+              className="w-full sm:w-auto font-semibold border-black/20 text-[#1E3A8A] hover:bg-black/5"
             >
               <Link to="/pricing">View pricing</Link>
             </Button>
             <Button
               asChild
               variant="outline"
-              className="w-full sm:w-auto font-semibold border-black/20 text-[#1A1F3C] hover:bg-black/5"
+              className="w-full sm:w-auto font-semibold border-black/20 text-[#1E3A8A] hover:bg-black/5"
             >
               <Link to="/about">Learn about us</Link>
             </Button>
