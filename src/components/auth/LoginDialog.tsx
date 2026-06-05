@@ -188,6 +188,41 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   }));
 
   const allowTestMode = useMemo(() => isPreviewOrDev(), []);
+  const isSandbox = useMemo(
+    () =>
+      typeof window !== 'undefined' &&
+      (!(window as any).Pi ||
+        window.location.hostname.includes('lovable.app') ||
+        window.location.hostname === 'localhost'),
+    []
+  );
+  const navigate = useNavigate();
+  const [devEmail, setDevEmail] = useState('');
+  const [devPassword, setDevPassword] = useState('');
+  const [devLoading, setDevLoading] = useState(false);
+  const [devError, setDevError] = useState<string | null>(null);
+
+  const handleDevLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDevError(null);
+    setDevLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: devEmail,
+        password: devPassword,
+      });
+      if (error) {
+        setDevError(error.message);
+        return;
+      }
+      onOpenChange(false);
+      navigate('/map');
+    } catch (err) {
+      setDevError(err instanceof Error ? err.message : 'Sign-in failed');
+    } finally {
+      setDevLoading(false);
+    }
+  };
   const sdkAvailable = preflight.canAttemptLogin;
 
   const refreshPreflight = useCallback(() => {
