@@ -116,7 +116,7 @@ const LandingPage: React.FC = () => {
                   onClick={handlePiLogin}
                   disabled={loginLoading}
                   className="w-full sm:w-auto font-semibold hover:brightness-95"
-                  style={{ backgroundColor: GOLD, color: NAVY }}
+                  style={{ backgroundColor: GOLD, color: '#FFFFFF' }}
                   size="lg"
                 >
                   {loginLoading ? 'Connecting…' : 'Get Started with Pi'}
