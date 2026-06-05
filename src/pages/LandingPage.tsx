@@ -25,6 +25,10 @@ const LandingPage: React.FC = () => {
   const [loginLoading, setLoginLoading] = useState(false);
 
   const handlePiLogin = async () => {
+    if (typeof window === 'undefined' || !(window as any).Pi) {
+      setShowLogin(true);
+      return;
+    }
     setLoginLoading(true);
     try {
       await login();

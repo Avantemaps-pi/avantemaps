@@ -2,13 +2,15 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { X, AlertCircle, HelpCircle, RefreshCw, ExternalLink, WifiOff, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from '@/context/auth';
 import { isPiNetworkAvailable, isPiBrowser } from '@/utils/piNetwork';
 import AuthTroubleshooting from './AuthTroubleshooting';
 import { secureLog } from '@/utils/secureLogger';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 // Preflight statuses for Pi Browser / SDK availability.
 // Order matters: the first failing check wins so we show the most
@@ -186,6 +188,41 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   }));
 
   const allowTestMode = useMemo(() => isPreviewOrDev(), []);
+  const isSandbox = useMemo(
+    () =>
+      typeof window !== 'undefined' &&
+      (!(window as any).Pi ||
+        window.location.hostname.includes('lovable.app') ||
+        window.location.hostname === 'localhost'),
+    []
+  );
+  const navigate = useNavigate();
+  const [devEmail, setDevEmail] = useState('');
+  const [devPassword, setDevPassword] = useState('');
+  const [devLoading, setDevLoading] = useState(false);
+  const [devError, setDevError] = useState<string | null>(null);
+
+  const handleDevLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDevError(null);
+    setDevLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: devEmail,
+        password: devPassword,
+      });
+      if (error) {
+        setDevError(error.message);
+        return;
+      }
+      onOpenChange(false);
+      navigate('/map');
+    } catch (err) {
+      setDevError(err instanceof Error ? err.message : 'Sign-in failed');
+    } finally {
+      setDevLoading(false);
+    }
+  };
   const sdkAvailable = preflight.canAttemptLogin;
 
   const refreshPreflight = useCallback(() => {
@@ -474,6 +511,49 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
           </Button>
 
           <AuthTroubleshooting isVisible={showTroubleshooting} />
+
+          {isSandbox && (
+            <div className="w-full mt-2 mb-4 p-4 border border-border rounded-md bg-muted/30">
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="text-sm font-semibold">Dev Login</h3>
+                <span className="text-[10px] uppercase tracking-wide bg-primary text-primary-foreground px-2 py-0.5 rounded">
+                  Sandbox only
+                </span>
+              </div>
+              <form onSubmit={handleDevLogin} className="space-y-2">
+                <Input
+                  type="email"
+                  placeholder="Email"
+                  value={devEmail}
+                  onChange={(e) => setDevEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                />
+                <Input
+                  type="password"
+                  placeholder="Password"
+                  value={devPassword}
+                  onChange={(e) => setDevPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
+                {devError && (
+                  <p className="text-xs text-red-600 dark:text-red-400">{devError}</p>
+                )}
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="w-full"
+                  disabled={devLoading || !devEmail || !devPassword}
+                >
+                  {devLoading ? 'Signing in…' : 'Sign in with Email'}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  This login method is only available in the Lovable sandbox and development environment.
+                </p>
+              </form>
+            </div>
+          )}
           
           <div className="text-center text-sm text-muted-foreground px-4">
             <p>
