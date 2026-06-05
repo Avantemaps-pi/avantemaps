@@ -865,6 +865,9 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
     showMyListings,
     sendContactOTP,
     verifyContactOTP,
+    isValidatingConversation,
+    conversationValidated,
+    validateConversation,
   };
 }
 
