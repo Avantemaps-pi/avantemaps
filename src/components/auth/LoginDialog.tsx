@@ -541,45 +541,33 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
           {isSandbox && (
             <div className="w-full mt-2 mb-4 p-4 border border-border rounded-md bg-muted/30">
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-semibold">Dev Login</h3>
+                <h3 className="text-sm font-semibold">Sandbox Session</h3>
                 <span className="text-[10px] uppercase tracking-wide bg-primary text-primary-foreground px-2 py-0.5 rounded">
                   Sandbox only
                 </span>
               </div>
-              <form onSubmit={handleDevLogin} className="space-y-2">
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  value={devEmail}
-                  onChange={(e) => setDevEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-                <Input
-                  type="password"
-                  placeholder="Password"
-                  value={devPassword}
-                  onChange={(e) => setDevPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
-                {devError && (
-                  <p className="text-xs text-red-600 dark:text-red-400">{devError}</p>
-                )}
-                <Button
-                  type="submit"
-                  variant="outline"
-                  className="w-full"
-                  disabled={devLoading || !devEmail || !devPassword}
-                >
-                  {devLoading ? 'Signing in…' : 'Sign in with Email'}
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  This login method is only available in the Lovable sandbox and development environment.
-                </p>
-              </form>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  secureLog.info('Sandbox login button pressed', {
+                    host: typeof window !== 'undefined' ? window.location.hostname : 'unknown',
+                  });
+                  loginAsSandbox();
+                  onOpenChange(false);
+                  navigate('/map');
+                }}
+              >
+                Continue as sandbox user
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2">
+                Simulates an authenticated session locally — no real Supabase user is created.
+                RLS-protected data will not be accessible. Sandbox/dev environments only.
+              </p>
             </div>
           )}
+
           
           <div className="text-center text-sm text-muted-foreground px-4">
             <p>
