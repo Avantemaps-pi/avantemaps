@@ -452,6 +452,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Clear local storage
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(SANDBOX_MOCK_KEY);
     
     // Clear any Supabase auth storage keys
     const keysToRemove = Object.keys(localStorage).filter(key => 
@@ -463,6 +464,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.info("You've been logged out");
   }, [safeSetUser]);
 
+  // Sandbox-only simulated session. No Supabase auth call is made — the app is
+  // treated as authenticated locally so UI/flows that don't depend on RLS can
+  // be exercised from the Lovable sandbox. RLS-protected requests will still
+  // fail because there is no real auth.uid().
+  const loginAsSandbox = useCallback((): void => {
+    if (!isSandboxHost()) {
+      toast.error('Sandbox login is disabled in production.');
+      secureLog.warn('Blocked loginAsSandbox: not a sandbox host');
+      return;
+    }
+    const base = DEV_CONFIG?.mockUser ?? {
+      uid: '00000000-0000-0000-0000-000000000001',
+      pi_uid: 'sandbox-mock-pi-uid',
+      username: 'SandboxUser',
+      walletAddress: 'sandbox-mock-wallet',
+      roles: ['user'],
+      accessToken: 'sandbox-mock-token',
+      lastAuthenticated: Date.now(),
+      subscriptionTier: SubscriptionTier.ORGANIZATION,
+      businessCount: 0,
+    };
+    const mockUser: PiUser = { ...base, lastAuthenticated: Date.now() };
+    try {
+      localStorage.setItem(SANDBOX_MOCK_KEY, '1');
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockUser));
+    } catch (e) {
+      secureLog.warn('Failed to persist sandbox mock session', e);
+    }
+    safeSetUser(mockUser);
+    secureLog.info('Sandbox mock session activated', { uid: mockUser.uid, username: mockUser.username });
+    toast.success('Sandbox session active (mock user, no real auth).');
+  }, [safeSetUser]);
+
   // access helpers
   const hasAccess = useCallback(
     (requiredTier: SubscriptionTier): boolean => user ? checkAccess(user.subscriptionTier, requiredTier) : false,
@@ -472,9 +506,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = user?.roles?.includes('admin') ?? false;
 
   // runtime session monitor - check Supabase session validity periodically
-  // Does NOT re-trigger Pi.authenticate(); just verifies the session is still active
+  // Does NOT re-trigger Pi.authenticate(); just verifies the session is still active.
+  // Skipped for sandbox mock sessions which have no Supabase session by design.
   useEffect(() => {
     if (!user) return;
+    if (hasSandboxMock()) return;
     const interval = setInterval(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -484,6 +520,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 10 * 60 * 1000);
     return () => clearInterval(interval);
   }, [user, logout]);
+
 
   // app-ready event
   useEffect(() => {
