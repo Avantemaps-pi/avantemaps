@@ -3,6 +3,29 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { initializePiNetwork, getPiAuthResult } from '@/utils/piNetwork/core';
 import { PiUser, AuthContextType, STORAGE_KEY } from './types';
+
+// Sandbox-only mock-session flag. When present in localStorage, the auth provider
+// will skip Supabase session checks and treat the cached PiUser as authenticated.
+// Strictly intended for the Lovable sandbox/dev environment.
+const SANDBOX_MOCK_KEY = 'avante_sandbox_mock_session';
+const isSandboxHost = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname;
+  return (
+    !(window as any).Pi ||
+    host.includes('lovable.app') ||
+    host.includes('lovableproject.com') ||
+    host === 'localhost' ||
+    host === '127.0.0.1'
+  );
+};
+const hasSandboxMock = (): boolean => {
+  try {
+    return typeof localStorage !== 'undefined' && !!localStorage.getItem(SANDBOX_MOCK_KEY);
+  } catch {
+    return false;
+  }
+};
 import { checkAccess } from './authUtils';
 import { performLogin, refreshUserData as refreshUserDataService, requestAuthPermissions } from './authService';
 import { useNetworkStatus } from './networkStatusService';
