@@ -20,6 +20,7 @@ export interface AuthContextType {
   isOffline: boolean;
   appReady: boolean;
   login: () => Promise<void>;
+  loginAsSandbox: () => void;
   logout: () => void;
   authError: string | null;
   hasAccess: (requiredTier: SubscriptionTier) => boolean;
@@ -27,6 +28,7 @@ export interface AuthContextType {
   setUser: (user: PiUser) => void;
   isAdmin: boolean;
 }
+
 
 // Session expires after 24 hours of inactivity
 // Note: useSessionRestoration uses a 15-minute threshold for silent refresh
