@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { X, AlertCircle, HelpCircle, RefreshCw, ExternalLink, WifiOff, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from '@/context/auth';
@@ -10,7 +9,7 @@ import { isPiNetworkAvailable, isPiBrowser } from '@/utils/piNetwork';
 import AuthTroubleshooting from './AuthTroubleshooting';
 import { secureLog } from '@/utils/secureLogger';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+
 
 // Preflight statuses for Pi Browser / SDK availability.
 // Order matters: the first failing check wins so we show the most
