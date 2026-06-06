@@ -172,7 +172,7 @@ const computeCooldownSeconds = (failures: number): number => {
 };
 
 const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
-  const { login, isLoading, authError } = useAuth();
+  const { login, loginAsSandbox, isLoading, authError } = useAuth();
   const [showTroubleshooting, setShowTroubleshooting] = useState<boolean>(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [attemptCount, setAttemptCount] = useState<number>(0);
