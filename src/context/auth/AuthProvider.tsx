@@ -109,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Heavy error detection is now handled by SessionManager via useSupabaseSession
     const checkSession = async () => {
       try {
+        if (hasSandboxMock()) return; // Sandbox mock: skip real session check
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
