@@ -197,58 +197,6 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
     []
   );
   const navigate = useNavigate();
-  const [devEmail, setDevEmail] = useState('');
-  const [devPassword, setDevPassword] = useState('');
-  const [devLoading, setDevLoading] = useState(false);
-  const [devError, setDevError] = useState<string | null>(null);
-
-  const handleDevLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setDevError(null);
-    setDevLoading(true);
-
-    secureLog.info('Dev login attempt', {
-      email: devEmail,
-      sandbox: isSandbox,
-      host: typeof window !== 'undefined' ? window.location.hostname : 'unknown',
-    });
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: devEmail,
-        password: devPassword,
-      });
-      if (error) {
-        secureLog.error('Dev login failed', {
-          email: devEmail,
-          errorMessage: error.message,
-          errorStatus: error.status,
-          errorName: error.name,
-          sandbox: isSandbox,
-        });
-        setDevError(error.message);
-        return;
-      }
-      secureLog.info('Dev login succeeded', {
-        email: devEmail,
-        userId: data.user?.id ?? null,
-        sandbox: isSandbox,
-      });
-      onOpenChange(false);
-      navigate('/map');
-    } catch (err) {
-      const errMessage = err instanceof Error ? err.message : 'Sign-in failed';
-      secureLog.error('Dev login unexpected error', {
-        email: devEmail,
-        errorMessage: errMessage,
-        errorType: err instanceof Error ? err.constructor.name : typeof err,
-        sandbox: isSandbox,
-      });
-      setDevError(errMessage);
-    } finally {
-      setDevLoading(false);
-    }
-  };
   const sdkAvailable = preflight.canAttemptLogin;
 
   const refreshPreflight = useCallback(() => {
