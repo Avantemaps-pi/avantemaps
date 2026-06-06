@@ -206,19 +206,45 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
     e.preventDefault();
     setDevError(null);
     setDevLoading(true);
+
+    secureLog.info('Dev login attempt', {
+      email: devEmail,
+      sandbox: isSandbox,
+      host: typeof window !== 'undefined' ? window.location.hostname : 'unknown',
+    });
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: devEmail,
         password: devPassword,
       });
       if (error) {
+        secureLog.error('Dev login failed', {
+          email: devEmail,
+          errorMessage: error.message,
+          errorStatus: error.status,
+          errorName: error.name,
+          sandbox: isSandbox,
+        });
         setDevError(error.message);
         return;
       }
+      secureLog.info('Dev login succeeded', {
+        email: devEmail,
+        userId: data.user?.id ?? null,
+        sandbox: isSandbox,
+      });
       onOpenChange(false);
       navigate('/map');
     } catch (err) {
-      setDevError(err instanceof Error ? err.message : 'Sign-in failed');
+      const errMessage = err instanceof Error ? err.message : 'Sign-in failed';
+      secureLog.error('Dev login unexpected error', {
+        email: devEmail,
+        errorMessage: errMessage,
+        errorType: err instanceof Error ? err.constructor.name : typeof err,
+        sandbox: isSandbox,
+      });
+      setDevError(errMessage);
     } finally {
       setDevLoading(false);
     }
