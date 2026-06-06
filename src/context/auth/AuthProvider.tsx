@@ -228,6 +228,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const cachedSession = localStorage.getItem(STORAGE_KEY);
       if (!cachedSession) return;
 
+      // Sandbox mock: restore cached PiUser without requiring a real Supabase session
+      if (hasSandboxMock()) {
+        try {
+          const userData = JSON.parse(cachedSession) as PiUser;
+          secureLog.info('Restoring sandbox mock user from cache');
+          safeSetUser(userData);
+        } catch {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(SANDBOX_MOCK_KEY);
+        }
+        return;
+      }
+
       // If Supabase session is missing, don't restore the app user from cache.
       // This prevents "logged-in UI" + "stale/invalid Supabase tokens" loops.
       const { data: { session } } = await supabase.auth.getSession();
@@ -236,6 +249,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem(STORAGE_KEY);
         return;
       }
+
 
       try {
         const userData = JSON.parse(cachedSession) as PiUser;
