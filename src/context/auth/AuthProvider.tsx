@@ -538,6 +538,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isOffline,
         appReady,
         login,
+        loginAsSandbox,
         logout,
         authError,
         hasAccess,
