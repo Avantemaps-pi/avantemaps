@@ -51,6 +51,28 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
+  // Auto-center on user's geolocation if permission granted (silent fallback)
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        window.dispatchEvent(
+          new CustomEvent('centerMap', {
+            detail: {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              zoom: 14,
+            },
+          })
+        );
+      },
+      () => {
+        // silent fallback — keep default world view
+      },
+      { timeout: 8000, maximumAge: 300000, enableHighAccuracy: false }
+    );
+  }, []);
+
   // Ensure map centers on San Francisco or a selected place, and handle zoom accordingly
   useEffect(() => {
     if (selectedPlaceId) {
