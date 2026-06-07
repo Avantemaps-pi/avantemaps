@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useBusinessLimit } from '@/hooks/useBusinessLimit';
 import { AlertTriangle } from 'lucide-react';
+import { secureLog } from '@/utils/secureLogger';
 
 const RegisteredBusiness = () => {
   const navigate = useNavigate();
@@ -34,20 +35,20 @@ const RegisteredBusiness = () => {
   useEffect(() => {
     const fetchUserBusinesses = async () => {
       if (!user?.uid) {
-        console.log('🏢 No user UID, skipping business fetch');
+        secureLog.info('No user UID, skipping business fetch');
         setIsLoading(false);
         return;
       }
 
       // Prevent duplicate fetches
       if (hasFetchedRef.current) {
-        console.log('🏢 Skipping duplicate fetch');
+        secureLog.info('Skipping duplicate fetch');
         return;
       }
       hasFetchedRef.current = true;
 
       try {
-        console.log('🏢 Fetching businesses for user:', user.uid);
+        secureLog.info('Fetching businesses for user', { uid: user.uid });
 
         // ✅ SECURITY: Get Supabase session and use session.user.id for consistency
         const getSessionUserId = async () => {
@@ -56,22 +57,22 @@ const RegisteredBusiness = () => {
         };
 
         let sessionUserId = await getSessionUserId();
-        console.log('🔐 Supabase session user (initial):', sessionUserId || 'none');
+        secureLog.info('Supabase session user (initial)', { sessionUserId: sessionUserId || 'none' });
 
         // As a last resort, try a full login once if still missing and online
         if (!sessionUserId && navigator.onLine) {
           try {
-            console.log('🔑 No session after refresh — attempting login() to restore session');
+            secureLog.info('No session after refresh — attempting login() to restore session');
             await login();
             sessionUserId = await getSessionUserId();
-            console.log('🔐 Supabase session user (after login):', sessionUserId || 'none');
+            secureLog.info('Supabase session user (after login)', { sessionUserId: sessionUserId || 'none' });
           } catch (e) {
-            console.warn('⚠️ Login attempt failed:', e);
+            secureLog.warn('Login attempt failed', { error: e });
           }
         }
 
         if (!sessionUserId) {
-          console.error('❌ No valid Supabase session found');
+          secureLog.error('No valid Supabase session found');
           if (!toastShownRef.current) {
             toast.error('Please log in to view your businesses');
             toastShownRef.current = true;
@@ -90,17 +91,17 @@ const RegisteredBusiness = () => {
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('❌ Error fetching businesses:', error);
+          secureLog.error('Error fetching businesses', { error });
           throw error;
         }
 
         const rows = data ?? [];
-        console.log('✅ Businesses fetched:', rows.length, 'businesses');
+        secureLog.info('Businesses fetched', { count: rows.length });
 
         // ✅ SECURITY: Runtime validation - filter out any businesses not owned by user
         const validRows = rows.filter((b: any) => {
           if (b.owner_id !== sessionUserId) {
-            console.error('🚨 Security warning: Business owner mismatch detected', {
+            secureLog.error('Security warning: Business owner mismatch detected', {
               businessId: b.id,
               businessOwnerId: b.owner_id,
               sessionUserId
@@ -111,7 +112,7 @@ const RegisteredBusiness = () => {
         });
 
         if (validRows.length !== rows.length) {
-          console.warn(`⚠️ Filtered out ${rows.length - validRows.length} invalid businesses`);
+          secureLog.warn('Filtered out invalid businesses', { count: rows.length - validRows.length });
         }
 
         // Transform to Business type - build address from components
@@ -161,7 +162,7 @@ const RegisteredBusiness = () => {
           navigate('.', { replace: true, state: {} });
         }
       } catch (error) {
-        console.error('❌ Error in fetchUserBusinesses:', error);
+        secureLog.error('Error in fetchUserBusinesses', { error });
         toast.error('Failed to load your businesses');
         hasFetchedRef.current = false;
       } finally {
@@ -172,7 +173,7 @@ const RegisteredBusiness = () => {
     if (isAuthenticated) {
       fetchUserBusinesses();
     } else {
-      console.log('🔒 User not authenticated, skipping business fetch');
+      secureLog.info('User not authenticated, skipping business fetch');
       hasFetchedRef.current = false;
       setIsLoading(false);
     }
