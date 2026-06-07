@@ -13,7 +13,7 @@ export const getUserRoles = async (uid: string): Promise<string[]> => {
       .eq('user_id', uid);
 
     if (error) {
-      console.error("Error fetching user roles:", error);
+      secureLog.error("Error fetching user roles:", error);
       return [];
     }
 
