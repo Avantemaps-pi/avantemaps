@@ -19,7 +19,7 @@ export const getUserRoles = async (uid: string): Promise<string[]> => {
 
     return data?.map(r => r.role) || [];
   } catch (error) {
-    console.error("Error in getUserRoles:", error);
+    secureLog.error("Error in getUserRoles:", error);
     return [];
   }
 };
@@ -37,7 +37,7 @@ export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) =
     if (sessionError || !session?.access_token) {
       // No valid session - just update localStorage without touching the database
       // This prevents errors during page refresh when session may be stale
-      console.warn("No active Supabase session, skipping database sync");
+      secureLog.warn("No active Supabase session, skipping database sync");
       localStorage.setItem('avante_maps_auth', JSON.stringify(updatedUserData));
       setUser(updatedUserData);
       return;
@@ -46,7 +46,7 @@ export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) =
     // Also verify the token is not expired
     const tokenExpiry = session.expires_at ? session.expires_at * 1000 : 0;
     if (tokenExpiry && Date.now() > tokenExpiry) {
-      console.warn("Session token expired, skipping database sync");
+      secureLog.warn("Session token expired, skipping database sync");
       localStorage.setItem('avante_maps_auth', JSON.stringify(updatedUserData));
       setUser(updatedUserData);
       return;
@@ -61,7 +61,7 @@ export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) =
     });
 
     if (error) {
-      console.error("Error updating user in Supabase:", error);
+      secureLog.error("Error updating user in Supabase:", error);
       // Still update localStorage so the app can function, but warn the user
       // Only show toast for unexpected errors (not auth-related or constraint violations)
       const errorMsg = error.message?.toLowerCase() || '';
@@ -71,7 +71,7 @@ export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) =
         errorMsg.includes('unique') || errorMsg.includes('duplicate') || errorMsg.includes('foreign key');
       
       if (!isAuthError && !isConstraintError) {
-        console.warn('Failed to sync user profile silently:', error.message);
+        secureLog.warn('Failed to sync user profile silently:', error.message);
       }
       // Update localStorage anyway to keep app functional
       localStorage.setItem('avante_maps_auth', JSON.stringify(updatedUserData));
@@ -83,7 +83,7 @@ export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) =
     localStorage.setItem('avante_maps_auth', JSON.stringify(updatedUserData));
     setUser(updatedUserData);
   } catch (error) {
-    console.error("Error updating user data:", error);
+    secureLog.error("Error updating user data:", error);
     // Still try to update localStorage on error
     try {
       localStorage.setItem('avante_maps_auth', JSON.stringify(userData));
@@ -104,13 +104,13 @@ export const getUserSubscription = async (uid: string): Promise<SubscriptionTier
       .maybeSingle();
 
     if (error || !data) {
-      console.error("Error fetching subscription:", error);
+      secureLog.error("Error fetching subscription:", error);
       return SubscriptionTier.INDIVIDUAL; // Default to INDIVIDUAL if error
     }
 
     return data.subscription as SubscriptionTier || SubscriptionTier.INDIVIDUAL;
   } catch (error) {
-    console.error("Error in getUserSubscription:", error);
+    secureLog.error("Error in getUserSubscription:", error);
     return SubscriptionTier.INDIVIDUAL;
   }
 };
