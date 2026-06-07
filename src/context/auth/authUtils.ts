@@ -2,6 +2,7 @@
 import { PiUser } from './types';
 import { SubscriptionTier } from '@/utils/piNetwork';
 import { supabase } from '@/integrations/supabase/client';
+import { secureLog } from '@/utils/secureLogger';
 
 // Get user roles from Supabase
 export const getUserRoles = async (uid: string): Promise<string[]> => {
