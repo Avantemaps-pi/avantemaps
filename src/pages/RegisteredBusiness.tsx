@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useBusinessLimit } from '@/hooks/useBusinessLimit';
 import { AlertTriangle } from 'lucide-react';
+import { secureLog } from '@/utils/secureLogger';
 
 const RegisteredBusiness = () => {
   const navigate = useNavigate();
