@@ -85,7 +85,7 @@ const RegisteredBusiness = () => {
         // Use direct Supabase query with RLS (most secure approach)
         const { data, error } = await supabase
           .from('businesses')
-          .select('*')
+          .select('id, business_name, owner_id, category, business_description, city, country, images, is_verified, is_certified, verification_status, is_active, created_at, lat, lng, business_types, keywords, location, street_address, state, zip_code')
           .eq('owner_id', sessionUserId)
           .eq('is_active', true)
           .order('created_at', { ascending: false });

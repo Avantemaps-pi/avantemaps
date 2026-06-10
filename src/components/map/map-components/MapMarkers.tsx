@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import { Place } from '@/types/business';
-import { LatLngTuple } from 'leaflet';
+import L, { LatLngTuple } from 'leaflet';
 import { createMarkerIcon } from '../markerUtils';
 
 interface MapMarkersProps {
@@ -11,6 +11,24 @@ interface MapMarkersProps {
 }
 
 const MapMarkers: React.FC<MapMarkersProps> = ({ places, activeMarkerId, onMarkerClick }) => {
+  const markerIcons = useMemo(() => {
+    const iconMap = new Map<string, L.Icon | L.DivIcon>();
+    places.forEach(place => {
+      const lat = place.position ? place.position.lat : (place.location ? place.location.lat : undefined);
+      const lng = place.position ? place.position.lng : (place.location ? place.location.lng : undefined);
+      if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng)) {
+        iconMap.set(place.id, createMarkerIcon({
+          isActive: activeMarkerId === place.id,
+          isUserBusiness: place.isUserBusiness || false,
+          isVerified: place.isVerified || false,
+          isCertified: place.isCertified || false,
+          verificationStatus: place.verificationStatus,
+        }));
+      }
+    });
+    return iconMap;
+  }, [places, activeMarkerId]);
+
   return (
     <>
       {places.map(place => {
@@ -21,16 +39,7 @@ const MapMarkers: React.FC<MapMarkersProps> = ({ places, activeMarkerId, onMarke
         // Only create marker if coordinates are valid numbers
         if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng)) {
           const position: LatLngTuple = [lat, lng];
-          const isActive = activeMarkerId === place.id;
-          
-          // Create marker icon with verification status
-          const markerIcon = createMarkerIcon({
-            isActive,
-            isUserBusiness: place.isUserBusiness || false,
-            isVerified: place.isVerified || false,
-            isCertified: place.isCertified || false,
-            verificationStatus: place.verificationStatus,
-          });
+          const markerIcon = markerIcons.get(place.id);
           
           return (
             <Marker
@@ -51,4 +60,10 @@ const MapMarkers: React.FC<MapMarkersProps> = ({ places, activeMarkerId, onMarke
   );
 };
 
-export default MapMarkers;
+export default React.memo(MapMarkers, (prev, next) => {
+  return (
+    prev.activeMarkerId === next.activeMarkerId &&
+    prev.onMarkerClick === next.onMarkerClick &&
+    prev.places === next.places
+  );
+});
