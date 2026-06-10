@@ -53,7 +53,7 @@ export const updateUserData = async (userData: PiUser, setUser: (user: PiUser) =
     }
 
     // Save to Supabase using security definer function to bypass RLS
-    await new Promise(resolve => setTimeout(resolve, 400));
+    await new Promise(resolve => setTimeout(resolve, 150));
     const { error } = await supabase.rpc('upsert_user_profile', {
       p_user_id: updatedUserData.uid,
       p_username: updatedUserData.username,
