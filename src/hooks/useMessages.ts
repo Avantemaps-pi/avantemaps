@@ -569,6 +569,19 @@ export function useMessages(inbox: Inbox | null) {
       }
 
 
+      // Optimistic append: show the message immediately, roll back on error.
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const optimisticMsg: MessageRow = {
+        id: tempId,
+        conversation_id: activeConvId,
+        sender_id: uid,
+        sender_role,
+        body: trimmed,
+        read_at: null,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, optimisticMsg]);
+
       const { data: inserted, error } = await supabase
         .from('messages')
         .insert({
@@ -577,12 +590,24 @@ export function useMessages(inbox: Inbox | null) {
           sender_role,
           body: trimmed,
         })
-        .select('id')
+        .select('id, created_at')
         .single();
       if (error || !inserted) {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
         toast.error(error?.message || 'Failed to send', { id: 'msg:send-failed', duration: 4000 });
         return false;
       }
+
+      // Replace the optimistic placeholder with the server-confirmed row so
+      // subsequent realtime INSERT events don't produce a duplicate.
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempId
+            ? { ...m, id: inserted.id, created_at: inserted.created_at ?? m.created_at }
+            : m,
+        ),
+      );
+
 
       // Idempotently link the paid fee row to this message. Safe to call
       // unconditionally for customer sends: verified senders simply have no
