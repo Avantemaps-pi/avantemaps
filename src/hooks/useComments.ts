@@ -116,9 +116,33 @@ export const useComments = (businessId: string | undefined) => {
       return false;
     }
 
+    const filteredContent = filterInappropriateContent(content);
+
+    // Optimistic insert
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: Comment = {
+      id: tempId,
+      business_id: parseInt(businessId),
+      user_id: user.id,
+      content: filteredContent,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      upvotes: 0,
+      downvotes: 0,
+      report_count: 0,
+      is_hidden: false,
+      userVote: null,
+      author: {
+        name: 'Pi User',
+        username: '@pi_user',
+        avatar: '/placeholder.svg',
+        isVerified: true,
+      },
+    };
+    const previous = comments;
+    setComments((prev) => [optimistic, ...prev]);
+
     try {
-      const filteredContent = filterInappropriateContent(content);
-      
       const { error } = await supabase
         .from('comments')
         .insert({
@@ -135,6 +159,7 @@ export const useComments = (businessId: string | undefined) => {
     } catch (error) {
       console.error('Error creating comment:', error);
       toast.error('Failed to post comment');
+      setComments(previous);
       return false;
     }
   };
@@ -145,6 +170,35 @@ export const useComments = (businessId: string | undefined) => {
       toast.error('You must be logged in to vote');
       return;
     }
+
+    // Optimistic vote update
+    const previous = comments;
+    setComments((prev) =>
+      prev.map((c) => {
+        if (c.id !== commentId) return c;
+        const wasUp = c.userVote === 'up';
+        const wasDown = c.userVote === 'down';
+        let upvotes = c.upvotes;
+        let downvotes = c.downvotes;
+        let nextVote: 'up' | 'down' | null = voteType;
+
+        if (c.userVote === voteType) {
+          // toggle off
+          nextVote = null;
+          if (voteType === 'up') upvotes -= 1;
+          else downvotes -= 1;
+        } else {
+          if (voteType === 'up') {
+            upvotes += 1;
+            if (wasDown) downvotes -= 1;
+          } else {
+            downvotes += 1;
+            if (wasUp) upvotes -= 1;
+          }
+        }
+        return { ...c, upvotes, downvotes, userVote: nextVote };
+      })
+    );
 
     try {
       // Check if user already voted
@@ -182,12 +236,15 @@ export const useComments = (businessId: string | undefined) => {
           });
       }
 
-      await fetchComments();
+      // Realtime subscription will sync counts; no forced refetch needed.
     } catch (error) {
       console.error('Error voting:', error);
       toast.error('Failed to vote');
+      setComments(previous);
     }
   };
+
+
 
   const reportComment = async (commentId: string, reason?: string) => {
     const { data: { user } } = await supabase.auth.getUser();
