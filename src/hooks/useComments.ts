@@ -245,55 +245,6 @@ export const useComments = (businessId: string | undefined) => {
   };
 
 
-  const voteComment = async (commentId: string, voteType: 'up' | 'down') => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error('You must be logged in to vote');
-      return;
-    }
-
-    try {
-      // Check if user already voted
-      const { data: existingVote } = await supabase
-        .from('comment_votes')
-        .select('*')
-        .eq('comment_id', commentId)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (existingVote) {
-        if (existingVote.vote_type === voteType) {
-          // Remove vote
-          await supabase
-            .from('comment_votes')
-            .delete()
-            .eq('comment_id', commentId)
-            .eq('user_id', user.id);
-        } else {
-          // Update vote
-          await supabase
-            .from('comment_votes')
-            .update({ vote_type: voteType })
-            .eq('comment_id', commentId)
-            .eq('user_id', user.id);
-        }
-      } else {
-        // Create new vote
-        await supabase
-          .from('comment_votes')
-          .insert({
-            comment_id: commentId,
-            user_id: user.id,
-            vote_type: voteType
-          });
-      }
-
-      await fetchComments();
-    } catch (error) {
-      console.error('Error voting:', error);
-      toast.error('Failed to vote');
-    }
-  };
 
   const reportComment = async (commentId: string, reason?: string) => {
     const { data: { user } } = await supabase.auth.getUser();
