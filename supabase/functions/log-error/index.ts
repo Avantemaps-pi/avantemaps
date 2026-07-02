@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, createRateLimitResponse, getClientIP } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,6 +9,13 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // ✅ SECURITY: IP-based rate limit to prevent flooding error_logs
+  const ip = getClientIP(req);
+  const rl = checkRateLimit(`log-error:${ip}`, { windowMs: 60_000, maxRequests: 20 });
+  if (!rl.allowed) {
+    return createRateLimitResponse(rl.retryAfter ?? 60, undefined, corsHeaders);
   }
 
   try {

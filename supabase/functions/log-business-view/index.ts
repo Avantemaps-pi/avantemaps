@@ -1,10 +1,18 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, createRateLimitResponse, getClientIP } from "../_shared/rateLimit.ts";
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // ✅ SECURITY: rate-limit anonymous analytics writes to prevent view-count inflation
+  const ip = getClientIP(req);
+  const rl = checkRateLimit(`log-business-view:${ip}`, { windowMs: 60_000, maxRequests: 30 });
+  if (!rl.allowed) {
+    return createRateLimitResponse(rl.retryAfter ?? 60, undefined, corsHeaders);
   }
 
   try {
@@ -18,10 +26,23 @@ Deno.serve(async (req) => {
     if (!business_id) {
       return new Response(
         JSON.stringify({ error: "business_id is required" }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
         }
+      );
+    }
+
+    // ✅ Validate the business_id exists before inserting a view record
+    const { data: exists, error: existsErr } = await supabase
+      .from('businesses')
+      .select('id')
+      .eq('id', parseInt(business_id))
+      .maybeSingle();
+    if (existsErr || !exists) {
+      return new Response(
+        JSON.stringify({ error: "Invalid business_id" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
