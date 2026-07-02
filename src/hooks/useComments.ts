@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { filterInappropriateContent } from '@/utils/contentFilter';
@@ -23,143 +24,133 @@ export interface Comment {
   };
 }
 
+const COMMENT_COLUMNS =
+  'id, business_id, user_id, content, created_at, updated_at, upvotes, downvotes, report_count, is_hidden';
+
+const buildAuthor = () => ({
+  name: 'Pi User',
+  username: '@pi_user',
+  avatar: '/placeholder.svg',
+  isVerified: true,
+});
+
 export const useComments = (businessId: string | undefined) => {
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const queryKey = ['comments', businessId] as const;
 
-  const fetchComments = async () => {
-    if (!businessId) {
-      setLoading(false);
-      return;
+  const fetchComments = async (): Promise<Comment[]> => {
+    if (!businessId) return [];
+
+    const { data, error } = await supabase
+      .from('comments')
+      .select(COMMENT_COLUMNS)
+      .eq('business_id', parseInt(businessId))
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    let userVotes: { comment_id: string; vote_type: 'up' | 'down' }[] = [];
+    if (user) {
+      const { data: votesData } = await supabase
+        .from('comment_votes')
+        .select('comment_id, vote_type')
+        .eq('user_id', user.id);
+      userVotes = (votesData || []) as typeof userVotes;
     }
 
-    try {
-      const { data, error } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('business_id', parseInt(businessId))
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Fetch user votes
-      const { data: { user } } = await supabase.auth.getUser();
-      let userVotes: any[] = [];
-      
-      if (user) {
-        const { data: votesData } = await supabase
-          .from('comment_votes')
-          .select('comment_id, vote_type')
-          .eq('user_id', user.id);
-        userVotes = votesData || [];
-      }
-
-      const formattedComments: Comment[] = (data || []).map((comment) => {
-        const userVote = userVotes.find(v => v.comment_id === comment.id);
-        return {
-          ...comment,
-          userVote: userVote?.vote_type || null,
-          author: {
-            name: 'Pi User',
-            username: '@pi_user',
-            avatar: '/placeholder.svg',
-            isVerified: true,
-          }
-        };
-      });
-
-      setComments(formattedComments);
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      toast.error('Failed to load comments');
-    } finally {
-      setLoading(false);
-    }
+    return (data || []).map((c: any) => ({
+      ...c,
+      userVote: userVotes.find((v) => v.comment_id === c.id)?.vote_type ?? null,
+      author: buildAuthor(),
+    }));
   };
 
+  const { data: comments = [], isLoading: loading, refetch } = useQuery({
+    queryKey,
+    queryFn: fetchComments,
+    enabled: !!businessId,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  });
+
+  // Realtime subscription: invalidate cache on updates.
   useEffect(() => {
-    fetchComments();
+    if (!businessId) return;
+    const channel = supabase
+      .channel(`comments-changes-${businessId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'comments',
+          filter: `business_id=eq.${businessId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [businessId, queryClient]);
 
-    // Subscribe to realtime updates
-    if (businessId) {
-      const channel = supabase
-        .channel('comments-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'comments',
-            filter: `business_id=eq.${businessId}`
-          },
-          () => {
-            fetchComments();
-          }
-        )
-        .subscribe();
+  const setCache = (updater: (prev: Comment[]) => Comment[]) => {
+    queryClient.setQueryData<Comment[]>(queryKey, (prev) => updater(prev ?? []));
+  };
 
-      return () => {
-        supabase.removeChannel(channel);
+  const createMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('You must be logged in to comment');
+      if (!businessId) throw new Error('Invalid business');
+      const filtered = filterInappropriateContent(content);
+      const { error } = await supabase.from('comments').insert({
+        business_id: parseInt(businessId),
+        user_id: user.id,
+        content: filtered,
+      });
+      if (error) throw error;
+    },
+    onMutate: async (content) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<Comment[]>(queryKey);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !businessId) return { previous };
+      const optimistic: Comment = {
+        id: `temp-${Date.now()}`,
+        business_id: parseInt(businessId),
+        user_id: user.id,
+        content: filterInappropriateContent(content),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        upvotes: 0,
+        downvotes: 0,
+        report_count: 0,
+        is_hidden: false,
+        userVote: null,
+        author: buildAuthor(),
       };
-    }
-  }, [businessId]);
+      setCache((prev) => [optimistic, ...prev]);
+      return { previous };
+    },
+    onError: (err, _content, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
+      toast.error(err instanceof Error ? err.message : 'Failed to post comment');
+    },
+    onSuccess: () => {
+      toast.success('Comment posted successfully!');
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
 
   const createComment = async (content: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error('You must be logged in to comment');
-      return false;
-    }
-
-    if (!businessId) {
-      toast.error('Invalid business');
-      return false;
-    }
-
-    const filteredContent = filterInappropriateContent(content);
-
-    // Optimistic insert
-    const tempId = `temp-${Date.now()}`;
-    const optimistic: Comment = {
-      id: tempId,
-      business_id: parseInt(businessId),
-      user_id: user.id,
-      content: filteredContent,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      upvotes: 0,
-      downvotes: 0,
-      report_count: 0,
-      is_hidden: false,
-      userVote: null,
-      author: {
-        name: 'Pi User',
-        username: '@pi_user',
-        avatar: '/placeholder.svg',
-        isVerified: true,
-      },
-    };
-    const previous = comments;
-    setComments((prev) => [optimistic, ...prev]);
-
     try {
-      const { error } = await supabase
-        .from('comments')
-        .insert({
-          business_id: parseInt(businessId),
-          user_id: user.id,
-          content: filteredContent
-        });
-
-      if (error) throw error;
-
-      toast.success('Comment posted successfully!');
-      await fetchComments();
+      await createMutation.mutateAsync(content);
       return true;
-    } catch (error) {
-      console.error('Error creating comment:', error);
-      toast.error('Failed to post comment');
-      setComments(previous);
+    } catch {
       return false;
     }
   };
@@ -171,9 +162,8 @@ export const useComments = (businessId: string | undefined) => {
       return;
     }
 
-    // Optimistic vote update
-    const previous = comments;
-    setComments((prev) =>
+    const previous = queryClient.getQueryData<Comment[]>(queryKey);
+    setCache((prev) =>
       prev.map((c) => {
         if (c.id !== commentId) return c;
         const wasUp = c.userVote === 'up';
@@ -183,7 +173,6 @@ export const useComments = (businessId: string | undefined) => {
         let nextVote: 'up' | 'down' | null = voteType;
 
         if (c.userVote === voteType) {
-          // toggle off
           nextVote = null;
           if (voteType === 'up') upvotes -= 1;
           else downvotes -= 1;
@@ -197,28 +186,25 @@ export const useComments = (businessId: string | undefined) => {
           }
         }
         return { ...c, upvotes, downvotes, userVote: nextVote };
-      })
+      }),
     );
 
     try {
-      // Check if user already voted
       const { data: existingVote } = await supabase
         .from('comment_votes')
-        .select('*')
+        .select('id, vote_type')
         .eq('comment_id', commentId)
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (existingVote) {
         if (existingVote.vote_type === voteType) {
-          // Remove vote
           await supabase
             .from('comment_votes')
             .delete()
             .eq('comment_id', commentId)
             .eq('user_id', user.id);
         } else {
-          // Update vote
           await supabase
             .from('comment_votes')
             .update({ vote_type: voteType })
@@ -226,25 +212,20 @@ export const useComments = (businessId: string | undefined) => {
             .eq('user_id', user.id);
         }
       } else {
-        // Create new vote
         await supabase
           .from('comment_votes')
           .insert({
             comment_id: commentId,
             user_id: user.id,
-            vote_type: voteType
+            vote_type: voteType,
           });
       }
-
-      // Realtime subscription will sync counts; no forced refetch needed.
     } catch (error) {
       console.error('Error voting:', error);
       toast.error('Failed to vote');
-      setComments(previous);
+      if (previous) queryClient.setQueryData(queryKey, previous);
     }
   };
-
-
 
   const reportComment = async (commentId: string, reason?: string) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -259,7 +240,7 @@ export const useComments = (businessId: string | undefined) => {
         .insert({
           comment_id: commentId,
           reported_by: user.id,
-          reason: reason || 'Inappropriate content'
+          reason: reason || 'Inappropriate content',
         });
 
       if (error) {
@@ -271,7 +252,7 @@ export const useComments = (businessId: string | undefined) => {
       }
 
       toast.success('Comment reported successfully');
-      await fetchComments();
+      queryClient.invalidateQueries({ queryKey });
     } catch (error) {
       console.error('Error reporting comment:', error);
       toast.error('Failed to report comment');
@@ -284,6 +265,6 @@ export const useComments = (businessId: string | undefined) => {
     createComment,
     voteComment,
     reportComment,
-    refreshComments: fetchComments
+    refreshComments: refetch,
   };
 };
