@@ -98,7 +98,7 @@ export const getAllNotifications = async (): Promise<NotificationProps[]> => {
 
   const { data, error } = await supabase
     .from('notifications')
-    .select('*')
+    .select('id, type, content, read, metadata, created_at, priority')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
   
