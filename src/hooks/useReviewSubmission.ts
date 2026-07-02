@@ -103,7 +103,7 @@ export function useReviewSubmission(options?: UseReviewSubmissionOptions) {
   const fetchUserReview = async (businessId: number, userId: string) => {
     const { data, error } = await supabase
       .from('reviews')
-      .select('*')
+      .select('id, rating, content, created_at')
       .eq('business_id', businessId)
       .eq('user_id', userId)
       .maybeSingle();
