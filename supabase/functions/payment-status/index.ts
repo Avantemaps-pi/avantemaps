@@ -54,18 +54,15 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    let userId: string;
-    try {
-      const jwt = JSON.parse(atob(token.split('.')[1]));
-      userId = jwt.sub;
-      if (!userId) throw new Error('Invalid token: missing user ID');
-    } catch (jwtError) {
+    const { data: authData, error: authError } = await supabaseClient.auth.getUser(token);
+    if (authError || !authData?.user) {
       log.error(`${FN}.auth.invalid_jwt`, {
         stage: 'validation',
-        message: jwtError instanceof Error ? jwtError.message : String(jwtError),
+        message: authError?.message ?? 'no user',
       });
       return respond({ success: false, message: 'Invalid authentication token' }, 401);
     }
+    const userId = authData.user.id;
 
     log.extend({ userId });
 

@@ -190,8 +190,7 @@ Deno.serve(async (req: Request) => {
       console.error(`[${traceId}] Insert error:`, error);
       return new Response(JSON.stringify({
         success: false,
-        error: 'Failed to insert business',
-        details: error.message,
+        error: 'Failed to process request. Please try again.',
         traceId,
       }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -221,7 +220,6 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({
       success: false,
       error: 'Internal server error',
-      details: err.message,
       traceId,
     }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }

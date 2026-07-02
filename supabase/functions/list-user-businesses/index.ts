@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
     if (error) {
       console.error(`[${traceId}] list-user-businesses:`, error);
       return new Response(
-        JSON.stringify({ success: false, error: 'Query failed', details: error.message, traceId }),
+        JSON.stringify({ success: false, error: 'Query failed', traceId }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -78,7 +78,7 @@ Deno.serve(async (req: Request) => {
   } catch (err: any) {
     console.error(`[${traceId}] list-user-businesses internal error`, err);
     return new Response(
-      JSON.stringify({ success: false, error: 'Internal server error', details: err?.message, traceId }),
+      JSON.stringify({ success: false, error: 'Internal server error', traceId }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

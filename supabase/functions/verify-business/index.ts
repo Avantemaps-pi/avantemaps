@@ -287,7 +287,7 @@ Deno.serve(async (req: Request) => {
   } catch (err: any) {
     console.error(`[${traceId}] Internal error:`, err);
     return new Response(
-      JSON.stringify({ success: false, error: 'Internal server error', details: err.message, traceId }),
+      JSON.stringify({ success: false, error: 'Internal server error', traceId }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

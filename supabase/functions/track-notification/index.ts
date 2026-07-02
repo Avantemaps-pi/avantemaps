@@ -12,7 +12,29 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // ✅ SECURITY: require a valid JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const token = authHeader.slice('Bearer '.length);
+
+    const authClient = createClient(supabaseUrl, supabaseAnonKey);
+    const { data: userData, error: userErr } = await authClient.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const authenticatedUserId = userData.user.id;
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { notification_id, event_type, click_url } = await req.json();
@@ -22,13 +44,32 @@ Deno.serve(async (req) => {
     if (!notification_id || !event_type) {
       return new Response(
         JSON.stringify({ error: 'Missing notification_id or event_type' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 },
+      );
+    }
+
+    // ✅ SECURITY: verify the notification belongs to the authenticated user
+    const { data: owned, error: ownedErr } = await supabase
+      .from('notifications')
+      .select('user_id')
+      .eq('id', notification_id)
+      .maybeSingle();
+    if (ownedErr || !owned) {
+      return new Response(
+        JSON.stringify({ error: 'Notification not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    if (owned.user_id !== authenticatedUserId) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
     // Update notification tracking fields
     const updateData: any = {};
-    
+
     if (event_type === 'delivered') {
       updateData.delivered_at = new Date().toISOString();
       updateData.delivery_status = 'delivered';
@@ -56,25 +97,8 @@ Deno.serve(async (req) => {
 
     // Update A/B test variant metrics if applicable
     if (notification?.ab_variant_id) {
-      const variantUpdate: any = {};
-      
-      if (event_type === 'delivered') {
-        variantUpdate.delivered_count = supabase.rpc('increment', { 
-          row_id: notification.ab_variant_id 
-        });
-      } else if (event_type === 'read') {
-        variantUpdate.read_count = supabase.rpc('increment', { 
-          row_id: notification.ab_variant_id 
-        });
-      } else if (event_type === 'clicked') {
-        variantUpdate.clicked_count = supabase.rpc('increment', { 
-          row_id: notification.ab_variant_id 
-        });
-      }
-
-      // Increment the appropriate counter
       await supabase.rpc(`increment_variant_${event_type}`, {
-        variant_id: notification.ab_variant_id
+        variant_id: notification.ab_variant_id,
       });
     }
 
@@ -82,14 +106,13 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ success: true }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
     );
-
   } catch (error) {
     console.error('Error in track-notification:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      JSON.stringify({ error: 'Internal error' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 },
     );
   }
 });
