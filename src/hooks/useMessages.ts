@@ -170,7 +170,7 @@ export function useMessages(inbox: Inbox | null) {
     setLoadingMsgs(true);
     const { data, error } = await supabase
       .from('messages')
-      .select('*')
+      .select('id, conversation_id, sender_id, sender_role, body, read_at, created_at')
       .eq('conversation_id', convId)
       .order('created_at', { ascending: true });
     if (error) {
