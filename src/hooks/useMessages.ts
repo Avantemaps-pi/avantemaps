@@ -105,7 +105,9 @@ export function useMessages(inbox: Inbox | null) {
     setLoadingConvs(true);
     let query = supabase
       .from('conversations')
-      .select('*, businesses:business_id(business_name,images)')
+      .select(
+        'id, business_id, customer_id, last_message_at, last_message_preview, customer_unread, business_unread, created_at, businesses:business_id(business_name,images)'
+      )
       .order('last_message_at', { ascending: false });
 
     if (inbox.kind === 'customer') {
@@ -168,7 +170,7 @@ export function useMessages(inbox: Inbox | null) {
     setLoadingMsgs(true);
     const { data, error } = await supabase
       .from('messages')
-      .select('*')
+      .select('id, conversation_id, sender_id, sender_role, body, read_at, created_at')
       .eq('conversation_id', convId)
       .order('created_at', { ascending: true });
     if (error) {
