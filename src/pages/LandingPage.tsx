@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, Bookmark, MessageCircle, Star, Mail, LifeBuoy } from 'lucide-react';
+import { MapPin, Bookmark, MessageCircle, Star, Mail, LifeBuoy, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/auth/useAuth';
@@ -13,10 +13,10 @@ const NAVY = '#1E3A8A';
 const GOLD = '#2563EB';
 
 const features = [
-  { icon: MapPin, title: 'Interactive Map', desc: 'Find businesses near you on a live map, filtered by category.' },
-  { icon: Bookmark, title: 'Save Favourites', desc: 'Bookmark businesses you love and revisit them anytime.' },
-  { icon: MessageCircle, title: 'Message Directly', desc: 'Send messages to businesses and get replies in real time.' },
-  { icon: Star, title: 'Trusted Reviews', desc: 'Read and leave reviews to help the Pi community choose wisely.' },
+  { icon: MapPin, title: 'Interactive Map', desc: "See exactly where Pi-accepting businesses are, filtered by what you're looking for." },
+  { icon: Bookmark, title: 'Save Favourites', desc: 'Save the ones you love. Come back to them whenever you need them.' },
+  { icon: MessageCircle, title: 'Message Directly', desc: 'Message a business directly — no middleman, no waiting on hold.' },
+  { icon: Star, title: 'Trusted Reviews', desc: 'Leave honest reviews. Help the next person in the Pi community make a good call.' },
 ];
 
 const LandingPage: React.FC = () => {
@@ -110,10 +110,10 @@ const LandingPage: React.FC = () => {
                 <Logo light />
               </div>
               <h1 className="font-bold text-white leading-tight text-[28px] sm:text-4xl md:text-5xl">
-                Discover Pi-Powered Businesses Near You
+                A Business Directory Built By One Person, For The Pi Community
               </h1>
               <p className="mt-3 sm:mt-4 text-white/70 leading-relaxed text-[15px] sm:text-base md:text-lg">
-                Avante Maps connects you with local businesses that accept Pi. Explore, save, and message them — all in one place.
+                I'm building the map I wish existed when I started using Pi — a real place to find, message, and support businesses that accept it. No corporate backing. Just one developer and a community that showed up.
               </p>
               <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center md:justify-start max-w-xs sm:max-w-none mx-auto md:mx-0">
                 <Button
@@ -153,7 +153,7 @@ const LandingPage: React.FC = () => {
             className="text-center font-bold text-xl sm:text-2xl md:text-3xl"
             style={{ color: NAVY }}
           >
-            Everything you need to find Pi businesses
+            What Avante Maps does today
           </h2>
           <div className="mt-8 sm:mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
             {features.map(({ icon: Icon, title, desc }) => (
@@ -177,6 +177,48 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* BUILT FOR MORE THAN JUST DISCOVERY */}
+      <section className="py-12 sm:py-16 px-4 sm:px-6 bg-blue-50">
+        <div className="max-w-5xl mx-auto">
+          <h2
+            className="text-center font-bold text-xl sm:text-2xl md:text-3xl"
+            style={{ color: NAVY }}
+          >
+            Built for more than just discovery
+          </h2>
+          <div className="mt-8 sm:mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+            <div className="p-4 sm:p-5 rounded-2xl border border-black/5 bg-white shadow-sm flex gap-3 sm:gap-4 items-start">
+              <div
+                className="flex items-center justify-center rounded-full flex-shrink-0 w-12 h-12"
+                style={{ backgroundColor: 'rgba(37,99,235,0.15)' }}
+              >
+                <MessageCircle className="h-6 w-6" style={{ color: GOLD }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-base" style={{ color: NAVY }}>Direct messaging</h3>
+                <p className="text-sm text-muted-foreground mt-1 leading-snug">
+                  Talk to a business before you visit. No app-switching, no waiting.
+                </p>
+              </div>
+            </div>
+            <div className="p-4 sm:p-5 rounded-2xl border border-black/5 bg-white shadow-sm flex gap-3 sm:gap-4 items-start">
+              <div
+                className="flex items-center justify-center rounded-full flex-shrink-0 w-12 h-12"
+                style={{ backgroundColor: 'rgba(37,99,235,0.15)' }}
+              >
+                <BarChart3 className="h-6 w-6" style={{ color: GOLD }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-base" style={{ color: NAVY }}>Business analytics</h3>
+                <p className="text-sm text-muted-foreground mt-1 leading-snug">
+                  Business owners see who's finding them and how — real data, not guesswork.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* PI CALLOUT */}
       <section className="py-12 sm:py-16 px-4 sm:px-6" style={{ backgroundColor: '#F5F5F5' }}>
         <div className="max-w-2xl mx-auto text-center">
@@ -188,10 +230,10 @@ const LandingPage: React.FC = () => {
             height={56}
           />
           <h2 className="font-bold text-xl sm:text-2xl md:text-3xl" style={{ color: NAVY }}>
-            Built for the Pi Network Community
+            Made For Pi. Not Made By Pi.
           </h2>
           <p className="mt-3 text-muted-foreground leading-relaxed text-sm sm:text-base">
-            Avante Maps is designed exclusively for Pi Network users. Verified Pi users get full access to messaging, saving, and business registration — all powered by Pi.
+            Avante Maps isn't an official Pi Network product — it's an independent app built by a KYC-verified Pi Network member, for the community I'm part of. Every business registration, message, and review here runs on Pi. And this is just the beginning of what I'm building toward.
           </p>
           <div className="mt-6 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center max-w-xs sm:max-w-none mx-auto">
             <Button
@@ -212,12 +254,23 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* FOUNDER NOTE */}
+      <section className="py-12 sm:py-16 px-4 sm:px-6 bg-white">
+        <div className="max-w-3xl mx-auto">
+          <div className="rounded-2xl border border-black/5 bg-slate-50 p-6 sm:p-8">
+            <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
+              👋 Hi, I'm the person building this. There are already ways to find Pi businesses on a map — but none of them let you message a business directly, or give business owners real analytics on who's finding them. So I built Avante Maps to close that gap. It's early, it's solo, and it's growing. Thank you for being here at the start. — Founder, Avante Maps
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* FOOTER */}
       <footer className="py-10 sm:py-12 px-4 sm:px-6 text-white" style={{ backgroundColor: NAVY }}>
         <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 gap-8 text-center sm:text-left">
           <div className="col-span-2 sm:col-span-1 flex flex-col items-center sm:items-start">
             <Logo light />
-            <p className="mt-3 text-white/70 text-sm">Discover. Connect. Transact.</p>
+            <p className="mt-3 text-white/70 text-sm">Discover. Connect. Transact. — Built solo, one commit at a time.</p>
           </div>
           <div>
             <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-white/90">Company</h4>
