@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Place } from '@/types/business';
 import ExpandableDescription from '@/components/business/ExpandableDescription';
 import BookmarkButton from './buttons/BookmarkButton';
-import WebsiteButton from './buttons/WebsiteButton';
+import PlaceCardButtonRow from '@/components/business/PlaceCardButtonRow';
 import PlaceRating from './place/PlaceRating';
 import PlaceAddress from './place/PlaceAddress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
