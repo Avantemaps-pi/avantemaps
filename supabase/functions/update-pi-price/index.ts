@@ -29,6 +29,21 @@ Deno.serve(async (req) => {
     return createRateLimitResponse(rateLimitCheck.retryAfter!, undefined, corsHeaders);
   }
 
+  // Initialize Supabase client (also used for cron auth verification)
+  const supabaseClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  // Require cron secret — only pg_cron should invoke this
+  const isAuthorized = await verifyCronRequest(req, supabaseClient);
+  if (!isAuthorized) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+    );
+  }
+
   try {
     console.log('Starting Pi price update...');
 
