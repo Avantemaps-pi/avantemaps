@@ -188,11 +188,16 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
 
   const allowTestMode = useMemo(() => isPreviewOrDev(), []);
   const isSandbox = useMemo(
-    () =>
-      typeof window !== 'undefined' &&
-      (!(window as any).Pi ||
-        window.location.hostname.includes('lovable.app') ||
-        window.location.hostname === 'localhost'),
+    () => {
+      if (typeof window === 'undefined') return false;
+      const host = window.location.hostname;
+      return (
+        host.includes('lovableproject.com') ||
+        host.includes('id-preview') ||
+        host === 'localhost' ||
+        host === '127.0.0.1'
+      );
+    },
     []
   );
   const navigate = useNavigate();
