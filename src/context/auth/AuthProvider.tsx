@@ -12,9 +12,8 @@ const isSandboxHost = (): boolean => {
   if (typeof window === 'undefined') return false;
   const host = window.location.hostname;
   return (
-    !(window as any).Pi ||
-    host.includes('lovable.app') ||
     host.includes('lovableproject.com') ||
+    host.includes('id-preview') ||
     host === 'localhost' ||
     host === '127.0.0.1'
   );
