@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const pendingAuthRef = useRef<boolean>(false);
   const initAttempted = useRef<boolean>(false);
-  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const authTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const devModeToastShown = useRef<boolean>(false);
   const isMountedRef = useRef<boolean>(true);
 
@@ -150,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // global error handlers (unchanged)
   useEffect(() => {
-    let reloadTimeout: NodeJS.Timeout | null = null;
+    let reloadTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const handleError = (event: ErrorEvent) => {
       const message = event?.error?.message || event?.message || 'An unexpected error occurred.';
