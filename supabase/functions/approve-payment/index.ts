@@ -31,12 +31,11 @@ const PaymentRequestSchema = z.object({
   }).strict()
 });
 
-function determineSubscriptionTier(amount: number, metadata: Record<string, any>): string {
-  if (metadata?.subscriptionTier) return metadata.subscriptionTier;
-  if (amount < 1) return 'individual';
-  if (amount < 10) return 'small-business';
-  return 'organization';
-}
+// Subscription tier assignment is intentionally NOT performed here.
+// See `complete-payment` — tier upgrades only occur after the on-chain
+// payment is verified completed, to prevent free subscription grants via
+// approval-only calls with forged amount/metadata.
+
 
 function isStalePayment(payment: any): boolean {
   const createdAt = new Date(payment.created_at).getTime();
