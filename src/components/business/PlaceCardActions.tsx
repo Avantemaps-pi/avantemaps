@@ -1,74 +1,104 @@
-
 import React, { useState } from 'react';
-import { Bookmark, Share2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import ShareDialog from './ShareDialog';
+import { useNavigate } from 'react-router-dom';
+import { MessageCircle, ExternalLink, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Place } from '@/types/business';
+import { useAuth } from '@/context/auth';
+import { useMessages } from '@/hooks/useMessages';
+import { cn } from '@/lib/utils';
 
 interface PlaceCardActionsProps {
-  isBookmarked: boolean;
-  onBookmarkToggle: (e: React.MouseEvent) => void;
-  onShare: (e: React.MouseEvent) => void;
-  isLoading?: boolean;
-  placeName: string;
-  placeId: string;
+  place: Place;
+  disabled?: boolean;
+  className?: string;
 }
 
-const PlaceCardActions: React.FC<PlaceCardActionsProps> = ({ 
-  isBookmarked, 
-  onBookmarkToggle, 
-  onShare,
-  isLoading,
-  placeName,
-  placeId
-}) => {
-  const [showShareDialog, setShowShareDialog] = useState(false);
+const PlaceCardActions: React.FC<PlaceCardActionsProps> = ({ place, disabled = false, className }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { startConversationWithBusiness } = useMessages(null);
+  const [pending, setPending] = useState(false);
 
-  const handleShareClick = (e: React.MouseEvent) => {
+  const hasWebsite = !!place.website && place.website !== '#';
+  const businessId = parseInt(place.id, 10);
+  const canMessage = !Number.isNaN(businessId);
+
+  const handleMessage = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowShareDialog(true);
+    if (disabled || pending || !canMessage) return;
+    if (!user?.uid) {
+      toast.error('Sign in to message businesses');
+      return;
+    }
+    setPending(true);
+    try {
+      const convId = await startConversationWithBusiness(businessId);
+      if (convId) {
+        navigate('/communicon', { state: { openConversationId: convId, chatMode: 'live' } });
+      } else {
+        toast.error("Couldn't open the conversation. Please try again.");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error('Failed to start conversation', { description: message });
+    } finally {
+      setPending(false);
+    }
   };
 
-  // Build share URL
-  const isRecommendationsPage = window.location.pathname === '/recommendations';
-  const shareUrl = isRecommendationsPage 
-    ? `${window.location.origin}/recommendations/${placeId}`
-    : `${window.location.origin}?place=${placeId}`;
+  const handleWebsite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (disabled || !hasWebsite) return;
+    window.open(place.website, '_blank', 'noopener,noreferrer');
+  };
+
+  if (!canMessage && !hasWebsite) return null;
+
+  const messageFull = !hasWebsite;
 
   return (
-    <>
-      <div className="absolute top-2 right-2 flex gap-2">
-        <Button 
-          variant="secondary" 
-          size="icon" 
-          className={`rounded-full w-8 h-8 bg-white/80 backdrop-blur-sm text-gray-800 hover:bg-white ${
-            isLoading ? 'opacity-70 cursor-wait' : ''
-          }`}
-          onClick={onBookmarkToggle}
-          disabled={isLoading}
+    <div className={cn('grid grid-cols-2 gap-2', className)}>
+      {canMessage && (
+        <button
+          type="button"
+          onClick={handleMessage}
+          disabled={disabled || pending}
+          aria-disabled={disabled || pending}
+          className={cn(
+            'inline-flex items-center justify-center gap-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors py-2 min-h-[40px] font-medium disabled:opacity-60 disabled:cursor-not-allowed',
+            messageFull && 'col-span-2'
+          )}
+          style={{ fontSize: '12px', fontWeight: 500 }}
         >
-          <Bookmark 
-            className={`h-4 w-4 ${isBookmarked ? 'text-primary fill-primary' : 'text-gray-600'}`}
-          />
-        </Button>
-        <Button 
-          variant="secondary" 
-          size="icon" 
-          className="rounded-full w-8 h-8 bg-white/80 backdrop-blur-sm text-gray-800 hover:bg-white"
-          onClick={handleShareClick}
-          title="Share this place"
-          aria-label="Share this place"
+          {pending ? (
+            <>
+              <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />
+              Messaging…
+            </>
+          ) : (
+            <>
+              <MessageCircle style={{ width: 14, height: 14 }} />
+              Message
+            </>
+          )}
+        </button>
+      )}
+      {hasWebsite && (
+        <button
+          type="button"
+          onClick={handleWebsite}
+          disabled={disabled}
+          className={cn(
+            'inline-flex items-center justify-center gap-1.5 rounded-md bg-transparent border border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors py-2 min-h-[40px] font-medium disabled:opacity-60 disabled:cursor-not-allowed',
+            !canMessage && 'col-span-2'
+          )}
+          style={{ fontSize: '12px', fontWeight: 500 }}
         >
-          <Share2 className="h-4 w-4 text-gray-600" />
-        </Button>
-      </div>
-
-      <ShareDialog
-        isOpen={showShareDialog}
-        onClose={() => setShowShareDialog(false)}
-        placeName={placeName}
-        shareUrl={shareUrl}
-      />
-    </>
+          <ExternalLink style={{ width: 13, height: 13 }} />
+          Link
+        </button>
+      )}
+    </div>
   );
 };
 
