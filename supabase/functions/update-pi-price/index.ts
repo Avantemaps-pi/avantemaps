@@ -58,11 +58,7 @@ Deno.serve(async (req) => {
     const piPriceUsd = parseFloat(data.data[0].last);
     console.log(`Fetched Pi price: $${piPriceUsd}`);
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Supabase client already initialized above
 
     // Update the price in the database
     const { error } = await supabaseClient
