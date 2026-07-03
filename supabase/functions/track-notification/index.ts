@@ -100,12 +100,17 @@ Deno.serve(async (req) => {
       throw updateError;
     }
 
-    // Update A/B test variant metrics if applicable
+    // Update A/B test variant metrics if applicable — map to a fixed RPC name.
     if (notification?.ab_variant_id) {
-      await supabase.rpc(`increment_variant_${event_type}`, {
+      const rpcName =
+        safeEvent === 'delivered' ? 'increment_variant_delivered'
+        : safeEvent === 'read' ? 'increment_variant_read'
+        : 'increment_variant_clicked';
+      await supabase.rpc(rpcName, {
         variant_id: notification.ab_variant_id,
       });
     }
+
 
     console.log(`✅ Notification event tracked successfully`);
 
