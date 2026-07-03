@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import { checkRateLimit, getClientIP, createRateLimitResponse } from '../_shared/rateLimit.ts';
+import { verifyCronRequest } from '../_shared/cronAuth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
