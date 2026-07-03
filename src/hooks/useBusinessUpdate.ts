@@ -109,7 +109,7 @@ export const useBusinessUpdate = (business: Business, onSuccess?: () => void) =>
       // Update business in database using Supabase session user ID
       const { error: updateError } = await supabase
         .from('businesses')
-        .update(updatePayload)
+        .update(updatePayload as any)
         .eq('id', business.id)
         .eq('owner_id', sessionUserId); // Use session user ID, not Pi auth user ID
 

@@ -22,7 +22,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
   const { predictions, isLoading, getSuggestions, clearSuggestions } = useLocationIQAutocomplete();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const [autofillDetected, setAutofillDetected] = useState(false);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const [countryOpen, setCountryOpen] = useState(false);

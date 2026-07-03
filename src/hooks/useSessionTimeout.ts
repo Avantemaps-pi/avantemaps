@@ -11,9 +11,9 @@ const INACTIVITY_THRESHOLD = 60 * 60 * 1000; // 1 hour of inactivity
 export const useSessionTimeout = () => {
   const { user, logout, login, refreshUserData } = useAuth();
   const [lastActivity, setLastActivity] = useState<number>(Date.now());
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const warningRef = useRef<NodeJS.Timeout | null>(null);
-  const inactivityRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const warningRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inactivityRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Function to update the last activity timestamp
   const updateActivity = () => {
