@@ -9,7 +9,7 @@ import PlaceCardImage from './PlaceCardImage';
 import PlaceCardTitle from './PlaceCardTitle';
 import PlaceCardAddress from './PlaceCardAddress';
 import PlaceCardRating from './PlaceCardRating';
-import PlaceCardWebsiteButton from './PlaceCardWebsiteButton';
+import PlaceCardButtonRow from './PlaceCardButtonRow';
 import PlaceCardDetails from './PlaceCardDetails';
 import DetailsCard from './DetailsCard';
 import { useBookmark } from '@/hooks/useBookmark';
