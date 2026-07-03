@@ -251,6 +251,106 @@ Deno.serve(async (req) => {
         terminalReason: 'completed',
       });
 
+      // ✅ SECURITY: Verify the real completed Pi amount matches the
+      // server-computed expected price for the requested tier/fee.
+      // Never trust client-supplied `amount` or `metadata.feePi` to
+      // grant subscriptions or fee-gated messaging rights.
+      let verifiedPiAmount: number | null = null;
+      try {
+        const piGetResp = await fetch(`${piNetworkApiUrl}/${paymentRequest.paymentId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Key ${piApiKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (piGetResp.ok) {
+          const piPayment = await piGetResp.json();
+          const amt = Number(piPayment?.amount);
+          if (Number.isFinite(amt) && amt > 0) verifiedPiAmount = amt;
+        } else {
+          log.warn(`${FN}.pi_api.get_payment_failed`, {
+            stage: 'pi_api', status: piGetResp.status,
+          });
+        }
+      } catch (getErr) {
+        log.warn(`${FN}.pi_api.get_payment_exception`, {
+          stage: 'pi_api',
+          message: getErr instanceof Error ? getErr.message : String(getErr),
+        });
+      }
+
+      if (verifiedPiAmount == null) {
+        log.error(`${FN}.verify.amount_unavailable`, { stage: 'verify' });
+        return respond({
+          success: false,
+          message: 'Unable to verify payment amount',
+          paymentId: paymentRequest.paymentId,
+          txid: paymentRequest.txid,
+        }, 502);
+      }
+
+      // 0.5% tolerance to accommodate FX rounding at price-conversion time.
+      const AMOUNT_TOLERANCE = 0.995;
+
+      // Server-side USD price table for subscription tiers (source of truth).
+      const SUBSCRIPTION_USD_PRICES: Record<string, { monthly: number; annual: number }> = {
+        'individual': { monthly: 0, annual: 0 },
+        'small-business': { monthly: 5, annual: 48 },
+        'organization': { monthly: 10, annual: 96 },
+      };
+
+      if (paymentRequest.metadata?.subscriptionTier) {
+        const tier = paymentRequest.metadata.subscriptionTier;
+        const freq = paymentRequest.metadata.frequency === 'annual' ? 'annual' : 'monthly';
+        const usdPrice = SUBSCRIPTION_USD_PRICES[tier]?.[freq];
+        if (usdPrice == null || usdPrice <= 0) {
+          log.error(`${FN}.verify.unknown_tier`, { stage: 'verify', tier, freq });
+          return respond({ success: false, message: 'Invalid subscription tier' }, 400);
+        }
+        const { data: priceRow, error: priceErr } = await supabaseClient
+          .from('pi_price').select('price_usd').limit(1).maybeSingle();
+        const piUsd = Number(priceRow?.price_usd ?? 0);
+        if (priceErr || !Number.isFinite(piUsd) || piUsd <= 0) {
+          log.error(`${FN}.verify.pi_price_unavailable`, { stage: 'verify' });
+          return respond({ success: false, message: 'Price service unavailable' }, 503);
+        }
+        const expectedPi = usdPrice / piUsd;
+        if (verifiedPiAmount < expectedPi * AMOUNT_TOLERANCE) {
+          log.error(`${FN}.verify.subscription_amount_mismatch`, {
+            stage: 'verify', tier, freq, expectedPi, verifiedPiAmount,
+          });
+          return respond({
+            success: false,
+            message: 'Payment amount does not match subscription price',
+          }, 400);
+        }
+      }
+
+      if (paymentRequest.metadata?.kind === 'message_fee') {
+        const { data: feeSetting, error: feeSettingErr } = await supabaseClient
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'unverified_message_fee_pi')
+          .maybeSingle();
+        const expectedFeePi = Number(feeSetting?.value ?? 0.5);
+        if (feeSettingErr || !Number.isFinite(expectedFeePi) || expectedFeePi <= 0) {
+          log.error(`${FN}.verify.fee_setting_unavailable`, { stage: 'verify' });
+          return respond({ success: false, message: 'Fee setting unavailable' }, 503);
+        }
+        if (verifiedPiAmount < expectedFeePi * AMOUNT_TOLERANCE) {
+          log.error(`${FN}.verify.message_fee_amount_mismatch`, {
+            stage: 'verify', expectedFeePi, verifiedPiAmount,
+          });
+          return respond({
+            success: false,
+            message: 'Payment amount does not match message fee',
+          }, 400);
+        }
+        // Pin fee to the server-side expected value to prevent forged metadata.
+        (paymentRequest.metadata as any).feePi = expectedFeePi;
+      }
+
       if (paymentRequest.metadata?.kind === 'message_fee') {
         try {
           const md = paymentRequest.metadata as any;
