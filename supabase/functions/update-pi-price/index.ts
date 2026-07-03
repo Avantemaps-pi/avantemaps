@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import { checkRateLimit, getClientIP, createRateLimitResponse } from '../_shared/rateLimit.ts';
+import { verifyCronRequest } from '../_shared/cronAuth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,6 +29,21 @@ Deno.serve(async (req) => {
     return createRateLimitResponse(rateLimitCheck.retryAfter!, undefined, corsHeaders);
   }
 
+  // Initialize Supabase client (also used for cron auth verification)
+  const supabaseClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  // Require cron secret — only pg_cron should invoke this
+  const isAuthorized = await verifyCronRequest(req, supabaseClient);
+  if (!isAuthorized) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+    );
+  }
+
   try {
     console.log('Starting Pi price update...');
 
@@ -42,11 +58,7 @@ Deno.serve(async (req) => {
     const piPriceUsd = parseFloat(data.data[0].last);
     console.log(`Fetched Pi price: $${piPriceUsd}`);
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Supabase client already initialized above
 
     // Update the price in the database
     const { error } = await supabaseClient
