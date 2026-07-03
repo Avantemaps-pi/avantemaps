@@ -41,12 +41,17 @@ Deno.serve(async (req) => {
 
     console.log(`📊 Tracking notification event: ${event_type} for notification ${notification_id}`);
 
-    if (!notification_id || !event_type) {
+    // SECURITY: strict allow-list for event_type — never interpolate into RPC names.
+    const ALLOWED_EVENTS = ['delivered', 'read', 'clicked'] as const;
+    type AllowedEvent = typeof ALLOWED_EVENTS[number];
+    if (!notification_id || !ALLOWED_EVENTS.includes(event_type as AllowedEvent)) {
       return new Response(
-        JSON.stringify({ error: 'Missing notification_id or event_type' }),
+        JSON.stringify({ error: 'Invalid notification_id or event_type' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 },
       );
     }
+    const safeEvent = event_type as AllowedEvent;
+
 
     // ✅ SECURITY: verify the notification belongs to the authenticated user
     const { data: owned, error: ownedErr } = await supabase
@@ -95,12 +100,17 @@ Deno.serve(async (req) => {
       throw updateError;
     }
 
-    // Update A/B test variant metrics if applicable
+    // Update A/B test variant metrics if applicable — map to a fixed RPC name.
     if (notification?.ab_variant_id) {
-      await supabase.rpc(`increment_variant_${event_type}`, {
+      const rpcName =
+        safeEvent === 'delivered' ? 'increment_variant_delivered'
+        : safeEvent === 'read' ? 'increment_variant_read'
+        : 'increment_variant_clicked';
+      await supabase.rpc(rpcName, {
         variant_id: notification.ab_variant_id,
       });
     }
+
 
     console.log(`✅ Notification event tracked successfully`);
 

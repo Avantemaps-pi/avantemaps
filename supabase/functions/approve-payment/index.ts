@@ -31,12 +31,11 @@ const PaymentRequestSchema = z.object({
   }).strict()
 });
 
-function determineSubscriptionTier(amount: number, metadata: Record<string, any>): string {
-  if (metadata?.subscriptionTier) return metadata.subscriptionTier;
-  if (amount < 1) return 'individual';
-  if (amount < 10) return 'small-business';
-  return 'organization';
-}
+// Subscription tier assignment is intentionally NOT performed here.
+// See `complete-payment` — tier upgrades only occur after the on-chain
+// payment is verified completed, to prevent free subscription grants via
+// approval-only calls with forged amount/metadata.
+
 
 function isStalePayment(payment: any): boolean {
   const createdAt = new Date(payment.created_at).getTime();
@@ -301,56 +300,12 @@ Deno.serve(async (req) => {
       }).eq('payment_id', paymentRequest.paymentId);
       log.transition('pending', 'approved');
 
-      const subscriptionTier = determineSubscriptionTier(paymentRequest.amount, paymentRequest.metadata);
-      const duration = Number(paymentRequest.metadata?.duration) || null;
-      const now = new Date();
-      const endDate = duration ? new Date(now.getTime() + duration * 86400000) : null;
+      // SECURITY: Do NOT grant subscription tiers on approval.
+      // Approval only signals intent — the on-chain Pi transfer has not
+      // been completed or verified yet. Subscription changes are applied
+      // exclusively in `complete-payment` after the payment is confirmed
+      // completed and the amount is validated server-side.
 
-      const { data: userData } = await supabaseClient
-        .from('users')
-        .select('id, subscription')
-        .eq('id', paymentRequest.userId)
-        .maybeSingle();
-
-      if (userData) {
-        const shouldUpdate = !userData.subscription ||
-          (subscriptionTier === 'organization') ||
-          (subscriptionTier === 'small-business' && userData.subscription === 'individual');
-
-        if (shouldUpdate) {
-          const { error: updateError } = await supabaseClient
-            .from('users')
-            .update({ subscription: subscriptionTier })
-            .eq('id', paymentRequest.userId);
-
-          if (!updateError) {
-            const { error: subError } = await supabaseClient
-              .from('subscriptions')
-              .insert({
-                user_id: paymentRequest.userId,
-                plan: subscriptionTier,
-                duration,
-                start_date: now.toISOString(),
-                end_date: endDate?.toISOString() || null,
-              });
-            if (subError) {
-              log.warn(`${FN}.db_write.subscription_history_error`, {
-                stage: 'db_write',
-                message: subError.message,
-              });
-            }
-          } else {
-            log.warn(`${FN}.db_write.user_update_error`, {
-              stage: 'db_write',
-              message: updateError.message,
-            });
-          }
-        } else {
-          log.info(`${FN}.subscription.unchanged`, { stage: 'db_write' });
-        }
-      } else {
-        log.warn(`${FN}.lookup.user_not_found`, { stage: 'lookup' });
-      }
 
       log.info(`${FN}.done`, { stage: 'done', durationMs: Date.now() - startTime });
       return respond({
