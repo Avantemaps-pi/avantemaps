@@ -1,7 +1,19 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, MapPin, Store, BadgeCheck } from 'lucide-react';
-import debounce from 'lodash/debounce';
+// Lightweight debounce (replaces lodash/debounce to drop vulnerable transitive deps)
+function debounce<T extends (...args: any[]) => void>(fn: T, wait: number) {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const debounced = ((...args: Parameters<T>) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  }) as T & { cancel: () => void };
+  debounced.cancel = () => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+  };
+  return debounced;
+}
 import { useLocationIQAutocomplete, GeocodingOptions } from '@/hooks/useLocationIQAutocomplete';
 import { useBusinessAutocomplete, BusinessSuggestion } from '@/hooks/useBusinessAutocomplete';
 import { Place } from '@/types/business';
