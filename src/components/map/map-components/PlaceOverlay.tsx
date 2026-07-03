@@ -134,121 +134,25 @@ const PlaceOverlayContent: React.FC<{ place: Place; detailCardRef?: React.RefObj
         <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none" />
       </div>
 
-      {/* Rating, category, website, details */}
+      {/* Rating and category */}
       <div className="flex justify-between items-start gap-2">
         <div className="flex flex-col items-start gap-2">
           <PlaceRating rating={place.rating} onClick={handleRatingClick} />
           <CategoryBadge category={place.category} />
         </div>
-
-        <div className="flex flex-col gap-2 items-end flex-shrink-0">
-          <WebsiteButton url={place.website} />
-          <div 
-            className="text-primary font-medium text-sm cursor-pointer flex items-center whitespace-nowrap"
-            onClick={() => setShowDetails(!showDetails)}
-          >
-            <Info className="h-3 w-3 mr-1" />
-            Details
-          </div>
-        </div>
       </div>
 
-      <MessageBusinessButton place={place} />
+      {/* Message + Link button row */}
+      <PlaceCardButtonRow place={place} />
+
+      <div
+        className="text-primary font-medium text-xs cursor-pointer flex items-center whitespace-nowrap"
+        onClick={() => setShowDetails(!showDetails)}
+      >
+        <Info className="h-3 w-3 mr-1" />
+        Details
+      </div>
     </div>
-  );
-};
-
-const MessageBusinessButton: React.FC<{ place: Place }> = ({ place }) => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  // Pass null inbox so this hook instance doesn't also fetch the conversation
-  // list (MessagesPanel owns that). We only need startConversationWithBusiness.
-  const { startConversationWithBusiness } = useMessages(null);
-  const [pending, setPending] = useState(false);
-
-  const businessId = parseInt(place.id, 10);
-  if (Number.isNaN(businessId)) return null;
-
-  const handleClick = async () => {
-    if (pending) {
-      // Structured telemetry: user tapped the button while a previous
-      // conversation-start request is still in-flight.
-      console.warn(
-        JSON.stringify({
-          ts: new Date().toISOString(),
-          level: 'warn',
-          event: 'message_business_button.click_while_pending',
-          fn: 'PlaceOverlay.MessageBusinessButton',
-          businessId,
-          authState: user?.uid ? 'authenticated' : 'anonymous',
-          userId: user?.uid ?? null,
-          placeName: place.name ?? null,
-        }),
-      );
-      return;
-    }
-    if (!user?.uid) {
-      toast.error('Sign in to message businesses');
-      return;
-    }
-    setPending(true);
-    try {
-      const convId = await startConversationWithBusiness(businessId);
-      if (convId) {
-        navigate('/communicon', {
-          state: { openConversationId: convId, chatMode: 'live' },
-        });
-      } else {
-        console.error('[MessageBusinessButton] startConversationWithBusiness returned null', {
-          businessId,
-          userId: user?.uid ?? null,
-          placeName: place.name ?? null,
-        });
-        toast.error("Couldn't open the conversation. Please try again.", {
-          id: 'msg:start-conv-null',
-          description: 'If this keeps happening, check your connection or sign out and back in.',
-          duration: 5000,
-        });
-      }
-    } catch (err) {
-      console.error('[MessageBusinessButton] startConversationWithBusiness threw', {
-        businessId,
-        userId: user?.uid ?? null,
-        err,
-      });
-      const message = err instanceof Error ? err.message : String(err);
-      toast.error('Failed to start conversation', {
-        id: 'msg:start-conv-threw',
-        description: message,
-        duration: 5000,
-      });
-    } finally {
-      setPending(false);
-    }
-  };
-
-  return (
-    <Button
-      onClick={handleClick}
-      aria-disabled={pending}
-      data-pending={pending ? 'true' : 'false'}
-      variant="outline"
-      size="sm"
-      className={`w-full mt-2 ${pending ? 'opacity-60 cursor-not-allowed' : ''}`}
-    >
-      {pending ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Messaging…
-        </>
-      ) : (
-        <>
-          <MessageSquare className="h-4 w-4 mr-2" />
-          Message this business
-        </>
-      )}
-    </Button>
-
   );
 };
 
