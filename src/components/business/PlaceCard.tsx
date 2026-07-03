@@ -9,7 +9,7 @@ import PlaceCardImage from './PlaceCardImage';
 import PlaceCardTitle from './PlaceCardTitle';
 import PlaceCardAddress from './PlaceCardAddress';
 import PlaceCardRating from './PlaceCardRating';
-import PlaceCardWebsiteButton from './PlaceCardWebsiteButton';
+import PlaceCardButtonRow from './PlaceCardButtonRow';
 import PlaceCardDetails from './PlaceCardDetails';
 import DetailsCard from './DetailsCard';
 import { useBookmark } from '@/hooks/useBookmark';
@@ -172,23 +172,19 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
             <PlaceCardRating rating={place.rating} onClick={(previewMode || disableRating) ? undefined : handleRatingClick} />
             <CategoryBadge category={categories[0] || ''} />
           </div>
-          
-          <div className="flex flex-col gap-2 items-end flex-shrink-0">
-            <div className={previewMode ? 'pointer-events-none select-none' : ''}>
-              <PlaceCardWebsiteButton url={place.website} disabled={previewMode} />
-            </div>
-            
-            {showDetails && (
-              <div 
-                className="text-primary font-medium text-sm cursor-pointer flex items-center whitespace-nowrap"
-                onClick={() => setDetailsOverlayOpen(!detailsOverlayOpen)}
-              >
-                <Info className="h-3 w-3 mr-1" />
-                Details
-              </div>
-            )}
-          </div>
         </div>
+
+        <PlaceCardButtonRow place={place} disabled={previewMode} />
+
+        {showDetails && (
+          <div
+            className="text-primary font-medium text-xs cursor-pointer flex items-center whitespace-nowrap"
+            onClick={() => setDetailsOverlayOpen(!detailsOverlayOpen)}
+          >
+            <Info className="h-3 w-3 mr-1" />
+            Details
+          </div>
+        )}
       </CardContent>
     </Card>
   );

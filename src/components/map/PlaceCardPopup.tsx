@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Place } from '@/types/business';
 import ExpandableDescription from '@/components/business/ExpandableDescription';
 import BookmarkButton from './buttons/BookmarkButton';
-import WebsiteButton from './buttons/WebsiteButton';
+import PlaceCardButtonRow from '@/components/business/PlaceCardButtonRow';
 import PlaceRating from './place/PlaceRating';
 import PlaceAddress from './place/PlaceAddress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -111,23 +111,21 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
             />
             <CategoryBadge category={location.category} />
           </div>
-
-          <div className="flex flex-col gap-2 items-end flex-shrink-0">
-            <WebsiteButton url={location.website} />
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <div className="text-blue-500 font-medium text-sm cursor-pointer flex items-center whitespace-nowrap">
-                  <Info className="h-3 w-3 mr-1" />
-                  Details
-                </div>
-              </PopoverTrigger>
-              <PopoverContent className="p-0 w-[480px]" align="end">
-                <DetailsCard place={location} />
-              </PopoverContent>
-            </Popover>
-          </div>
         </div>
+
+        <PlaceCardButtonRow place={location} />
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <div className="text-primary font-medium text-xs cursor-pointer flex items-center whitespace-nowrap">
+              <Info className="h-3 w-3 mr-1" />
+              Details
+            </div>
+          </PopoverTrigger>
+          <PopoverContent className="p-0 w-[480px]" align="end">
+            <DetailsCard place={location} />
+          </PopoverContent>
+        </Popover>
       </CardContent>
     </Card>
   );
