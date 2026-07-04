@@ -7,7 +7,7 @@ interface ContactOTPVerificationProps {
   email: string;
   businessId: number;
   onVerified: () => void;
-  onSendOTP: (email: string) => Promise<boolean>;
+  onSendOTP: (email: string, businessId: number) => Promise<boolean>;
   onVerifyOTP: (email: string, otp: string, businessId: number) => Promise<boolean>;
 }
 
