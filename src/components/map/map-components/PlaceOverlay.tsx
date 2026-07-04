@@ -142,15 +142,17 @@ const PlaceOverlayContent: React.FC<{ place: Place; detailCardRef?: React.RefObj
         </div>
       </div>
 
-      {/* Message + Link button row */}
-      <PlaceCardButtonRow place={place} />
-
-      <div
-        className="text-primary font-medium text-xs cursor-pointer flex items-center whitespace-nowrap"
-        onClick={() => setShowDetails(!showDetails)}
-      >
-        <Info className="h-3 w-3 mr-1" />
-        Details
+      <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <PlaceCardButtonRow place={place} />
+        </div>
+        <div
+          className="text-primary font-medium text-xs cursor-pointer flex items-center whitespace-nowrap"
+          onClick={() => setShowDetails(!showDetails)}
+        >
+          <Info className="h-3 w-3 mr-1" />
+          Details
+        </div>
       </div>
     </div>
   );

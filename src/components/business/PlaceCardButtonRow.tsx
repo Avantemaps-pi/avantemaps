@@ -7,13 +7,13 @@ import { useAuth } from '@/context/auth';
 import { useMessages } from '@/hooks/useMessages';
 import { cn } from '@/lib/utils';
 
-interface PlaceCardActionsProps {
+interface PlaceCardButtonRowProps {
   place: Place;
   disabled?: boolean;
   className?: string;
 }
 
-const PlaceCardActions: React.FC<PlaceCardActionsProps> = ({ place, disabled = false, className }) => {
+const PlaceCardButtonRow: React.FC<PlaceCardButtonRowProps> = ({ place, disabled = false, className }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { startConversationWithBusiness } = useMessages(null);
@@ -102,4 +102,4 @@ const PlaceCardActions: React.FC<PlaceCardActionsProps> = ({ place, disabled = f
   );
 };
 
-export default PlaceCardActions;
+export default PlaceCardButtonRow;

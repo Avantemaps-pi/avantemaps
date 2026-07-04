@@ -174,17 +174,20 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
           </div>
         </div>
 
-        <PlaceCardButtonRow place={place} disabled={previewMode} />
-
-        {showDetails && (
-          <div
-            className="text-primary font-medium text-xs cursor-pointer flex items-center whitespace-nowrap"
-            onClick={() => setDetailsOverlayOpen(!detailsOverlayOpen)}
-          >
-            <Info className="h-3 w-3 mr-1" />
-            Details
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <PlaceCardButtonRow place={place} disabled={previewMode} />
           </div>
-        )}
+          {showDetails && (
+            <div
+              className="text-primary font-medium text-xs cursor-pointer flex items-center whitespace-nowrap"
+              onClick={() => setDetailsOverlayOpen(!detailsOverlayOpen)}
+            >
+              <Info className="h-3 w-3 mr-1" />
+              Details
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
