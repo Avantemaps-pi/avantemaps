@@ -71,7 +71,7 @@ interface VerificationResultCardProps {
   metrics: VerificationMetrics;
   contactEmail?: string;
   contactBusinessId?: number;
-  onSendContactOTP?: (email: string) => Promise<boolean>;
+  onSendContactOTP?: (email: string, businessId: number) => Promise<boolean>;
   onVerifyContactOTP?: (email: string, otp: string, businessId: number) => Promise<boolean>;
   animate?: boolean;
 }

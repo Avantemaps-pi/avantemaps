@@ -7,7 +7,7 @@ interface ContactOTPVerificationProps {
   email: string;
   businessId: number;
   onVerified: () => void;
-  onSendOTP: (email: string) => Promise<boolean>;
+  onSendOTP: (email: string, businessId: number) => Promise<boolean>;
   onVerifyOTP: (email: string, otp: string, businessId: number) => Promise<boolean>;
 }
 
@@ -26,7 +26,7 @@ const ContactOTPVerification: React.FC<ContactOTPVerificationProps> = ({
   const handleSend = async () => {
     setStep('loading');
     setErrorMsg('');
-    const ok = await onSendOTP(email);
+    const ok = await onSendOTP(email, businessId);
     if (ok) {
       setStep('verify');
     } else {
@@ -54,7 +54,7 @@ const ContactOTPVerification: React.FC<ContactOTPVerificationProps> = ({
     setResending(true);
     setErrorMsg('');
     setOtp('');
-    const ok = await onSendOTP(email);
+    const ok = await onSendOTP(email, businessId);
     setResending(false);
     if (!ok) setErrorMsg('Failed to resend. Please try again.');
   };
