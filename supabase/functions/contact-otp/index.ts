@@ -92,6 +92,42 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'send') {
+      // ✅ SECURITY: require business_id and verify caller owns it (prevents email-bombing arbitrary addresses)
+      if (!business_id) {
+        return new Response(JSON.stringify({ error: 'Missing business_id' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { data: ownerCheck, error: ownerError } = await supabase
+        .from('businesses')
+        .select('owner_id')
+        .eq('id', business_id)
+        .maybeSingle();
+      if (ownerError || !ownerCheck || ownerCheck.owner_id !== authenticatedUserId) {
+        return new Response(JSON.stringify({ error: 'Forbidden: not the business owner' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // ✅ SECURITY: per-email cooldown (60s) to prevent spamming
+      const { data: existing } = await supabase
+        .from('contact_otps')
+        .select('expires_at')
+        .eq('email', email)
+        .maybeSingle();
+      if (existing?.expires_at) {
+        const issuedAtMs = new Date(existing.expires_at).getTime() - 10 * 60 * 1000;
+        if (Date.now() - issuedAtMs < 60 * 1000) {
+          return new Response(JSON.stringify({ error: 'Please wait before requesting another code' }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
       const code = generateOTP();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
