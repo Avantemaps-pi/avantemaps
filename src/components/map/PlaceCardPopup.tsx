@@ -113,19 +113,22 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
           </div>
         </div>
 
-        <PlaceCardButtonRow place={location} />
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <div className="text-primary font-medium text-xs cursor-pointer flex items-center whitespace-nowrap">
-              <Info className="h-3 w-3 mr-1" />
-              Details
-            </div>
-          </PopoverTrigger>
-          <PopoverContent className="p-0 w-[480px]" align="end">
-            <DetailsCard place={location} />
-          </PopoverContent>
-        </Popover>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <PlaceCardButtonRow place={location} />
+          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <div className="text-primary font-medium text-xs cursor-pointer flex items-center whitespace-nowrap">
+                <Info className="h-3 w-3 mr-1" />
+                Details
+              </div>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-[480px]" align="end">
+              <DetailsCard place={location} />
+            </PopoverContent>
+          </Popover>
+        </div>
       </CardContent>
     </Card>
   );
