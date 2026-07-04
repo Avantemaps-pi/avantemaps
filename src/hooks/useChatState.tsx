@@ -83,27 +83,31 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
         setConversationValidated(false);
         return 'access_denied';
       }
-      const { data, error } = await supabase
+      const { data: convData, error: convError } = await supabase
         .from('conversations')
-        .select('id')
+        .select('id, customer_id, business_id')
         .eq('id', conversationId)
         .maybeSingle();
-      if (error || data === null) {
+      if (convError || convData === null) {
         setConversationValidated(false);
         return 'not_found';
       }
-      const { data: participantData } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('id', conversationId)
-        .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
-        .maybeSingle();
-      if (!participantData) {
-        setConversationValidated(false);
-        return 'access_denied';
+      if (convData.customer_id === userId) {
+        setConversationValidated(true);
+        return 'valid';
       }
-      setConversationValidated(true);
-      return 'valid';
+      const { data: bizData } = await supabase
+        .from('businesses')
+        .select('id')
+        .eq('id', convData.business_id)
+        .eq('owner_id', userId)
+        .maybeSingle();
+      if (bizData) {
+        setConversationValidated(true);
+        return 'valid';
+      }
+      setConversationValidated(false);
+      return 'access_denied';
     } catch {
       setConversationValidated(false);
       return 'not_found';
