@@ -797,7 +797,7 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
     setAwaitingVerificationBusinessSelection(true);
   }, [fetchUserBusinesses, navigate]);
 
-  const sendContactOTP = useCallback(async (email: string): Promise<boolean> => {
+  const sendContactOTP = useCallback(async (email: string, businessId: number): Promise<boolean> => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
@@ -809,7 +809,7 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
             'Content-Type': 'application/json',
             ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
           },
-          body: JSON.stringify({ action: 'send', email }),
+          body: JSON.stringify({ action: 'send', email, business_id: businessId }),
         }
       );
       return response.ok;

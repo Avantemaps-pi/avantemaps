@@ -37,7 +37,7 @@ interface ChatInterfaceProps {
   handleAttachmentOption?: () => void;
   showAttachmentIcon?: boolean;
   hasLiveChatAccess?: boolean;
-  onSendContactOTP?: (email: string) => Promise<boolean>;
+  onSendContactOTP?: (email: string, businessId: number) => Promise<boolean>;
   onVerifyContactOTP?: (email: string, otp: string, businessId: number) => Promise<boolean>;
 }
 
