@@ -520,6 +520,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!session) {
         secureLog.warn('Supabase session expired, logging out');
         logout();
+        return;
+      }
+      if (session.user.id !== user.uid) {
+        secureLog.warn(`Session uid mismatch in monitor: ${session.user.id} !== ${user.uid}`);
+        logout();
       }
     }, 10 * 60 * 1000);
     return () => clearInterval(interval);
