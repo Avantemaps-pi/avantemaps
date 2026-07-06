@@ -202,7 +202,7 @@ export function useMessages(inbox: Inbox | null) {
     async (businessId: number, isRetry = false): Promise<string | null> => {
       // Deduplicate: if a call for this businessId is already in flight, return its promise.
       const inFlight = inFlightRef.current;
-      if (inFlight.has(businessId)) {
+      if (!isRetry && inFlight.has(businessId)) {
         return inFlight.get(businessId)!;
       }
 
@@ -351,18 +351,20 @@ export function useMessages(inbox: Inbox | null) {
           }, INFLIGHT_TIMEOUT_MS);
         }),
       ]);
-      inFlight.set(businessId, promise);
-      const scheduleEviction = () => {
-        const timers = dedupeTimersRef.current;
-        const prev = timers.get(businessId);
-        if (prev) clearTimeout(prev);
-        const handle = setTimeout(() => {
-          inFlight.delete(businessId);
-          timers.delete(businessId);
-        }, DEDUPE_TTL_MS);
-        timers.set(businessId, handle);
-      };
-      promise.then(scheduleEviction, scheduleEviction);
+      if (!isRetry) {
+        inFlight.set(businessId, promise);
+        const scheduleEviction = () => {
+          const timers = dedupeTimersRef.current;
+          const prev = timers.get(businessId);
+          if (prev) clearTimeout(prev);
+          const handle = setTimeout(() => {
+            inFlight.delete(businessId);
+            timers.delete(businessId);
+          }, DEDUPE_TTL_MS);
+          timers.set(businessId, handle);
+        };
+        promise.then(scheduleEviction, scheduleEviction);
+      }
       return promise;
     },
     [uid, login, loadConversations],
