@@ -202,7 +202,7 @@ export function useMessages(inbox: Inbox | null) {
     async (businessId: number, isRetry = false): Promise<string | null> => {
       // Deduplicate: if a call for this businessId is already in flight, return its promise.
       const inFlight = inFlightRef.current;
-      if (inFlight.has(businessId)) {
+      if (!isRetry && inFlight.has(businessId)) {
         return inFlight.get(businessId)!;
       }
 
