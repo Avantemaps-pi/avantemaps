@@ -252,6 +252,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       try {
         const userData = JSON.parse(cachedSession) as PiUser;
+        if (session.user.id !== userData.uid) {
+          secureLog.warn(`Session uid mismatch during restore: ${session.user.id} !== ${userData.uid}`);
+          localStorage.removeItem(STORAGE_KEY);
+          return;
+        }
         if (Date.now() - userData.lastAuthenticated < 24 * 60 * 60 * 1000) {
           secureLog.info('Restoring user from cached session');
           safeSetUser(userData);
