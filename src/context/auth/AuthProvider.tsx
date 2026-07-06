@@ -252,6 +252,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       try {
         const userData = JSON.parse(cachedSession) as PiUser;
+        if (session.user.id !== userData.uid) {
+          secureLog.warn(`Session uid mismatch during restore: ${session.user.id} !== ${userData.uid}`);
+          localStorage.removeItem(STORAGE_KEY);
+          return;
+        }
         if (Date.now() - userData.lastAuthenticated < 24 * 60 * 60 * 1000) {
           secureLog.info('Restoring user from cached session');
           safeSetUser(userData);
@@ -514,6 +519,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         secureLog.warn('Supabase session expired, logging out');
+        logout();
+        return;
+      }
+      if (session.user.id !== user.uid) {
+        secureLog.warn(`Session uid mismatch in monitor: ${session.user.id} !== ${user.uid}`);
         logout();
       }
     }, 10 * 60 * 1000);
