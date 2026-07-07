@@ -373,7 +373,15 @@ export type Database = {
           last_message_at?: string
           last_message_preview?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "conversations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       error_logs: {
         Row: {
