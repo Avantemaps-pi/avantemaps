@@ -7,6 +7,9 @@ import { useAuth } from '@/context/auth';
 import { useMessages } from '@/hooks/useMessages';
 import { cn } from '@/lib/utils';
 
+// TEMPORARY: Link button disabled while investigating an issue. Set back to true to re-enable.
+const LINK_BUTTON_ENABLED = false;
+
 interface PlaceCardButtonRowProps {
   place: Place;
   disabled?: boolean;
@@ -25,7 +28,7 @@ const PlaceCardButtonRow: React.FC<PlaceCardButtonRowProps> = ({
   const { startConversationWithBusiness } = useMessages(null);
   const [pending, setPending] = useState(false);
 
-  const hasWebsite = !!place.website && place.website !== '#';
+  const hasWebsite = LINK_BUTTON_ENABLED && !!place.website && place.website !== '#';
   const businessId = parseInt(place.id, 10);
   const canMessage = !Number.isNaN(businessId);
 
