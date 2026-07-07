@@ -351,13 +351,15 @@ export const performLogin = async (
             errorMsg.toLowerCase().includes('fetch') || 
             errorMsg.toLowerCase().includes('connection') ||
             errorMsg.toLowerCase().includes('timeout')) {
-          secureLog.warn("Network error during verification, allowing login with warning");
-          toast.warning("Couldn't verify with server due to network issue. Some features may be limited.");
-          verificationSucceeded = false;
+          secureLog.warn("Network error during verification; treating as auth failure so retry loop can run");
+          // Re-throw so the outer catch handles retry/backoff and surfaces a clean error to the user.
+          // Do NOT fall through to the success path — no valid Supabase session exists here.
+          throw new Error("Couldn't reach the server to verify your login. Please check your connection and try again.");
         } else {
           // For non-network errors, re-throw
           throw verificationError;
           }
+
         }
       }
 
