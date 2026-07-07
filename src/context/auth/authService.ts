@@ -281,15 +281,15 @@ export const performLogin = async (
             continue;
           }
 
-          // For network errors, allow login with warning
+          // For network errors, treat as a real failure (no valid Supabase session was established)
           if (reason.includes('network') || reason.includes('connection') || reason.includes('timeout')) {
-            secureLog.warn("Backend verification failed due to network issue, allowing login with warning");
-            toast.warning("Authentication succeeded but couldn't verify with server. Some features may be limited.");
-            verificationSucceeded = false; // Continue without server verification
+            secureLog.warn("Backend verification failed due to network issue; treating as auth failure");
+            throw new Error("Couldn't reach the server to verify your login. Please check your connection and try again.");
           } else {
             // For other errors, fail the authentication
             throw new Error(verificationResult.details || verificationResult.error || "Verification failed");
           }
+
           } else {
             verificationSucceeded = true;
             
@@ -351,13 +351,15 @@ export const performLogin = async (
             errorMsg.toLowerCase().includes('fetch') || 
             errorMsg.toLowerCase().includes('connection') ||
             errorMsg.toLowerCase().includes('timeout')) {
-          secureLog.warn("Network error during verification, allowing login with warning");
-          toast.warning("Couldn't verify with server due to network issue. Some features may be limited.");
-          verificationSucceeded = false;
+          secureLog.warn("Network error during verification; treating as auth failure so retry loop can run");
+          // Re-throw so the outer catch handles retry/backoff and surfaces a clean error to the user.
+          // Do NOT fall through to the success path — no valid Supabase session exists here.
+          throw new Error("Couldn't reach the server to verify your login. Please check your connection and try again.");
         } else {
           // For non-network errors, re-throw
           throw verificationError;
           }
+
         }
       }
 
