@@ -281,15 +281,15 @@ export const performLogin = async (
             continue;
           }
 
-          // For network errors, allow login with warning
+          // For network errors, treat as a real failure (no valid Supabase session was established)
           if (reason.includes('network') || reason.includes('connection') || reason.includes('timeout')) {
-            secureLog.warn("Backend verification failed due to network issue, allowing login with warning");
-            toast.warning("Authentication succeeded but couldn't verify with server. Some features may be limited.");
-            verificationSucceeded = false; // Continue without server verification
+            secureLog.warn("Backend verification failed due to network issue; treating as auth failure");
+            throw new Error("Couldn't reach the server to verify your login. Please check your connection and try again.");
           } else {
             // For other errors, fail the authentication
             throw new Error(verificationResult.details || verificationResult.error || "Verification failed");
           }
+
           } else {
             verificationSucceeded = true;
             
