@@ -7,6 +7,9 @@ import { useAuth } from '@/context/auth';
 import { useMessages } from '@/hooks/useMessages';
 import { cn } from '@/lib/utils';
 
+// TEMPORARY: Link button disabled while investigating an issue. Set back to true to re-enable.
+const LINK_BUTTON_ENABLED = false;
+
 interface PlaceCardButtonRowProps {
   place: Place;
   disabled?: boolean;
