@@ -28,7 +28,7 @@ const PlaceCardButtonRow: React.FC<PlaceCardButtonRowProps> = ({
   const { startConversationWithBusiness } = useMessages(null);
   const [pending, setPending] = useState(false);
 
-  const hasWebsite = !!place.website && place.website !== '#';
+  const hasWebsite = LINK_BUTTON_ENABLED && !!place.website && place.website !== '#';
   const businessId = parseInt(place.id, 10);
   const canMessage = !Number.isNaN(businessId);
 
