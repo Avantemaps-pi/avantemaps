@@ -63,6 +63,23 @@ export const drainPendingConversations = async (): Promise<void> => {
 };
 
 /**
+ * Resolve queued request(s) for a specific business immediately — used when
+ * re-auth finished without producing a session, so the caller gets a prompt
+ * failure instead of waiting for the drain or in-flight timeout.
+ */
+export const resolvePendingConversation = (
+  businessId: number,
+  result: string | null,
+): void => {
+  for (let i = pending.length - 1; i >= 0; i--) {
+    if (pending[i].businessId === businessId) {
+      const [item] = pending.splice(i, 1);
+      item.resolve(result);
+    }
+  }
+};
+
+/**
  * Reject all pending items — used when the user signs out before re-auth
  * completes, so callers don't hang forever.
  */
