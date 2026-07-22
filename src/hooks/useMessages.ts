@@ -4,6 +4,7 @@ import { useAuth } from '@/context/auth';
 import { toast } from 'sonner';
 import {
   enqueuePendingConversation,
+  resolvePendingConversation,
   setConversationRunner,
 } from '@/lib/pendingConversationQueue';
 import { useVerifiedSender } from '@/hooks/useVerifiedSender';
@@ -246,8 +247,27 @@ export function useMessages(inbox: Inbox | null) {
           // picks it up the moment SIGNED_IN / TOKEN_REFRESHED fires.
           const pending = enqueuePendingConversation(businessId);
           login()
-            .then(() => {
-              toast.success('Signed back in — resuming…', { id: toastId, duration: 4000 });
+            .then(async () => {
+              // login() resolves even when auth genuinely failed (it handles
+              // its own errors internally), so confirm a real session exists
+              // before declaring success.
+              const { data: postLogin } = await supabase.auth.getSession();
+              if (postLogin?.session?.user?.id) {
+                toast.success('Signed back in — resuming…', { id: toastId, duration: 4000 });
+                return;
+              }
+              console.error(
+                '[startConversationWithBusiness] re-auth completed without a session',
+                { ...ctxBase, reason },
+              );
+              recordReauthEvent('reauth_failed', {
+                ...telemetryCtx,
+                message: 'login() resolved but no session was established',
+              });
+              toast.error('Sign-in failed. Please try again.', { id: toastId, duration: 4000 });
+              // Resolve the queued request now so the caller gets a prompt
+              // failure instead of hanging until the in-flight timeout.
+              resolvePendingConversation(businessId, null);
             })
             .catch((err) => {
               console.error('[startConversationWithBusiness] re-auth failed', {
@@ -261,6 +281,7 @@ export function useMessages(inbox: Inbox | null) {
                 err,
               );
               toast.error('Sign-in failed. Please try again.', { id: toastId, duration: 4000 });
+              resolvePendingConversation(businessId, null);
             });
           return pending;
         };
