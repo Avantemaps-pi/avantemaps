@@ -298,11 +298,32 @@ export function useMessages(inbox: Inbox | null) {
           return reAuthAndRetry('missing-session', authUid);
         }
         if (authUid !== uid) {
-          console.error(
-            '[startConversationWithBusiness] uid mismatch between local user and Supabase session',
+          // Non-blocking: RLS + the queries below rely solely on `authUid`
+          // (from the live Supabase session), so a stale local `user.uid`
+          // in React state does not compromise correctness. This mismatch
+          // is a known structural race between setSession() (fires SIGNED_IN
+          // immediately) and updateUserData() (which corrects `user.uid`
+          // after an intentional 150ms delay + RPC round-trip). Log for
+          // observability but proceed — do NOT trigger reAuthAndRetry, which
+          // was causing an infinite re-auth loop for accounts whose cached
+          // PiUser.uid was stale.
+          console.warn(
+            '[startConversationWithBusiness] local uid stale vs Supabase session — proceeding with authUid',
             ctx,
           );
-          return reAuthAndRetry('uid-mismatch', authUid);
+          recordReauthEvent('uid_stale_non_blocking' as never, {
+            businessId,
+            localUid: uid ?? null,
+            authUid,
+            retryReason: 'uid-stale-non-blocking',
+            isRetry,
+            message: 'local uid stale; proceeding with authUid from live session',
+          });
+          // Fire-and-forget local cache resync so subsequent actions see the
+          // corrected uid. Never block the current operation on this.
+          void refreshUserData?.(true).catch(() => {
+            /* silent — non-blocking best effort */
+          });
         }
 
         // Try to find existing
