@@ -12,7 +12,7 @@ import { useMessageFee } from '@/hooks/useMessageFee';
 import { startPayment } from '@/utils/piPayment/payments';
 import { approvePayment, completePayment } from '@/api/payments';
 import { generateLifecycleId } from '@/utils/correlation';
-import { recordReauthEvent } from '@/utils/telemetry/reauthTelemetry';
+import { recordReauthEvent, type ReauthEventType } from '@/utils/telemetry/reauthTelemetry';
 
 export interface Conversation {
   id: string;
