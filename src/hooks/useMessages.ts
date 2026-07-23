@@ -45,7 +45,7 @@ export type Inbox =
 const PAID_PLANS = new Set(['small-business', 'small_business', 'organization']);
 
 export function useMessages(inbox: Inbox | null) {
-  const { user, login } = useAuth();
+  const { user, login, refreshUserData } = useAuth();
   const uid = user?.uid;
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
