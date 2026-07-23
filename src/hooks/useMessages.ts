@@ -102,7 +102,43 @@ export function useMessages(inbox: Inbox | null) {
   }, [uid]);
 
   const loadConversations = useCallback(async () => {
-    if (!uid || !inbox) return;
+    if (!inbox) return;
+
+    let customerId: string | null = null;
+    if (inbox.kind === 'customer') {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const authUid = sessionData?.session?.user?.id ?? null;
+      if (authUid) {
+        customerId = authUid;
+        if (uid && authUid !== uid) {
+          // Stale local uid: proceed with the live session id, but resync
+          // the cached user in the background so subsequent renders are
+          // consistent.
+          console.warn(
+            '[loadConversations] local uid stale vs Supabase session — proceeding with authUid',
+            { localUid: uid, authUid },
+          );
+          recordReauthEvent('uid_stale_non_blocking' as ReauthEventType, {
+            localUid: uid,
+            authUid,
+            retryReason: 'uid-stale-non-blocking',
+            isRetry: false,
+            message: 'local uid stale in loadConversations; proceeding with authUid from live session',
+          });
+          try {
+            void Promise.resolve(refreshUserData?.(true)).catch(() => {
+              /* silent — non-blocking best effort */
+            });
+          } catch {
+            /* silent */
+          }
+        }
+      } else if (uid) {
+        customerId = uid;
+      }
+      if (!customerId) return;
+    }
+
     setLoadingConvs(true);
     let query = supabase
       .from('conversations')
@@ -112,7 +148,7 @@ export function useMessages(inbox: Inbox | null) {
       .order('last_message_at', { ascending: false });
 
     if (inbox.kind === 'customer') {
-      query = query.eq('customer_id', uid);
+      query = query.eq('customer_id', customerId);
     } else {
       query = query.eq('business_id', inbox.businessId);
     }
@@ -131,7 +167,7 @@ export function useMessages(inbox: Inbox | null) {
     }));
     setConversations(mapped);
     setLoadingConvs(false);
-  }, [uid, inbox]);
+  }, [uid, inbox, refreshUserData]);
 
   useEffect(() => {
     loadConversations();
