@@ -413,7 +413,7 @@ export function useMessages(inbox: Inbox | null) {
       }
       return promise;
     },
-    [uid, login, loadConversations],
+    [uid, login, loadConversations, refreshUserData],
   );
 
   // Keep a stable ref to the latest startConversationWithBusiness so the
