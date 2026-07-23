@@ -311,7 +311,7 @@ export function useMessages(inbox: Inbox | null) {
             '[startConversationWithBusiness] local uid stale vs Supabase session — proceeding with authUid',
             ctx,
           );
-          recordReauthEvent('uid_stale_non_blocking' as never, {
+          recordReauthEvent('uid_stale_non_blocking' as ReauthEventType, {
             businessId,
             localUid: uid ?? null,
             authUid,
@@ -321,9 +321,13 @@ export function useMessages(inbox: Inbox | null) {
           });
           // Fire-and-forget local cache resync so subsequent actions see the
           // corrected uid. Never block the current operation on this.
-          void refreshUserData?.(true).catch(() => {
-            /* silent — non-blocking best effort */
-          });
+          try {
+            void Promise.resolve(refreshUserData?.(true)).catch(() => {
+              /* silent — non-blocking best effort */
+            });
+          } catch {
+            /* silent */
+          }
         }
 
         // Try to find existing
