@@ -16,6 +16,7 @@ interface AppLayoutProps {
   fullHeight?: boolean;
   fullWidth?: boolean;
   hideSidebar?: boolean;
+  hideBottomNav?: boolean;
   onSearch?: (searchTerm: string) => void;
   showSearch?: boolean;
   className?: string;
@@ -31,6 +32,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   fullHeight = false,
   fullWidth = false,
   hideSidebar = false,
+  hideBottomNav = false,
   onSearch,
   showSearch = false,
   className = '',
