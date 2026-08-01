@@ -435,17 +435,18 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
             </div>
           )}
 
-          <div className="w-full bg-muted/50 p-4 rounded-lg mb-6">
+          <div className="w-full bg-muted/50 border border-border/60 p-3 rounded-xl mb-4">
             <div className="flex items-center">
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                <img src="/lovable-uploads/816179f9-d16d-46a7-9d6e-169846c0d0da.svg" alt="User" className="w-17 h-17" />
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                <img src="/lovable-uploads/816179f9-d16d-46a7-9d6e-169846c0d0da.svg" alt="User" className="w-6 h-6" />
               </div>
-              <div className="ml-4 text-left">
-                <p className="font-medium text-lg">Pi Network User</p>
-                <p className="text-sm text-muted-foreground">Connect with Pi Network</p>
+              <div className="ml-3 text-left">
+                <p className="font-medium">Pi Network User</p>
+                <p className="text-xs text-muted-foreground">Connect with Pi Network</p>
               </div>
             </div>
           </div>
+
           
           {isCoolingDown && (
             <div
