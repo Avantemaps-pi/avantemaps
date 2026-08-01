@@ -493,7 +493,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
 
           <Button
             variant="ghost"
-            className="w-full mb-6 text-sm"
+            className="w-full mb-4 text-sm"
             onClick={() => setShowTroubleshooting(!showTroubleshooting)}
           >
             <HelpCircle className="h-4 w-4 mr-2" />
@@ -533,7 +533,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
           )}
 
           
-          <div className="text-center text-sm text-muted-foreground px-4">
+          <div className="text-center text-xs text-muted-foreground px-2 mt-2">
             <p>
               By connecting, Pi Network will share your profile information with Avante Maps. See our{' '}
               <Link to="/privacy" className="text-primary hover:underline">privacy policy</Link>
