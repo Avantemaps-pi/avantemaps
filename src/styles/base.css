@@ -17,6 +17,10 @@
     --primary: 221 83% 53%;
     --primary-foreground: 210 40% 98%;
 
+    --brand-navy: 224 64% 33%;
+    --gradient-brand: linear-gradient(160deg, hsl(221 83% 53%), hsl(224 64% 33%));
+
+
     --secondary: 260 84% 60%;
     --secondary-foreground: 210 40% 98%;
 
