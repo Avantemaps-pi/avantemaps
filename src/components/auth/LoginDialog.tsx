@@ -311,22 +311,33 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md border rounded-lg shadow-lg bg-card">
-        <div className="p-6 flex flex-col items-center">
-          <DialogClose className="absolute right-4 top-4 opacity-70 hover:opacity-100">
-            <X className="h-4 w-4" />
+      <DialogContent className="max-w-md p-0 overflow-hidden border-0 rounded-2xl shadow-xl bg-card">
+        {/* Gradient brand header */}
+        <div
+          className="relative px-6 pt-8 pb-12 text-center"
+          style={{ background: 'var(--gradient-brand)' }}
+        >
+          <DialogClose className="absolute right-4 top-4 text-primary-foreground/80 hover:text-primary-foreground transition-opacity">
+            <X className="h-5 w-5" />
             <span className="sr-only">Close</span>
           </DialogClose>
-          
-          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6">
-            <img src="/lovable-uploads/Avante-Maps-icon.svg" alt="Pi Logo" className="w-17 h-17" />
+
+          <div className="mx-auto w-16 h-16 rounded-full bg-primary-foreground/10 ring-1 ring-primary-foreground/25 flex items-center justify-center mb-4">
+            <img src="/lovable-uploads/Avante-Maps-icon.svg" alt="Avante Maps" className="w-10 h-10" />
           </div>
-          
-          <DialogTitle className="text-2xl mb-4 text-center font-bold">
-            Sign in to <span className="bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">Avante Maps</span>
+
+          <DialogTitle className="text-2xl font-bold text-primary-foreground">
+            Sign in to Avante Maps
           </DialogTitle>
-          
+          <p className="mt-1.5 text-sm text-primary-foreground/80">
+            Connect with Pi Network to continue
+          </p>
+        </div>
+
+        {/* White card sheet overlapping the gradient */}
+        <div className="relative -mt-6 rounded-t-2xl bg-card px-5 pt-6 pb-6 flex flex-col items-center max-h-[70vh] overflow-y-auto">
           {preflight.status !== 'ok' && preflight.status !== 'test-mode' && (
+
             (() => {
               const tone =
                 preflight.status === 'offline' || preflight.status === 'not-pi-browser'
@@ -424,17 +435,18 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
             </div>
           )}
 
-          <div className="w-full bg-muted/50 p-4 rounded-lg mb-6">
+          <div className="w-full bg-muted/50 border border-border/60 p-3 rounded-xl mb-4">
             <div className="flex items-center">
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                <img src="/lovable-uploads/816179f9-d16d-46a7-9d6e-169846c0d0da.svg" alt="User" className="w-17 h-17" />
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                <img src="/lovable-uploads/816179f9-d16d-46a7-9d6e-169846c0d0da.svg" alt="User" className="w-6 h-6" />
               </div>
-              <div className="ml-4 text-left">
-                <p className="font-medium text-lg">Pi Network User</p>
-                <p className="text-sm text-muted-foreground">Connect with Pi Network</p>
+              <div className="ml-3 text-left">
+                <p className="font-medium">Pi Network User</p>
+                <p className="text-xs text-muted-foreground">Connect with Pi Network</p>
               </div>
             </div>
           </div>
+
           
           {isCoolingDown && (
             <div
@@ -481,7 +493,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
 
           <Button
             variant="ghost"
-            className="w-full mb-6 text-sm"
+            className="w-full mb-4 text-sm"
             onClick={() => setShowTroubleshooting(!showTroubleshooting)}
           >
             <HelpCircle className="h-4 w-4 mr-2" />
@@ -521,7 +533,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
           )}
 
           
-          <div className="text-center text-sm text-muted-foreground px-4">
+          <div className="text-center text-xs text-muted-foreground px-2 mt-2">
             <p>
               By connecting, Pi Network will share your profile information with Avante Maps. See our{' '}
               <Link to="/privacy" className="text-primary hover:underline">privacy policy</Link>

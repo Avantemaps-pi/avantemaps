@@ -67,6 +67,7 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
+				'brand-navy': 'hsl(var(--brand-navy))',
 				avante: {
 					blue: '#3B82F6',
 					purple: '#8B5CF6',
@@ -74,6 +75,7 @@ export default {
 					dark: '#1E293B',
 					light: '#F9FAFB'
 				}
+
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
