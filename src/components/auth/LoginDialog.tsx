@@ -311,22 +311,33 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md border rounded-lg shadow-lg bg-card">
-        <div className="p-6 flex flex-col items-center">
-          <DialogClose className="absolute right-4 top-4 opacity-70 hover:opacity-100">
-            <X className="h-4 w-4" />
+      <DialogContent className="max-w-md p-0 overflow-hidden border-0 rounded-2xl shadow-xl bg-card">
+        {/* Gradient brand header */}
+        <div
+          className="relative px-6 pt-8 pb-12 text-center"
+          style={{ background: 'var(--gradient-brand)' }}
+        >
+          <DialogClose className="absolute right-4 top-4 text-primary-foreground/80 hover:text-primary-foreground transition-opacity">
+            <X className="h-5 w-5" />
             <span className="sr-only">Close</span>
           </DialogClose>
-          
-          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6">
-            <img src="/lovable-uploads/Avante-Maps-icon.svg" alt="Pi Logo" className="w-17 h-17" />
+
+          <div className="mx-auto w-16 h-16 rounded-full bg-primary-foreground/10 ring-1 ring-primary-foreground/25 flex items-center justify-center mb-4">
+            <img src="/lovable-uploads/Avante-Maps-icon.svg" alt="Avante Maps" className="w-10 h-10" />
           </div>
-          
-          <DialogTitle className="text-2xl mb-4 text-center font-bold">
-            Sign in to <span className="bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">Avante Maps</span>
+
+          <DialogTitle className="text-2xl font-bold text-primary-foreground">
+            Sign in to Avante Maps
           </DialogTitle>
-          
+          <p className="mt-1.5 text-sm text-primary-foreground/80">
+            Connect with Pi Network to continue
+          </p>
+        </div>
+
+        {/* White card sheet overlapping the gradient */}
+        <div className="relative -mt-6 rounded-t-2xl bg-card px-5 pt-6 pb-6 flex flex-col items-center max-h-[70vh] overflow-y-auto">
           {preflight.status !== 'ok' && preflight.status !== 'test-mode' && (
+
             (() => {
               const tone =
                 preflight.status === 'offline' || preflight.status === 'not-pi-browser'
