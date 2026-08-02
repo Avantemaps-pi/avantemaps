@@ -102,25 +102,8 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
           Demo Mode — showing sample data for preview testing
         </div>
       )}
-      <AnalyticsHeader 
-        businessName={displayBusinessName}
-        businesses={displayBusinesses}
-        selectedBusinessId={isDemoMode ? 0 : selectedBusinessId}
-        onBusinessChange={isDemoMode ? () => {} : setSelectedBusinessId}
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-        onExport={handleExport}
-        hasAnnualSubscription={isDemoMode || annualSubCount >= 1}
-        hasRenewedAnnualSubscription={isDemoMode || annualSubCount >= 2}
-        canExport={canExport}
-      />
-      
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4">
-          {[1, 2, 3, 4].map(i => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
+        <Skeleton className="h-[520px] rounded-2xl" />
       ) : error ? (
         <Card className="text-center py-8 mb-4">
           <CardContent>
@@ -129,59 +112,25 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8">
-            <AnalyticCard 
-              title="Total Views"
-              value={metrics.totalViews.toLocaleString()}
-              description="All-time impressions"
-              icon={<Eye />}
-              trend={metrics.viewsTrend}
-              trendDirection={metrics.viewsTrend >= 0 ? "up" : "down"}
-            />
-            
-            <AnalyticCard 
-              title="This Week"
-              value={(metrics.totalViews > 0 ? 
-                engagementData.reduce((sum, d) => sum + d.views, 0) : 0
-              ).toLocaleString()}
-              description="Views in selected period"
-              icon={<TrendingUp />}
-              trend={0}
-              trendDirection="neutral"
-            />
-            
-            <AnalyticCard 
-              title="Total Bookmarks"
-              value={metrics.totalBookmarks.toLocaleString()}
-              description={`${metrics.bookmarkRate}% bookmark rate`}
-              icon={<Bookmark />}
-              trend={0}
-              trendDirection="neutral"
-            />
-            
-            <AnalyticCard 
-              title="Comments"
-              value={metrics.totalComments.toLocaleString()}
-              description="User reviews"
-              icon={<MessageSquare />}
-              trend={0}
-              trendDirection="neutral"
-            />
-          </div>
-          
-          <div className="w-full max-w-full min-w-0 overflow-hidden pb-2">
-            <EngagementChart 
-              data={engagementData}
-              title="Views Over Time"
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-              hasAnnualSubscription={isDemoMode || annualSubCount >= 1}
-              hasRenewedAnnualSubscription={isDemoMode || annualSubCount >= 2}
-            />
-          </div>
+          <AnalyticsPanel
+            businessName={displayBusinessName}
+            businesses={displayBusinesses}
+            selectedBusinessId={isDemoMode ? 0 : selectedBusinessId}
+            onBusinessChange={isDemoMode ? () => {} : setSelectedBusinessId}
+            data={engagementData}
+            totalViews={metrics.totalViews}
+            viewsTrend={metrics.viewsTrend}
+            totalBookmarks={metrics.totalBookmarks}
+            totalComments={metrics.totalComments}
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            onExport={handleExport}
+            canExport={canExport}
+            hasRenewedAnnualSubscription={isDemoMode || annualSubCount >= 2}
+          />
 
           {metrics.totalViews === 0 && (
-            <Card className="text-center py-8">
+            <Card className="text-center py-8 mt-4">
               <CardContent>
                 <p className="text-muted-foreground">
                   No view data yet. As users view your business listing, analytics will appear here.
@@ -191,6 +140,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
           )}
         </>
       )}
+
     </div>
   );
 };
