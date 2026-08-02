@@ -100,6 +100,22 @@
 }
 
 @layer base {
+  /* Analytics section: intentional fixed-dark scope, independent of app light/dark mode */
+  .analytics-scope {
+    --analytics-bg: 220 16% 9%;
+    --analytics-surface: 220 13% 16%;
+    --analytics-border: 220 12% 21%;
+    --analytics-text: 210 20% 97%;
+    --analytics-text-muted: 218 11% 65%;
+    --analytics-primary: 208 45% 62%;
+    --analytics-secondary: 215 14% 55%;
+    --analytics-success: 152 55% 48%;
+    --analytics-danger: 0 72% 60%;
+  }
+}
+
+@layer base {
+
   * {
     @apply border-border;
   }

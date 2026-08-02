@@ -1,5 +1,5 @@
 
-export { default as AnalyticCard } from './AnalyticCard';
+export { default as AnalyticsPanel } from './AnalyticsPanel';
 export { default as AnalyticsHeader } from './AnalyticsHeader';
 export { default as EngagementChart } from './EngagementChart';
 export { default as RankingChart } from './RankingChart';
