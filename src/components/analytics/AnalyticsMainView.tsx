@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Bookmark, MessageSquare, TrendingUp } from 'lucide-react';
-import AnalyticCard from './AnalyticCard';
-import AnalyticsHeader from './AnalyticsHeader';
-import EngagementChart from './EngagementChart';
+import AnalyticsPanel from './AnalyticsPanel';
 import { useAnalyticsData } from './hooks/useAnalyticsData';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/auth/useAuth';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SubscriptionTier } from '@/utils/piNetwork';
 import { hasFeatureAccess } from '@/utils/piNetwork/subscription';
+
 
 interface AnalyticsMainViewProps {
   handleExport: (format: 'csv' | 'pdf') => void;
