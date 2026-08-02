@@ -67,8 +67,9 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				'brand-navy': 'hsl(var(--brand-navy))',
-				avante: {
+			'brand-navy': 'hsl(var(--brand-navy))',
+			'brand-ink': 'hsl(var(--brand-ink))',
+			avante: {
 					blue: '#3B82F6',
 					purple: '#8B5CF6',
 					teal: '#0D9488',

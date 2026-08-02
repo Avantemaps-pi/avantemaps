@@ -5,8 +5,8 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 43 30% 95%;
+    --foreground: 30 9% 21%;
 
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -14,18 +14,18 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 221 83% 53%;
+    --primary: 208 25% 48%;
     --primary-foreground: 210 40% 98%;
 
-    --brand-navy: 224 64% 33%;
-    --gradient-brand: linear-gradient(160deg, hsl(221 83% 53%), hsl(224 64% 33%));
-
+    --brand-navy: 209 35% 31%;
+    --brand-ink: 207 35% 13%;
+    --gradient-brand: linear-gradient(160deg, hsl(208 25% 48%), hsl(209 35% 31%));
 
     --secondary: 260 84% 60%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted-foreground: 43 8% 44%;
 
     --accent: 168 89% 32%;
     --accent-foreground: 210 40% 98%;
@@ -53,8 +53,8 @@
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    --background: 36 14% 7%;
+    --foreground: 42 39% 94%;
 
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
@@ -62,18 +62,18 @@
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 221 83% 53%;
+    --primary: 208 30% 55%;
     --primary-foreground: 240 5.9% 10%;
 
-    --brand-navy: 224 64% 26%;
-    --gradient-brand: linear-gradient(160deg, hsl(221 83% 45%), hsl(224 64% 22%));
-
+    --brand-navy: 210 33% 44%;
+    --brand-ink: 208 38% 20%;
+    --gradient-brand: linear-gradient(160deg, hsl(208 30% 55%), hsl(210 33% 44%));
 
     --secondary: 260 84% 60%;
     --secondary-foreground: 0 0% 98%;
 
     --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted-foreground: 44 9% 59%;
 
     --accent: 168 89% 32%;
     --accent-foreground: 0 0% 98%;
