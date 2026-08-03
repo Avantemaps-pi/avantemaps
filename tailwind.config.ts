@@ -69,6 +69,17 @@ export default {
 				},
 			'brand-navy': 'hsl(var(--brand-navy))',
 			'brand-ink': 'hsl(var(--brand-ink))',
+			analytics: {
+					bg: 'hsl(var(--analytics-bg))',
+					surface: 'hsl(var(--analytics-surface))',
+					border: 'hsl(var(--analytics-border))',
+					text: 'hsl(var(--analytics-text))',
+					'text-muted': 'hsl(var(--analytics-text-muted))',
+					primary: 'hsl(var(--analytics-primary))',
+					secondary: 'hsl(var(--analytics-secondary))',
+					success: 'hsl(var(--analytics-success))',
+					danger: 'hsl(var(--analytics-danger))'
+				},
 			avante: {
 					blue: '#3B82F6',
 					purple: '#8B5CF6',

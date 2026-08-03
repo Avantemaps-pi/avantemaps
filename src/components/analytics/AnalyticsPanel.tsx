@@ -47,23 +47,17 @@ const ChartTooltip: React.FC<{ active?: boolean; payload?: TooltipEntry[]; label
 }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div
-      className="rounded-lg px-3 py-2 shadow-xl"
-      style={{
-        background: 'hsl(var(--analytics-surface))',
-        border: '1px solid hsl(var(--analytics-border))',
-      }}
-    >
-      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--analytics-text-muted))' }}>
+    <div className="rounded-lg border border-analytics-border bg-analytics-surface px-3 py-2 shadow-xl">
+      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-analytics-text-muted">
         {label}
       </p>
       {payload.map((entry) => (
         <div key={String(entry.dataKey)} className="flex items-center justify-between gap-5 py-0.5">
-          <span className="flex items-center gap-1.5 text-xs capitalize" style={{ color: 'hsl(var(--analytics-text-muted))' }}>
+          <span className="flex items-center gap-1.5 text-xs capitalize text-analytics-text-muted">
             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
             {String(entry.dataKey)}
           </span>
-          <span className="text-xs font-bold tabular-nums" style={{ color: 'hsl(var(--analytics-text))' }}>
+          <span className="text-xs font-bold tabular-nums text-analytics-text">
             {entry.value?.toLocaleString()}
           </span>
         </div>
@@ -76,17 +70,19 @@ const Stat: React.FC<{ label: string; value: number; trend?: number }> = ({ labe
   const TrendIcon = trend !== undefined && trend < 0 ? TrendingDown : TrendingUp;
   return (
     <div className="flex min-w-0 flex-col">
-      <span className="text-[11px] font-medium uppercase tracking-wide" style={{ color: 'hsl(var(--analytics-text-muted))' }}>
+      <span className="text-[11px] font-medium uppercase tracking-wide text-analytics-text-muted">
         {label}
       </span>
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-bold tabular-nums sm:text-3xl" style={{ color: 'hsl(var(--analytics-text))' }}>
+        <span className="text-2xl font-bold tabular-nums text-analytics-text sm:text-3xl">
           {value.toLocaleString()}
         </span>
         {trend !== undefined && trend !== 0 && (
           <span
-            className="flex items-center gap-0.5 text-[11px] font-semibold"
-            style={{ color: trend > 0 ? 'hsl(var(--analytics-success))' : 'hsl(var(--analytics-danger))' }}
+            className={cn(
+              'flex items-center gap-0.5 text-[11px] font-semibold',
+              trend > 0 ? 'text-analytics-success' : 'text-analytics-danger'
+            )}
           >
             <TrendIcon className="h-3 w-3" />
             {Math.abs(trend)}%
@@ -129,19 +125,13 @@ const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({
   const axisStyle = { fill: 'hsl(var(--analytics-text-muted))', fontSize: 11 };
 
   return (
-    <div
-      className="analytics-scope rounded-2xl p-4 sm:p-6"
-      style={{ background: 'hsl(var(--analytics-bg))', border: '1px solid hsl(var(--analytics-border))' }}
-    >
+    <div className="analytics-scope rounded-2xl border border-analytics-border bg-analytics-bg p-4 sm:p-6">
       {/* Header */}
       <div className="mb-6 flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
           {businesses.length > 1 && onBusinessChange ? (
             <Select value={selectedBusinessId?.toString()} onValueChange={(v) => onBusinessChange(parseInt(v))}>
-              <SelectTrigger
-                className="h-auto w-auto gap-1 border-none p-0 text-lg font-semibold shadow-none sm:text-xl [&>svg]:h-4 [&>svg]:w-4"
-                style={{ color: 'hsl(var(--analytics-text))' }}
-              >
+              <SelectTrigger className="h-auto w-auto gap-1 border-none p-0 text-lg font-semibold text-analytics-text shadow-none sm:text-xl [&>svg]:h-4 [&>svg]:w-4">
                 <SelectValue placeholder={businessName} />
               </SelectTrigger>
               <SelectContent>
@@ -153,25 +143,18 @@ const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({
               </SelectContent>
             </Select>
           ) : (
-            <h2 className="truncate text-lg font-semibold sm:text-xl" style={{ color: 'hsl(var(--analytics-text))' }}>
+            <h2 className="truncate text-lg font-semibold text-analytics-text sm:text-xl">
               {businessName}
             </h2>
           )}
-          <p className="mt-0.5 text-xs" style={{ color: 'hsl(var(--analytics-text-muted))' }}>
-            Performance & engagement
+          <p className="mt-0.5 text-xs text-analytics-text-muted">
+            Performance &amp; engagement
           </p>
         </div>
 
         {canExport && (
           <Select onValueChange={(value) => onExport(value as 'csv' | 'pdf')}>
-            <SelectTrigger
-              className="h-9 w-[110px] shrink-0 text-xs"
-              style={{
-                background: 'hsl(var(--analytics-surface))',
-                borderColor: 'hsl(var(--analytics-border))',
-                color: 'hsl(var(--analytics-text))',
-              }}
-            >
+            <SelectTrigger className="h-9 w-[110px] shrink-0 border-analytics-border bg-analytics-surface text-xs text-analytics-text">
               <Download className="mr-1.5 h-3.5 w-3.5" />
               <SelectValue placeholder="Export" />
             </SelectTrigger>
@@ -228,12 +211,12 @@ const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({
 
       {/* Legend */}
       <div className="mt-3 flex items-center gap-4">
-        <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'hsl(var(--analytics-text-muted))' }}>
-          <span className="h-2 w-2 rounded-full" style={{ background: 'hsl(var(--analytics-primary))' }} />
+        <span className="flex items-center gap-1.5 text-[11px] text-analytics-text-muted">
+          <span className="h-2 w-2 rounded-full bg-analytics-primary" />
           Views
         </span>
-        <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'hsl(var(--analytics-text-muted))' }}>
-          <span className="h-2 w-2 rounded-full" style={{ background: 'hsl(var(--analytics-secondary))' }} />
+        <span className="flex items-center gap-1.5 text-[11px] text-analytics-text-muted">
+          <span className="h-2 w-2 rounded-full bg-analytics-secondary" />
           Bookmarks
         </span>
       </div>
@@ -245,12 +228,12 @@ const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({
             key={option.value}
             type="button"
             onClick={() => onDateRangeChange(option.value)}
-            className={cn('rounded-full px-3 py-1 text-[11px] font-medium transition-colors sm:text-xs')}
-            style={
+            className={cn(
+              'rounded-full px-3 py-1 text-[11px] font-medium transition-colors sm:text-xs',
               dateRange === option.value
-                ? { background: 'hsl(var(--analytics-surface))', color: 'hsl(var(--analytics-text))' }
-                : { color: 'hsl(var(--analytics-text-muted))' }
-            }
+                ? 'bg-analytics-surface text-analytics-text'
+                : 'text-analytics-text-muted'
+            )}
           >
             {option.label}
           </button>
