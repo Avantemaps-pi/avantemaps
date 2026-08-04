@@ -101,7 +101,7 @@ const VerificationInfo = () => {
             </Alert>
 
             <Alert variant="default" className="bg-primary/10 border-primary/20">
-              <CheckCircle className="h-4 w-4 text-blue-500" />
+              <CheckCircle className="h-4 w-4 text-primary" />
               <AlertTitle className="text-brand-ink">Verification Timeline</AlertTitle>
               <AlertDescription className="text-primary">
                 The verification process typically takes 24 - 72 hours from Submission of Response.
