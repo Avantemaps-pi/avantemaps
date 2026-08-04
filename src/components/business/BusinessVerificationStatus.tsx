@@ -46,7 +46,7 @@ const BusinessVerificationStatus = ({ isCertification = false }: BusinessVerific
               <AlertTriangle className="h-3 w-3" />
               Not Verified
             </Badge>
-            <Button variant="link" size="sm" asChild className="pl-0 h-auto text-blue-600 self-start">
+            <Button variant="link" size="sm" asChild className="pl-0 h-auto text-primary self-start">
               <Link to="/verification-info">
                 <Info className="h-3.5 w-3.5 mr-1" />
                 <span className="text-xs">View Requirements</span>
@@ -86,7 +86,7 @@ const BusinessVerificationStatus = ({ isCertification = false }: BusinessVerific
               <AlertTriangle className="h-3 w-3" />
               Not Certified
             </Badge>
-            <Button variant="link" size="sm" asChild className="pl-0 h-auto text-blue-600 self-start">
+            <Button variant="link" size="sm" asChild className="pl-0 h-auto text-primary self-start">
               <Link to="/verification-info">
                 <Info className="h-3.5 w-3.5 mr-1" />
                 <span className="text-xs">View Requirements</span>

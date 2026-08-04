@@ -23,7 +23,7 @@ const CommentContent: React.FC<CommentContentProps> = ({ content }) => {
         <Button 
           variant="link" 
           size="sm" 
-          className="p-0 h-auto mt-1 text-blue-500"
+          className="p-0 h-auto mt-1 text-primary"
           onClick={toggleExpand}
         >
           {isExpanded ? 'Show Less' : 'Read More'}

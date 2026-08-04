@@ -219,7 +219,7 @@ const RegisteredBusiness = () => {
             <div className="mt-8">
               <Button 
                 onClick={handleLoginClick}
-                className="bg-blue-500 hover:bg-blue-600 text-white text-xl py-6 px-12 rounded-md"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xl py-6 px-12 rounded-md"
                 size="lg"
               >
                 Login
@@ -286,7 +286,7 @@ const RegisteredBusiness = () => {
           {hasReachedLimit && (
             <button
               onClick={() => navigate('/pricing')}
-              className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
+              className="text-primary hover:text-brand-navy hover:underline font-medium"
             >
               Upgrade Plan
             </button>

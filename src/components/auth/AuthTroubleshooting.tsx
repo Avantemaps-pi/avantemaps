@@ -39,7 +39,7 @@ const AuthTroubleshooting: React.FC<AuthTroubleshootingProps> = ({ isVisible }) 
   if (!isVisible) return null;
 
   const StatusIcon = ({ status }: { status: boolean | 'loading' }) => {
-    if (status === 'loading') return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
+    if (status === 'loading') return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
     return status ? (
       <CheckCircle className="h-4 w-4 text-green-500" />
     ) : (

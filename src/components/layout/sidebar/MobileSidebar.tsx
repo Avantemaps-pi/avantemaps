@@ -125,7 +125,7 @@ const MobileSidebar = ({
           <div className="flex-1 overflow-y-auto py-4 flex flex-col">
             {!isAuthenticated && (
               <div className="px-2 mb-4">
-                <Button onClick={handleLogin} disabled={isLoading} className="w-full flex items-center bg-blue-500 hover:bg-blue-600 text-white">
+                <Button onClick={handleLogin} disabled={isLoading} className="w-full flex items-center bg-primary hover:bg-primary/90 text-primary-foreground">
                   <LogIn className="h-4 w-4 mr-2" />
                   {isLoading ? "Authenticating..." : "Login with Pi Network"}
                 </Button>
