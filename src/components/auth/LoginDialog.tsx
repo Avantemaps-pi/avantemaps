@@ -303,6 +303,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({
 
   const handleContinueBrowsing = () => {
     onOpenChange(false);
+    onContinueBrowsing?.();
   };
 
   // Prefer the most recent local error, fall back to context-level authError
