@@ -496,7 +496,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({
             className="w-full mb-3"
             onClick={handleContinueBrowsing}
           >
-            Continue Browsing
+            {continueBrowsingLabel}
           </Button>
 
           <Button
