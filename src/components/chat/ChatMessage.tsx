@@ -26,7 +26,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ text, sender, timestamp }) =>
       <div
         className={`max-w-[80%] px-4 py-2 rounded-lg transition-opacity ${
           isUser
-            ? 'bg-blue-500 text-white'
+            ? 'bg-primary text-primary-foreground'
             : sender === 'system'
               ? 'bg-gray-200 text-gray-800'
               : sender === 'live-support'

@@ -57,7 +57,7 @@ const DesktopSidebar = ({
         <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-6">
           {!isAuthenticated && (
             <div className="mb-2">
-              <Button onClick={handleLogin} disabled={isLoading} className="w-full bg-blue-500 hover:bg-blue-600 text-white">
+              <Button onClick={handleLogin} disabled={isLoading} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                 <LogIn className="h-4 w-4 mr-2" />
                 {isLoading ? "Authenticating..." : "Login with Pi Network"}
               </Button>

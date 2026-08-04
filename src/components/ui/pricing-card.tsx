@@ -51,7 +51,7 @@ export function PricingCard({
   return (
     <div id={id} className="">
       {tier.popular && (
-        <div className="absolute -top-3 left-8 rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white">
+        <div className="absolute -top-3 left-8 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
           Most popular
         </div>
       )}
@@ -125,8 +125,8 @@ export function PricingCard({
         </ul>
 
         {tier.id === 'individual' && (
-          <div className="flex items-start gap-2 rounded-md bg-blue-50 border border-blue-100 p-3 text-sm text-blue-800">
-            <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600" />
+          <div className="flex items-start gap-2 rounded-md bg-primary/10 border border-primary/20 p-3 text-sm text-brand-ink">
+            <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" />
             <span>Need more than 1 listing? Upgrade to Small Business for up to 3.</span>
           </div>
         )}

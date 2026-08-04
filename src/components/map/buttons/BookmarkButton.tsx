@@ -52,7 +52,7 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({ isBookmarked, onToggle,
         <Bookmark
           className={`h-5 w-5 transition-colors ${
             isBookmarked
-              ? 'text-blue-500 fill-blue-500'
+              ? 'text-primary fill-primary'
               : 'text-gray-400 hover:text-gray-600'
           }`}
         />

@@ -67,7 +67,7 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
               </div>
             )}
             <CardTitle 
-              className="text-base font-bold cursor-pointer hover:text-blue-500 transition-colors"
+              className="text-base font-bold cursor-pointer hover:text-primary transition-colors"
               onClick={handlePlaceClick}
             >
               {location.name}
