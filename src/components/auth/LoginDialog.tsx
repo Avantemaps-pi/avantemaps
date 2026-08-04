@@ -153,6 +153,8 @@ const isPreviewOrDev = (): boolean => {
 interface LoginDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  continueBrowsingLabel?: string;
+  onContinueBrowsing?: () => void;
 }
 
 // Cooldown thresholds: kick in after the 2nd consecutive failure.
@@ -170,7 +172,12 @@ const computeCooldownSeconds = (failures: number): number => {
   return COOLDOWN_STEPS_SECONDS[idx];
 };
 
-const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
+const LoginDialog: React.FC<LoginDialogProps> = ({
+  open,
+  onOpenChange,
+  continueBrowsingLabel = 'Continue Browsing',
+  onContinueBrowsing,
+}) => {
   const { login, loginAsSandbox, isLoading, authError } = useAuth();
   const [showTroubleshooting, setShowTroubleshooting] = useState<boolean>(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -296,6 +303,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
 
   const handleContinueBrowsing = () => {
     onOpenChange(false);
+    onContinueBrowsing?.();
   };
 
   // Prefer the most recent local error, fall back to context-level authError
@@ -488,7 +496,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
             className="w-full mb-3"
             onClick={handleContinueBrowsing}
           >
-            Continue Browsing
+            {continueBrowsingLabel}
           </Button>
 
           <Button
