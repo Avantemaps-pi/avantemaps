@@ -153,6 +153,8 @@ const isPreviewOrDev = (): boolean => {
 interface LoginDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  continueBrowsingLabel?: string;
+  onContinueBrowsing?: () => void;
 }
 
 // Cooldown thresholds: kick in after the 2nd consecutive failure.
