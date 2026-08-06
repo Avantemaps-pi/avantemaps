@@ -305,10 +305,12 @@ export async function executeWalletTopUp(
       try {
         const { authenticate } = await import('../piNetwork/core');
         authResult = await authenticate(['username', 'payments', 'wallet_address']);
-      } catch (authError: any) {
+      } catch (authError) {
         return {
           success: false,
-          message: authError.message || 'Please authenticate with Pi Network first'
+          message: authError instanceof Error
+            ? authError.message
+            : 'Please authenticate with Pi Network first'
         };
       }
     }
@@ -442,10 +444,10 @@ export async function executeWalletTopUp(
           });
         });
     });
-  } catch (error: any) {
+  } catch (error) {
     return {
       success: false,
-      message: error.message || 'Payment failed'
+      message: error instanceof Error ? error.message : 'Payment failed'
     };
   } finally {
     walletTopUpInProgress = false;
