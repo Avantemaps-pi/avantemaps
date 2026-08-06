@@ -1,6 +1,7 @@
 
 import { 
   executeSubscriptionPayment, 
+  executeWalletTopUp,
   isPaymentInProgress, 
   resetPaymentState,
   startPayment,
@@ -11,6 +12,7 @@ import {
 
 export { 
   executeSubscriptionPayment, 
+  executeWalletTopUp,
   isPaymentInProgress, 
   resetPaymentState,
   startPayment,

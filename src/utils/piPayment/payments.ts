@@ -22,6 +22,9 @@ import { generateLifecycleId } from '@/utils/correlation';
 
 // State tracking
 let paymentInProgress = false;
+// Separate lock for wallet top-ups — a subscription purchase and a wallet
+// top-up are distinct flows and shouldn't block one another.
+let walletTopUpInProgress = false;
 
 export interface PaymentResult {
   success: boolean;
