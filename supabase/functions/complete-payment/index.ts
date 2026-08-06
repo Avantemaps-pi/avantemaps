@@ -25,7 +25,7 @@ const PaymentRequestSchema = z.object({
     val.replace(/[<>]/g, '')
   ).optional(),
   metadata: z.object({
-    kind: z.enum(['subscription', 'message_fee']).optional(),
+    kind: z.enum(['subscription', 'message_fee', 'wallet_topup']).optional(),
     subscriptionTier: z.enum(['individual', 'small-business', 'organization']).optional(),
     frequency: z.enum(['monthly', 'annual']).optional(),
     duration: z.number().int().positive().max(365).optional(),
@@ -288,6 +288,67 @@ Deno.serve(async (req) => {
           paymentId: paymentRequest.paymentId,
           txid: paymentRequest.txid,
         }, 502);
+      }
+
+      // Wallet top-ups have no fixed expected price (user picks the amount),
+      // so the Pi-API-confirmed `verifiedPiAmount` is the only trustworthy
+      // number to credit. Never trust `paymentRequest.amount` or metadata.
+      if (paymentRequest.metadata?.kind === 'wallet_topup') {
+        const { data: newBalance, error: creditError } = await supabaseClient.rpc(
+          'credit_wallet_balance',
+          {
+            p_user_id: paymentRequest.userId,
+            p_amount_pi: verifiedPiAmount,
+            p_payment_id: paymentRequest.paymentId,
+            p_transaction_type: 'deposit',
+          },
+        );
+
+        if (creditError) {
+          log.error(`${FN}.wallet_topup.credit_failed`, {
+            stage: 'error',
+            message: creditError.message,
+          });
+          return respond({
+            success: false,
+            message: 'Payment completed but wallet credit failed. Please contact support.',
+            paymentId: paymentRequest.paymentId,
+            txid: paymentRequest.txid,
+          }, 500);
+        }
+
+        log.info(`${FN}.wallet_topup.credited`, {
+          stage: 'db_write',
+          amount: verifiedPiAmount,
+          newBalance,
+        });
+
+        try {
+          await createPaymentNotification(
+            supabaseClient,
+            paymentRequest.userId,
+            verifiedPiAmount,
+          );
+          log.info(`${FN}.notify.created`, { stage: 'notify' });
+        } catch (notifError) {
+          log.warn(`${FN}.notify.error`, {
+            stage: 'notify',
+            message: notifError instanceof Error ? notifError.message : String(notifError),
+          });
+        }
+
+        log.info(`${FN}.done`, {
+          stage: 'done',
+          terminalReason: 'completed',
+          durationMs: Date.now() - startTime,
+        });
+        return respond({
+          success: true,
+          message: 'Wallet credited successfully',
+          paymentId: paymentRequest.paymentId,
+          txid: paymentRequest.txid,
+          newBalance,
+        });
       }
 
       // 0.5% tolerance to accommodate FX rounding at price-conversion time.
