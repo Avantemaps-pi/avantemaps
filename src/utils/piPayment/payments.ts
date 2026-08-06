@@ -268,3 +268,183 @@ export { getPiAuthResult };
  * Registers the cross-session handler for unfinished payments.
  */
 export { setIncompletePaymentHandler };
+
+/**
+ * Execute a wallet top-up payment.
+ *
+ * Mirrors executeSubscriptionPayment's structure (SDK init → cached auth or
+ * re-auth → fresh Supabase UUID → lifecycle logging → approve/complete
+ * callbacks), simplified for a metadata `kind: 'wallet_topup'` payment.
+ *
+ * Uses its own lock: a wallet top-up and a subscription purchase are separate
+ * flows and shouldn't block each other, but two concurrent top-ups should not
+ * be possible.
+ */
+export async function executeWalletTopUp(
+  amountPi: number,
+  hooks?: { onPaymentId?: (paymentId: string) => void }
+): Promise<PaymentResult> {
+  if (walletTopUpInProgress) {
+    return {
+      success: false,
+      message: 'A wallet top-up is already in progress'
+    };
+  }
+
+  walletTopUpInProgress = true;
+
+  try {
+    await initPiForPayments();
+
+    // Try cached auth first; if missing, re-authenticate with Pi SDK
+    let authResult = getPiAuthResult();
+    if (!authResult) {
+      try {
+        const { authenticate } = await import('../piNetwork/core');
+        authResult = await authenticate(['username', 'payments', 'wallet_address']);
+      } catch (authError: any) {
+        return {
+          success: false,
+          message: authError.message || 'Please authenticate with Pi Network first'
+        };
+      }
+    }
+
+    // Get Supabase UUID (not Pi UID) for edge function calls
+    const { data: { session } } = await supabase.auth.getSession();
+    const supabaseUserId = session?.user?.id;
+    if (!supabaseUserId) {
+      return {
+        success: false,
+        message: 'Please log in to your account first'
+      };
+    }
+
+    const memo = `Wallet top-up (${amountPi} Pi)`;
+    const metadata = { kind: 'wallet_topup' as const };
+
+    const lifecycleId = generateLifecycleId('wallettopup');
+    const FN_LC = 'client.executeWalletTopUp';
+    const lcEmit = (
+      level: 'info' | 'warn' | 'error',
+      event: string,
+      stage: string,
+      extra?: Record<string, unknown>
+    ) => {
+      const line = JSON.stringify({
+        ts: new Date().toISOString(),
+        level,
+        event,
+        fn: FN_LC,
+        stage,
+        lifecycleId,
+        amountPi,
+        ...(extra ?? {}),
+      });
+      if (level === 'error') console.error(line);
+      else if (level === 'warn') console.warn(line);
+      else console.log(line);
+    };
+    lcEmit('info', `${FN_LC}.lifecycle.start`, 'validation');
+
+    return new Promise<PaymentResult>((resolve) => {
+      const callbacks: PaymentCallbacks = {
+        onReadyForServerApproval: async (paymentId: string) => {
+          lcEmit('info', `${FN_LC}.approve.start`, 'pi_api', { paymentId });
+          try {
+            hooks?.onPaymentId?.(paymentId);
+            const approvalResult = await approvePayment(
+              { paymentId, userId: supabaseUserId, amount: amountPi, memo, metadata },
+              { lifecycleId }
+            );
+            lcEmit('info', `${FN_LC}.approve.result`, 'pi_api', {
+              paymentId,
+              success: approvalResult.success,
+            });
+          } catch (error) {
+            lcEmit('error', `${FN_LC}.approve.exception`, 'error', {
+              paymentId,
+              terminalReason: 'error',
+              message: error instanceof Error ? error.message : String(error),
+            });
+            resolve({
+              success: false,
+              message: 'Failed to approve payment on server',
+            });
+          }
+        },
+        onReadyForServerCompletion: async (paymentId: string, txid: string) => {
+          lcEmit('info', `${FN_LC}.complete.start`, 'pi_api', { paymentId, txid });
+          try {
+            const completionResult = await completePayment(
+              { paymentId, userId: supabaseUserId, amount: amountPi, memo, metadata, txid },
+              { lifecycleId }
+            );
+            lcEmit('info', `${FN_LC}.complete.result`, 'pi_api', {
+              paymentId,
+              txid,
+              success: completionResult.success,
+              terminalReason: completionResult.success ? 'completed' : 'error',
+            });
+            // The authoritative balance is refetched by the UI via
+            // get_wallet_balance — we deliberately ignore any inline balance
+            // value returned by the completion response.
+            resolve({
+              success: true,
+              message: 'Wallet topped up successfully!',
+              shouldRefreshUser: false,
+              paymentId,
+            });
+          } catch (error) {
+            lcEmit('error', `${FN_LC}.complete.exception`, 'error', {
+              paymentId,
+              txid,
+              terminalReason: 'error',
+              message: error instanceof Error ? error.message : String(error),
+            });
+            resolve({
+              success: false,
+              message: 'Payment completed but failed to credit your wallet',
+            });
+          }
+        },
+        onCancel: (paymentId: string) => {
+          lcEmit('info', `${FN_LC}.cancel`, 'transition', {
+            paymentId,
+            terminalReason: 'cancelled',
+          });
+          resolve({
+            success: false,
+            message: 'Payment was cancelled',
+          });
+        },
+        onError: (error: Error) => {
+          lcEmit('error', `${FN_LC}.error`, 'error', {
+            terminalReason: 'error',
+            message: error.message,
+          });
+          resolve({
+            success: false,
+            message: error.message || 'Payment failed',
+          });
+        },
+      };
+
+      createPiPayment({ amount: amountPi, memo, metadata }, callbacks)
+        .catch((error) => {
+          console.error('Failed to create wallet top-up payment:', error);
+          resolve({
+            success: false,
+            message: error.message || 'Failed to create payment'
+          });
+        });
+    });
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || 'Payment failed'
+    };
+  } finally {
+    walletTopUpInProgress = false;
+  }
+}
