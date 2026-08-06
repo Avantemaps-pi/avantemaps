@@ -1,12 +1,14 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { usePiPrice } from '@/hooks/usePiPrice';
 
 interface BalanceCardProps {
   balance?: number | null;
+  isLoading?: boolean;
 }
 
-const BalanceCard: React.FC<BalanceCardProps> = ({ balance }) => {
+const BalanceCard: React.FC<BalanceCardProps> = ({ balance, isLoading }) => {
   const { piPrice } = usePiPrice();
   const piBalance = typeof balance === 'number' && !Number.isNaN(balance) ? balance : 0;
   const usdEquivalent = piPrice ? piBalance * piPrice : null;
@@ -17,9 +19,13 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ balance }) => {
         <p className="text-xs sm:text-sm font-medium uppercase tracking-wide opacity-90">
           Your Pi balance
         </p>
-        <p className="mt-1 text-3xl sm:text-4xl font-semibold tabular-nums">
-          {piBalance.toFixed(2)} <span className="text-2xl sm:text-3xl opacity-90">π</span>
-        </p>
+        {isLoading ? (
+          <Skeleton className="mt-2 h-9 w-32 bg-primary-foreground/20" />
+        ) : (
+          <p className="mt-1 text-3xl sm:text-4xl font-semibold tabular-nums">
+            {piBalance.toFixed(2)} <span className="text-2xl sm:text-3xl opacity-90">π</span>
+          </p>
+        )}
         <p className="mt-1 text-xs sm:text-sm opacity-75">
           {usdEquivalent !== null ? `≈ $${usdEquivalent.toFixed(2)} USD` : 'USD value unavailable'}
         </p>
