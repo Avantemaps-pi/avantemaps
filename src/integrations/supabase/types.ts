@@ -1128,6 +1128,36 @@ export type Database = {
           },
         ]
       }
+      wallet_ledger: {
+        Row: {
+          amount_pi: number
+          created_at: string
+          id: number
+          payment_id: string | null
+          reference_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount_pi: number
+          created_at?: string
+          id?: never
+          payment_id?: string | null
+          reference_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount_pi?: number
+          created_at?: string
+          id?: never
+          payment_id?: string | null
+          reference_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       geography_columns: {
@@ -1316,6 +1346,24 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
+      }
+      credit_wallet_balance: {
+        Args: {
+          p_amount_pi: number
+          p_payment_id: string
+          p_transaction_type?: string
+          p_user_id: string
+        }
+        Returns: number
+      }
+      debit_wallet_balance: {
+        Args: {
+          p_amount_pi: number
+          p_reference_id?: string
+          p_transaction_type: string
+          p_user_id: string
+        }
+        Returns: number
       }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
@@ -1560,6 +1608,7 @@ export type Database = {
         }[]
       }
       get_user_subscription: { Args: { user_id: string }; Returns: string }
+      get_wallet_balance: { Args: { p_user_id: string }; Returns: number }
       gettransactionid: { Args: never; Returns: unknown }
       handle_subscription_after_payment: {
         Args: {
