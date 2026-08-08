@@ -153,6 +153,7 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
 
   const actions = [
     { icon: Store, label: registerLabel, onClick: handleRegisterExpand, isRegister: true },
+    { icon: MessageSquare, label: 'CommuniCon', onClick: () => navigate('/communicon') },
   ];
 
   const handleActionClick = (action: typeof actions[number]) => {
