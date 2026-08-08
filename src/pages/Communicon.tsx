@@ -186,8 +186,8 @@ const Communicon = () => {
   };
 
   return (
-    <AppLayout title="CommuniCon" hideBottomNav={chatMode === 'live'}>
-      <div className="max-w-4xl mx-auto mt-6">
+    <AppLayout title="CommuniCon" hideBottomNav={true}>
+      <div className="max-w-4xl mx-auto">
         {isValidatingConversation ? (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

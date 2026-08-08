@@ -169,15 +169,32 @@ export function useMessages(inbox: Inbox | null) {
     setLoadingConvs(false);
   }, [uid, inbox, refreshUserData]);
 
+  // Keep the latest loadConversations in a ref so effects can call it without
+  // depending on its (frequently changing) identity. A background uid resync
+  // rebuilds the callback; without this indirection every resync retriggered a
+  // full refetch and made the conversation skeleton flicker.
+  const loadConversationsRef = useRef(loadConversations);
   useEffect(() => {
-    loadConversations();
+    loadConversationsRef.current = loadConversations;
   }, [loadConversations]);
+
+  // Stable "should we refetch" signal: only the inbox identity matters.
+  const inboxKey = inbox
+    ? inbox.kind === 'customer'
+      ? 'customer'
+      : `business:${inbox.businessId}`
+    : null;
+
+  useEffect(() => {
+    if (!inboxKey) return;
+    loadConversationsRef.current();
+  }, [inboxKey]);
 
   // Realtime: refresh on new messages affecting any of our conversations
   useEffect(() => {
-    if (!uid || !inbox) return;
+    if (!uid || !inboxKey) return;
     const channel = supabase
-      .channel(`messages-${inbox.kind === 'customer' ? `c-${uid}` : `b-${inbox.businessId}`}`)
+      .channel(`messages-${inboxKey === 'customer' ? `c-${uid}` : `b-${inboxKey}`}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages' },
@@ -188,20 +205,20 @@ export function useMessages(inbox: Inbox | null) {
               ? [...prev, msg]
               : prev,
           );
-          loadConversations();
+          loadConversationsRef.current();
         },
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'conversations' },
-        () => loadConversations(),
+        () => loadConversationsRef.current(),
       )
       .subscribe();
     channelRef.current = channel;
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [uid, inbox, activeConvId, loadConversations]);
+  }, [uid, inboxKey, activeConvId]);
 
   const loadMessages = useCallback(async (convId: string) => {
     setLoadingMsgs(true);
