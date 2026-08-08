@@ -124,7 +124,7 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
     const res = await fetchIpLocation();
     if (res) {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ ...res, ts: Date.now() }));
-      dispatchCenter(res.lat, res.lng, 12);
+      dispatchCenter(res.lat, res.lng);
       toast.success('Centered on your approximate location', { id: TOAST_ID });
     } else {
       secureLog.error('LocateMe: all IP fallback providers failed', logCtx());
@@ -149,7 +149,7 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
             accuracy: pos.coords.accuracy,
             ...logCtx(),
           });
-          dispatchCenter(latitude, longitude, 15);
+          dispatchCenter(latitude, longitude);
           toast.success('Centered on your location', { id: TOAST_ID });
           resolve(true);
         },
@@ -230,7 +230,7 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
         if (raw) {
           const cached: CachedLocation = JSON.parse(raw);
           if (Date.now() - cached.ts < TTL_MS) {
-            dispatchCenter(cached.lat, cached.lng, 12);
+            dispatchCenter(cached.lat, cached.lng);
             toast.success('Centered on your approximate location', { id: TOAST_ID });
             return;
           }
