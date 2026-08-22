@@ -34,7 +34,7 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place, className }) => {
   const formattedHours = getFormattedHours();
 
   return (
-    <Card className={`w-full max-w-lg bg-card shadow-sm rounded-xl overflow-hidden border border-border ${className || ''}`}>
+    <Card className={`w-full max-w-lg bg-card shadow-xs rounded-xl overflow-hidden border border-border ${className || ''}`}>
       <CardContent className="p-3">
         
         <div className="grid grid-cols-2 gap-1 overflow-hidden">

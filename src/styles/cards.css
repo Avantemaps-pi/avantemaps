@@ -6,7 +6,7 @@
 
 /* Material design card */
 .material-card {
-  @apply bg-card shadow-sm border border-border/50 rounded-lg transition-shadow hover:shadow-md;
+  @apply bg-card shadow-xs border border-border/50 rounded-lg transition-shadow hover:shadow-md;
 }
 
 /* Custom animation for cards */
@@ -21,11 +21,11 @@
 
 /* Material design elevation */
 .elevation-1 {
-  @apply shadow-sm;
+  @apply shadow-xs;
 }
 
 .elevation-2 {
-  @apply shadow;
+  @apply shadow-sm;
 }
 
 .elevation-3 {

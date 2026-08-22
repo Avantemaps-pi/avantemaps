@@ -129,11 +129,11 @@ const inBbox = (lat: number, lng: number, b: CountryData['bbox']) =>
   lat >= b[0] && lat <= b[1] && lng >= b[2] && lng <= b[3];
 
 // Ray-casting point-in-polygon (lng, lat)
-const pointInRing = (lng: number, lat: number, ring: number[][]) => {
+const pointInRing = (lng: number, lat: number, ring-3: number[][]) => {
   let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i];
-    const [xj, yj] = ring[j];
+  for (let i = 0, j = ring-3.length - 1; i < ring-3.length; j = i++) {
+    const [xi, yi] = ring-3[i];
+    const [xj, yj] = ring-3[j];
     const intersect =
       yi > lat !== yj > lat &&
       lng < ((xj - xi) * (lat - yi)) / (yj - yi + 1e-12) + xi;

@@ -14,7 +14,7 @@ const AvanteMapLogo: React.FC<AvanteMapLogoProps> = ({
     large: 'h-10 w-10'
   };
   return <Link to="/" className="flex items-center gap-2">
-      <div className="bg-white/90 rounded-full p-1 shadow-sm">
+      <div className="bg-white/90 rounded-full p-1 shadow-xs">
         
       </div>
       {showText}

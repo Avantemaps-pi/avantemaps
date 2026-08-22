@@ -9,7 +9,7 @@ const EmptyMapState = () => {
 
   return (
     <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none md:pl-[280px]">
-      <Card className="w-[90%] max-w-md pointer-events-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-lg">
+      <Card className="w-[90%] max-w-md pointer-events-auto bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/80 shadow-lg">
         <CardContent className="text-center py-12 px-6">
           <div className="p-4 bg-muted rounded-full inline-block mb-4">
             <MapPin className="h-8 w-8 text-muted-foreground" />

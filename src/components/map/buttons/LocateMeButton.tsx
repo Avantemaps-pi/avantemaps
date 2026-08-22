@@ -262,7 +262,7 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
       aria-busy={loading}
       title={loading ? 'Resolving your location…' : 'Locate me'}
       className={cn(
-        'h-10 w-10 rounded-full bg-background/95 backdrop-blur-sm border border-border shadow-md flex items-center justify-center text-foreground hover:bg-accent transition-colors disabled:opacity-70 disabled:cursor-progress',
+        'h-10 w-10 rounded-full bg-background/95 backdrop-blur-xs border border-border shadow-md flex items-center justify-center text-foreground hover:bg-accent transition-colors disabled:opacity-70 disabled:cursor-progress',
         className
       )}
     >

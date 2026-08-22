@@ -40,7 +40,7 @@ const PlaceCardActions: React.FC<PlaceCardActionsProps> = ({
         <Button 
           variant="secondary" 
           size="icon" 
-          className={`rounded-full w-8 h-8 bg-white/80 backdrop-blur-sm text-gray-800 hover:bg-white ${
+          className={`rounded-full w-8 h-8 bg-white/80 backdrop-blur-xs text-gray-800 hover:bg-white ${
             isLoading ? 'opacity-70 cursor-wait' : ''
           }`}
           onClick={onBookmarkToggle}
@@ -53,7 +53,7 @@ const PlaceCardActions: React.FC<PlaceCardActionsProps> = ({
         <Button 
           variant="secondary" 
           size="icon" 
-          className="rounded-full w-8 h-8 bg-white/80 backdrop-blur-sm text-gray-800 hover:bg-white"
+          className="rounded-full w-8 h-8 bg-white/80 backdrop-blur-xs text-gray-800 hover:bg-white"
           onClick={handleShareClick}
           title="Share this place"
           aria-label="Share this place"

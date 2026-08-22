@@ -41,7 +41,7 @@ const PlaceOverlay: React.FC<PlaceOverlayProps> = ({
       dismissible={true}
       fadeFromIndex={0}
     >
-      <DrawerContent className="z-50 max-h-[96vh] focus:outline-none">
+      <DrawerContent className="z-50 max-h-[96vh] focus:outline-hidden">
         <PlaceOverlayContent 
           place={selectedPlace} 
           detailCardRef={detailCardRef} 
@@ -111,7 +111,7 @@ const PlaceOverlayContent: React.FC<{ place: Place; detailCardRef?: React.RefObj
         
         {/* Details overlay on top of images */}
         {showDetails && (
-          <div className="absolute inset-0 z-20 bg-background/95 backdrop-blur-sm rounded-lg overflow-y-auto flex flex-col">
+          <div className="absolute inset-0 z-20 bg-background/95 backdrop-blur-xs rounded-lg overflow-y-auto flex flex-col">
             <button
               onClick={() => setShowDetails(false)}
               className="absolute top-1 right-1 z-30 p-1 rounded-full bg-muted hover:bg-muted/80 transition-colors"

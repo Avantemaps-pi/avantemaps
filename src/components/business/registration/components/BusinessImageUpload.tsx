@@ -261,7 +261,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
                     />
 
                     {/* Status Overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-background/90 backdrop-blur-sm px-2 py-1.5 flex items-center justify-between">
+                    <div className="absolute bottom-0 left-0 right-0 bg-background/90 backdrop-blur-xs px-2 py-1.5 flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <CheckCircle className="h-4 w-4 text-green-500" />
                         <span className="text-xs text-green-600">Saved</span>
@@ -312,7 +312,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
                   />
 
                   {/* Status Overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-background/90 backdrop-blur-sm px-2 py-1.5 flex items-center justify-between">
+                  <div className="absolute bottom-0 left-0 right-0 bg-background/90 backdrop-blur-xs px-2 py-1.5 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <StatusIcon status={image.status} />
                       <StatusLabel status={image.status} error={image.error} />

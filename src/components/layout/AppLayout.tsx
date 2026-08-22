@@ -54,7 +54,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
     const prevTabIndex = focusTarget.getAttribute('tabindex');
     if (prevTabIndex === null) focusTarget.setAttribute('tabindex', '-1');
     focusTarget.focus({ preventScroll: true });
-    // Avoid leaving a persistent focus ring on headings
+    // Avoid leaving a persistent focus ring-3 on headings
     const handleBlur = () => {
       if (prevTabIndex === null) focusTarget.removeAttribute('tabindex');
       focusTarget.removeEventListener('blur', handleBlur);
@@ -84,7 +84,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             id="main-content"
             tabIndex={-1}
             aria-labelledby="page-title"
-            className={`flex-1 w-full min-w-0 overflow-x-hidden overflow-y-auto animate-fade-in outline-none ${isMobile && !hideBottomNav ? 'pb-24' : ''}`}
+            className={`flex-1 w-full min-w-0 overflow-x-hidden overflow-y-auto animate-fade-in outline-hidden ${isMobile && !hideBottomNav ? 'pb-24' : ''}`}
             style={isMobile && !hideBottomNav ? { paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' } : undefined}
           >
             {children}

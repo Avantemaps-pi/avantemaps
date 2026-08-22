@@ -339,7 +339,7 @@ const RegisteredBusiness = () => {
         {businesses.length === 0 ? (
           <EmptyBusinessState />
         ) : filteredBusinesses.length === 0 ? (
-          <div className="p-6 text-center text-gray-500 bg-white rounded-md shadow-sm">
+          <div className="p-6 text-center text-gray-500 bg-white rounded-md shadow-xs">
             <p>Select a business from the dropdown to view its details</p>
           </div>
         ) : (
