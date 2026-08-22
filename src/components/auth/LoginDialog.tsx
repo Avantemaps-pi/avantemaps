@@ -528,7 +528,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({
                   });
                   loginAsSandbox();
                   onOpenChange(false);
-                  navigate('/map');
+                  navigate('/');
                 }}
               >
                 Continue as sandbox user
