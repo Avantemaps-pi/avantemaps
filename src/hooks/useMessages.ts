@@ -148,6 +148,7 @@ export function useMessages(inbox: Inbox | null) {
       .order('last_message_at', { ascending: false });
 
     if (inbox.kind === 'customer') {
+      if (!customerId) { setLoadingConvs(false); return; }
       query = query.eq('customer_id', customerId);
     } else {
       query = query.eq('business_id', inbox.businessId);

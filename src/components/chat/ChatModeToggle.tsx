@@ -4,7 +4,7 @@ import { ChatMode } from './ChatInterface';
 
 interface ChatModeToggleProps {
   chatMode: ChatMode;
-  onChatModeChange: (value: string) => void;
+  onChatModeChange: (value: ChatMode) => void;
   hasLiveChatAccess?: boolean;
 }
 

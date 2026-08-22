@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, TooltipProps } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import type { ActiveShape, PieSectorDataItem } from 'recharts/types/util/types';
 
 interface DistributionData {
   name: string;
@@ -17,8 +18,25 @@ interface DistributionChartProps {
 
 const RADIAN = Math.PI / 180;
 
+interface PieLabelProps {
+  cx?: number | string;
+  cy?: number | string;
+  midAngle?: number;
+  innerRadius?: number | string;
+  outerRadius?: number | string;
+  percent?: number;
+  index?: number;
+  name?: string;
+}
+
 // Modified label rendering function to position labels closer to center
-const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
+const renderCustomizedLabel = (props: PieLabelProps) => {
+  const cx = Number(props.cx ?? 0);
+  const cy = Number(props.cy ?? 0);
+  const midAngle = Number(props.midAngle ?? 0);
+  const outerRadius = Number(props.outerRadius ?? 0);
+  const percent = Number(props.percent ?? 0);
+
   // Move radius closer to center (from 0.8 to 0.65)
   const radius = outerRadius * 0.65;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -45,16 +63,31 @@ interface CustomTooltipProps {
   payload?: Array<{
     name: string;
     value: number;
-    payload?: any;
+    payload?: unknown;
     color?: string;
   }>;
   label?: string;
 }
 
+interface LegendEntry {
+  color?: string;
+  value?: string;
+}
+
+interface ActiveShapeProps {
+  cx?: number;
+  cy?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  startAngle?: number;
+  endAngle?: number;
+  fill?: string;
+}
+
 const DistributionChart: React.FC<DistributionChartProps> = ({ data, title, description }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  const handleMouseEnter = (_, index) => {
+  const handleMouseEnter = (_: unknown, index: number) => {
     setActiveIndex(index);
   };
 
@@ -64,11 +97,12 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ data, title, desc
 
   // Custom tooltip content with proper typing
   const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
-    if (active && payload && payload.length) {
+    const first = payload?.[0];
+    if (active && first) {
       return (
         <div className="bg-background p-2 rounded-md shadow-md border border-border text-sm">
-          <p className="font-medium">{payload[0].name}</p>
-          <p className="text-muted-foreground">{`${payload[0].value}%`}</p>
+          <p className="font-medium">{first.name}</p>
+          <p className="text-muted-foreground">{`${first.value}%`}</p>
         </div>
       );
     }
@@ -76,8 +110,8 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ data, title, desc
   };
 
   // Custom legend that arranges items in two rows for Traffic Sources chart
-  const CustomizedLegend = (props) => {
-    const { payload } = props;
+  const CustomizedLegend = (props: { payload?: LegendEntry[] }) => {
+    const payload = props.payload ?? [];
     
     // Only apply the custom layout for Traffic Sources chart (4 items)
     if (payload.length === 4) {
@@ -149,9 +183,9 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ data, title, desc
                 label={renderCustomizedLabel}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
-                activeIndex={activeIndex}
-                activeShape={(props) => {
-                  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+                {...(activeIndex !== null ? { activeIndex } : {})}
+                activeShape={(((props: unknown) => {
+                  const { cx = 0, cy = 0, outerRadius = 0, startAngle = 0, endAngle = 0, fill } = props as ActiveShapeProps;
                   return (
                     <g>
                       <path 
@@ -162,7 +196,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ data, title, desc
                       />
                     </g>
                   );
-                }}
+                }}) as ActiveShape<PieSectorDataItem>)}
               >
                 {data.map((entry, index) => (
                   <Cell 

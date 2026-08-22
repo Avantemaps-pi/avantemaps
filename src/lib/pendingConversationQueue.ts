@@ -72,9 +72,9 @@ export const resolvePendingConversation = (
   result: string | null,
 ): void => {
   for (let i = pending.length - 1; i >= 0; i--) {
-    if (pending[i].businessId === businessId) {
+    if (pending[i]?.businessId === businessId) {
       const [item] = pending.splice(i, 1);
-      item.resolve(result);
+      item?.resolve(result);
     }
   }
 };

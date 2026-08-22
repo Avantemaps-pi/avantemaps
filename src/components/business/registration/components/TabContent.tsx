@@ -39,7 +39,7 @@ const TabContent: React.FC<TabContentProps> = ({
       <TabsContent value="business-owner" className="space-y-4 w-full">
         <BusinessOwnerTab 
           onNext={() => setSelectedTab('address')}
-          disabled={isSubmitting} 
+          {...(isSubmitting !== undefined ? { disabled: isSubmitting } : {})}
         />
       </TabsContent>
 
@@ -47,7 +47,7 @@ const TabContent: React.FC<TabContentProps> = ({
         <AddressTab 
           onNext={() => setSelectedTab('contact')} 
           onPrevious={() => setSelectedTab('business-owner')} 
-          disabled={isSubmitting}
+          {...(isSubmitting !== undefined ? { disabled: isSubmitting } : {})}
         />
       </TabsContent>
 
@@ -55,7 +55,7 @@ const TabContent: React.FC<TabContentProps> = ({
         <ContactTab 
           onNext={() => setSelectedTab('hours')} 
           onPrevious={() => setSelectedTab('address')} 
-          disabled={isSubmitting}
+          {...(isSubmitting !== undefined ? { disabled: isSubmitting } : {})}
         />
       </TabsContent>
 
@@ -63,7 +63,7 @@ const TabContent: React.FC<TabContentProps> = ({
         <HoursTab 
           onNext={() => setSelectedTab('details')} 
           onPrevious={() => setSelectedTab('contact')} 
-          disabled={isSubmitting}
+          {...(isSubmitting !== undefined ? { disabled: isSubmitting } : {})}
         />
       </TabsContent>
 
@@ -75,11 +75,11 @@ const TabContent: React.FC<TabContentProps> = ({
           onAddImage={onAddImage}
           onAddCroppedImage={onAddCroppedImage}
           onRemoveImage={onRemoveImage}
-          onRetryImage={onRetryImage}
-          isProcessing={isProcessing}
-          disabled={isSubmitting}
           existingImages={existingImages}
-          onRemoveExistingImage={onRemoveExistingImage}
+          {...(onRetryImage !== undefined ? { onRetryImage } : {})}
+          {...(isProcessing !== undefined ? { isProcessing } : {})}
+          {...(isSubmitting !== undefined ? { disabled: isSubmitting } : {})}
+          {...(onRemoveExistingImage !== undefined ? { onRemoveExistingImage } : {})}
         />
       </TabsContent>
 
@@ -89,7 +89,7 @@ const TabContent: React.FC<TabContentProps> = ({
           onPrevious={() => setSelectedTab('details')}
           images={images}
           existingImages={existingImages}
-          disabled={isSubmitting}
+          {...(isSubmitting !== undefined ? { disabled: isSubmitting } : {})}
         />
       </TabsContent>
     </div>

@@ -8,7 +8,7 @@ import { useAuth } from '@/context/auth';
 import { Button } from '@/components/ui/button';
 import { LogIn, LogOut } from 'lucide-react';
 interface DesktopSidebarProps {
-  className?: string;
+  className?: string | undefined;
   navItems: Array<{
     to: string;
     icon: React.ElementType;

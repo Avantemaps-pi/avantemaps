@@ -71,11 +71,11 @@ export interface Place {
     lng: number;
   };
   // Enhanced address fields
-  streetAddress?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  country?: string;
+  streetAddress?: string | undefined;
+  city?: string | undefined;
+  state?: string | undefined;
+  postalCode?: string | undefined;
+  country?: string | undefined;
   // Search relevance
   distance?: number; // Distance in meters from search point
   relevance?: number; // Search relevance score

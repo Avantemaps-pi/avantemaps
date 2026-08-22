@@ -22,9 +22,10 @@ const CommentSection: React.FC<{ businessId?: string }> = ({ businessId }) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
   
+  const locationState = location.state as { businessDetails?: { id?: string } } | null;
   const targetBusinessId = businessId || 
                            params['businessId'] || 
-                           (location.state?.businessDetails?.id);
+                           (locationState?.businessDetails?.id);
 
   const { createComment, loading: isSubmitting } = useComments(targetBusinessId);
 

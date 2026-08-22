@@ -52,12 +52,16 @@ const Bookmarks = () => {
       // Only start a pull when scrolled to the top of the page
       if (window.scrollY > 0) return;
       pullingRef.current = true;
-      startYRef.current = e.touches[0].clientY;
+      const touch = e.touches[0];
+      if (!touch) return;
+      startYRef.current = touch.clientY;
     };
 
     const onTouchMove = (e: TouchEvent) => {
       if (!pullingRef.current) return;
-      const dy = e.touches[0].clientY - startYRef.current;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const dy = touch.clientY - startYRef.current;
       if (dy <= 0) {
         setPullDistance(0);
         return;

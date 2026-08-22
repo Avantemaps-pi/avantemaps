@@ -2,7 +2,7 @@ import React from 'react';
 
 interface HighlightTextProps {
   text: string;
-  query?: string;
+  query?: string | undefined;
 }
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

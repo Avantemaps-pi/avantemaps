@@ -108,13 +108,13 @@ const transformBusiness = (business: PublicBusinessInfo): Place => {
     city: business.city,
     state: business.state,
     postalCode: business.postal_code,
-    country: business.country,
+    country: business.country ?? undefined,
   };
 };
 
 const fetchBusinesses = async (): Promise<Place[]> => {
   const { data: { user } } = await supabase.auth.getUser();
-  const userId = user?.id || null;
+  const userId = user?.id || undefined;
   
   const { data, error } = await supabase
     .rpc('get_public_business_info', { user_uuid: userId });

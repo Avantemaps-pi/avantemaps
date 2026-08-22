@@ -19,8 +19,9 @@ const UpdateRegistration = () => {
   
   useEffect(() => {
     // Check if we have business data in the location state
-    if (location.state?.business) {
-      setBusiness(location.state.business);
+    const state = location.state as { business?: Business } | null;
+    if (state?.business) {
+      setBusiness(state.business);
       setIsLoading(false);
     } else {
       // No business data provided - show error

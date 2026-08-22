@@ -14,7 +14,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface AddressFormFieldsProps {
-  disabled?: boolean;
+  disabled?: boolean | undefined;
 }
 
 const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
@@ -22,7 +22,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
   const { predictions, isLoading, getSuggestions, clearSuggestions } = useLocationIQAutocomplete();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [autofillDetected, setAutofillDetected] = useState(false);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const [countryOpen, setCountryOpen] = useState(false);
@@ -57,7 +57,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
       const countryCode = getCountryCode(selectedCountry);
       
       getSuggestions(trimmedValue, {
-        countrycodes: countryCode,
+        ...(countryCode !== undefined ? { countrycodes: countryCode } : {}),
       });
       setShowSuggestions(true);
     }, 200);

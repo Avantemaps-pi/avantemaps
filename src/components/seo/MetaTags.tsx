@@ -57,7 +57,7 @@ const MetaTags: React.FC<MetaTagsProps> = ({
   const finalTitle = `${title} | Avante Maps`;
   const finalOgTitle = ogTitle || title;
   const finalOgDescription = ogDescription || description;
-  const currentUrl = typeof window !== 'undefined' ? window.location.href.split('?')[0].split('#')[0] : '';
+  const currentUrl = typeof window !== 'undefined' ? (window.location.href.split('?')[0] ?? '').split('#')[0] ?? '' : '';
   const finalOgUrl = ogUrl || currentUrl;
   const finalCanonical = canonicalUrl || currentUrl;
   

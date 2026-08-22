@@ -16,12 +16,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 interface PageHeaderProps {
-  title?: string;
-  hideSidebar?: boolean;
-  onSearch?: (searchTerm: string) => void;
-  showSearch?: boolean;
-  backButton?: boolean;
-  onBackClick?: () => void;
+  title?: string | undefined;
+  hideSidebar?: boolean | undefined;
+  onSearch?: ((searchTerm: string) => void) | undefined;
+  showSearch?: boolean | undefined;
+  backButton?: boolean | undefined;
+  onBackClick?: (() => void) | undefined;
 }
 
 const PageHeader = ({

@@ -169,7 +169,7 @@ let persistentCooldownUntil = 0;
 const computeCooldownSeconds = (failures: number): number => {
   if (failures < COOLDOWN_TRIGGER_AT) return 0;
   const idx = Math.min(failures - COOLDOWN_TRIGGER_AT, COOLDOWN_STEPS_SECONDS.length - 1);
-  return COOLDOWN_STEPS_SECONDS[idx];
+  return COOLDOWN_STEPS_SECONDS[idx] ?? 0;
 };
 
 const LoginDialog: React.FC<LoginDialogProps> = ({

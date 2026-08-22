@@ -19,7 +19,7 @@ interface DetailsTabProps {
   onRemoveImage: (id: string) => void;
   onRetryImage?: (id: string) => void;
   isProcessing?: boolean;
-  disabled?: boolean;
+  disabled?: boolean | undefined;
   existingImages?: string[];
   onRemoveExistingImage?: (index: number) => void;
 }

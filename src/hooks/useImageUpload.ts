@@ -12,8 +12,8 @@ export interface ImageUploadStatus {
   file: File;
   id: string;
   status: 'pending' | 'compressing' | 'uploading' | 'success' | 'error';
-  error?: string;
-  previewUrl?: string;
+  error?: string | undefined;
+  previewUrl?: string | undefined;
 }
 
 export interface UploadResult {
@@ -154,9 +154,10 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
       // Process compression results and update statuses
       const updatedImages = images.map((img, index) => {
         const result = compressionResults[index];
-        if (!result.success) {
-          errors.push(`Failed to process "${result.originalName}": ${result.error}`);
-          return { ...img, status: 'error' as const, error: result.error };
+        if (!result || !result.success) {
+          const message = result?.error ?? 'Unknown compression error';
+          errors.push(`Failed to process "${result?.originalName ?? img.file.name}": ${message}`);
+          return { ...img, status: 'error' as const, error: message };
         }
         return { ...img, status: 'uploading' as const };
       });
@@ -200,7 +201,7 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
       for (let index = 0; index < compressionResults.length; index++) {
         const result = compressionResults[index];
         
-        if (!result.success || !result.file) {
+        if (!result || !result.success || !result.file) {
           uploadResults.push({ index, success: false, url: null });
           continue;
         }
@@ -283,7 +284,7 @@ export const useImageUpload = (options: UseImageUploadOptions = {}) => {
       // Update final statuses
       setImages(prev => prev.map((img, index) => {
         const uploadResult = uploadResults[index];
-        if (uploadResult.success) {
+        if (uploadResult?.success) {
           return { ...img, status: 'success' as const };
         } else if (img.status !== 'error') {
           return { ...img, status: 'error' as const, error: 'Upload failed' };

@@ -7,7 +7,7 @@ interface MarkerOptions {
   isUserBusiness?: boolean;
   isVerified?: boolean;
   isCertified?: boolean;
-  verificationStatus?: 'pending' | 'verified' | 'rejected' | null;
+  verificationStatus?: 'pending' | 'verified' | 'rejected' | null | undefined;
 }
 
 // Function to create marker icon based on verification status

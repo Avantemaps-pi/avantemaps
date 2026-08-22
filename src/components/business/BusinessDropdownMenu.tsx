@@ -19,9 +19,9 @@ import DeleteBusinessDialog from './DeleteBusinessDialog';
 import ShareDialog from './ShareDialog';
 
 interface BusinessDropdownMenuProps {
-  businessId?: number;
-  businessName?: string;
-  onDeleted?: () => void;
+  businessId?: number | undefined;
+  businessName?: string | undefined;
+  onDeleted?: (() => void) | undefined;
 }
 
 const BusinessDropdownMenu = ({ businessId, businessName, onDeleted }: BusinessDropdownMenuProps) => {
@@ -66,9 +66,9 @@ const BusinessDropdownMenu = ({ businessId, businessName, onDeleted }: BusinessD
       <DeleteBusinessDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        businessId={businessId}
-        businessName={businessName}
-        onDeleted={onDeleted}
+        {...(businessId !== undefined ? { businessId } : {})}
+        {...(businessName !== undefined ? { businessName } : {})}
+        {...(onDeleted !== undefined ? { onDeleted } : {})}
       />
 
       <ShareDialog

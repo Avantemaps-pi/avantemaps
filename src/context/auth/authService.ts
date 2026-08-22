@@ -165,7 +165,7 @@ export const performLogin = async (
           secureLog.info("📱 Calling Pi.authenticate()...");
           toast.info('Waiting for Pi Browser approval...', { id: 'auth-progress', duration: 120000 });
         
-          window.Pi.authenticate(['username', 'payments', 'wallet_address'], (payment) => {
+          window.Pi.authenticate(['username', 'payments', 'wallet_address'], (payment: unknown) => {
             secureLog.info('Incomplete payment detected during authentication');
             try {
               if (window.sessionStorage) {

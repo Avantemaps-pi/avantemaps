@@ -30,7 +30,7 @@ export function PricingSection({
   onFrequencyChange,
   children
 }: PricingSectionProps) {
-  const [selectedFrequency, setSelectedFrequency] = React.useState(frequencies[0]);
+  const [selectedFrequency, setSelectedFrequency] = React.useState(frequencies[0] ?? 'monthly');
 
   const handleFrequencyChange = (frequency: string) => {
     setSelectedFrequency(frequency);

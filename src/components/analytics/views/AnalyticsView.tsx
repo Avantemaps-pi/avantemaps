@@ -25,7 +25,7 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ handleExport }) => {
       withHeader={true}
       fullHeight={false}
       hideSidebar={false}
-      onBackClick={!hasPermission ? () => navigate(-1) : undefined}
+      {...(!hasPermission ? { onBackClick: () => navigate(-1) } : {})}
     >
       {!isLoading && !hasPermission ? (
         <SubscriptionPrompt />

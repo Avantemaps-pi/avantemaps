@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { formSchema, FormValues } from '@/components/business/registration/formSchema';
 import { useNavigate } from '@/lib/router-compat';
@@ -31,7 +31,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
   }, [user]);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as unknown as Resolver<FormValues>,
     defaultValues: {
       firstName: '',
       lastName: '',
@@ -268,8 +268,8 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
       // BUILD TYPED PAYLOAD
       // ---------------------------
       const payload: BusinessInsertPayload = {
-        user_id: user.uid,
-        subscription: user.subscriptionTier,
+        user_id: user!.uid,
+        subscription: user!.subscriptionTier,
         business_name: values.businessName,
         business_description: values.businessDescription,
         business_types: values.businessTypes,
@@ -297,7 +297,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
           sunday: { open: values.sundayOpen, close: values.sundayClose, closed: values.sundayClosed },
         },
         owner: {
-          first_name: user.username,
+          first_name: user!.username,
           last_name: '',
         },
       };
@@ -411,7 +411,7 @@ export const useBusinessRegistration = (onSuccess?: () => void) => {
 
       // Approaching-limit notification (only for tiered plans)
       try {
-        const tier = user.subscriptionTier;
+        const tier = user!.subscriptionTier;
         if (tier === 'small-business' || tier === 'organization') {
           const planLimit = getBusinessLimit(tier);
           const { count: newCount } = await supabase

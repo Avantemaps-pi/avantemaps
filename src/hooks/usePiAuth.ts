@@ -38,5 +38,9 @@ export function usePiAuth(): UsePiAuthReturn {
     }
   }, [login]);
 
-  return { loginWithPi, loading: pending || isLoading, error: authError ?? undefined };
+  return {
+    loginWithPi,
+    loading: pending || isLoading,
+    ...(authError ? { error: authError } : {}),
+  };
 }

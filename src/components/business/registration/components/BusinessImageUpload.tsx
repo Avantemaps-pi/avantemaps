@@ -13,20 +13,20 @@ interface BusinessImageUploadProps {
   onAddImage: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onAddCroppedImage: (file: File) => void;
   onRemoveImage: (id: string) => void;
-  onRetryImage?: (id: string) => void;
+  onRetryImage?: ((id: string) => void) | undefined;
   maxImages?: number;
-  disabled?: boolean;
-  isProcessing?: boolean;
+  disabled?: boolean | undefined;
+  isProcessing?: boolean | undefined;
   existingImages?: string[];
-  onRemoveExistingImage?: (index: number) => void;
+  onRemoveExistingImage?: ((index: number) => void) | undefined;
 }
 
 // Component to handle image preview with proper blob URL regeneration
 const ImagePreview: React.FC<{ 
   file: File; 
-  previewUrl?: string; 
+  previewUrl?: string | undefined; 
   alt: string; 
-  className?: string;
+  className?: string | undefined;
 }> = ({ file, previewUrl, alt, className }) => {
   const [localUrl, setLocalUrl] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
@@ -111,7 +111,7 @@ const StatusIcon: React.FC<{ status: ImageUploadStatus['status'] }> = ({ status 
   }
 };
 
-const StatusLabel: React.FC<{ status: ImageUploadStatus['status']; error?: string }> = ({ status, error }) => {
+const StatusLabel: React.FC<{ status: ImageUploadStatus['status']; error?: string | undefined }> = ({ status, error }) => {
   switch (status) {
     case 'compressing':
       return <span className="text-xs text-muted-foreground">Optimizing...</span>;

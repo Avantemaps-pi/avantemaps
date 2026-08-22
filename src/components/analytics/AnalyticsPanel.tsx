@@ -20,8 +20,8 @@ interface BusinessOption {
 interface AnalyticsPanelProps {
   businessName: string;
   businesses: BusinessOption[];
-  selectedBusinessId?: number;
-  onBusinessChange?: (id: number) => void;
+  selectedBusinessId?: number | undefined;
+  onBusinessChange?: ((id: number) => void) | undefined;
   data: ChartPoint[];
   totalViews: number;
   viewsTrend: number;
@@ -130,7 +130,7 @@ const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({
       <div className="mb-6 flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
           {businesses.length > 1 && onBusinessChange ? (
-            <Select value={selectedBusinessId?.toString()} onValueChange={(v) => onBusinessChange(parseInt(v))}>
+            <Select value={selectedBusinessId?.toString() ?? ''} onValueChange={(v) => onBusinessChange(parseInt(v))}>
               <SelectTrigger className="h-auto w-auto gap-1 border-none p-0 text-lg font-semibold text-analytics-text shadow-none sm:text-xl [&>svg]:h-4 [&>svg]:w-4">
                 <SelectValue placeholder={businessName} />
               </SelectTrigger>

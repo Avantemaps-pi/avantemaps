@@ -4,8 +4,8 @@ import { useToast } from './use-toast';
 export const useSharePlace = (placeName: string, placeId: string) => {
   const { toast } = useToast();
 
-  const handleShare = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleShare = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     
     // Build share URL - use recommendations/:id for recommendations page
     const isRecommendationsPage = window.location.pathname === '/recommendations';

@@ -18,7 +18,7 @@ interface PlaceOverlayProps {
   selectedPlace: Place | null;
   showPopover: boolean;
   onOverlayClick: () => void;
-  detailCardRef?: React.RefObject<HTMLDivElement>;
+  detailCardRef?: React.RefObject<HTMLDivElement> | undefined;
 }
 
 const PlaceOverlay: React.FC<PlaceOverlayProps> = ({ 
@@ -51,7 +51,7 @@ const PlaceOverlay: React.FC<PlaceOverlayProps> = ({
   );
 };
 
-const PlaceOverlayContent: React.FC<{ place: Place; detailCardRef?: React.RefObject<HTMLDivElement> }> = ({ place, detailCardRef }) => {
+const PlaceOverlayContent: React.FC<{ place: Place; detailCardRef?: React.RefObject<HTMLDivElement> | undefined }> = ({ place, detailCardRef }) => {
   const navigate = useNavigate();
   const [showDetails, setShowDetails] = useState(false);
   const { isBookmarked, handleBookmarkToggle, isLoading } = useBookmark({

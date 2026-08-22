@@ -47,7 +47,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
           console.error('Error fetching businesses:', error);
         } else if (data && data.length > 0) {
           setUserBusinesses(data);
-          setSelectedBusinessId(data[0].id);
+          setSelectedBusinessId(data[0]?.id);
         }
 
         // Fetch annual subscription count

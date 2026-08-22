@@ -48,7 +48,7 @@ const Review = () => {
   useEffect(() => {
     const loadBusiness = async () => {
       // First try to use state passed from navigation
-      const businessDetails = location.state?.businessDetails;
+      const businessDetails = (location.state as any)?.businessDetails;
       if (businessDetails) {
         setBusiness(businessDetails);
         setBusinessLoading(false);
@@ -99,7 +99,7 @@ const Review = () => {
               hours: data.hours as Place['hours'] || undefined,
               isVerified: data.is_verified || false,
               isCertified: data.is_certified || false,
-              verificationStatus: data.verification_status as Place['verificationStatus'] || null,
+              verificationStatus: (data.verification_status as Place['verificationStatus']) || undefined,
               business_types: data.business_types || undefined,
             };
             setBusiness(place);

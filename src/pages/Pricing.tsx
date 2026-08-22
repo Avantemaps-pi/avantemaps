@@ -13,9 +13,16 @@ import { useSubscriptionPayment } from '@/components/pricing/useSubscriptionPaym
 import { PaymentOutcomeBanner } from '@/components/pricing/PaymentOutcomeBanner';
 import MetaTags from '@/components/seo/MetaTags';
 
+interface PricingLocationState {
+  upgradeNeeded?: boolean;
+  fromLiveChat?: boolean;
+  focusTier?: string;
+}
+
 const Pricing = () => {
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
+  const locationState = location.state as PricingLocationState | null;
   const navigate = useNavigate();
   const [previousPlan, setPreviousPlan] = useState("");
   const [showDialog, setShowDialog] = useState(false);
@@ -39,7 +46,7 @@ const Pricing = () => {
 
   // Check if user was directed here from another page for subscription upgrade
   useEffect(() => {
-    if (location.state && location.state.upgradeNeeded) {
+    if (locationState && locationState.upgradeNeeded) {
       toast("Premium subscription required for this feature", {
         description: "Please subscribe to a paid plan to access this feature.",
         action: {
@@ -48,12 +55,12 @@ const Pricing = () => {
         },
       });
     }
-    if (location.state?.fromLiveChat || location.state?.focusTier === 'organization') {
+    if (locationState?.fromLiveChat || locationState?.focusTier === 'organization') {
       setTimeout(() => {
         document.getElementById('tier-organization')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 250);
     }
-  }, [location.state]);
+  }, [locationState]);
 
   // Handle individual plan selection
   const handleIndividualPlanClick = async () => {
@@ -101,20 +108,20 @@ const Pricing = () => {
         terminalReason={paymentPolling.terminalReason}
         paymentId={paymentPolling.paymentId}
         retryDisabled={isPaymentLocked}
-        onRetry={
-          lastAttemptedTier.current
-            ? () => {
+        {...(lastAttemptedTier.current
+          ? {
+              onRetry: () => {
                 paymentPolling.reset();
                 handleSubscribe(lastAttemptedTier.current!);
-              }
-            : undefined
-        }
+              },
+            }
+          : {})}
         onDismiss={() => paymentPolling.reset()}
       />
       <PricingSection
         title="Simple, transparent pricing"
         subtitle="Choose the plan that's right for you and explore Avante Maps with premium features."
-        currentUserTier={userSubscriptionTier}
+        {...(userSubscriptionTier !== undefined ? { currentUserTier: userSubscriptionTier } : {})}
         tiers={TIERS.map(tier => ({
           ...tier,
           onSubscribe: () => {
@@ -129,7 +136,7 @@ const Pricing = () => {
           disabled: isPaymentLocked,
         }))}
         frequencies={["monthly", "yearly"]}
-        organizationTierId={location.state?.focusTier === 'organization' || location.state?.fromLiveChat ? 'organization' : undefined}
+        {...((locationState?.focusTier === 'organization' || locationState?.fromLiveChat) ? { organizationTierId: 'organization' } : {})}
         onFrequencyChange={handleBillingChange}
       />
       

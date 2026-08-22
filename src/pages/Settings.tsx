@@ -227,6 +227,7 @@ const Settings = () => {
         mediaQuery.removeEventListener('change', handleChange);
       };
     }
+    return undefined;
   }, [colorScheme]);
 
   const handleColorSchemeChange = (scheme: 'system' | 'light' | 'dark') => {

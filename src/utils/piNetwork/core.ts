@@ -165,7 +165,7 @@ export const authenticate = async (scopes: Scope[] = ['username', 'payments']): 
   if (!window.Pi) throw new Error('Pi SDK not available');
   if (!window.Pi.authenticate) throw new Error('Pi.authenticate not available');
 
-  const result = await window.Pi.authenticate(scopes, (uuid) => uuid);
+  const result = await window.Pi.authenticate(scopes, (uuid: string) => uuid);
   
   const authResult: AuthResult = {
     accessToken: result.accessToken,

@@ -107,8 +107,9 @@ const Index = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const sharedPlaceId = urlParams.get('place');
-    const stateSelectedPlaceId = location.state?.selectedPlaceId;
-    const shouldZoom = location.state?.zoomToLocation;
+    const state = location.state as { selectedPlaceId?: string; zoomToLocation?: boolean } | null;
+    const stateSelectedPlaceId = state?.selectedPlaceId;
+    const shouldZoom = state?.zoomToLocation;
     
     if (sharedPlaceId) {
       setSelectedPlace(sharedPlaceId);

@@ -3,7 +3,7 @@ import React from 'react';
 import ProgressiveImage from './ProgressiveImage';
 
 interface PlaceCardImageProps {
-  image: string;
+  image: string | undefined;
   name: string;
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
   children?: React.ReactNode;

@@ -77,7 +77,7 @@ const transformToPlace = (b: BookmarkedBusiness): Place => {
     hours: formatHours(b.hours) || {},
     isVerified: b.is_verified || false,
     isCertified: b.is_certified || false,
-    verificationStatus: b.verification_status as Place['verificationStatus'],
+    ...(b.verification_status ? { verificationStatus: b.verification_status as Place['verificationStatus'] } : {}),
     business_types: b.business_types || [],
     keywords: b.keywords || [],
     streetAddress: b.street_address,
