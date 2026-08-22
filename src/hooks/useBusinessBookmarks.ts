@@ -90,17 +90,30 @@ const broadcastBookmarkChange = (message: BookmarkSyncMessage) => {
 export const useBusinessBookmarks = () => {
   const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-  // Rehydrate ids synchronously from localStorage so bookmark icons render
-  // in their correct state immediately on first paint, before the network
-  // sync completes.
-  const [bookmarks, setBookmarks] = useState<string[]>(() => Array.from(new Set(readPersistedBookmarkIds())));
+  // SSR-safe: start empty and rehydrate ids from localStorage in the mount
+  // effect below (a render-time read would mismatch server and client HTML
+  // for users with persisted bookmarks).
+  const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const hydratedRef = React.useRef(false);
 
   const BOOKMARKS_QUERY_KEY = ['bookmarked-businesses'] as const;
 
+  // Hydrate persisted ids on mount (client-only), before any persist writes.
+  useEffect(() => {
+    const persisted = Array.from(new Set(readPersistedBookmarkIds()));
+    hydratedRef.current = true;
+    if (persisted.length > 0) {
+      setBookmarks(prev => (prev.length === 0 ? persisted : prev));
+    }
+  }, []);
+
   // Persist any change to the id list so the next page load can rehydrate.
   // Always dedupe before persisting so the stored shape is canonical.
+  // Skip until hydration has run so the initial empty state never clobbers
+  // previously stored ids.
   useEffect(() => {
+    if (!hydratedRef.current) return;
     writePersistedBookmarkIds(Array.from(new Set(bookmarks)));
   }, [bookmarks]);
 
