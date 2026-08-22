@@ -224,6 +224,8 @@ const SessionRestoration = () => {
 };
 
 function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
+
   // ported from App.tsx — Pi SDK loader fallback (init itself lives in head() script)
   useEffect(() => {
     const initPiSdk = async () => {
@@ -270,25 +272,27 @@ function RootComponent() {
   }, []);
 
   return (
-    <HelmetProvider>
-      <TooltipProvider>
-        <ErrorBoundary>
-          <AuthProvider>
-            <AuthenticatingOverlay />
-            <SidebarProvider>
-              <SessionRestoration />
-              <SessionManager />
-              <PendingConversationDispatcher />
-              <Toaster />
-              <Sonner />
-              <Suspense fallback={<PageLoader />}>
-                <Outlet />
-              </Suspense>
-            </SidebarProvider>
-          </AuthProvider>
-        </ErrorBoundary>
-      </TooltipProvider>
-    </HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <HelmetProvider>
+        <TooltipProvider>
+          <ErrorBoundary>
+            <AuthProvider>
+              <AuthenticatingOverlay />
+              <SidebarProvider>
+                <SessionRestoration />
+                <SessionManager />
+                <PendingConversationDispatcher />
+                <Toaster />
+                <Sonner />
+                <Suspense fallback={<PageLoader />}>
+                  <Outlet />
+                </Suspense>
+              </SidebarProvider>
+            </AuthProvider>
+          </ErrorBoundary>
+        </TooltipProvider>
+      </HelmetProvider>
+    </QueryClientProvider>
   );
 }
 

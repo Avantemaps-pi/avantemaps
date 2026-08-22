@@ -57,6 +57,8 @@ export const isDevelopmentMode = (): boolean => import.meta.env.DEV;
  * Production deployments always require real Pi authentication
  */
 export const shouldBypassAuth = (): boolean => {
+  // SSR safety: no window on the server — never bypass during server render
+  if (typeof window === 'undefined') return false;
   const hostname = window.location.hostname;
   
   // Allow test mode ONLY on Lovable preview/project domains (NOT the published app)
