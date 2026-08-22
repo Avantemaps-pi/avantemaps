@@ -56,7 +56,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategoryId, onS
       </div>
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-background via-background/70 to-transparent"
+        className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-background/80 via-background/50 to-transparent"
       />
     </div>
   );
