@@ -9,8 +9,8 @@ interface PricingGridProps {
     disabled?: boolean
   })[]
   paymentFrequency: string
-  organizationTierId?: string
-  currentUserTier?: string
+  organizationTierId?: string | undefined
+  currentUserTier?: string | undefined
 }
 
 export function PricingGrid({

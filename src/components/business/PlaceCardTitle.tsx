@@ -8,10 +8,10 @@ import HighlightText from './HighlightText';
 interface PlaceCardTitleProps {
   name: string;
   onClick: (() => void) | undefined;
-  isVerified?: boolean;
-  isCertified?: boolean;
-  verificationStatus?: 'pending' | 'verified' | 'rejected' | null;
-  highlightQuery?: string;
+  isVerified?: boolean | undefined;
+  isCertified?: boolean | undefined;
+  verificationStatus?: 'pending' | 'verified' | 'rejected' | null | undefined;
+  highlightQuery?: string | undefined;
 }
 
 const PlaceCardTitle: React.FC<PlaceCardTitleProps> = ({ 
