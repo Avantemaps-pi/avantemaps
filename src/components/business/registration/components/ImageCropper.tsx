@@ -184,7 +184,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
               min={1}
               max={3}
               step={0.1}
-              onValueChange={([value]) => setZoom(value)}
+              onValueChange={([value]) => value !== undefined && setZoom(value)}
               className="flex-1"
             />
             <ZoomIn className="h-4 w-4 text-muted-foreground" />

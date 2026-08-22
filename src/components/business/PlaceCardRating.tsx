@@ -4,7 +4,7 @@ import { Star } from 'lucide-react';
 
 interface PlaceCardRatingProps {
   rating: number;
-  onClick: () => void;
+  onClick: (() => void) | undefined;
 }
 
 const PlaceCardRating: React.FC<PlaceCardRatingProps> = ({ rating, onClick }) => {

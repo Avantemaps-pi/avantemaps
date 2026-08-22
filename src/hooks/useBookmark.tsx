@@ -6,7 +6,7 @@ import { useAuth } from '@/context/auth';
 
 interface UseBookmarkProps {
   initialIsBookmarked: boolean;
-  onRemove?: (id: string) => void;
+  onRemove?: ((id: string) => void) | undefined;
   id: string;
 }
 
@@ -25,9 +25,8 @@ export const useBookmark = ({ initialIsBookmarked, onRemove, id }: UseBookmarkPr
     }
   }, [id, isPersistentBookmarked, isAuthenticated, isLoading]);
 
-  const handleBookmarkToggle = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
+  const handleBookmarkToggle = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (!isAuthenticated) {
       toast.error('Please sign in to bookmark businesses');
       return;

@@ -134,7 +134,7 @@ const MobileSidebar = ({
             
             <nav>
               <ul className="space-y-1 px-2">
-                {navItems.map(item => <NavItem key={item.to} to={item.to} icon={item.icon} label={item.label} isActive={currentPath === item.to} onClick={onLinkClick} badge={item.badge} />)}
+                {navItems.map(item => <NavItem key={item.to} to={item.to} icon={item.icon} label={item.label} isActive={currentPath === item.to} onClick={onLinkClick} {...(item.badge !== undefined ? { badge: item.badge } : {})} />)}
               </ul>
             </nav>
 

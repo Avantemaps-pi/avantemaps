@@ -16,7 +16,7 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BusinessTypeSelectorProps {
-  disabled?: boolean;
+  disabled?: boolean | undefined;
 }
 
 const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ disabled }) => {
@@ -115,7 +115,7 @@ const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ disabled })
               
               {/* Type selector dropdown */}
               <FormControl>
-                <Select onValueChange={handleSelectType} disabled={disabled}>
+                <Select onValueChange={handleSelectType} disabled={disabled ?? false}>
                   <SelectTrigger 
                     className={cn(
                       "w-full",
@@ -136,7 +136,7 @@ const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ disabled })
                         <SelectItem
                           key={type}
                           value={type}
-                          disabled={selectedTypes.includes(type) || disabled}
+                          disabled={selectedTypes.includes(type) || (disabled ?? false)}
                         >
                           {type}
                         </SelectItem>

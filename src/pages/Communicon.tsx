@@ -50,13 +50,14 @@ const Communicon = () => {
   const hasTriggeredVerification = useRef(false);
 
   useEffect(() => {
-    if (location.state?.triggerVerification && !hasTriggeredVerification.current) {
+    const state = location.state as any;
+    if (state?.triggerVerification && !hasTriggeredVerification.current) {
       hasTriggeredVerification.current = true;
-      const verificationType = location.state.verificationType || 'verification';
+      const verificationType = state.verificationType || 'verification';
       navigate(location.pathname, { replace: true, state: {} });
       triggerVerificationFlow(verificationType);
     }
-  }, [location.state, triggerVerificationFlow, navigate, location.pathname]);
+  }, [location.state, triggerVerificationFlow, navigate, location.pathname]); // eslint-disable-line
 
   const showConversationErrorToast = (
     result: 'not_found' | 'access_denied' | 'missing',
@@ -123,7 +124,7 @@ const Communicon = () => {
 
     handleChatModeChange(incomingMode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state?.chatMode]);
+  }, [(location.state as any)?.chatMode]);
 
   // Structured error log for live-mode opens without a usable conversation reference
   const missingConvNotifiedRef = useRef(false);

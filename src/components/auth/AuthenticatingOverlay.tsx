@@ -16,6 +16,7 @@ const AuthenticatingOverlay: React.FC = () => {
       }, 800);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [isLoading]);
 
   if (hideOverlay) {

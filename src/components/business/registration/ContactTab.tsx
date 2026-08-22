@@ -256,7 +256,7 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
                   <Select
                     value={countryCode}
                     onValueChange={handleCountryCodeChange}
-                    disabled={disabled}
+                    {...(disabled !== undefined ? { disabled } : {})}
                   >
                     <SelectTrigger className="w-[70px] flex-shrink-0">
                       <SelectValue placeholder="+1" />

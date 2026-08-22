@@ -110,7 +110,7 @@ const transformToPlace = (result: SearchNearbyResult | SearchByLocationResult): 
     city: result.city,
     state: result.state,
     postalCode: result.postal_code,
-    distance: 'distance_meters' in result ? result.distance_meters : undefined,
+    ...('distance_meters' in result ? { distance: result.distance_meters } : {}),
     relevance: result.relevance,
     image: result.images?.[0] || '/placeholder.svg',
     website: result.contact_info?.website || '',
@@ -143,7 +143,7 @@ export const useAdvancedSearch = () => {
         lat,
         lng,
         radius_meters: radius,
-        search_term: searchTerm || null,
+        search_term: searchTerm ?? undefined,
         limit_count: limit
       });
 
@@ -177,10 +177,10 @@ export const useAdvancedSearch = () => {
   ): Promise<{ data: Place[] | null; error: Error | null }> => {
     try {
       const { data, error } = await supabase.rpc('search_businesses_by_location', {
-        search_city: city || null,
-        search_state: state || null,
-        search_postal_code: postalCode || null,
-        search_term: searchTerm || null,
+        search_city: city ?? undefined,
+        search_state: state ?? undefined,
+        search_postal_code: postalCode ?? undefined,
+        search_term: searchTerm ?? undefined,
         limit_count: limit
       });
 

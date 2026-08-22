@@ -111,9 +111,8 @@ export function usePaymentStatusPolling(opts: Options = {}) {
         if (cancelledRef.current || activeIdRef.current !== paymentId) return;
         attempts += 1;
         try {
-          const response = await getPaymentStatus(paymentId, {
-            lifecycleId: opts.lifecycleId ?? opts.correlationId,
-          });
+          const lifecycleId = opts.lifecycleId ?? opts.correlationId;
+          const response = await getPaymentStatus(paymentId, lifecycleId !== undefined ? { lifecycleId } : {});
           if (cancelledRef.current || activeIdRef.current !== paymentId) return;
 
           const terminalReason = deriveTerminal(response.status);

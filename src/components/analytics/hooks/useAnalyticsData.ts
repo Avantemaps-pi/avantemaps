@@ -43,7 +43,7 @@ const generateMockData = (days: number, isHourly = false): DailyViewData[] => {
       // Use smooth base with slight variation for natural-looking curves
       const base = 5 + Math.round(Math.sin(i * 0.3) * 3 + Math.random() * 3);
       data.push({
-        view_date: date.toISOString().split('T')[0],
+        view_date: date.toISOString().split('T')[0] ?? '',
         view_count: Math.max(0, base),
       });
     }

@@ -35,10 +35,10 @@ export function PricingGrid({
               key={tier.name}
               tier={tier}
               paymentFrequency={paymentFrequency}
-              id={tier.id === organizationTierId ? `tier-${tier.id}` : undefined}
-              onSubscribe={tier.onSubscribe}
-              isLoading={tier.isLoading}
-              disabled={tier.disabled}
+              {...(tier.id === organizationTierId ? { id: `tier-${tier.id}` } : {})}
+              {...(tier.onSubscribe !== undefined ? { onSubscribe: tier.onSubscribe } : {})}
+              {...(tier.isLoading !== undefined ? { isLoading: tier.isLoading } : {})}
+              {...(tier.disabled !== undefined ? { disabled: tier.disabled } : {})}
               isCurrentPlan={isCurrentPlan}
             />
           );

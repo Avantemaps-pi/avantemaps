@@ -60,7 +60,7 @@ export async function startPayment(
     memo: options.memo,
     metadata: options.metadata || {}
   };
-  return await createPiPayment(paymentData, callbacks);
+  return await createPiPayment(paymentData, callbacks ?? {});
 }
 
 /**

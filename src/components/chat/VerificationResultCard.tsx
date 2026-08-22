@@ -19,8 +19,8 @@ interface CheckItemProps {
   passed: boolean;
   loading: boolean;
   label: string;
-  detail?: string;
-  collapsibleContent?: React.ReactNode;
+  detail?: string | undefined;
+  collapsibleContent?: React.ReactNode | undefined;
 }
 
 const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail, collapsibleContent }) => {
@@ -69,11 +69,11 @@ const REVEAL_DELAYS = [300, 900, 1500];
 
 interface VerificationResultCardProps {
   metrics: VerificationMetrics;
-  contactEmail?: string;
-  contactBusinessId?: number;
-  onSendContactOTP?: (email: string, businessId: number) => Promise<boolean>;
-  onVerifyContactOTP?: (email: string, otp: string, businessId: number) => Promise<boolean>;
-  animate?: boolean;
+  contactEmail?: string | undefined;
+  contactBusinessId?: number | undefined;
+  onSendContactOTP?: ((email: string, businessId: number) => Promise<boolean>) | undefined;
+  onVerifyContactOTP?: ((email: string, otp: string, businessId: number) => Promise<boolean>) | undefined;
+  animate?: boolean | undefined;
 }
 
 const VerificationResultCard: React.FC<VerificationResultCardProps> = ({

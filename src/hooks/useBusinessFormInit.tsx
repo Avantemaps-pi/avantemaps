@@ -32,6 +32,7 @@ const parseStoredPhone = (phone?: string): { countryCode: string; nationalNumber
 export const useBusinessFormInit = (business: Business) => {
   const contactInfo = business.contactInfo || {};
   const hours = business.hours || {};
+  const phoneParsed = parseStoredPhone(contactInfo.phone);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -39,8 +40,8 @@ export const useBusinessFormInit = (business: Business) => {
       firstName: contactInfo.first_name || '',
       lastName: contactInfo.last_name || '',
       businessName: business.name || '',
-      countryCode: parseStoredPhone(contactInfo.phone).countryCode,
-      phone: parseStoredPhone(contactInfo.phone).nationalNumber,
+      countryCode: phoneParsed.countryCode,
+      phone: phoneParsed.nationalNumber,
       email: contactInfo.email || '',
       website: contactInfo.website || '',
       streetAddress: business.streetAddress || '',

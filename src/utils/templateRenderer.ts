@@ -40,8 +40,9 @@ export const extractTemplateVariables = (template: string): string[] => {
   let match;
   
   while ((match = variableRegex.exec(template)) !== null) {
-    if (!variables.includes(match[1])) {
-      variables.push(match[1]);
+    const name = match[1];
+    if (name && !variables.includes(name)) {
+      variables.push(name);
     }
   }
   

@@ -6,7 +6,7 @@ import { useFormContext } from 'react-hook-form';
 import { FormValues } from '../formSchema';
 
 interface WalletAddressFieldProps {
-  disabled?: boolean;
+  disabled?: boolean | undefined;
 }
 
 const WalletAddressField: React.FC<WalletAddressFieldProps> = ({ disabled }) => {

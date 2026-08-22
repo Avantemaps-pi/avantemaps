@@ -25,5 +25,5 @@ export const getSubscriptionPrice = (
   // Default to monthly price if frequency is invalid
   const validFrequency = frequency === 'yearly' ? 'yearly' : 'monthly';
   
-  return SUBSCRIPTION_USD_PRICES[tier][validFrequency] || 0;
+  return SUBSCRIPTION_USD_PRICES[tier]?.[validFrequency] || 0;
 };

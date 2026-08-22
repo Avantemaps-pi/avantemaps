@@ -4,8 +4,8 @@ import HighlightText from './HighlightText';
 
 interface PlaceCardAddressProps {
   address: string;
-  onClick: () => void;
-  highlightQuery?: string;
+  onClick: (() => void) | undefined;
+  highlightQuery?: string | undefined;
 }
 
 const PlaceCardAddress: React.FC<PlaceCardAddressProps> = ({ address, onClick, highlightQuery }) => {
@@ -16,7 +16,7 @@ const PlaceCardAddress: React.FC<PlaceCardAddressProps> = ({ address, onClick, h
     >
       <MapPin className="h-4 w-4 flex-shrink-0" />
       <span className="text-xs line-clamp-1">
-        <HighlightText text={address} query={highlightQuery} />
+        <HighlightText text={address} {...(highlightQuery !== undefined ? { query: highlightQuery } : {})} />
       </span>
     </div>
   );

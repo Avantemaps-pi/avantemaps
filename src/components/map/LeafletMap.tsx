@@ -166,7 +166,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
     }
   };
 
-  const selectedPlace = activeMarker ? displayPlaces.find(place => place.id === activeMarker) : null;
+  const selectedPlace = activeMarker ? (displayPlaces.find(place => place.id === activeMarker) ?? null) : null;
 
   return (
     <div className="w-full h-full relative">

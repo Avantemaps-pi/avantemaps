@@ -11,7 +11,7 @@ interface NavItemProps {
   label: string;
   isActive: boolean;
   onClick?: () => void;
-  badge?: number | null;
+  badge?: number | null | undefined;
   isLogout?: boolean;
   requiresAuth?: boolean;
 }
@@ -61,7 +61,7 @@ const NavItem = ({
       >
         <Icon className="h-4 w-4" />
         <span>{label}</span>
-        {badge > 0 && (
+        {badge != null && badge > 0 && (
           <span className="absolute right-4 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
             {badge}
           </span>

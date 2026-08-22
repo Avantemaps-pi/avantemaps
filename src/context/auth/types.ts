@@ -25,7 +25,7 @@ export interface AuthContextType {
   authError: string | null;
   hasAccess: (requiredTier: SubscriptionTier) => boolean;
   refreshUserData: (silent?: boolean) => Promise<void>;
-  setUser: (user: PiUser) => void;
+  setUser: (user: PiUser | null) => void;
   isAdmin: boolean;
 }
 

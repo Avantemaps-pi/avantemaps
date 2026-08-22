@@ -132,8 +132,11 @@ const inBbox = (lat: number, lng: number, b: CountryData['bbox']) =>
 const pointInRing = (lng: number, lat: number, ring: number[][]) => {
   let inside = false;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i];
-    const [xj, yj] = ring[j];
+    const ri = ring[i];
+    const rj = ring[j];
+    if (!ri || !rj) continue;
+    const [xi, yi] = ri;
+    const [xj, yj] = rj;
     const intersect =
       yi > lat !== yj > lat &&
       lng < ((xj - xi) * (lat - yi)) / (yj - yi + 1e-12) + xi;
@@ -146,9 +149,11 @@ const pointInGeoJson = (lat: number, lng: number, geo: any): boolean => {
   if (!geo) return false;
   const test = (coords: number[][][]) => {
     if (!coords?.length) return false;
-    if (!pointInRing(lng, lat, coords[0])) return false;
+    const outer = coords[0];
+    if (!outer || !pointInRing(lng, lat, outer)) return false;
     for (let i = 1; i < coords.length; i++) {
-      if (pointInRing(lng, lat, coords[i])) return false; // hole
+      const hole = coords[i];
+      if (hole && pointInRing(lng, lat, hole)) return false; // hole
     }
     return true;
   };

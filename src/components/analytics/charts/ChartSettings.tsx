@@ -32,7 +32,7 @@ const ChartSettings: React.FC<ChartSettingsProps> = React.memo(({
             min={50}
             max={300}
             step={10}
-            onValueChange={(value) => setXScale(value[0])}
+            onValueChange={(value) => { const v = value[0]; if (v !== undefined) setXScale(v); }}
             className="flex-1"
           />
           <ZoomIn className="h-4 w-4 text-muted-foreground" />
@@ -51,7 +51,7 @@ const ChartSettings: React.FC<ChartSettingsProps> = React.memo(({
             min={50}
             max={300}
             step={10}
-            onValueChange={(value) => setYScale(value[0])}
+            onValueChange={(value) => { const v = value[0]; if (v !== undefined) setYScale(v); }}
             className="flex-1"
           />
           <ZoomIn className="h-4 w-4 text-muted-foreground" />

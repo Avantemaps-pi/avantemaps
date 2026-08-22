@@ -6,10 +6,10 @@ export interface BusinessSuggestion {
   name: string;
   category: string;
   address: string;
-  city?: string;
-  country?: string;
-  isVerified?: boolean;
-  isCertified?: boolean;
+  city?: string | undefined;
+  country?: string | undefined;
+  isVerified?: boolean | undefined;
+  isCertified?: boolean | undefined;
   lat: number;
   lng: number;
   relevanceScore: number;

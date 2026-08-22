@@ -7,7 +7,7 @@ import HighlightText from './HighlightText';
 
 interface PlaceCardTitleProps {
   name: string;
-  onClick: () => void;
+  onClick: (() => void) | undefined;
   isVerified?: boolean;
   isCertified?: boolean;
   verificationStatus?: 'pending' | 'verified' | 'rejected' | null;

@@ -249,10 +249,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
         if (selectedIndex >= 0 && selectedIndex < currentSuggestions.length) {
           if (autocompleteMode === 'business') {
             const suggestion = businessSuggestions[selectedIndex];
-            handleBusinessSuggestionClick(suggestion);
+            if (suggestion) handleBusinessSuggestionClick(suggestion);
           } else {
             const prediction = addressPredictions[selectedIndex];
-            handleAddressPredictionClick(prediction.placeId, prediction.description);
+            if (prediction) handleAddressPredictionClick(prediction.placeId, prediction.description);
           }
         } else if (searchTerm.trim()) {
           handleSearch(e);

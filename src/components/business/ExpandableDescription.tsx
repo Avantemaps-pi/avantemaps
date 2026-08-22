@@ -5,7 +5,7 @@ interface ExpandableDescriptionProps {
   text: string;
   maxLines?: number;
   className?: string;
-  highlightQuery?: string;
+  highlightQuery?: string | undefined;
 }
 
 const ExpandableDescription: React.FC<ExpandableDescriptionProps> = ({

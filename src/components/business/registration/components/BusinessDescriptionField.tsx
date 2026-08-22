@@ -9,7 +9,7 @@ const MAX_WORD_COUNT = 150;
 const MIN_WORD_COUNT = 10;
 
 interface BusinessDescriptionFieldProps {
-  disabled?: boolean;
+  disabled?: boolean | undefined;
 }
 
 const BusinessDescriptionField: React.FC<BusinessDescriptionFieldProps> = ({ disabled }) => {

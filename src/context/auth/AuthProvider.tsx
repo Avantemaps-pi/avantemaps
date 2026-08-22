@@ -442,6 +442,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const timer = setTimeout(() => refreshUserData(false, true), 1000); // silent=true
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [user, isOffline, isSdkInitialized, refreshUserData]);
 
   // logout - properly clear Supabase session and all storage

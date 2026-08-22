@@ -3,11 +3,11 @@
 
 interface Window {
   Pi?: any;
-  handleBusinessSelection?: (business: {
+  handleBusinessSelection?: ((business: {
     id: number;
     business_name: string;
     verification_status?: string | null;
     is_verified?: boolean;
-  }) => void;
-  sendVerificationRequest?: (type: 'verification' | 'certification') => void;
+  }) => void) | undefined;
+  sendVerificationRequest?: ((type: 'verification' | 'certification') => void) | undefined;
 }
