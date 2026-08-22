@@ -19,6 +19,7 @@ const listeners: Array<() => void> = [];
 export const markAppHydrated = (): void => {
   if (hydrated) return;
   hydrated = true;
+  console.log('[hydration-debug] markAppHydrated at', performance.now());
   const pending = listeners.splice(0, listeners.length);
   pending.forEach((cb) => {
     try {
@@ -46,7 +47,7 @@ export const whenAppHydrated = (cb: () => void, timeoutMs = 3000): (() => void) 
     cb();
   };
   listeners.push(run);
-  const timer = window.setTimeout(run, timeoutMs);
+  const timer = window.setTimeout(() => { console.log('[hydration-debug] TIMEOUT fired at', performance.now()); run(); }, timeoutMs);
   return () => {
     done = true;
     window.clearTimeout(timer);
