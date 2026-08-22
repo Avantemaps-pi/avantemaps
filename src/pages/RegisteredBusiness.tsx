@@ -7,7 +7,7 @@ import EmptyBusinessState from '@/components/business/EmptyBusinessState';
 import BusinessHeader from '@/components/business/BusinessHeader';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from '@/lib/router-compat';
 import { useAuth } from '@/context/auth';
 import { Business } from '@/types/business';
 import { supabase } from '@/integrations/supabase/client';

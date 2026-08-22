@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { Mail, LifeBuoy } from 'lucide-react';
 import avanteIcon72 from '@/assets/avante-icon-72.webp';
 import avanteIcon144 from '@/assets/avante-icon-144.webp';

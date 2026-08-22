@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation } from '@/lib/router-compat';
 import CommentList from './CommentList';
 import CommentSorter from './CommentSorter';
 import LoginDialog from '@/components/auth/LoginDialog';

@@ -1,6 +1,6 @@
 
 import React, { ReactNode, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from '@/lib/router-compat';
 import { Toaster } from '@/components/ui/sonner';
 import PageHeader from '@/components/layout/PageHeader';
 

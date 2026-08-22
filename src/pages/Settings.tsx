@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import AppLayout from '@/components/layout/AppLayout';
 import ProfileSettings from '@/components/settings/ProfileSettings';
 import AppPreferences from '@/components/settings/AppPreferences';

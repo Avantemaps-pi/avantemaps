@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MapPin, Bookmark, MessageCircle, Star, Mail, LifeBuoy, BarChart3 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { Button } from '@/components/ui/button';
 import LoginDialog from '@/components/auth/LoginDialog';
 import avanteIcon72 from '@/assets/avante-icon-72.webp';

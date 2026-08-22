@@ -5,7 +5,7 @@ import ChatMessage from './ChatMessage';
 import BusinessSelectionButtons from './BusinessSelectionButtons';
 import VerificationResultCard, { VerificationMetrics } from './VerificationResultCard';
 import MessagesPanel from '@/components/messages/MessagesPanel';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from '@/lib/router-compat';
 import { Send, Image, Video, MessagesSquare, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';

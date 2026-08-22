@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { Place } from '@/types/business';
 import { CircleCheck, Info, Shield, X } from 'lucide-react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';

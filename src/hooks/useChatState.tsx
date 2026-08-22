@@ -1,6 +1,6 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { filterInappropriateContent, isSafeForAI } from '@/utils/contentFilter';
 import { VerificationMetrics } from '@/components/chat/VerificationResultCard';
 import { useToast } from '@/hooks/use-toast';

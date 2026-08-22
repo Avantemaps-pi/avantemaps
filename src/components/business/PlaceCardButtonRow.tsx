@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { MessageCircle, ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Place } from '@/types/business';

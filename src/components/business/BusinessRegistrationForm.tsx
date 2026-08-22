@@ -7,7 +7,7 @@ import TabNavigation from './registration/components/TabNavigation';
 import TabContent from './registration/components/TabContent';
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { useAuth } from '@/context/auth';
 import { toast } from 'sonner';
 import { PiAuthButton } from './registration/PiAuthButton';

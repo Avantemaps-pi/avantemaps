@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from '@/lib/router-compat';
 import { ArrowLeft, Menu, MoreVertical } from 'lucide-react';
 import MobileMenuButton from './header/MobileMenuButton';
 import DesktopMenuButton from './header/DesktopMenuButton';

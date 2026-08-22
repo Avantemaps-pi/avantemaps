@@ -5,7 +5,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail, MessageCircle, Facebook, Twitter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import MetaTags from '@/components/seo/MetaTags';
 
 const About = () => {

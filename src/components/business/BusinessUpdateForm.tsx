@@ -4,7 +4,7 @@ import { FormProvider } from 'react-hook-form';
 import { Form } from '@/components/ui/form';
 import { Tabs } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { Business } from '@/types/business';
 import { useBusinessFormInit } from '@/hooks/useBusinessFormInit';
 import { useBusinessUpdate } from '@/hooks/useBusinessUpdate';

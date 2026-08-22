@@ -2,7 +2,7 @@
 import React from 'react';
 import { useAuth } from '@/context/auth';
 import { Shield, WifiOff, Code } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from '@/lib/router-compat';
 import { shouldBypassAuth } from '@/config/environment';
 
 const AuthStatus: React.FC = () => {

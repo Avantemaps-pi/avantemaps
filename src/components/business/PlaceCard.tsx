@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { Place } from '@/types/business';
 import CategoryBadge from '@/components/business/CategoryBadge';
 import ExpandableDescription from './ExpandableDescription';
