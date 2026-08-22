@@ -116,7 +116,7 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrat
         </p>
       </div>
 
-      <FormContainer form={form} onSubmit={onSubmit} isSubmitting={isSubmitting}>
+      <FormContainer form={form} onSubmit={onSubmit} onInvalid={handleInvalid} isSubmitting={isSubmitting}>
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
           <TabNavigation isMobile={isMobile} disabled={isSubmitting} />
           <TabContent
