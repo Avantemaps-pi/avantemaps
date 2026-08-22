@@ -12,9 +12,15 @@
 
 /* Horizontal scroll container for categories */
 .scroll-container {
-  @apply flex overflow-x-auto pb-4 gap-4 no-scrollbar;
+  @apply flex overflow-x-auto pb-4 gap-4;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+}
+
+.scroll-container::-webkit-scrollbar {
+  display: none;
 }
 
 .scroll-container > * {
