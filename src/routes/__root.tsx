@@ -22,6 +22,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import NotFound from "@/pages/NotFound";
 import { initializePiNetwork } from "@/utils/piNetwork";
 import { prefetchHighPriorityRoutes } from "@/lib/routePrefetch";
+import { markAppHydrated } from "@/utils/hydrationSignal";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 
 import appCss from "../styles.css?url";
