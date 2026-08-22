@@ -272,8 +272,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Restore session immediately - no artificial delay needed
-    restoreSession().catch((err) => secureLog.warn('Failed to restore cached session:', err));
+    // Wait for the route subtree to hydrate before mutating auth state
+    // (whenAppHydrated fires immediately if hydration already completed,
+    // and has a built-in safety timeout so restore can never be lost).
+    const cancel = whenAppHydrated(() => {
+      if (shouldBypassAuth() && DEV_CONFIG?.mockUser) {
+        runBypass();
+        return;
+      }
+      restoreSession().catch((err) => secureLog.warn('Failed to restore cached session:', err));
+    });
+    return cancel;
   }, [safeSetUser]);
 
   // --- Robust SDK initialization helper (retries + timeout) ---
