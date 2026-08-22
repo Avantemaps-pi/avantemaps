@@ -80,6 +80,21 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrat
     }
   }, [form.formState.isDirty, imageUpload.hasImages, onFormChange]);
 
+  // On invalid submit: jump to the earliest tab containing an error and focus the field
+  const handleInvalid: SubmitErrorHandler<FormValues> = React.useCallback((errors) => {
+    for (const { tab, fields } of TAB_FIELDS) {
+      const field = fields.find((f) => errors[f]);
+      if (field) {
+        setSelectedTab(tab);
+        toast.error('Please fix the highlighted field');
+        // Wait for the tab content to mount before focusing
+        requestAnimationFrame(() => form.setFocus(field));
+        return;
+      }
+    }
+    toast.error('Please fix the highlighted field');
+  }, [form]);
+
   // ✅ Require Pi auth before showing the form
   if (!user) {
     return (
