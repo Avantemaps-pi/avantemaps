@@ -123,7 +123,7 @@ const PageHeader = ({
         
         <div className={`flex-1 flex ${showSearch && isIndexPage ? 'items-center justify-between' : 'justify-center'}`}>
           {pageTitle ? 
-            <h1 id="page-title" className="text-xl font-semibold">{pageTitle}</h1> 
+            <h1 id="page-title" className="text-xl font-semibold rounded-sm focus:outline-2 focus:outline-offset-2 focus:outline-ring">{pageTitle}</h1> 
             : 
             <Link to="/" className="flex items-center gap-2">
               {/* Logo would go here */}
