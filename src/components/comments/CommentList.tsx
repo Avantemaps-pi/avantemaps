@@ -5,7 +5,7 @@ import { useComments } from '@/hooks/useComments';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface CommentListProps {
-  businessId?: string;
+  businessId?: string | undefined;
   sortOption: SortOption;
 }
 

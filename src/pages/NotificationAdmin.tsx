@@ -87,10 +87,10 @@ function TemplatesTab() {
       const { data, error } = await supabase
         .from('notification_templates')
         .insert({
-          name: template.name,
-          type: template.type,
-          content_template: template.content_template,
-          description: template.description,
+          name: template.name ?? '',
+          type: template.type ?? '',
+          content_template: template.content_template ?? '',
+          description: template.description ?? null,
           priority: template.priority || 'medium',
           is_active: template.is_active ?? true,
           variables: template.variables || [],
@@ -173,7 +173,7 @@ function TemplatesTab() {
             <div><Label>Name</Label><Input placeholder="e.g., business_approved" value={formData.name || ''} onChange={(e) => setFormData({ ...formData, name: e.target.value })} /></div>
             <div>
               <Label>Type</Label>
-              <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
+              <Select value={formData.type ?? ''} onValueChange={(v) => setFormData({ ...formData, type: v })}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
                   {['message','review','business','verification','certification','payment','follower','like','bookmark','system'].map(t => (
@@ -186,7 +186,7 @@ function TemplatesTab() {
             <div><Label>Description</Label><Input placeholder="Brief description" value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} /></div>
             <div>
               <Label>Priority</Label>
-              <Select value={formData.priority} onValueChange={(v: any) => setFormData({ ...formData, priority: v })}>
+              <Select value={formData.priority ?? ''} onValueChange={(v: any) => setFormData({ ...formData, priority: v })}>
                 <SelectTrigger><SelectValue placeholder="Select priority" /></SelectTrigger>
                 <SelectContent><SelectItem value="low">Low</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="high">High</SelectItem></SelectContent>
               </Select>
@@ -434,7 +434,7 @@ function ABTestingTab() {
 
   const loadTests = async () => {
     const { data } = await supabase.from('notification_ab_tests').select('*').order('created_at', { ascending: false });
-    setTests(data || []);
+    setTests((data ?? []) as ABTest[]);
   };
 
   const loadTemplates = async () => {
@@ -444,7 +444,7 @@ function ABTestingTab() {
 
   const loadVariants = async (testId: string) => {
     const { data } = await supabase.from('notification_ab_variants').select('*').eq('ab_test_id', testId);
-    setVariants(data || []);
+    setVariants((data ?? []) as Variant[]);
   };
 
   const createTest = async () => {
@@ -464,7 +464,7 @@ function ABTestingTab() {
   };
 
   const updateStatus = async (id: string, status: string) => {
-    await supabase.from('notification_ab_tests').update({ status, start_date: status === 'running' ? new Date().toISOString() : undefined }).eq('id', id);
+    await supabase.from('notification_ab_tests').update({ status, ...(status === 'running' ? { start_date: new Date().toISOString() } : {}) }).eq('id', id);
     toast.success(`Test ${status === 'running' ? 'started' : 'paused'}`);
     loadTests();
   };
@@ -574,7 +574,7 @@ function FrequencyCapsTab() {
 
   const loadCaps = async () => {
     const { data } = await supabase.from('notification_frequency_caps').select('*').order('created_at', { ascending: false });
-    setCaps(data || []);
+    setCaps((data ?? []) as FrequencyCap[]);
   };
 
   const resetForm = () => {

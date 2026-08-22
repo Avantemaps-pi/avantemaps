@@ -60,7 +60,13 @@ export async function startPayment(
     memo: options.memo,
     metadata: options.metadata || {}
   };
-  return await createPiPayment(paymentData, callbacks ?? {});
+  const noopCallbacks: PaymentCallbacks = {
+    onReadyForServerApproval: () => {},
+    onReadyForServerCompletion: () => {},
+    onCancel: () => {},
+    onError: () => {},
+  };
+  return await createPiPayment(paymentData, callbacks ?? noopCallbacks);
 }
 
 /**

@@ -5,10 +5,10 @@ import ProgressiveImage from './ProgressiveImage';
 interface PlaceCardImageProps {
   image: string | undefined;
   name: string;
-  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
-  children?: React.ReactNode;
-  className?: string;
-  loading?: 'eager' | 'lazy';
+  onClick?: ((e: React.MouseEvent<HTMLDivElement>) => void) | undefined;
+  children?: React.ReactNode | undefined;
+  className?: string | undefined;
+  loading?: 'eager' | 'lazy' | undefined;
 }
 
 const PlaceCardImage: React.FC<PlaceCardImageProps> = ({ 
@@ -25,7 +25,7 @@ const PlaceCardImage: React.FC<PlaceCardImageProps> = ({
       onClick={onClick}
     >
       <ProgressiveImage
-        src={image}
+        src={image ?? '/placeholder.svg'}
         alt={name}
         className="w-full h-full object-cover hover:opacity-90 transition-opacity"
         loading={loading}

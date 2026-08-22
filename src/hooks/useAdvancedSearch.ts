@@ -143,7 +143,7 @@ export const useAdvancedSearch = () => {
         lat,
         lng,
         radius_meters: radius,
-        search_term: searchTerm ?? undefined,
+        ...(searchTerm !== undefined ? { search_term: searchTerm } : {}),
         limit_count: limit
       });
 
@@ -177,10 +177,10 @@ export const useAdvancedSearch = () => {
   ): Promise<{ data: Place[] | null; error: Error | null }> => {
     try {
       const { data, error } = await supabase.rpc('search_businesses_by_location', {
-        search_city: city ?? undefined,
-        search_state: state ?? undefined,
-        search_postal_code: postalCode ?? undefined,
-        search_term: searchTerm ?? undefined,
+        ...(city !== undefined ? { search_city: city } : {}),
+        ...(state !== undefined ? { search_state: state } : {}),
+        ...(postalCode !== undefined ? { search_postal_code: postalCode } : {}),
+        ...(searchTerm !== undefined ? { search_term: searchTerm } : {}),
         limit_count: limit
       });
 

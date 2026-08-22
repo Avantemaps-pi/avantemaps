@@ -49,27 +49,27 @@ export interface Place {
   };
   address: string;
   rating: number;
-  totalReviews?: number;
+  totalReviews?: number | undefined;
   category: string;
   description: string;
-  image?: string;
-  images?: string[];
-  website?: string;
-  phone?: string;
-  email?: string;
+  image?: string | undefined;
+  images?: string[] | undefined;
+  website?: string | undefined;
+  phone?: string | undefined;
+  email?: string | undefined;
   hours?: {
     [key: string]: string;
-  };
-  isVerified?: boolean;
-  isCertified?: boolean;
-  verificationStatus?: 'pending' | 'verified' | 'rejected' | null;
-  business_types?: string[];
-  keywords?: string[];
-  isUserBusiness?: boolean;
+  } | undefined;
+  isVerified?: boolean | undefined;
+  isCertified?: boolean | undefined;
+  verificationStatus?: 'pending' | 'verified' | 'rejected' | null | undefined;
+  business_types?: string[] | undefined;
+  keywords?: string[] | undefined;
+  isUserBusiness?: boolean | undefined;
   location?: {
     lat: number;
     lng: number;
-  };
+  } | undefined;
   // Enhanced address fields
   streetAddress?: string | undefined;
   city?: string | undefined;
@@ -77,6 +77,6 @@ export interface Place {
   postalCode?: string | undefined;
   country?: string | undefined;
   // Search relevance
-  distance?: number; // Distance in meters from search point
-  relevance?: number; // Search relevance score
+  distance?: number | undefined; // Distance in meters from search point
+  relevance?: number | undefined; // Search relevance score
 }

@@ -10,11 +10,11 @@ interface SwipeableImageGalleryProps {
   onBookmarkToggle: (e?: React.MouseEvent) => void;
   onShare: (e?: React.MouseEvent) => void;
   placeId: string;
-  onClick?: () => void;
-  previewMode?: boolean;
-  imageClassName?: string;
-  hideIndicators?: boolean;
-  paused?: boolean;
+  onClick?: (() => void) | undefined;
+  previewMode?: boolean | undefined;
+  imageClassName?: string | undefined;
+  hideIndicators?: boolean | undefined;
+  paused?: boolean | undefined;
 }
 
 const STORY_DURATION = 3000; // 3 seconds per image
