@@ -190,8 +190,8 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
 
   return (
     <div 
-      className="relative overflow-hidden" 
-      {...handlers} 
+      className="relative overflow-hidden rounded-lg" 
+      {...handlers}
       onClick={previewMode ? handleClick : undefined}
       onMouseDown={images.length > 1 ? handlePause : undefined}
       onMouseUp={images.length > 1 ? handleResume : undefined}
