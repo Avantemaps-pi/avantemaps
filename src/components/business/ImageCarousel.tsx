@@ -68,7 +68,7 @@ const SortableImage: React.FC<SortableImageProps> = ({ image, index, id }) => {
       <div
         {...attributes}
         {...listeners}
-        className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm p-1.5 rounded-md cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-2 left-2 bg-background/80 backdrop-blur-xs p-1.5 rounded-md cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
       >
         <GripVertical className="h-4 w-4 text-muted-foreground" />
       </div>

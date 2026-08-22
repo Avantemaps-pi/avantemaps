@@ -3,7 +3,7 @@ import AppLayout from '@/components/layout/AppLayout';
 
 import ChatInterface from '@/components/chat/ChatInterface';
 import { useChatState } from '@/hooks/useChatState';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from '@/lib/router-compat';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/auth';
 import { Loader2 } from 'lucide-react';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { Place } from '@/types/business';
 import CategoryBadge from '@/components/business/CategoryBadge';
 import ExpandableDescription from './ExpandableDescription';
@@ -143,7 +143,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
         
         {/* Details overlay on top of images */}
         {detailsOverlayOpen && (
-          <div className="absolute inset-0 z-20 bg-background/95 backdrop-blur-sm rounded-lg overflow-y-auto flex flex-col">
+          <div className="absolute inset-0 z-20 bg-background/95 backdrop-blur-xs rounded-lg overflow-y-auto flex flex-col">
             <button
               onClick={() => setDetailsOverlayOpen(false)}
               className="absolute top-1 right-1 z-30 p-1 rounded-full bg-muted hover:bg-muted/80 transition-colors"

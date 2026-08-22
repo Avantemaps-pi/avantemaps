@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '@/lib/router-compat';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/auth';
 import { prefetchRoute } from '@/lib/routePrefetch';

@@ -1,0 +1,23 @@
+{
+  "customizations": [
+    { "token": "--background/--foreground custom light palette (warm cream)", "source": "src/styles/base.css", "reappliedIn": "src/styles.css" },
+    { "token": "--primary/--primary-foreground (dusty blue)", "source": "src/styles/base.css", "reappliedIn": "src/styles.css" },
+    { "token": "--brand-navy", "source": "src/styles/base.css", "reappliedIn": "src/styles.css" },
+    { "token": "--brand-ink", "source": "src/styles/base.css", "reappliedIn": "src/styles.css" },
+    { "token": "--gradient-brand", "source": "src/styles/base.css", "reappliedIn": "src/styles.css" },
+    { "token": "--warning/--warning-foreground + warning color utility", "source": "src/styles/base.css + tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "--secondary/--muted/--accent/--destructive/--border/--input/--ring custom values", "source": "src/styles/base.css", "reappliedIn": "src/styles.css" },
+    { "token": "sidebar token set (8 vars, light+dark) + sidebar color utilities", "source": "src/styles/base.css + tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "dark-mode counterpart palette (.dark block)", "source": "src/styles/base.css", "reappliedIn": "src/styles.css" },
+    { "token": ".analytics-scope fixed-dark token set (9 vars) + analytics-* color utilities", "source": "src/styles/base.css + tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "avante-blue/purple/teal/dark/light color utilities", "source": "tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "shadow-card / shadow-card-hover", "source": "tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "keyframes+animations: accordion-down, accordion-up, pulse-subtle, fade-in, scale-in", "source": "tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "container config (center, 2rem padding, 2xl 1400px)", "source": "tailwind.config.ts", "reappliedIn": "src/styles.css (@utility container)" },
+    { "token": "8 component stylesheet imports (map, scrollbar, cards, buttons, layouts, carousel, recommendations, scroll-snap)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "borderRadius scale bound to --radius (0.5rem)", "source": "tailwind.config.ts + base.css", "reappliedIn": "src/styles.css" },
+    { "token": "base layer: * border-color + body bg/fg/font-feature-settings", "source": "src/styles/base.css", "reappliedIn": "src/styles.css" },
+    { "token": "onAutoFillStart autofill keyframes", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": ".skeleton-shimmer + shimmer keyframes", "source": "src/index.css", "reappliedIn": "src/styles.css" }
+  ]
+}

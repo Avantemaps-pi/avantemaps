@@ -1,6 +1,6 @@
 
 import { useAuth } from '@/context/auth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { SubscriptionTier } from '@/utils/piNetwork';
 import { shouldBypassAuth } from '@/config/environment';
 import { useEffect, useState } from 'react';

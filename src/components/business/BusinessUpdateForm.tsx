@@ -4,7 +4,7 @@ import { FormProvider } from 'react-hook-form';
 import { Form } from '@/components/ui/form';
 import { Tabs } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { Business } from '@/types/business';
 import { useBusinessFormInit } from '@/hooks/useBusinessFormInit';
 import { useBusinessUpdate } from '@/hooks/useBusinessUpdate';
@@ -150,7 +150,7 @@ export const BusinessUpdateForm = forwardRef<BusinessUpdateFormRef, BusinessUpda
 
       {/* Loading overlay during submission */}
       {isSubmitting && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-xs flex items-center justify-center z-50">
           <div className="bg-card p-6 rounded-lg shadow-lg flex flex-col items-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-lg font-medium">Updating your business...</p>

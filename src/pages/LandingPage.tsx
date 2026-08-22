@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MapPin, Bookmark, MessageCircle, Star, Mail, LifeBuoy, BarChart3 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { Button } from '@/components/ui/button';
 import LoginDialog from '@/components/auth/LoginDialog';
 import avanteIcon72 from '@/assets/avante-icon-72.webp';
@@ -59,7 +59,7 @@ const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Sticky Nav */}
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur border-b border-border/60">
+      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-sm border-b border-border/60">
         <div className="max-w-5xl mx-auto px-5 sm:px-6 h-16 flex items-center justify-between">
           <Logo />
           <Button

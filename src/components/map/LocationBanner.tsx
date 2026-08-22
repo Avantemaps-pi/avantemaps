@@ -54,7 +54,7 @@ const LocationBanner: React.FC<Props> = ({ className }) => {
     <div
       role="status"
       className={cn(
-        'absolute left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-3 py-2 rounded-full bg-background/95 backdrop-blur-sm border border-border shadow-md text-xs sm:text-sm max-w-[92vw]',
+        'absolute left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-3 py-2 rounded-full bg-background/95 backdrop-blur-xs border border-border shadow-md text-xs sm:text-sm max-w-[92vw]',
         className
       )}
     >

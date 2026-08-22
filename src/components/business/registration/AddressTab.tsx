@@ -14,7 +14,7 @@ const AddressTab: React.FC<AddressTabProps> = ({
 }) => {
   return (
     <div className="w-full">
-      <Card className="border shadow-sm">
+      <Card className="border shadow-xs">
         <CardHeader className="pb-4 space-y-2">
           <CardTitle className="text-2xl sm:text-xl">Business Location</CardTitle>
           <CardDescription className="text-base sm:text-sm">

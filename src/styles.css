@@ -1,0 +1,326 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+/* Component styles carried over from the Classic src/index.css */
+@import "./styles/map.css";
+@import "./styles/scrollbar.css";
+@import "./styles/cards.css";
+@import "./styles/buttons.css";
+@import "./styles/layouts.css";
+@import "./styles/carousel.css";
+@import "./styles/recommendations.css";
+@import "./styles/scroll-snap.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system definition — ported from the Classic theme
+ * (src/styles/base.css + tailwind.config.ts). Tokens stay as HSL triplets
+ * consumed via hsl(var(--token)) so the existing component CSS keeps working.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-ring-offset-background: hsl(var(--background));
+
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --color-brand-navy: hsl(var(--brand-navy));
+  --color-brand-ink: hsl(var(--brand-ink));
+
+  /* Analytics section: intentional fixed-dark scope */
+  --color-analytics-bg: hsl(var(--analytics-bg));
+  --color-analytics-surface: hsl(var(--analytics-surface));
+  --color-analytics-border: hsl(var(--analytics-border));
+  --color-analytics-text: hsl(var(--analytics-text));
+  --color-analytics-text-muted: hsl(var(--analytics-text-muted));
+  --color-analytics-primary: hsl(var(--analytics-primary));
+  --color-analytics-secondary: hsl(var(--analytics-secondary));
+  --color-analytics-success: hsl(var(--analytics-success));
+  --color-analytics-danger: hsl(var(--analytics-danger));
+
+  --color-avante-blue: #3b82f6;
+  --color-avante-purple: #8b5cf6;
+  --color-avante-teal: #0d9488;
+  --color-avante-dark: #1e293b;
+  --color-avante-light: #f9fafb;
+
+  --shadow-card: 0 2px 8px -1px rgba(0, 0, 0, 0.1);
+  --shadow-card-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-pulse-subtle: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-scale-in: scale-in 0.2s ease-out;
+}
+
+/* v3 container config port: centered, 2rem padding, 2xl capped at 1400px */
+@utility container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (min-width: 640px) {
+    max-width: 640px;
+  }
+  @media (min-width: 768px) {
+    max-width: 768px;
+  }
+  @media (min-width: 1024px) {
+    max-width: 1024px;
+  }
+  @media (min-width: 1280px) {
+    max-width: 1280px;
+  }
+  @media (min-width: 1400px) {
+    max-width: 1400px;
+  }
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  0% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+:root {
+  --background: 43 30% 95%;
+  --foreground: 30 9% 21%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+
+  --primary: 208 25% 48%;
+  --primary-foreground: 210 40% 98%;
+
+  --brand-navy: 209 35% 31%;
+  --brand-ink: 207 35% 13%;
+  --gradient-brand: linear-gradient(160deg, hsl(208 25% 48%), hsl(209 35% 31%));
+
+  --secondary: 260 84% 60%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 43 8% 44%;
+
+  --accent: 168 89% 32%;
+  --accent-foreground: 210 40% 98%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --warning: 38 92% 50%;
+  --warning-foreground: 210 40% 98%;
+
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221 83% 53%;
+
+  --radius: 0.5rem;
+
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 222.2 84% 4.9%;
+  --sidebar-primary: 221 83% 53%;
+  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-accent: 260 84% 60%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 214.3 31.8% 91.4%;
+  --sidebar-ring: 221 83% 53%;
+}
+
+.dark {
+  --background: 36 14% 7%;
+  --foreground: 42 39% 94%;
+
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+
+  --primary: 208 30% 55%;
+  --primary-foreground: 240 5.9% 10%;
+
+  --brand-navy: 210 33% 44%;
+  --brand-ink: 208 38% 20%;
+  --gradient-brand: linear-gradient(160deg, hsl(208 30% 55%), hsl(210 33% 44%));
+
+  --secondary: 260 84% 60%;
+  --secondary-foreground: 0 0% 98%;
+
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 44 9% 59%;
+
+  --accent: 168 89% 32%;
+  --accent-foreground: 0 0% 98%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 98%;
+
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 224.3 76.3% 48%;
+
+  --sidebar-background: 240 10% 3.9%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 221 83% 53%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 260 84% 60%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 240 3.7% 15.9%;
+  --sidebar-ring: 224.3 76.3% 48%;
+}
+
+/* Analytics section: intentional fixed-dark scope, independent of app light/dark mode */
+.analytics-scope {
+  --analytics-bg: 220 16% 9%;
+  --analytics-surface: 220 13% 16%;
+  --analytics-border: 220 12% 21%;
+  --analytics-text: 210 20% 97%;
+  --analytics-text-muted: 218 11% 65%;
+  --analytics-primary: 208 45% 62%;
+  --analytics-secondary: 215 14% 55%;
+  --analytics-success: 152 55% 48%;
+  --analytics-danger: 0 72% 60%;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+  }
+}
+
+/* Autofill detection animation (ported from Classic src/index.css) */
+@keyframes onAutoFillStart {
+  from {
+    opacity: 0.99;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+input:-webkit-autofill {
+  animation-name: onAutoFillStart;
+  animation-duration: 0.001s;
+}
+
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--primary) / 0.06),
+    transparent
+  );
+  animation: shimmer 1.8s infinite ease-in-out;
+}

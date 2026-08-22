@@ -17,7 +17,7 @@ export function Tab({ text, selected, setSelected, discount = false, discountAmo
       className={cn(
         "relative flex h-10 items-center justify-center gap-2 rounded-full px-6 text-sm font-medium transition text-gray-600",
         selected
-          ? "bg-white text-black shadow-sm"
+          ? "bg-white text-black shadow-xs"
           : "hover:text-black"
       )}
     >

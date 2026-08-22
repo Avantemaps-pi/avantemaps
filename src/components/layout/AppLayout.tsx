@@ -1,6 +1,6 @@
 
 import React, { ReactNode, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from '@/lib/router-compat';
 import { Toaster } from '@/components/ui/sonner';
 import PageHeader from '@/components/layout/PageHeader';
 
@@ -84,7 +84,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             id="main-content"
             tabIndex={-1}
             aria-labelledby="page-title"
-            className={`flex-1 w-full min-w-0 overflow-x-hidden overflow-y-auto animate-fade-in outline-none ${isMobile && !hideBottomNav ? 'pb-24' : ''}`}
+            className={`flex-1 w-full min-w-0 overflow-x-hidden overflow-y-auto animate-fade-in outline-hidden ${isMobile && !hideBottomNav ? 'pb-24' : ''}`}
             style={isMobile && !hideBottomNav ? { paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' } : undefined}
           >
             {children}

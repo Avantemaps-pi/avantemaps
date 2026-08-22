@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import AppLayout from '@/components/layout/AppLayout';
 import AnalyticsMainView from '@/components/analytics/AnalyticsMainView';
 import SubscriptionPrompt from '@/components/analytics/SubscriptionPrompt';

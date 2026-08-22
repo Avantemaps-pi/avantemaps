@@ -14,7 +14,7 @@ export class ErrorBoundary extends React.Component<
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error) {
+  override componentDidCatch(error: Error) {
     console.error("App crashed:", error);
     // Log to server via edge function
     supabase.functions.invoke('log-error', {
@@ -28,7 +28,7 @@ export class ErrorBoundary extends React.Component<
     });
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div className="w-full h-screen flex flex-col justify-center items-center bg-purple-700 text-white">

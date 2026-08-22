@@ -277,7 +277,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           value={searchTerm}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          className="w-full pl-12 h-10 bg-white/90 backdrop-blur-sm shadow-md transition-all duration-300 border-gray-200 px-[40px] mx-0"
+          className="w-full pl-12 h-10 bg-white/90 backdrop-blur-xs shadow-md transition-all duration-300 border-gray-200 px-[40px] mx-0"
           autoComplete="off"
         />
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

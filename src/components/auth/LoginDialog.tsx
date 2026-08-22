@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { X, AlertCircle, HelpCircle, RefreshCw, ExternalLink, WifiOff, Loader2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@/lib/router-compat";
 import { useAuth } from '@/context/auth';
 import { isPiNetworkAvailable, isPiBrowser } from '@/utils/piNetwork';
 import AuthTroubleshooting from './AuthTroubleshooting';

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/auth';
@@ -103,7 +103,7 @@ export const useBusinessUpdate = (business: Business, onSuccess?: () => void) =>
       
       // Always update images if there are any changes
       if (hasImageChanges || newImageUrls.length > 0) {
-        updatePayload.images = combinedImages.length > 0 ? combinedImages : null;
+        updatePayload['images'] = combinedImages.length > 0 ? combinedImages : null;
       }
 
       // Update business in database using Supabase session user ID

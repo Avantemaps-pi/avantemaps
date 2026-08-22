@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from '@/lib/router-compat';
 import { useBusinessData } from '@/hooks/useBusinessData';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -219,7 +219,7 @@ const Index = () => {
           variant="ghost"
           size="icon"
           onClick={handleMenuClick}
-          className="mr-2 bg-white/80 shadow-sm flex-shrink-0 sm:hidden"
+          className="mr-2 bg-white/80 shadow-xs flex-shrink-0 sm:hidden"
         >
           <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
@@ -260,7 +260,7 @@ const Index = () => {
                 reason = `No businesses found in ${categoryLabel}.`;
               }
               return (
-                <div className="bg-background/95 backdrop-blur-sm rounded-lg px-4 py-3 shadow-sm border border-border flex items-start gap-3">
+                <div className="bg-background/95 backdrop-blur-xs rounded-lg px-4 py-3 shadow-xs border border-border flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">No matching businesses</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{reason}</p>

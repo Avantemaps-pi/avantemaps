@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { cn } from '@/lib/utils';
 import { Sidebar, SidebarContent, SidebarHeader } from '@/components/ui/sidebar';
 import NavItem from './NavItem';

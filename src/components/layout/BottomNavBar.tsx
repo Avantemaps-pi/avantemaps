@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from '@/lib/router-compat';
 import { Map, LayoutGrid, Bookmark, Wallet, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -38,7 +38,7 @@ const BottomNavBar: React.FC = () => {
   return (
     <nav
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-sm transition-transform duration-300",
+        "fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-xs transition-transform duration-300",
         visible ? "translate-y-0" : "translate-y-[calc(100%+env(safe-area-inset-bottom))]"
       )}
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}

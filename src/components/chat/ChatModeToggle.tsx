@@ -19,7 +19,7 @@ const ChatModeToggle: React.FC<ChatModeToggleProps> = ({
         onClick={() => onChatModeChange('ai')}
         className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
           chatMode === 'ai'
-            ? 'bg-primary text-primary-foreground shadow-sm'
+            ? 'bg-primary text-primary-foreground shadow-xs'
             : 'text-muted-foreground hover:text-foreground'
         }`}
       >
@@ -32,7 +32,7 @@ const ChatModeToggle: React.FC<ChatModeToggleProps> = ({
         onClick={() => onChatModeChange('live')}
         className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
           chatMode === 'live'
-            ? 'bg-primary text-primary-foreground shadow-sm'
+            ? 'bg-primary text-primary-foreground shadow-xs'
             : 'text-muted-foreground hover:text-foreground'
         }`}
       >

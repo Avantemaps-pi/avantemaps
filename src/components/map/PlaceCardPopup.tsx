@@ -2,7 +2,7 @@ import React, { forwardRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CircleCheck, Info, Shield } from 'lucide-react';
 import CategoryBadge from '@/components/business/CategoryBadge';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { Place } from '@/types/business';
 import ExpandableDescription from '@/components/business/ExpandableDescription';
 import BookmarkButton from './buttons/BookmarkButton';

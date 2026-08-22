@@ -380,7 +380,7 @@ const CountryZoomControl: React.FC = () => {
   const btnBase =
     'w-9 h-9 flex items-center justify-center transition-colors ' +
     'bg-background text-foreground hover:bg-accent hover:text-accent-foreground ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ' +
+    'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ' +
     'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-background disabled:hover:text-foreground';
 
   // Render via portal directly into the Leaflet map container so the absolute

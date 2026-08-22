@@ -101,7 +101,7 @@ const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ disabled })
                       {!disabled && (
                         <button
                           type="button"
-                          className="ml-1 rounded-full outline-none focus:ring-2 focus:ring-offset-1 focus:ring-primary"
+                          className="ml-1 rounded-full outline-hidden focus:ring-2 focus:ring-offset-1 focus:ring-primary"
                           onClick={() => handleRemoveType(type)}
                           disabled={disabled}
                         >

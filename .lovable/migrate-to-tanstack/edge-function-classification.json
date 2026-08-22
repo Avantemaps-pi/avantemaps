@@ -1,0 +1,31 @@
+{
+  "found": 24,
+  "migrated": 0,
+  "left": 24,
+  "functions": [
+    { "name": "approve-payment", "classification": "internal-only, secret-bound (PI_API_KEY, service role) on external Supabase", "outcome": "left" },
+    { "name": "chat-ai", "classification": "internal-only, secret-bound on external Supabase", "outcome": "left" },
+    { "name": "cleanup-deleted-accounts", "classification": "cron target (supabase/migrations)", "outcome": "left" },
+    { "name": "cleanup-stale-payments", "classification": "mixed cron/internal, cron-secret hardened", "outcome": "left" },
+    { "name": "complete-payment", "classification": "internal-only, secret-bound payment-critical on external Supabase", "outcome": "left" },
+    { "name": "contact-otp", "classification": "internal-only, secret-bound (Brevo) on external Supabase", "outcome": "left" },
+    { "name": "create-buckets", "classification": "unknown caller (no internal call sites)", "outcome": "left" },
+    { "name": "delete-account", "classification": "internal-only, secret-bound on external Supabase", "outcome": "left" },
+    { "name": "geocode-address", "classification": "internal-only, secret-bound (geocoding API keys) on external Supabase", "outcome": "left" },
+    { "name": "insert-business", "classification": "internal-only, secret-bound on external Supabase", "outcome": "left" },
+    { "name": "list-user-businesses", "classification": "unknown caller (no internal call sites)", "outcome": "left" },
+    { "name": "log-business-view", "classification": "internal-only, secret-bound on external Supabase", "outcome": "left" },
+    { "name": "log-error", "classification": "internal-only, secret-bound on external Supabase", "outcome": "left" },
+    { "name": "payment-status", "classification": "internal-only, secret-bound payment-critical on external Supabase", "outcome": "left" },
+    { "name": "pinet-meta", "classification": "external caller — Pi Network .pinet metadata endpoint (fixed URL)", "outcome": "left" },
+    { "name": "process-scheduled-notifications", "classification": "cron target (X-Cron-Secret)", "outcome": "left" },
+    { "name": "public-business-detail", "classification": "unknown caller (no internal call sites)", "outcome": "left" },
+    { "name": "public-businesses", "classification": "unknown caller (no internal call sites)", "outcome": "left" },
+    { "name": "send-bulk-notification", "classification": "internal-only, admin, secret-bound on external Supabase", "outcome": "left" },
+    { "name": "supabase-set-session", "classification": "unknown caller (no internal call sites)", "outcome": "left" },
+    { "name": "track-notification", "classification": "internal-only, secret-bound on external Supabase", "outcome": "left" },
+    { "name": "update-pi-price", "classification": "cron target (supabase/migrations) + cron secret", "outcome": "left" },
+    { "name": "verify-business", "classification": "internal-only, secret-bound on external Supabase", "outcome": "left" },
+    { "name": "verify-pi-auth", "classification": "internal-only, secret-bound auth-critical on external Supabase", "outcome": "left" }
+  ]
+}

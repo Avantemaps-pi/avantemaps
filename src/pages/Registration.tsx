@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import AppLayout from '@/components/layout/AppLayout';
 import BusinessRegistrationForm from '@/components/business/BusinessRegistrationForm';
 import { motion } from '@/components/ui/motion';

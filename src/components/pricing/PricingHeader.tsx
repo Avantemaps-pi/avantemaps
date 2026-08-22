@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
@@ -44,13 +44,13 @@ const PricingHeader = ({
             onClick={() => onBillingChange(option)}
             className={`relative flex h-10 items-center justify-center rounded-full px-6 text-sm font-medium transition ${
               selectedBilling === option
-                ? "bg-background text-foreground shadow-sm"
+                ? "bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {option.charAt(0).toUpperCase() + option.slice(1)}
             {option === "yearly" && selectedBilling === option && (
-              <span className="absolute -right-12 flex h-6 items-center justify-center rounded-full bg-green-600 px-2 text-[10px] font-medium text-white shadow-sm">
+              <span className="absolute -right-12 flex h-6 items-center justify-center rounded-full bg-green-600 px-2 text-[10px] font-medium text-white shadow-xs">
                 Save 20%
               </span>
             )}

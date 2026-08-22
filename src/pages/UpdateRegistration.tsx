@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from '@/lib/router-compat';
 import { Loader2 } from 'lucide-react';
 import { motion } from '@/components/ui/motion';
 import { useIsMobile } from '@/hooks/use-mobile';

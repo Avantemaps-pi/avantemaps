@@ -26,7 +26,7 @@ interface CategoryFilterProps {
 
 const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategoryId, onSelect, className }) => {
   return (
-    <div className={cn('relative bg-background/80 backdrop-blur-sm shadow-sm rounded-xl', className)}>
+    <div className={cn('relative bg-background/80 backdrop-blur-xs shadow-xs rounded-xl', className)}>
       <div
         className="flex gap-2 overflow-x-auto no-scrollbar flex-nowrap scroll-smooth px-3 py-2 pb-3 pr-12"
         role="tablist"
@@ -42,7 +42,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategoryId, onS
             aria-selected={active}
             onClick={() => onSelect(id)}
             className={cn(
-              'flex items-center gap-1.5 flex-none rounded-full border px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap shadow-sm backdrop-blur-sm',
+              'flex items-center gap-1.5 flex-none rounded-full border px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap shadow-xs backdrop-blur-xs',
               active
                 ? 'bg-primary text-primary-foreground border-primary'
                 : 'bg-white/90 text-foreground border-border hover:bg-accent'

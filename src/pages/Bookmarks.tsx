@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PlaceCard from '@/components/business/PlaceCard';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { ArrowDown, BookmarkX, Loader2, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useBusinessBookmarks } from '@/hooks/useBusinessBookmarks';

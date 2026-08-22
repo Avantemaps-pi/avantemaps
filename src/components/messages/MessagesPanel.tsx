@@ -14,7 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Send, Lock, MessageSquare, User as UserIcon, Store } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 
 type OwnedBusiness = { id: number; business_name: string };
 

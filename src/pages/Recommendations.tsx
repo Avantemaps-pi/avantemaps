@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import AppLayout from '@/components/layout/AppLayout';
 import PlaceCard from '@/components/business/PlaceCard';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -135,7 +135,7 @@ const Recommendations = () => {
 
       {!authLoading && !isAuthenticated ? (
         <div className="w-full mx-auto pb-6 px-4 md:px-[15px] flex items-center justify-center min-h-[60vh]">
-          <div className="max-w-md w-full text-center bg-card border rounded-xl p-6 shadow-sm">
+          <div className="max-w-md w-full text-center bg-card border rounded-xl p-6 shadow-xs">
             <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
               <Lock className="h-6 w-6 text-primary" />
             </div>
