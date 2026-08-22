@@ -1,5 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { Resolver } from 'react-hook-form';
 import { formSchema, FormValues } from '@/components/business/registration/formSchema';
 import { Business } from '@/types/business';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
@@ -35,7 +36,10 @@ export const useBusinessFormInit = (business: Business) => {
   const phoneParsed = parseStoredPhone(contactInfo.phone);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    // formSchema uses .default() so its input type has optional fields while
+    // FormValues (the output type) requires them; the resolver still yields
+    // fully-defaulted values at runtime.
+    resolver: zodResolver(formSchema) as unknown as Resolver<FormValues>,
     defaultValues: {
       firstName: contactInfo.first_name || '',
       lastName: contactInfo.last_name || '',

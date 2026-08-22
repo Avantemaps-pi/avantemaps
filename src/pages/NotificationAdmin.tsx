@@ -90,7 +90,7 @@ function TemplatesTab() {
           name: template.name ?? '',
           type: template.type ?? '',
           content_template: template.content_template ?? '',
-          description: template.description,
+          description: template.description ?? null,
           priority: template.priority || 'medium',
           is_active: template.is_active ?? true,
           variables: template.variables || [],
