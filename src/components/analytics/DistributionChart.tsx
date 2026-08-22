@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import type { ActiveShape, PieSectorDataItem } from 'recharts/types/util/types';
+import type { ActiveShape } from 'recharts/types/util/types';
+import type { PieSectorDataItem } from 'recharts/types/polar/Pie';
 
 interface DistributionData {
   name: string;
