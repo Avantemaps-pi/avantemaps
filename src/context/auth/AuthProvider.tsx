@@ -208,10 +208,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // --- Cached session restoration & dev bypass handling (kept local-only for previews) ---
+  // Deferred until the route subtree has hydrated (whenAppHydrated): restoring
+  // the cached user earlier changes SSR-visible DOM (e.g. sidebar login/logout)
+  // while part of the tree is still dehydrated → "Hydration failed" errors.
   useEffect(() => {
-    if (shouldBypassAuth() && DEV_CONFIG?.mockUser) {
+    const runBypass = () => {
       secureLog.info('Development mode: bypassing authentication');
-      const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
+      const mockUser = { ...DEV_CONFIG!.mockUser!, lastAuthenticated: Date.now() };
       safeSetUser(mockUser);
       secureLog.info('Preview bypass uses local mock auth only; verify-pi-auth still requires real Pi tokens.');
 
@@ -220,8 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           secureLog.warn('Failed to create dev user in database:', err)
         );
       });
-      return;
-    }
+    };
 
     const restoreSession = async () => {
       const cachedSession = localStorage.getItem(STORAGE_KEY);
