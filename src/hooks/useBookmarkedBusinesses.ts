@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Place } from '@/types/business';
 import { useAuth } from '@/context/auth';
@@ -171,10 +172,6 @@ export const useBookmarkedBusinesses = () => {
       return places;
     },
     enabled: isAuthenticated,
-    // Rehydrate from localStorage synchronously for instant first paint.
-    initialData: () => readPersistedPlaces(),
-    // Mark the rehydrated data as stale so a fresh network sync runs.
-    initialDataUpdatedAt: 0,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
