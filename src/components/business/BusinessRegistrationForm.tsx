@@ -13,11 +13,34 @@ import { toast } from 'sonner';
 import { PiAuthButton } from './registration/PiAuthButton';
 import { AddressVerificationDialog } from './registration/components/AddressVerificationDialog';
 import { DuplicateWarningDialog } from './registration/components/DuplicateWarningDialog';
+import type { SubmitErrorHandler } from 'react-hook-form';
+import type { FormValues } from './registration/formSchema';
+
+// Field-to-tab mapping, in the order tabs should be prioritized on invalid submit
+const TAB_FIELDS: { tab: string; fields: (keyof FormValues)[] }[] = [
+  { tab: 'business-owner', fields: ['firstName', 'lastName', 'businessName'] },
+  { tab: 'details', fields: ['businessTypes', 'businessDescription', 'piWalletAddress'] },
+  { tab: 'address', fields: ['streetAddress', 'apartment', 'city', 'state', 'zipCode', 'country'] },
+  { tab: 'contact', fields: ['email', 'phone', 'website', 'countryCode'] },
+  {
+    tab: 'hours',
+    fields: [
+      'mondayOpen', 'mondayClose', 'mondayClosed',
+      'tuesdayOpen', 'tuesdayClose', 'tuesdayClosed',
+      'wednesdayOpen', 'wednesdayClose', 'wednesdayClosed',
+      'thursdayOpen', 'thursdayClose', 'thursdayClosed',
+      'fridayOpen', 'fridayClose', 'fridayClosed',
+      'saturdayOpen', 'saturdayClose', 'saturdayClosed',
+      'sundayOpen', 'sundayClose', 'sundayClosed',
+    ],
+  },
+];
 
 interface BusinessRegistrationFormProps {
   onSuccess?: () => void;
   onFormChange?: (hasChanges: boolean) => void;
 }
+
 
 const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrationFormProps) => {
   const isMobile = useIsMobile();
@@ -57,6 +80,21 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrat
     }
   }, [form.formState.isDirty, imageUpload.hasImages, onFormChange]);
 
+  // On invalid submit: jump to the earliest tab containing an error and focus the field
+  const handleInvalid: SubmitErrorHandler<FormValues> = React.useCallback((errors) => {
+    for (const { tab, fields } of TAB_FIELDS) {
+      const field = fields.find((f) => errors[f]);
+      if (field) {
+        setSelectedTab(tab);
+        toast.error('Please fix the highlighted field');
+        // Wait for the tab content to mount before focusing
+        requestAnimationFrame(() => form.setFocus(field));
+        return;
+      }
+    }
+    toast.error('Please fix the highlighted field');
+  }, [form]);
+
   // ✅ Require Pi auth before showing the form
   if (!user) {
     return (
@@ -78,7 +116,7 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrat
         </p>
       </div>
 
-      <FormContainer form={form} onSubmit={onSubmit} isSubmitting={isSubmitting}>
+      <FormContainer form={form} onSubmit={onSubmit} onInvalid={handleInvalid} isSubmitting={isSubmitting}>
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
           <TabNavigation isMobile={isMobile} disabled={isSubmitting} />
           <TabContent
