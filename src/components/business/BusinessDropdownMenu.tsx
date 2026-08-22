@@ -17,6 +17,7 @@ import {
 import { useNavigate } from '@/lib/router-compat';
 import DeleteBusinessDialog from './DeleteBusinessDialog';
 import ShareDialog from './ShareDialog';
+import { getOrigin } from '@/utils/browserEnv';
 
 interface BusinessDropdownMenuProps {
   businessId?: number | undefined;
@@ -33,7 +34,7 @@ const BusinessDropdownMenu = ({ businessId, businessName, onDeleted }: BusinessD
     navigate('/analytics', { state: { businessId } });
   };
 
-  const shareUrl = `${window.location.origin}?place=${businessId}`;
+  const shareUrl = `${getOrigin()}?place=${businessId}`;
 
   return (
     <>

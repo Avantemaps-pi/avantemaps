@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { useNavigate } from '@/lib/router-compat';
+import { useNavigate, useLocation } from '@/lib/router-compat';
 import { Place } from '@/types/business';
 import CategoryBadge from '@/components/business/CategoryBadge';
 import ExpandableDescription from './ExpandableDescription';
@@ -48,6 +48,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
   highlightQuery,
 }) => {
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const isMobile = useIsMobile();
   const [detailsOverlayOpen, setDetailsOverlayOpen] = useState(false);
   
@@ -84,8 +85,8 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
     }
   };
   
-  // Check if we're on the recommendations page
-  const isRecommendationsPage = window.location.pathname === '/recommendations';
+  // Check if we're on the recommendations page (SSR-safe via router location)
+  const isRecommendationsPage = routerLocation.pathname === '/recommendations';
 
   // Parse categories and limit to 2
   const categories = place.category.split(',')

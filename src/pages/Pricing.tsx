@@ -12,6 +12,7 @@ import { useAuth } from '@/context/auth';
 import { useSubscriptionPayment } from '@/components/pricing/useSubscriptionPayment';
 import { PaymentOutcomeBanner } from '@/components/pricing/PaymentOutcomeBanner';
 import MetaTags from '@/components/seo/MetaTags';
+import { getOrigin } from '@/utils/browserEnv';
 
 interface PricingLocationState {
   upgradeNeeded?: boolean;
@@ -91,7 +92,7 @@ const Pricing = () => {
         ogTitle="Avante Maps Pricing - Pay with Pi"
         ogDescription="Flexible subscription plans powered by Pi Network"
         ogImage={{
-          url: `${window.location.origin}/og-image.png`,
+          url: `${getOrigin()}/og-image.png`,
           width: 1200,
           height: 630,
           alt: 'Avante Maps Pricing'

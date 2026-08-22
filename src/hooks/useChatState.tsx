@@ -62,7 +62,10 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
   const { user } = useAuth();
   const [message, setMessage] = useState("");
   const storageKey = getChatStorageKey(user?.uid);
-  const [messages, setMessages] = useState<ChatMessage[]>(() => loadMessagesFromStorage(storageKey));
+  // SSR-safe: start empty and hydrate from localStorage in the mount effect
+  // below (the default greeting's timestamp is nondeterministic, so building
+  // it during render would mismatch between server and client).
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatMode, setChatMode] = useState<ChatMode>(initialChatMode);
   const [awaitingVerificationConfirmation, setAwaitingVerificationConfirmation] = useState(false);
   const [awaitingBusinessSelection, setAwaitingBusinessSelection] = useState(false);
@@ -121,8 +124,11 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
     setMessages(loadMessagesFromStorage(storageKey));
   }, [storageKey]);
 
-  // Persist messages to localStorage whenever they change
+  // Persist messages to localStorage whenever they change.
+  // Skip the initial empty state so we never clobber stored messages
+  // before the hydration effect above has loaded them.
   useEffect(() => {
+    if (messages.length === 0) return;
     saveMessagesToStorage(storageKey, messages);
   }, [messages, storageKey]);
 

@@ -10,6 +10,7 @@ import LoginDialog from '@/components/auth/LoginDialog';
 import { toast } from 'sonner';
 import MetaTags from '@/components/seo/MetaTags';
 import { UnsavedChangesDialog } from '@/components/business/registration/UnsavedChangesDialog';
+import { getOrigin } from '@/utils/browserEnv';
 
 const Registration = () => {
   const isMobile = useIsMobile();
@@ -92,7 +93,7 @@ const Registration = () => {
         ogTitle="Register Your Business on Avante Maps"
         ogDescription="Join the Pi Network business community and reach local customers"
         ogImage={{
-          url: `${window.location.origin}/og-image.png`,
+          url: `${getOrigin()}/og-image.png`,
           width: 1200,
           height: 630,
           alt: 'Register Your Business - Avante Maps'

@@ -6,9 +6,11 @@ export const useNetworkStatus = (
   pendingAuthRef: React.MutableRefObject<boolean>,
   triggerLogin: () => Promise<void>
 ) => {
-  const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
-  
+  // Deterministic SSR default (online); real value syncs on mount (client-only)
+  const [isOffline, setIsOffline] = useState<boolean>(false);
+
   useEffect(() => {
+    setIsOffline(!navigator.onLine);
     const handleOnline = () => {
       setIsOffline(false);
       toast.success("You're back online!");
