@@ -97,14 +97,17 @@ const markPrompted = () => {
 };
 const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
   const [loading, setLoading] = useState(false);
-  const [enabled, setEnabled] = useState<boolean>(readUseLocationPref);
-  const [gpsOptIn, setGpsOptIn] = useState<boolean>(readUseDeviceGps);
+  // SSR-safe deterministic defaults; real prefs hydrate from localStorage in
+  // the mount effect below so server and first client render stay identical.
+  const [enabled, setEnabled] = useState<boolean>(true);
+  const [gpsOptIn, setGpsOptIn] = useState<boolean>(false);
 
   React.useEffect(() => {
     const sync = () => {
       setEnabled(readUseLocationPref());
       setGpsOptIn(readUseDeviceGps());
     };
+    sync();
     window.addEventListener('storage', sync);
     window.addEventListener('use_location_focus_changed', sync as EventListener);
     window.addEventListener('use_device_gps_changed', sync as EventListener);

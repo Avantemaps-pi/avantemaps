@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 
@@ -289,7 +289,11 @@ const CountryClickFocus: React.FC = () => {
   const lastCountryRef = useRef<string | null>(null);
   const layerRef = useRef<L.GeoJSON | null>(null);
 
-  hydrateOnce();
+  // Client-only cache hydration; runs in an effect (not the render body) so
+  // no localStorage access happens during render.
+  useEffect(() => {
+    hydrateOnce();
+  }, []);
 
   const map = useMapEvents({
     click: async (e) => {
