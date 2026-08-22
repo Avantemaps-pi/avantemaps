@@ -127,6 +127,21 @@ const writePersistedPlaces = (places: Place[]) => {
 
 export const useBookmarkedBusinesses = () => {
   const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+
+  // SSR-safe rehydration: seed the query cache from localStorage in a mount
+  // effect instead of a render-time `initialData` read, which would make the
+  // first client render diverge from the server HTML for users with
+  // persisted bookmarks. Seeded with updatedAt 0 so it is immediately stale
+  // and a fresh network sync still runs.
+  useEffect(() => {
+    const existing = queryClient.getQueryData(['bookmarked-businesses']);
+    if (existing !== undefined) return;
+    const persisted = readPersistedPlaces();
+    if (persisted) {
+      queryClient.setQueryData(['bookmarked-businesses'], persisted, { updatedAt: 0 });
+    }
+  }, [queryClient]);
 
   const { data: bookmarkedPlaces = [], isLoading } = useQuery({
     queryKey: ['bookmarked-businesses'],

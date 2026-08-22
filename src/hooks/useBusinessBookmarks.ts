@@ -95,7 +95,7 @@ export const useBusinessBookmarks = () => {
   // for users with persisted bookmarks).
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const hydratedRef = React.useRef(false);
+  const hydratedRef = useRef(false);
 
   const BOOKMARKS_QUERY_KEY = ['bookmarked-businesses'] as const;
 
