@@ -32,6 +32,7 @@ import { SubscriptionTier } from '@/utils/piNetwork/types';
 import { shouldBypassAuth, DEV_CONFIG } from '@/config/environment';
 import AuthContext from './useAuth';
 import { secureLog } from '@/utils/secureLogger';
+import { whenAppHydrated } from '@/utils/hydrationSignal';
 import { verifyPiAuthentication } from '@/utils/piNetwork/verification';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
