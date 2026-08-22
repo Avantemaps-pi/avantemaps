@@ -19,7 +19,7 @@ type ChatMessage = {
   sender: string;
   timestamp: string;
   businesses?: Array<{ id: number; business_name: string; verification_status?: string | null; is_verified?: boolean }>;
-  verificationMetrics?: VerificationMetrics;
+  verificationMetrics?: VerificationMetrics | undefined;
   contactVerification?: { email: string; businessId: number };
   animateVerification?: boolean;
 };

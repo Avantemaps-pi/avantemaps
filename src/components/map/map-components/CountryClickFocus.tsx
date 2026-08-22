@@ -135,8 +135,8 @@ const pointInRing = (lng: number, lat: number, ring: number[][]) => {
     const ri = ring[i];
     const rj = ring[j];
     if (!ri || !rj) continue;
-    const [xi, yi] = ri;
-    const [xj, yj] = rj;
+    const [xi = 0, yi = 0] = ri;
+    const [xj = 0, yj = 0] = rj;
     const intersect =
       yi > lat !== yj > lat &&
       lng < ((xj - xi) * (lat - yi)) / (yj - yi + 1e-12) + xi;

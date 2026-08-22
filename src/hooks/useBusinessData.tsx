@@ -117,7 +117,7 @@ const fetchBusinesses = async (): Promise<Place[]> => {
   const userId = user?.id || undefined;
   
   const { data, error } = await supabase
-    .rpc('get_public_business_info', { user_uuid: userId });
+    .rpc('get_public_business_info', userId ? { user_uuid: userId } : {});
   
   if (error) throw error;
   

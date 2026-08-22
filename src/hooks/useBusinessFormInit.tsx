@@ -23,7 +23,7 @@ const parseStoredPhone = (phone?: string): { countryCode: string; nationalNumber
   // Fallback: try simple regex (less reliable)
   const match = phone.match(/^(\+\d{1,3})(.*)/);
   if (match) {
-    return { countryCode: match[1], nationalNumber: match[2].trim() };
+    return { countryCode: match[1] ?? '+1', nationalNumber: (match[2] ?? '').trim() };
   }
   
   return { countryCode: '+1', nationalNumber: phone };

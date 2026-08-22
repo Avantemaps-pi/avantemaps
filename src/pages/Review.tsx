@@ -61,7 +61,7 @@ const Review = () => {
           // Use the SECURITY DEFINER RPC so sensitive fields (pi_wallet_address)
           // are never exposed; this also works for non-owners viewing the page.
           const { data: rows, error } = await supabase
-            .rpc('get_public_business_info', { user_uuid: user?.uid ?? null });
+            .rpc('get_public_business_info', user?.uid ? { user_uuid: user.uid } : {});
 
           if (error) throw error;
           const data = (rows ?? []).find((r: any) => r.id === parseInt(businessId));
