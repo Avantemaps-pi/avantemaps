@@ -223,6 +223,18 @@ const SessionRestoration = () => {
   return null;
 };
 
+/**
+ * Rendered INSIDE the root Suspense boundary so its mount effect fires only
+ * after the route subtree has hydrated. Signals AuthProvider that it is now
+ * safe to restore the cached session without causing hydration mismatches.
+ */
+const AppHydrationSignal = () => {
+  useEffect(() => {
+    markAppHydrated();
+  }, []);
+  return null;
+};
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
@@ -285,6 +297,7 @@ function RootComponent() {
                 <Toaster />
                 <Sonner />
                 <Suspense fallback={<PageLoader />}>
+                  <AppHydrationSignal />
                   <Outlet />
                 </Suspense>
               </SidebarProvider>
