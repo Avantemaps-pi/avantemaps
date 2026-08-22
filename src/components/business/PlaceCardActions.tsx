@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { Bookmark, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLocation } from '@/lib/router-compat';
+import { getOrigin } from '@/utils/browserEnv';
 import ShareDialog from './ShareDialog';
 
 interface PlaceCardActionsProps {
@@ -21,6 +23,7 @@ const PlaceCardActions: React.FC<PlaceCardActionsProps> = ({
   placeName,
   placeId
 }) => {
+  const routerLocation = useLocation();
   const [showShareDialog, setShowShareDialog] = useState(false);
 
   const handleShareClick = (e: React.MouseEvent) => {
@@ -28,11 +31,11 @@ const PlaceCardActions: React.FC<PlaceCardActionsProps> = ({
     setShowShareDialog(true);
   };
 
-  // Build share URL
-  const isRecommendationsPage = window.location.pathname === '/recommendations';
+  // Build share URL (SSR-safe: router location + guarded origin)
+  const isRecommendationsPage = routerLocation.pathname === '/recommendations';
   const shareUrl = isRecommendationsPage 
-    ? `${window.location.origin}/recommendations/${placeId}`
-    : `${window.location.origin}?place=${placeId}`;
+    ? `${getOrigin()}/recommendations/${placeId}`
+    : `${getOrigin()}?place=${placeId}`;
 
   return (
     <>

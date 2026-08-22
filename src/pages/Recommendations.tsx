@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { useBusinessData } from '@/hooks/useBusinessData';
 import { useAuth } from '@/context/auth';
 import LoginDialog from '@/components/auth/LoginDialog';
+import { getOrigin } from '@/utils/browserEnv';
 
 const Recommendations = () => {
   const navigate = useNavigate();
@@ -121,7 +122,7 @@ const Recommendations = () => {
         ogTitle="Business Recommendations on Avante Maps"
         ogDescription="Discover top-rated local businesses recommended by the community"
         ogImage={{
-          url: `${window.location.origin}/og-image.png`,
+          url: `${getOrigin()}/og-image.png`,
           width: 1200,
           height: 630,
           alt: 'Avante Maps Recommendations'

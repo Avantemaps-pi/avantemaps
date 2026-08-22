@@ -22,6 +22,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import NotFound from "@/pages/NotFound";
 import { initializePiNetwork } from "@/utils/piNetwork";
 import { prefetchHighPriorityRoutes } from "@/lib/routePrefetch";
+import { markAppHydrated } from "@/utils/hydrationSignal";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 
 import appCss from "../styles.css?url";
@@ -223,6 +224,18 @@ const SessionRestoration = () => {
   return null;
 };
 
+/**
+ * Rendered INSIDE the root Suspense boundary so its mount effect fires only
+ * after the route subtree has hydrated. Signals AuthProvider that it is now
+ * safe to restore the cached session without causing hydration mismatches.
+ */
+const AppHydrationSignal = () => {
+  useEffect(() => {
+    markAppHydrated();
+  }, []);
+  return null;
+};
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
@@ -285,6 +298,7 @@ function RootComponent() {
                 <Toaster />
                 <Sonner />
                 <Suspense fallback={<PageLoader />}>
+                  <AppHydrationSignal />
                   <Outlet />
                 </Suspense>
               </SidebarProvider>

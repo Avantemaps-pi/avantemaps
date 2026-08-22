@@ -48,15 +48,10 @@ const Settings = () => {
   } = useAuth();
   useSessionTimeout();
 
-  const [colorScheme, setColorScheme] = useState<'system' | 'light' | 'dark'>(() => {
-    return localStorage.getItem('colorScheme') as 'system' | 'light' | 'dark' || 'system';
-  });
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedScheme = localStorage.getItem('colorScheme');
-    if (savedScheme === 'dark') return true;
-    if (savedScheme === 'light') return false;
-    return false;
-  });
+  // Deterministic SSR defaults; real values hydrate from localStorage on mount
+  // (see the client-only hydration effect below).
+  const [colorScheme, setColorScheme] = useState<'system' | 'light' | 'dark'>('system');
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isAccountDeleted, setIsAccountDeleted] = useState(false);
   const [deletionDate, setDeletionDate] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>("profile");
@@ -74,6 +69,12 @@ const Settings = () => {
       if (stored === '0') setUseLocation(false);
       const gps = window.localStorage?.getItem('use_device_gps');
       if (gps === '1') setUseDeviceGps(true);
+      const savedScheme = window.localStorage?.getItem('colorScheme');
+      if (savedScheme === 'light' || savedScheme === 'dark' || savedScheme === 'system') {
+        setColorScheme(savedScheme);
+        if (savedScheme === 'dark') setIsDarkMode(true);
+        else if (savedScheme === 'light') setIsDarkMode(false);
+      }
     } catch {
       // ignore — storage unavailable (private mode, disabled, etc.)
     }

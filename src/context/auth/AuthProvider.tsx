@@ -32,6 +32,7 @@ import { SubscriptionTier } from '@/utils/piNetwork/types';
 import { shouldBypassAuth, DEV_CONFIG } from '@/config/environment';
 import AuthContext from './useAuth';
 import { secureLog } from '@/utils/secureLogger';
+import { whenAppHydrated } from '@/utils/hydrationSignal';
 import { verifyPiAuthentication } from '@/utils/piNetwork/verification';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -208,10 +209,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // --- Cached session restoration & dev bypass handling (kept local-only for previews) ---
+  // Deferred until the route subtree has hydrated (whenAppHydrated): restoring
+  // the cached user earlier changes SSR-visible DOM (e.g. sidebar login/logout)
+  // while part of the tree is still dehydrated → "Hydration failed" errors.
   useEffect(() => {
-    if (shouldBypassAuth() && DEV_CONFIG?.mockUser) {
+    const runBypass = () => {
       secureLog.info('Development mode: bypassing authentication');
-      const mockUser = { ...DEV_CONFIG.mockUser, lastAuthenticated: Date.now() };
+      const mockUser = { ...DEV_CONFIG!.mockUser!, lastAuthenticated: Date.now() };
       safeSetUser(mockUser);
       secureLog.info('Preview bypass uses local mock auth only; verify-pi-auth still requires real Pi tokens.');
 
@@ -220,8 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           secureLog.warn('Failed to create dev user in database:', err)
         );
       });
-      return;
-    }
+    };
 
     const restoreSession = async () => {
       const cachedSession = localStorage.getItem(STORAGE_KEY);
@@ -270,8 +273,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Restore session immediately - no artificial delay needed
-    restoreSession().catch((err) => secureLog.warn('Failed to restore cached session:', err));
+    // Wait for the route subtree to hydrate before mutating auth state
+    // (whenAppHydrated fires immediately if hydration already completed,
+    // and has a built-in safety timeout so restore can never be lost).
+    const cancel = whenAppHydrated(() => {
+      if (shouldBypassAuth() && DEV_CONFIG?.mockUser) {
+        runBypass();
+        return;
+      }
+      restoreSession().catch((err) => secureLog.warn('Failed to restore cached session:', err));
+    });
+    return cancel;
   }, [safeSetUser]);
 
   // --- Robust SDK initialization helper (retries + timeout) ---

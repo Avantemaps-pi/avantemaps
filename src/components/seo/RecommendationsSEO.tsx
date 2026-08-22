@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Place } from '@/types/business';
+import { getOrigin } from '@/utils/browserEnv';
 
 interface RecommendationsSEOProps {
   selectedPlace?: Place;
@@ -11,8 +12,8 @@ const RecommendationsSEO: React.FC<RecommendationsSEOProps> = ({ selectedPlace, 
   // Default SEO for recommendations page
   const defaultTitle = 'Discover Amazing Places - Avante Maps Recommendations';
   const defaultDescription = 'Explore curated recommendations of top places, restaurants, and businesses on Avante Maps. Find your next favorite spot!';
-  const defaultImage = `${window.location.origin}/og-image.png`;
-  const defaultUrl = `${window.location.origin}/recommendations`;
+  const defaultImage = `${getOrigin()}/og-image.png`;
+  const defaultUrl = `${getOrigin()}/recommendations`;
 
   // If a specific place is selected, use its details
   if (selectedPlace) {
@@ -27,14 +28,14 @@ const RecommendationsSEO: React.FC<RecommendationsSEOProps> = ({ selectedPlace, 
       }
       
       if (imageUrl.startsWith('/')) {
-        return `${window.location.origin}${imageUrl}`;
+        return `${getOrigin()}${imageUrl}`;
       }
       
       return defaultImage;
     };
 
     const imageUrl = getAbsoluteImageUrl(selectedPlace.image);
-    const url = `${window.location.origin}/recommendations/${selectedPlace.id}`;
+    const url = `${getOrigin()}/recommendations/${selectedPlace.id}`;
 
     return (
       <Helmet>

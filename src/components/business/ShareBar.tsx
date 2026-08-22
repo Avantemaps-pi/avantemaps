@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, Mail, Facebook, Twitter, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getHref } from '@/utils/browserEnv';
 
 interface ShareBarProps {
   title?: string;
@@ -17,7 +18,9 @@ const ShareBar: React.FC<ShareBarProps> = ({
   className = ''
 }) => {
   const { toast } = useToast();
-  const shareUrl = url || window.location.href;
+  // SSR-safe: getHref() returns '' on the server; shareUrl is only consumed
+  // inside click handlers, which run client-side.
+  const shareUrl = url || getHref();
 
   const shareOptions = [
     {

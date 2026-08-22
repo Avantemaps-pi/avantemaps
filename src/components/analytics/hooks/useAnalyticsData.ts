@@ -60,13 +60,15 @@ const MOCK_STATS: BusinessStats = {
 };
 
 export const useAnalyticsData = (businessId?: number, demoMode = false) => {
-  const [dateRange, setDateRange] = useState(() => {
+  // Deterministic SSR default; real value hydrates from localStorage on mount
+  const [dateRange, setDateRange] = useState('week');
+
+  useEffect(() => {
     try {
-      return localStorage.getItem('analytics_dateRange') || 'week';
-    } catch {
-      return 'week';
-    }
-  });
+      const stored = localStorage.getItem('analytics_dateRange');
+      if (stored) setDateRange(stored);
+    } catch {}
+  }, []);
 
   useEffect(() => {
     try {

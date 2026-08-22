@@ -20,6 +20,7 @@ import { useAuth } from '@/context/auth/useAuth';
 import LandingPage from './LandingPage';
 import { useIpLocationFocus } from '@/hooks/useIpLocationFocus';
 import '../styles/map.css';
+import { getOrigin } from '@/utils/browserEnv';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
 const AddBusinessButton = lazy(() => import('@/components/map/buttons/AddBusinessButton'));
@@ -169,8 +170,8 @@ const Index = () => {
           authors={[{ name: 'Avante Maps Team' }]}
           ogType="website"
           ogImage={{
-            url: `${window.location.origin}/og-image.png`,
-            secure_url: `${window.location.origin}/og-image.png`,
+            url: `${getOrigin()}/og-image.png`,
+            secure_url: `${getOrigin()}/og-image.png`,
             type: 'image/png',
             width: 1200,
             height: 630,
@@ -181,7 +182,7 @@ const Index = () => {
             site: '@AvanteMap',
             title: 'Avante Maps - Discover Local Businesses',
             description: 'Find local businesses and pay with Pi Network',
-            image: `${window.location.origin}/og-image.png`,
+            image: `${getOrigin()}/og-image.png`,
             image_alt: 'Avante Maps Preview'
           }}
           structuredData={{
@@ -189,7 +190,7 @@ const Index = () => {
             '@type': 'WebApplication',
             'name': 'Avante Maps',
             'description': 'Local business discovery platform powered by Pi Network',
-            'url': window.location.origin,
+            'url': getOrigin(),
             'applicationCategory': 'BusinessApplication',
             'operatingSystem': 'Web',
             'offers': {

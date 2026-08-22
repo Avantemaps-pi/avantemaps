@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Place } from '@/types/business';
+import { getOrigin } from '@/utils/browserEnv';
 
 interface PlaceCardSEOProps {
   place: Place;
@@ -15,7 +16,7 @@ const PlaceCardSEO: React.FC<PlaceCardSEOProps> = ({ place, isActive }) => {
   
   // Ensure image URL is absolute
   const getAbsoluteImageUrl = (imageUrl: string | undefined) => {
-    if (!imageUrl) return `${window.location.origin}/og-image.png`;
+    if (!imageUrl) return `${getOrigin()}/og-image.png`;
     
     // If already absolute URL, return as is
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
@@ -24,15 +25,15 @@ const PlaceCardSEO: React.FC<PlaceCardSEOProps> = ({ place, isActive }) => {
     
     // If relative URL, make it absolute
     if (imageUrl.startsWith('/')) {
-      return `${window.location.origin}${imageUrl}`;
+      return `${getOrigin()}${imageUrl}`;
     }
     
     // Default fallback
-    return `${window.location.origin}/og-image.png`;
+    return `${getOrigin()}/og-image.png`;
   };
 
   const imageUrl = getAbsoluteImageUrl(place.image);
-  const url = `${window.location.origin}?place=${place.id}`;
+  const url = `${getOrigin()}?place=${place.id}`;
   const siteName = 'Avante Maps';
 
   return (
