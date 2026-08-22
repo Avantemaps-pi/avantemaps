@@ -54,7 +54,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
     const prevTabIndex = focusTarget.getAttribute('tabindex');
     if (prevTabIndex === null) focusTarget.setAttribute('tabindex', '-1');
     focusTarget.focus({ preventScroll: true });
-    // Avoid leaving a persistent focus ring-3 on headings
+    // Avoid leaving a persistent focus ring on headings
     const handleBlur = () => {
       if (prevTabIndex === null) focusTarget.removeAttribute('tabindex');
       focusTarget.removeEventListener('blur', handleBlur);
