@@ -275,7 +275,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                     : "Select a country first to search addresses..."}
                   {...field}
                   ref={(el) => {
-                    inputRefs.current.streetAddress = el;
+                    inputRefs.current['streetAddress'] = el;
                     field.ref(el);
                   }}
                   onChange={(e) => {
@@ -344,7 +344,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                 placeholder="e.g., Suite 100, Unit 5B, Apt 2A"
                 {...field}
                 ref={(el) => {
-                  inputRefs.current.apartment = el;
+                  inputRefs.current['apartment'] = el;
                   field.ref(el);
                 }}
                 disabled={disabled}
@@ -375,7 +375,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                   placeholder="e.g., Toronto"
                   {...field}
                   ref={(el) => {
-                    inputRefs.current.city = el;
+                    inputRefs.current['city'] = el;
                     field.ref(el);
                   }}
                   disabled={disabled}
@@ -404,7 +404,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                   placeholder="e.g., ON"
                   {...field}
                   ref={(el) => {
-                    inputRefs.current.state = el;
+                    inputRefs.current['state'] = el;
                     field.ref(el);
                   }}
                   disabled={disabled}
@@ -433,7 +433,7 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
                   placeholder="e.g., M5H 2N2"
                   {...field}
                   ref={(el) => {
-                    inputRefs.current.zipCode = el;
+                    inputRefs.current['zipCode'] = el;
                     field.ref(el);
                   }}
                   disabled={disabled}

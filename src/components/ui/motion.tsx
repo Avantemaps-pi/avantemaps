@@ -57,7 +57,7 @@ const Motion = React.forwardRef<
 
       if (transition) {
         const { duration } = transition;
-        styles.transition = `all ${duration || 0.3}s ease`;
+        styles['transition'] = `all ${duration || 0.3}s ease`;
       }
 
       return styles;
@@ -89,7 +89,7 @@ const Motion = React.forwardRef<
         // Reset to animate state
         Object.keys(whileHover).forEach((key) => {
           if (key === "scale" || key === "x" || key === "y") {
-            target.style.transform = animate?.transform || "";
+            target.style.transform = animate?.['transform'] || "";
           } else {
             (target.style as any)[key] = animate?.[key] || "";
           }
@@ -124,7 +124,7 @@ const Motion = React.forwardRef<
         // Reset to animate state
         Object.keys(whileTap).forEach((key) => {
           if (key === "scale" || key === "x" || key === "y") {
-            target.style.transform = animate?.transform || "";
+            target.style.transform = animate?.['transform'] || "";
           } else {
             (target.style as any)[key] = animate?.[key] || "";
           }

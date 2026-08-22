@@ -23,7 +23,7 @@ const CommentSection: React.FC<{ businessId?: string }> = ({ businessId }) => {
   const { user } = useAuth();
   
   const targetBusinessId = businessId || 
-                           params.businessId || 
+                           params['businessId'] || 
                            (location.state?.businessDetails?.id);
 
   const { createComment, loading: isSubmitting } = useComments(targetBusinessId);

@@ -103,7 +103,7 @@ export const useBusinessUpdate = (business: Business, onSuccess?: () => void) =>
       
       // Always update images if there are any changes
       if (hasImageChanges || newImageUrls.length > 0) {
-        updatePayload.images = combinedImages.length > 0 ? combinedImages : null;
+        updatePayload['images'] = combinedImages.length > 0 ? combinedImages : null;
       }
 
       // Update business in database using Supabase session user ID

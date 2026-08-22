@@ -57,13 +57,13 @@ const Notifications = () => {
             }
 
             const newNotification: NotificationProps = {
-              id: payload.new.id,
-              type: payload.new.type,
-              content: payload.new.content,
+              id: payload.new['id'],
+              type: payload.new['type'],
+              content: payload.new['content'],
               time: 'Just now',
-              read: payload.new.read,
-              metadata: payload.new.metadata,
-              priority: payload.new.priority || 'medium'
+              read: payload.new['read'],
+              metadata: payload.new['metadata'],
+              priority: payload.new['priority'] || 'medium'
             };
 
             // Add to new notification IDs for animation

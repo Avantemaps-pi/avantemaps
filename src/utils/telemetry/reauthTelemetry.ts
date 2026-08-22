@@ -22,12 +22,12 @@ const safeMetadata = (
   const meta: Record<string, unknown> = { ...(ctx.metadata ?? {}) };
   if (err) {
     if (err instanceof Error) {
-      meta.error = { name: err.name, message: err.message, stack: err.stack };
+      meta['error'] = { name: err.name, message: err.message, stack: err.stack };
     } else {
       try {
-        meta.error = JSON.parse(JSON.stringify(err));
+        meta['error'] = JSON.parse(JSON.stringify(err));
       } catch {
-        meta.error = String(err);
+        meta['error'] = String(err);
       }
     }
   }

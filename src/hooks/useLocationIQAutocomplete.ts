@@ -68,17 +68,17 @@ export const useLocationIQAutocomplete = () => {
       // Add viewbox if provided (format: "minLon,minLat,maxLon,maxLat")
       if (options?.viewbox) {
         const { minLon, minLat, maxLon, maxLat } = options.viewbox;
-        requestBody.viewbox = `${minLon},${minLat},${maxLon},${maxLat}`;
+        requestBody['viewbox'] = `${minLon},${minLat},${maxLon},${maxLat}`;
       }
       
       // Add country codes if provided
       if (options?.countrycodes) {
-        requestBody.countrycodes = options.countrycodes;
+        requestBody['countrycodes'] = options.countrycodes;
       }
       
       // Add tag filter if provided
       if (options?.tag) {
-        requestBody.tag = options.tag;
+        requestBody['tag'] = options.tag;
       }
 
       const { data, error } = await supabase.functions.invoke('geocode-address', {
