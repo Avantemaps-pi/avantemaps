@@ -34,7 +34,7 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place, className }) => {
   const formattedHours = getFormattedHours();
 
   return (
-    <Card className={`w-full max-w-lg bg-white shadow-md rounded-xl overflow-hidden border border-gray-100 ${className || ''}`}>
+    <Card className={`w-full max-w-lg bg-card shadow-sm rounded-xl overflow-hidden border border-border ${className || ''}`}>
       <CardContent className="p-3">
         
         <div className="grid grid-cols-2 gap-1 overflow-hidden">
@@ -42,9 +42,9 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place, className }) => {
           <div className="min-w-0">
             <div className="flex items-center space-x-1.5 mb-1.5">
               <Clock className="h-4 w-4 text-avante-blue flex-shrink-0" />
-              <h3 className="text-xs font-medium text-gray-700">Trading Hours</h3>
+              <h3 className="text-xs font-medium text-foreground">Trading Hours</h3>
             </div>
-            <div className="text-[11px] space-y-0.5 text-gray-600">
+            <div className="text-[11px] space-y-0.5 text-muted-foreground">
               {formattedHours ? (
                 formattedHours.map(({ day, hours }) => (
                   <p key={day} className="truncate">
@@ -52,7 +52,7 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place, className }) => {
                   </p>
                 ))
               ) : (
-                <p className="text-gray-400 italic">No hours</p>
+                <p className="text-muted-foreground italic">No hours</p>
               )}
             </div>
           </div>
@@ -63,15 +63,15 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place, className }) => {
             <div>
               <div className="flex items-center space-x-1.5 mb-1.5">
                 <Tag className="h-4 w-4 text-avante-purple flex-shrink-0" />
-                <h3 className="text-xs font-medium text-gray-700">Categories</h3>
+                <h3 className="text-xs font-medium text-foreground">Categories</h3>
               </div>
-              <div className="text-[11px] space-y-0.5 text-gray-600">
+              <div className="text-[11px] space-y-0.5 text-muted-foreground">
                 {categories.length > 0 ? (
                   categories.map((category, index) => (
                     <p key={index} className="truncate">{category}</p>
                   ))
                 ) : (
-                  <p className="text-gray-400 italic">None</p>
+                  <p className="text-muted-foreground italic">None</p>
                 )}
               </div>
             </div>
@@ -80,13 +80,13 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place, className }) => {
             <div>
               <div className="flex items-center space-x-1.5 mb-1.5">
                 <Phone className="h-4 w-4 text-avante-teal flex-shrink-0" />
-                <h3 className="text-xs font-medium text-gray-700">Contact</h3>
+                <h3 className="text-xs font-medium text-foreground">Contact</h3>
               </div>
-              <div className="text-[11px] space-y-0.5 text-gray-600 overflow-hidden">
+              <div className="text-[11px] space-y-0.5 text-muted-foreground overflow-hidden">
                 {place.phone ? (
                   <p className="truncate">{place.phone}</p>
                 ) : (
-                  <p className="text-gray-400 italic">No phone</p>
+                  <p className="text-muted-foreground italic">No phone</p>
                 )}
                 {place.email && (
                   <p className="truncate">{place.email}</p>
@@ -99,7 +99,7 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place, className }) => {
               <div>
                 <div className="flex items-center space-x-1.5 mb-1.5">
                   <Globe className="h-4 w-4 text-green-500 flex-shrink-0" />
-                  <h3 className="text-xs font-medium text-gray-700">Website</h3>
+                  <h3 className="text-xs font-medium text-foreground">Website</h3>
                 </div>
                 <a 
                   href={place.website}
