@@ -13,11 +13,34 @@ import { toast } from 'sonner';
 import { PiAuthButton } from './registration/PiAuthButton';
 import { AddressVerificationDialog } from './registration/components/AddressVerificationDialog';
 import { DuplicateWarningDialog } from './registration/components/DuplicateWarningDialog';
+import type { SubmitErrorHandler } from 'react-hook-form';
+import type { FormValues } from './registration/formSchema';
+
+// Field-to-tab mapping, in the order tabs should be prioritized on invalid submit
+const TAB_FIELDS: { tab: string; fields: (keyof FormValues)[] }[] = [
+  { tab: 'business-owner', fields: ['firstName', 'lastName', 'businessName'] },
+  { tab: 'details', fields: ['businessTypes', 'businessDescription', 'piWalletAddress'] },
+  { tab: 'address', fields: ['streetAddress', 'apartment', 'city', 'state', 'zipCode', 'country'] },
+  { tab: 'contact', fields: ['email', 'phone', 'website', 'countryCode'] },
+  {
+    tab: 'hours',
+    fields: [
+      'mondayOpen', 'mondayClose', 'mondayClosed',
+      'tuesdayOpen', 'tuesdayClose', 'tuesdayClosed',
+      'wednesdayOpen', 'wednesdayClose', 'wednesdayClosed',
+      'thursdayOpen', 'thursdayClose', 'thursdayClosed',
+      'fridayOpen', 'fridayClose', 'fridayClosed',
+      'saturdayOpen', 'saturdayClose', 'saturdayClosed',
+      'sundayOpen', 'sundayClose', 'sundayClosed',
+    ],
+  },
+];
 
 interface BusinessRegistrationFormProps {
   onSuccess?: () => void;
   onFormChange?: (hasChanges: boolean) => void;
 }
+
 
 const BusinessRegistrationForm = ({ onSuccess, onFormChange }: BusinessRegistrationFormProps) => {
   const isMobile = useIsMobile();
