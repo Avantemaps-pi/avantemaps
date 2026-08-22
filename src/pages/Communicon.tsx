@@ -105,7 +105,7 @@ const Communicon = () => {
         handleChatModeChange('ai');
         toast.error('No conversation selected', {
           description: 'Open a business listing and tap Message to start a live chat.',
-          action: { label: 'Go to Map', onClick: () => navigate('/map') },
+          action: { label: 'Go to Map', onClick: () => navigate('/') },
         });
         return;
       }
