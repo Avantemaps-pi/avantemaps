@@ -197,7 +197,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ data, title, desc
                       />
                     </g>
                   );
-                }}) as ActiveShape<PieSectorDataItem>)}
+                }) as ActiveShape<PieSectorDataItem>)}
               >
                 {data.map((entry, index) => (
                   <Cell 
