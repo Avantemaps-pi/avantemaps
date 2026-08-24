@@ -1069,6 +1069,7 @@ export type Database = {
           email: string | null
           id: string
           pi_uid: string | null
+          pi_wallet_address: string | null
           scheduled_deletion_at: string | null
           subscription: string | null
           username: string
@@ -1078,6 +1079,7 @@ export type Database = {
           email?: string | null
           id?: string
           pi_uid?: string | null
+          pi_wallet_address?: string | null
           scheduled_deletion_at?: string | null
           subscription?: string | null
           username: string
@@ -1087,6 +1089,7 @@ export type Database = {
           email?: string | null
           id?: string
           pi_uid?: string | null
+          pi_wallet_address?: string | null
           scheduled_deletion_at?: string | null
           subscription?: string | null
           username?: string
