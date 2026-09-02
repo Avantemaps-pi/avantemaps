@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Send, Lock, MessageSquare, User as UserIcon, Store } from 'lucide-react';
+import { ArrowLeft, Send, MessageSquare, User as UserIcon, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from '@/lib/router-compat';
 
@@ -72,11 +72,6 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
     messages,
     loadingConvs,
     loadingMsgs,
-    hasPaidSub,
-    isVerifiedSender,
-    feePi,
-    feeUsd,
-    paying,
     openConversation,
     sendMessage,
   } = useMessages(inbox);
@@ -127,7 +122,6 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
   };
 
   const isBusinessInbox = inbox?.kind === 'business';
-  const canReply = !isBusinessInbox || hasPaidSub;
 
   const activeConv = conversations.find((c) => c.id === activeConvId);
 
@@ -279,53 +273,29 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
             <div ref={messagesEndRef} />
           </div>
 
-          {!canReply ? (
-            <div className="border-t bg-muted/40 p-3 flex items-center gap-2 text-xs">
-              <Lock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-muted-foreground flex-1">
-                Replying as a business requires a paid plan. You can still see how many
-                messages you've received.
-              </span>
-              <Button size="sm" variant="default" onClick={() => navigate('/pricing')}>
-                Upgrade
-              </Button>
+          <div className="border-t p-3 space-y-2">
+            <div className="flex items-center gap-2 bg-muted/50 rounded-full px-4 py-2">
+              <Input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder={isBusinessInbox ? 'Reply as your business...' : 'Type a message...'}
+                className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+              <button
+                onClick={handleSend}
+                disabled={!draft.trim()}
+                className="text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send size={20} className="transform rotate-45" />
+              </button>
             </div>
-          ) : (
-            <div className="border-t p-3 space-y-2">
-              {!isBusinessInbox && !isVerifiedSender && (
-                <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-amber-500/10 border border-amber-500/20 rounded-md px-2.5 py-1.5">
-                  <Lock className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                  <span className="flex-1">
-                    Sending costs <span className="font-medium text-foreground">π {feePi}</span>
-                    {feeUsd > 0 && <> (~${feeUsd.toFixed(2)})</>} per message.
-                    Verify or certify a business to message for free.
-                  </span>
-                </div>
-              )}
-              <div className="flex items-center gap-2 bg-muted/50 rounded-full px-4 py-2">
-                <Input
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  placeholder={isBusinessInbox ? 'Reply as your business...' : 'Type a message...'}
-                  className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                  disabled={paying}
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={!draft.trim() || paying}
-                  className="text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Send size={20} className="transform rotate-45" />
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
         </>
       )}
     </div>
