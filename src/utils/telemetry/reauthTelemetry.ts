@@ -3,7 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 export type ReauthEventType =
   | 'reauth_triggered'
   | 'reauth_failed'
-  | 'reauth_retry_exhausted';
+  | 'reauth_retry_exhausted'
+  | 'pi_auth_timeout'
+  | 'pi_auth_resolved'
+  | 'pi_auth_error';
 
 export interface ReauthEventContext {
   businessId?: number | null;
@@ -60,7 +63,11 @@ export const recordReauthEvent = (
 
   // Structured console log (kept for dev/console-based diagnostics)
   // eslint-disable-next-line no-console
-  console[eventType === 'reauth_triggered' ? 'warn' : 'error'](
+  console[
+    eventType === 'reauth_triggered' || eventType === 'pi_auth_resolved'
+      ? 'warn'
+      : 'error'
+  ](
     `[telemetry] ${eventType}`,
     payload,
   );
