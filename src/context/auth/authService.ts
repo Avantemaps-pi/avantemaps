@@ -438,8 +438,11 @@ export const performLogin = async (
         stack: err instanceof Error ? err.stack : undefined
       });
 
-      // If attempts remain, increment and retry
-      if (authAttempt < maxAuthAttempts) {
+      const isTerminal = err instanceof AuthTimeoutError;
+
+      // If attempts remain, increment and retry — but never re-run a hung
+      // handshake: that pushes the user's first error message minutes out.
+      if (!isTerminal && authAttempt < maxAuthAttempts) {
         authAttempt++;
         secureLog.info(`🔄 Retrying authentication (${authAttempt}/${maxAuthAttempts})`);
         await new Promise(r => setTimeout(r, 300));
@@ -447,8 +450,10 @@ export const performLogin = async (
       }
 
       // Final failure: surface friendly message to user
-      setAuthError(userMessage);
-      toast.error(userMessage, { duration: 6000 });
+      const finalMessage = isTerminal && err instanceof Error ? err.message : userMessage;
+      toast.dismiss('auth-progress');
+      setAuthError(finalMessage);
+      toast.error(finalMessage, { duration: 6000 });
       secureLog.error("❌ Final authentication error surfaced to user:", {
         userMessage,
         attempts: authAttempt + 1
