@@ -11,6 +11,7 @@ import { secureLog } from '@/utils/secureLogger';
 import { verifyPiAuthentication, getDetailedAuthError } from '@/utils/piNetwork/verification';
 import { supabase } from '@/integrations/supabase/client';
 import { shouldBypassAuth, DEV_CONFIG } from '@/config/environment';
+import { recordReauthEvent } from '@/utils/telemetry/reauthTelemetry';
 
 /** Ceiling for a single Pi.authenticate() handshake. */
 export const PI_AUTH_TIMEOUT_MS = 60_000;
@@ -158,11 +159,27 @@ export const performLogin = async (
       // Show progress indicator
       toast.info('Connecting to Pi Network...', { id: 'auth-progress', duration: 120000 });
       
+      const authStartedAt = Date.now();
+      let paymentCallbackFired = false;
+      let timedOut = false;
+
       const authPromise = new Promise<any>((resolve, reject) => {
         // 60s: long enough for a real human approval in Pi Browser, short enough
         // that a hung handshake surfaces a visible error instead of stalling.
         const authTimeout = setTimeout(() => {
+          timedOut = true;
           toast.dismiss('auth-progress');
+          recordReauthEvent('pi_auth_timeout', {
+            isRetry: authAttempt > 0,
+            message: "Pi.authenticate() didn't resolve or reject within the 60s window",
+            metadata: {
+              elapsedMs: Date.now() - authStartedAt,
+              paymentCallbackFired,
+              piPresent: !!window.Pi,
+              piAuthenticateIsFunction: typeof window.Pi?.authenticate === 'function',
+              authAttempt,
+            },
+          });
           reject(new AuthTimeoutError('Pi Network didn\'t respond. Please make sure you approved the request in Pi Browser, then try again.'));
         }, PI_AUTH_TIMEOUT_MS);
 
@@ -173,11 +190,18 @@ export const performLogin = async (
             reject(new Error("Pi SDK not loaded yet. Please refresh the page or try again."));
             return;
           }
-          
+
+          // Captured explicitly (rather than assumed from the check above) so the
+          // pi_auth_timeout event can record what was actually true right before
+          // the call, in case window.Pi changes state in the 60s that follow.
+          const piPresentAtCallTime = !!window.Pi;
+          const piAuthenticateIsFunctionAtCallTime = typeof window.Pi.authenticate === 'function';
+
           secureLog.info("📱 Calling Pi.authenticate()...");
           toast.info('Waiting for Pi Browser approval...', { id: 'auth-progress', duration: 120000 });
-        
+
           window.Pi.authenticate(['username', 'payments', 'wallet_address'], (payment: unknown) => {
+            paymentCallbackFired = true;
             secureLog.info('Incomplete payment detected during authentication');
             try {
               if (window.sessionStorage) {
@@ -191,6 +215,15 @@ export const performLogin = async (
             clearTimeout(authTimeout);
             toast.info('Verifying authentication...', { id: 'auth-progress', duration: 30000 });
             secureLog.info("📱 Pi.authenticate() resolved successfully");
+            recordReauthEvent('pi_auth_resolved', {
+              authUid: res?.user?.uid ?? null,
+              isRetry: authAttempt > 0,
+              message: 'Pi.authenticate() resolved successfully',
+              metadata: {
+                elapsedMs: Date.now() - authStartedAt,
+                timedOutBeforeResolve: timedOut,
+              },
+            });
             resolve(res);
           })
           .catch((err: any) => {
@@ -201,6 +234,23 @@ export const performLogin = async (
               errorType: err?.constructor?.name,
               message: err instanceof Error ? err.message : 'Unknown error'
             });
+            if (!timedOut) {
+              recordReauthEvent(
+                'pi_auth_error',
+                {
+                  isRetry: authAttempt > 0,
+                  message: 'Pi.authenticate() rejected before the 60s timeout fired',
+                  metadata: {
+                    elapsedMs: Date.now() - authStartedAt,
+                    paymentCallbackFired,
+                    piPresentAtCallTime,
+                    piAuthenticateIsFunctionAtCallTime,
+                    errorType: err?.constructor?.name ?? null,
+                  },
+                },
+                err,
+              );
+            }
             reject(err);
           });
         } catch (err) {
