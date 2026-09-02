@@ -11,6 +11,17 @@ import { secureLog } from '@/utils/secureLogger';
 import { verifyPiAuthentication, getDetailedAuthError } from '@/utils/piNetwork/verification';
 import { supabase } from '@/integrations/supabase/client';
 import { shouldBypassAuth, DEV_CONFIG } from '@/config/environment';
+
+/** Ceiling for a single Pi.authenticate() handshake. */
+export const PI_AUTH_TIMEOUT_MS = 60_000;
+
+/** Timeouts are terminal — retrying a hung handshake only multiplies the wait. */
+class AuthTimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthTimeoutError';
+  }
+}
 // Simplified permission check - actual permissions are requested during authentication
 export const requestAuthPermissions = async (
   isSdkInitialized: boolean,
@@ -148,11 +159,12 @@ export const performLogin = async (
       toast.info('Connecting to Pi Network...', { id: 'auth-progress', duration: 120000 });
       
       const authPromise = new Promise<any>((resolve, reject) => {
-        // Increased timeout to 120 seconds - Pi SDK can be slow on mobile/slow connections or user approval
+        // 60s: long enough for a real human approval in Pi Browser, short enough
+        // that a hung handshake surfaces a visible error instead of stalling.
         const authTimeout = setTimeout(() => {
           toast.dismiss('auth-progress');
-          reject(new Error('Authentication request timed out. Please check your connection and try again.'));
-        }, 120000);
+          reject(new AuthTimeoutError('Pi Network didn\'t respond. Please make sure you approved the request in Pi Browser, then try again.'));
+        }, PI_AUTH_TIMEOUT_MS);
 
         try {
           // ✅ Defensive check before calling Pi.authenticate
