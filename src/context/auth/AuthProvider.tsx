@@ -592,6 +592,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginAsSandbox,
         logout,
         authError,
+        clearAuthError,
+        cancelLogin,
         hasAccess,
         refreshUserData: (silent = false) => refreshUserData(true, silent),
         setUser: safeSetUser,
