@@ -7,11 +7,6 @@ import {
   resolvePendingConversation,
   setConversationRunner,
 } from '@/lib/pendingConversationQueue';
-import { useVerifiedSender } from '@/hooks/useVerifiedSender';
-import { useMessageFee } from '@/hooks/useMessageFee';
-import { startPayment } from '@/utils/piPayment/payments';
-import { approvePayment, completePayment } from '@/api/payments';
-import { generateLifecycleId } from '@/utils/correlation';
 import { recordReauthEvent, type ReauthEventType } from '@/utils/telemetry/reauthTelemetry';
 
 export interface Conversation {
@@ -42,8 +37,6 @@ export type Inbox =
   | { kind: 'customer' }
   | { kind: 'business'; businessId: number };
 
-const PAID_PLANS = new Set(['small-business', 'small_business', 'organization']);
-
 export function useMessages(inbox: Inbox | null) {
   const { user, login, refreshUserData } = useAuth();
   const uid = user?.uid;
@@ -52,11 +45,7 @@ export function useMessages(inbox: Inbox | null) {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [loadingConvs, setLoadingConvs] = useState(false);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
-  const [hasPaidSub, setHasPaidSub] = useState(false);
   const channelRef = useRef<any>(null);
-  const { isVerifiedSender } = useVerifiedSender();
-  const { feePi, feeUsd } = useMessageFee();
-  const [paying, setPaying] = useState(false);
   // Deduplicate in-flight startConversationWithBusiness calls per businessId.
   // Recently-resolved promises are also kept for a short TTL so rapid repeat
   // clicks reuse the prior result instead of issuing a new request.
@@ -78,28 +67,6 @@ export function useMessages(inbox: Inbox | null) {
       dedupeTimersRef.current.clear();
     };
   }, []);
-
-
-
-
-  // Check subscription (for business reply gating UI)
-  useEffect(() => {
-    if (!uid) return;
-    (async () => {
-      const { data } = await supabase
-        .from('subscriptions')
-        .select('plan,end_date')
-        .eq('user_id', uid)
-        .order('start_date', { ascending: false })
-        .limit(1);
-      const row = data?.[0];
-      const active =
-        !!row &&
-        PAID_PLANS.has((row.plan ?? '').toString()) &&
-        (!row.end_date || new Date(row.end_date) > new Date());
-      setHasPaidSub(active);
-    })();
-  }, [uid]);
 
   const loadConversations = useCallback(async () => {
     if (!inbox) return;
@@ -498,180 +465,6 @@ export function useMessages(inbox: Inbox | null) {
       const trimmed = body.trim();
       if (!trimmed) return false;
       const sender_role = inbox.kind === 'customer' ? 'customer' : 'business';
-      if (sender_role === 'business' && !hasPaidSub) {
-        toast.error('Upgrade your plan to reply to customer messages', { id: 'msg:biz-reply-gated', duration: 4000 });
-        return false;
-      }
-
-      // Unverified customers must pay a per-message fee before the insert.
-      if (sender_role === 'customer' && !isVerifiedSender) {
-        const conv = conversations.find((c) => c.id === activeConvId);
-        if (!conv) {
-          toast.error('Conversation not found', { id: 'msg:conv-not-found', duration: 4000 });
-          return false;
-        }
-        if (paying) return false;
-        setPaying(true);
-        const feeLifecycleId = generateLifecycleId('msgfee');
-        const logFee = (
-          stage: string,
-          extra: Record<string, unknown> = {},
-        ) => {
-          console.log(
-            JSON.stringify({
-              ts: new Date().toISOString(),
-              level: 'info',
-              event: `client.message_fee.${stage}`,
-              fn: 'useMessages.sendMessage',
-              stage,
-              lifecycleId: feeLifecycleId,
-              conversationId: activeConvId,
-              senderId: uid,
-              businessId: conv.business_id,
-              feePi,
-              ...extra,
-            }),
-          );
-        };
-        logFee('start', { idempotencyCheck: 'pending' });
-        const toastId = toast.loading(
-          `Checking for previous payment…`,
-        );
-        try {
-          // Idempotency pre-check: if a paid, unattached fee already
-          // exists for this sender/conversation within the RLS 60s
-          // window, reuse it instead of charging again. This covers
-          // the case where the previous attempt paid but the message
-          // insert failed (network/RLS), so the user can safely retry.
-          const { data: existingFee, error: precheckError } = await supabase
-            .from('message_fees')
-            .select('id,payment_id,created_at')
-            .eq('conversation_id', activeConvId)
-            .eq('sender_id', uid)
-            .eq('status', 'paid')
-            .is('message_id', null)
-            .gt('created_at', new Date(Date.now() - 55_000).toISOString())
-            .limit(1)
-            .maybeSingle();
-
-          if (precheckError) {
-            logFee('precheck_error', { error: precheckError.message });
-          }
-
-          if (existingFee?.id) {
-            logFee('reused_existing_fee', {
-              outcome: 'reused',
-              feeId: existingFee.id,
-              paymentId: existingFee.payment_id,
-              feeCreatedAt: existingFee.created_at,
-            });
-            toast.success(
-              `Reusing your previous π ${feePi} payment — no new charge.`,
-              { id: toastId, description: `Fee ID: ${existingFee.id.slice(0, 8)}`, duration: 4000 },
-            );
-          } else {
-            logFee('new_payment_start', { outcome: 'new' });
-            toast.loading(`Charging π ${feePi} message fee…`, { id: toastId });
-            const lifecycleId = feeLifecycleId;
-            const memo = `Message fee to business #${conv.business_id}`;
-            const metadata = {
-              kind: 'message_fee' as const,
-              conversationId: activeConvId,
-              businessId: conv.business_id,
-              feePi,
-            };
-            // Guard against Pi SDK firing the same callback twice for
-            // the same paymentId. Each callback is only acted on once;
-            // the server-side completePayment is also idempotent
-            // (payments row + message_fees.payment_id UNIQUE).
-            const approvedIds = new Set<string>();
-            const completedIds = new Set<string>();
-            let settled = false;
-            const settle = (resolve: (v: boolean) => void, v: boolean) => {
-              if (settled) return;
-              settled = true;
-              resolve(v);
-            };
-            const paid = await new Promise<boolean>((resolve) => {
-              startPayment(
-                { amount: feePi, memo, metadata },
-                {
-                  onReadyForServerApproval: async (paymentId) => {
-                    if (approvedIds.has(paymentId)) {
-                      logFee('approve_duplicate_callback', { paymentId });
-                      return;
-                    }
-                    approvedIds.add(paymentId);
-                    logFee('approve', { paymentId });
-                    try {
-                      await approvePayment(
-                        { paymentId, userId: uid, amount: feePi, memo, metadata },
-                        { lifecycleId },
-                      );
-                    } catch (e) {
-                      logFee('approve_error', { paymentId, error: String(e) });
-                      console.error('[sendMessage] approve fee error', e);
-                      settle(resolve, false);
-                    }
-                  },
-                  onReadyForServerCompletion: async (paymentId, txid) => {
-                    if (completedIds.has(paymentId)) {
-                      logFee('complete_duplicate_callback', { paymentId, txid });
-                      return;
-                    }
-                    completedIds.add(paymentId);
-                    logFee('complete', { paymentId, txid });
-                    try {
-                      const res = await completePayment(
-                        { paymentId, userId: uid, amount: feePi, memo, metadata, txid },
-                        { lifecycleId },
-                      );
-                      logFee('complete_done', {
-                        paymentId,
-                        txid,
-                        success: !!res?.success,
-                      });
-                      settle(resolve, !!res?.success);
-                    } catch (e) {
-                      logFee('complete_error', { paymentId, error: String(e) });
-                      console.error('[sendMessage] complete fee error', e);
-                      settle(resolve, false);
-                    }
-                  },
-                  onCancel: () => {
-                    logFee('cancelled', {});
-                    settle(resolve, false);
-                  },
-                  onError: () => {
-                    logFee('sdk_error', {});
-                    settle(resolve, false);
-                  },
-                },
-              ).catch((e) => {
-                logFee('start_error', { error: String(e) });
-                settle(resolve, false);
-              });
-            });
-
-            if (!paid) {
-              logFee('payment_failed', { outcome: 'failed' });
-              toast.error(
-                `Message fee payment was not completed. No charge was made.`,
-                { id: toastId, duration: 4000 },
-              );
-              return false;
-            }
-            logFee('new_payment_success', { outcome: 'charged' });
-            toast.success(`Charged π ${feePi} — sending your message…`, {
-              id: toastId, duration: 4000,
-            });
-          }
-
-        } finally {
-          setPaying(false);
-        }
-      }
-
 
       // Optimistic append: show the message immediately, roll back on error.
       const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -712,33 +505,9 @@ export function useMessages(inbox: Inbox | null) {
         ),
       );
 
-
-      // Idempotently link the paid fee row to this message. Safe to call
-      // unconditionally for customer sends: verified senders simply have no
-      // unattached fee row, so the RPC returns null. Retries are no-ops
-      // thanks to the partial UNIQUE index on message_fees.message_id and
-      // the early-return in the SQL function when the message already has
-      // a fee attached.
-      if (sender_role === 'customer') {
-        try {
-          const { error: attachError } = await (supabase as any).rpc(
-            'attach_message_fee',
-            { _conversation_id: activeConvId, _message_id: inserted.id },
-          );
-          if (attachError) {
-            console.warn(
-              '[sendMessage] attach_message_fee failed',
-              attachError.message,
-            );
-          }
-        } catch (e) {
-          console.warn('[sendMessage] attach_message_fee exception', e);
-        }
-      }
-
       return true;
     },
-    [uid, activeConvId, inbox, hasPaidSub, isVerifiedSender, feePi, conversations, paying],
+    [uid, activeConvId, inbox],
   );
 
   const totalUnread = useMemo(
@@ -758,11 +527,6 @@ export function useMessages(inbox: Inbox | null) {
     messages,
     loadingConvs,
     loadingMsgs,
-    hasPaidSub,
-    isVerifiedSender,
-    feePi,
-    feeUsd,
-    paying,
     totalUnread,
     openConversation,
     startConversationWithBusiness,
