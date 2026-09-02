@@ -390,19 +390,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setLastRefresh(Date.now());
       safeSetAppReady(true);
-    } catch (error: any) {
-      console.error('Login process error:', error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Authentication failed.';
       secureLog.error('Login failed:', error);
-      toast.error(error instanceof Error ? error.message : 'Authentication failed.');
+      safeSetAuthError(message);
+      toast.dismiss('auth-progress');
+      toast.error(message);
     } finally {
       if (authTimeoutRef.current) {
         clearTimeout(authTimeoutRef.current);
         authTimeoutRef.current = null;
       }
+      // Every exit path must settle auth state — a non-ready app with no
+      // pending login keeps the full-screen overlay mounted with no escape.
       safeSetIsLoading(false);
+      safeSetAppReady(true);
       pendingAuthRef.current = false;
     }
   }, [ensureSdkInitialized, isSdkInitialized, safeSetIsLoading, safeSetAuthError, safeSetUser, safeSetAppReady]);
+
+  const clearAuthError = useCallback(() => {
+    safeSetAuthError(null);
+  }, [safeSetAuthError]);
+
+  /** User-initiated escape from a hung Pi handshake. */
+  const cancelLogin = useCallback(() => {
+    if (authTimeoutRef.current) {
+      clearTimeout(authTimeoutRef.current);
+      authTimeoutRef.current = null;
+    }
+    toast.dismiss('auth-progress');
+    pendingAuthRef.current = false;
+    safeSetIsLoading(false);
+    safeSetAppReady(true);
+    safeSetAuthError(null);
+    secureLog.info('Login cancelled by user while waiting for Pi Browser approval');
+  }, [safeSetAuthError, safeSetAppReady, safeSetIsLoading]);
+
 
   // offline handler
   const isOffline = useNetworkStatus(pendingAuthRef, login);
