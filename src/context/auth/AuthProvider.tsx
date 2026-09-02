@@ -350,7 +350,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
     authTimeoutRef.current = setTimeout(() => {
+      // CRITICAL: this watchdog must fully settle auth state. Leaving appReady
+      // false here latches AuthenticatingOverlay on screen forever (the
+      // "stuck on Preparing your map..." bug).
+      toast.dismiss('auth-progress');
       safeSetIsLoading(false);
+      safeSetAppReady(true);
       safeSetAuthError('Authentication timed out. Please retry.');
       toast.error('Authentication timeout. Check your connection.', { duration: 6000 });
       pendingAuthRef.current = false;
