@@ -1,26 +1,67 @@
 import React, { useState, useEffect } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/context/auth';
+import { Button } from '@/components/ui/button';
 import { shouldBypassAuth } from '@/config/environment';
 
-const AuthenticatingOverlay: React.FC = () => {
-  const { isLoading, appReady } = useAuth();
-  const [progress, setProgress] = useState(0);
+/** How long a handshake may run before we offer the user an escape hatch. */
+const SLOW_AUTH_MS = 20_000;
 
-  const hideOverlay = shouldBypassAuth() || (appReady && !isLoading);
+const AuthenticatingOverlay: React.FC = () => {
+  const { isLoading, appReady, authError, clearAuthError, cancelLogin, login } = useAuth();
+  const [progress, setProgress] = useState(0);
+  const [isSlow, setIsSlow] = useState(false);
+
+  const hideOverlay = shouldBypassAuth() || (!authError && appReady && !isLoading);
 
   useEffect(() => {
     if (isLoading) {
       setProgress(0);
+      setIsSlow(false);
       const interval = setInterval(() => {
         setProgress(prev => Math.min(prev + 10, 90));
       }, 800);
-      return () => clearInterval(interval);
+      const slowTimer = setTimeout(() => setIsSlow(true), SLOW_AUTH_MS);
+      return () => {
+        clearInterval(interval);
+        clearTimeout(slowTimer);
+      };
     }
+    setIsSlow(false);
     return undefined;
   }, [isLoading]);
 
   if (hideOverlay) {
     return null;
+  }
+
+  // Failure state: never keep showing fake progress over an auth attempt that
+  // has already failed underneath it.
+  if (authError) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex items-center justify-center p-6 animate-fade-in">
+        <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 text-center shadow-lg">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+            <AlertTriangle className="h-6 w-6 text-destructive" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground">Sign-in didn't complete</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{authError}</p>
+          <div className="mt-6 flex flex-col gap-2">
+            <Button
+              onClick={() => {
+                clearAuthError();
+                void login();
+              }}
+            >
+              Try again
+            </Button>
+            <Button variant="ghost" onClick={clearAuthError}>
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -23,6 +23,8 @@ export interface AuthContextType {
   loginAsSandbox: () => void;
   logout: () => void;
   authError: string | null;
+  clearAuthError: () => void;
+  cancelLogin: () => void;
   hasAccess: (requiredTier: SubscriptionTier) => boolean;
   refreshUserData: (silent?: boolean) => Promise<void>;
   setUser: (user: PiUser | null) => void;
