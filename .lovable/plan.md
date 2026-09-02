@@ -1,115 +1,43 @@
-# Paid Messaging & Reply Gating
+# Fix: stuck forever on "Waiting for Pi Browser approval…"
 
-Add a two-sided message gating system: businesses without a paid plan can read but not reply, and unverified users must pay a Pi fee per message to send.
+## What the code reads confirm so far
 
-## Scope (Phase 1 only)
+Three separate defects line up exactly with the video. All three are verified by reading the current files; the timing behaviour will be confirmed by an actual simulated-failure run before/after the fix.
 
-This plan implements **Phase 1**. Phase 2 (per-business custom fee + 80/20 revenue split) is scaffolded in the schema but disabled behind a feature flag until the platform reaches 50+ active businesses.
+1. **The overlay can never hide after a timeout.**
+   `AuthenticatingOverlay` hides only when `appReady && !isLoading`. `AuthProvider.login()` sets `appReady = false` at the start, and `appReady = true` only on the normal completion path. Its 120s watchdog callback sets `isLoading = false`, sets `authError`, and fires a toast — but never sets `appReady = true`. So when the watchdog is the thing that fires, the full-screen overlay stays mounted permanently. That is an indefinite stick, not a 2-minute one.
 
-## Behavior
+2. **A hung `Pi.authenticate()` is retried, so the real error is minutes away.**
+   `performLogin`'s inner timeout (120s) rejects, and the rejection lands in the retry loop, which retries up to 2 more times with a fresh 120s timer each — roughly 6 minutes before `setAuthError` / the error toast ever runs. A timeout is not a retryable condition here.
 
-### Business side (recipients)
-- Already implemented: `hasPaidSub` gates the send box for `sender_role === 'business'` and DB-level RLS enforces `has_active_paid_subscription` on inserts.
-- Add: unread badge and inbox list **always visible** to unpaid businesses (already true via `loadConversations` — confirm + add an "Upgrade to reply" banner in the conversation view when `!hasPaidSub`).
-- Add: a small "Upgrade required to reply" CTA in `MessagesPanel` that deep-links to `/pricing`.
+3. **The overlay is error-blind and its progress is fake.**
+   Progress is a time-based counter capped at 90%; the overlay never reads `authError`. Even a perfectly working timeout would only silently remove the overlay, and its `fixed inset-0 z-50` surface can sit over the toast layer.
 
-### Customer side (senders)
-- A user is **"verified"** if their Pi account is authenticated AND they own at least one business with `is_verified = true` OR `is_certified = true`. (Reuse existing `is_verified` / `is_certified` columns on `businesses` keyed by `owner_id`.)
-- Verified users → free messaging (current behavior).
-- Unverified users → must pay **π 0.5 per outgoing message** via existing Pi payment flow before the message is inserted.
-- Fee is configurable platform-wide via a new `platform_settings` row (`unverified_message_fee_pi`, default `0.5`).
-- USD equivalent shown in UI is computed from `pi_price` table (already kept fresh by `update-pi-price`).
+## Reproduction (before writing any fix)
 
-## Data model
+Playwright against the running app, in a script under `/tmp/browser/`:
+- block the real `pi-sdk.js`, stub `window.Pi` with an `authenticate()` returning a promise that never settles, and mark the SDK initialised so the flow proceeds past the Pi Browser checks (same technique as `tests/e2e/reauth-false-success.spec.ts`);
+- trigger login from the login dialog, then poll for ~140s recording: overlay visibility, the overlay's message text, whether any error toast is present, and the auth context's `isLoading` / `authError` / `appReady`.
 
-New tables (migration):
+This tells us definitively which of the failure modes above the user is hitting, and gives a before screenshot.
 
-```text
-platform_settings
-  key              text PRIMARY KEY
-  value            jsonb NOT NULL
-  updated_at       timestamptz default now()
-  -- seeded with:
-  --  unverified_message_fee_pi = 0.5
-  --  custom_fee_enabled        = false   (Phase 2 flag)
-  --  custom_fee_min_pi         = 0.1
-  --  custom_fee_max_pi         = 5
-  --  platform_revenue_share    = 0.20
+## Fix
 
-message_fees
-  id               uuid PK
-  message_id       uuid NULL  -- set after message insert
-  conversation_id  uuid NOT NULL
-  sender_id        uuid NOT NULL
-  business_id      int  NOT NULL
-  fee_pi           numeric NOT NULL
-  fee_usd          numeric NOT NULL  -- snapshot at time of payment
-  payment_id       int  NOT NULL REFERENCES payments(id)
-  business_share_pi numeric NOT NULL default 0   -- Phase 2
-  platform_share_pi numeric NOT NULL             -- = fee_pi in Phase 1
-  status           text NOT NULL  -- 'pending' | 'paid' | 'refunded'
-  created_at       timestamptz default now()
-```
+**Root cause — auth state must always settle**
+- In `AuthProvider.login()`, the watchdog callback also sets `appReady = true` (and clears `pendingAuthRef`, as it already does) so no failure path can leave the overlay latched on.
+- Make the same guarantee structural: the `finally` block sets `appReady = true` too, so every exit path (throw, early return, watchdog) ends with a settled state.
+- In `performLogin`, treat a timeout / cancellation as terminal: do not re-enter the retry loop for it. Surface `authError` + toast immediately instead of after ~6 minutes.
+- Lower the hung-authenticate ceiling to a value that still allows real human approval in Pi Browser but fails visibly much sooner (60s), and show a "taking longer than usual" state with a Cancel action at ~20s so a genuinely hung handshake is actionable almost immediately.
 
-Helper SQL functions:
-- `public.is_verified_sender(uid uuid) returns boolean` — true if user owns any verified/certified business.
-- `public.get_platform_setting(key text) returns jsonb`.
+**Overlay — surface errors**
+- `AuthenticatingOverlay` also reads `authError`. When it is non-null, the overlay immediately swaps the fake progress skeleton for an error state: the real message, a **Try again** button (calls `login()`), and a **Dismiss** button (clears the error / closes the overlay) — regardless of `isLoading`.
+- Add the "still waiting" hint + Cancel affordance for the pre-error slow case, so the user is never watching a frozen 90% bar with no way out.
+- Raise the sonner toaster above the overlay (or rely on the in-overlay error copy) so the message is never hidden behind the fixed layer.
 
-RLS:
-- `platform_settings`: public SELECT, admin-only write.
-- `message_fees`: sender can SELECT own rows; service role writes.
+## Verification
 
-Update `messages` INSERT policy to additionally require: `is_verified_sender(auth.uid()) OR EXISTS (paid message_fees row for this conversation in last 60s by this sender)`. The window pattern lets the client (1) pay, (2) insert message, (3) edge function attaches `message_id` to the fee row.
+Re-run the same simulated-hung-`authenticate()` script and confirm: the overlay shows a real, readable error with working Try again / Dismiss well inside the window (target ~60s, with the Cancel affordance at ~20s), `isLoading` returns to false, `appReady` returns to true, and the overlay is dismissible. Screenshot the error state. Also run a normal (non-hung) stub to confirm the happy path still hides the overlay. Build + typecheck clean, no new `any`.
 
-## Edge functions
+## Technical notes
 
-1. **`charge-message-fee`** (new)
-   - Input: `{ conversationId, businessId }`.
-   - Validates JWT, checks `is_verified_sender` — if true returns `{ skip: true }`.
-   - Reads current fee from `platform_settings` + USD from `pi_price`.
-   - Creates Pi payment (reuses `approve-payment` / `complete-payment` flow with `metadata.kind = 'message_fee'`).
-   - On completion inserts `message_fees` row with `status='paid'`, returns `{ feeId }`.
-
-2. **`approve-payment` / `complete-payment`** — extend to recognize `metadata.kind === 'message_fee'` and create the corresponding `message_fees` row (no subscription side-effect).
-
-3. **`attach-message-fee`** (new, tiny) — called after the message insert with `{ feeId, messageId }`; sets `message_fees.message_id`.
-
-## Frontend
-
-- `src/hooks/useVerifiedSender.ts` — fetches `is_verified_sender` for current uid, cached.
-- `src/hooks/useMessageFee.ts` — exposes `{ feePi, feeUsd, requiresPayment, payAndSend }`.
-- `src/hooks/useMessages.ts::sendMessage` — when `sender_role === 'customer'` and `!isVerifiedSender`:
-  1. Call `payAndSend()` → invokes `charge-message-fee` → opens Pi payment UI.
-  2. On success, insert the message, then call `attach-message-fee`.
-  3. On cancel/failure, surface toast and abort.
-- `src/components/chat/ChatInput.tsx` — show inline fee notice: *"Sending costs π 0.5 (~$0.08). Verified businesses message for free."* with a "Why?" tooltip linking to a help section.
-- `src/components/messages/MessagesPanel.tsx` — for unpaid businesses, show inbox + unread counts as today, but replace the input with an "Upgrade to reply" CTA card.
-
-## Phase 2 scaffolding (disabled)
-
-- `custom_fee_enabled` flag in `platform_settings` (default `false`).
-- `businesses.custom_message_fee_pi numeric NULL` column added but unused while flag is false.
-- Fee resolution helper `resolve_message_fee(business_id)` returns platform default until flag flips.
-- Revenue-split math (`business_share_pi`, `platform_share_pi`) computed in `charge-message-fee` but in Phase 1 always 0 / fee.
-
-## Files
-
-New:
-- `supabase/migrations/<ts>_message_fees.sql`
-- `supabase/functions/charge-message-fee/index.ts`
-- `supabase/functions/attach-message-fee/index.ts`
-- `src/hooks/useVerifiedSender.ts`
-- `src/hooks/useMessageFee.ts`
-- `src/components/messages/UpgradeToReplyCard.tsx`
-- `src/components/chat/MessageFeeNotice.tsx`
-
-Edited:
-- `supabase/functions/approve-payment/index.ts`, `complete-payment/index.ts` — handle `kind: 'message_fee'`.
-- `src/hooks/useMessages.ts` — fee-aware send path.
-- `src/components/chat/ChatInput.tsx` — fee notice + disabled state during payment.
-- `src/components/messages/MessagesPanel.tsx` — unpaid-business CTA, keep unread badges visible.
-
-## Out of scope
-
-- Per-business custom fees and revenue payouts (Phase 2).
-- Refund automation for failed message inserts after successful payment (manual via `message_fees.status='refunded'` for now; logged for admin review).
+Files touched: `src/context/auth/AuthProvider.tsx` (watchdog + `finally` settle `appReady`), `src/context/auth/authService.ts` (timeout is terminal, timeout constant lowered, slow-state signal), `src/components/auth/AuthenticatingOverlay.tsx` (error + slow states, retry/dismiss). A `clearAuthError` action is added to the auth context if one is not already exposed. Regression test added under `tests/e2e/` covering "hung Pi authenticate surfaces a visible error and the overlay does not latch".
