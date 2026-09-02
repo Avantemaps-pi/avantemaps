@@ -12,8 +12,12 @@ import { verifyPiAuthentication, getDetailedAuthError } from '@/utils/piNetwork/
 import { supabase } from '@/integrations/supabase/client';
 import { shouldBypassAuth, DEV_CONFIG } from '@/config/environment';
 
-/** Ceiling for a single Pi.authenticate() handshake. */
-export const PI_AUTH_TIMEOUT_MS = 60_000;
+/**
+ * Ceiling for a single Pi.authenticate() handshake.
+ * Overridable via VITE_PI_AUTH_TIMEOUT_MS for e2e tests that simulate a hung
+ * handshake — not a runtime/production behavior change.
+ */
+export const PI_AUTH_TIMEOUT_MS = Number(import.meta.env['VITE_PI_AUTH_TIMEOUT_MS']) || 60_000;
 
 /** Timeouts are terminal — retrying a hung handshake only multiplies the wait. */
 class AuthTimeoutError extends Error {
