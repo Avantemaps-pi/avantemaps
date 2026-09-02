@@ -140,6 +140,14 @@ const AuthenticatingOverlay: React.FC = () => {
                   ? 'Verifying credentials...'
                   : 'Preparing your map...'}
               </p>
+              {isSlow && (
+                <div className="mt-2 flex flex-col items-center gap-2">
+                  <p className="text-xs text-muted-foreground">This is taking longer than usual.</p>
+                  <Button variant="outline" size="sm" onClick={cancelLogin}>
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
