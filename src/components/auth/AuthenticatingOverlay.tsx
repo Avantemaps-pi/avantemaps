@@ -39,7 +39,7 @@ const AuthenticatingOverlay: React.FC = () => {
   // has already failed underneath it.
   if (authError) {
     return (
-      <div className="fixed inset-0 z-50 bg-background flex items-center justify-center p-6 animate-fade-in">
+      <div className="fixed inset-0 z-[70] pointer-events-auto bg-background flex items-center justify-center p-6 animate-fade-in">
         <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 text-center shadow-lg">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
             <AlertTriangle className="h-6 w-6 text-destructive" />
@@ -65,7 +65,7 @@ const AuthenticatingOverlay: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background animate-fade-in">
+    <div className="fixed inset-0 z-[70] pointer-events-auto bg-background animate-fade-in">
       {/* Top progress bar */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-muted overflow-hidden">
         <div
@@ -131,7 +131,7 @@ const AuthenticatingOverlay: React.FC = () => {
             </div>
 
             {/* Center loading indicator */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
               <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
               <p className="text-sm text-muted-foreground font-medium">
                 {progress < 30
@@ -140,6 +140,16 @@ const AuthenticatingOverlay: React.FC = () => {
                   ? 'Verifying credentials...'
                   : 'Preparing your map...'}
               </p>
+              {isSlow && (
+                <>
+                  <p className="text-xs text-muted-foreground max-w-xs">
+                    This is taking longer than usual. Check Pi Browser for an approval prompt, or cancel and try again.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={cancelLogin}>
+                    Cancel
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
