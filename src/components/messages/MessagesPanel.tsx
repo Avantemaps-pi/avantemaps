@@ -134,9 +134,9 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
   }
 
   return (
-    <div className="flex flex-col min-h-[400px] max-h-[60vh] flex-1">
-      {/* Inbox switcher */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
+    <div className="flex flex-col flex-1 min-h-0">
+      {/* Inbox switcher — styled as a second row of the branded header above it */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
         <Select value={inboxKey} onValueChange={(v) => { setInboxKey(v); setActiveConvId(null); }}>
           <SelectTrigger className="h-8 text-xs w-full max-w-[260px]">
             <SelectValue />

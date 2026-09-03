@@ -107,7 +107,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const showQuickChips = chatMode === 'ai' && messages.filter(m => m.sender === 'user').length === 0;
 
   return (
-    <Card className="mt-6 overflow-hidden border-none shadow-md">
+    <Card className="overflow-hidden border-none shadow-md">
       <div className="flex h-full flex-col">
         {/* Branded header */}
         <div className="border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3">
@@ -129,91 +129,93 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         </div>
 
-        {chatMode === 'live' ? (
-          <MessagesPanel
-            initialConversationId={(location.state as any)?.openConversationId ?? null}
-            initialInboxBusinessId={(location.state as any)?.inboxBusinessId ?? null}
-          />
-        ) : (
-          <>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[60vh] min-h-[400px]">
-              {messages.length === 0 ? (
-                <div className="flex h-full items-center justify-center">
-                  <p className="text-center text-muted-foreground">No messages yet. Start a conversation!</p>
-                </div>
-              ) : (
-                <>
-                  {messages.map(msg => (
-                    <div key={msg.id}>
-                      <ChatMessage
-                        id={msg.id}
-                        text={msg.text}
-                        sender={msg.sender}
-                        timestamp={msg.timestamp}
-                      />
-                      {msg.verificationMetrics && (
-                        <div className="mt-2">
-                          <VerificationResultCard
-                            metrics={msg.verificationMetrics}
-                            contactEmail={msg.contactVerification?.email}
-                            contactBusinessId={msg.contactVerification?.businessId}
-                            onSendContactOTP={onSendContactOTP}
-                            onVerifyContactOTP={onVerifyContactOTP}
-                            animate={msg.animateVerification ?? false}
-                          />
-                        </div>
-                      )}
-                      {renderBusinessSelectionButtons(msg)}
-                    </div>
-                  ))}
+        <div className="flex-1 flex flex-col min-h-[400px] max-h-[60vh] overflow-hidden">
+          {chatMode === 'live' ? (
+            <MessagesPanel
+              initialConversationId={(location.state as any)?.openConversationId ?? null}
+              initialInboxBusinessId={(location.state as any)?.inboxBusinessId ?? null}
+            />
+          ) : (
+            <>
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+                {messages.length === 0 ? (
+                  <div className="flex h-full items-center justify-center">
+                    <p className="text-center text-muted-foreground">No messages yet. Start a conversation!</p>
+                  </div>
+                ) : (
+                  <>
+                    {messages.map(msg => (
+                      <div key={msg.id}>
+                        <ChatMessage
+                          id={msg.id}
+                          text={msg.text}
+                          sender={msg.sender}
+                          timestamp={msg.timestamp}
+                        />
+                        {msg.verificationMetrics && (
+                          <div className="mt-2">
+                            <VerificationResultCard
+                              metrics={msg.verificationMetrics}
+                              contactEmail={msg.contactVerification?.email}
+                              contactBusinessId={msg.contactVerification?.businessId}
+                              onSendContactOTP={onSendContactOTP}
+                              onVerifyContactOTP={onVerifyContactOTP}
+                              animate={msg.animateVerification ?? false}
+                            />
+                          </div>
+                        )}
+                        {renderBusinessSelectionButtons(msg)}
+                      </div>
+                    ))}
 
-                  {showQuickChips && (
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {QUICK_REPLIES.map(text => (
-                        <button
-                          key={text}
-                          type="button"
-                          onClick={() => onChipClick(text)}
-                          className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
-                        >
-                          {text}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                    {showQuickChips && (
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {QUICK_REPLIES.map(text => (
+                          <button
+                            key={text}
+                            type="button"
+                            onClick={() => onChipClick(text)}
+                            className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+                          >
+                            {text}
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
-                  <div ref={messagesEndRef} />
-                </>
-              )}
-            </div>
+                    <div ref={messagesEndRef} />
+                  </>
+                )}
+              </div>
 
-            <div className="px-4 pt-2 pb-1 flex items-center justify-center gap-1 text-[10px] text-muted-foreground border-t">
-              <Sparkles className="h-3 w-3" />
-              <span>Powered by CommuniCon</span>
-            </div>
+              <div className="px-4 pt-2 pb-1 flex items-center justify-center gap-1 text-[10px] text-muted-foreground border-t">
+                <Sparkles className="h-3 w-3" />
+                <span>Powered by CommuniCon</span>
+              </div>
 
-            <div className="p-3">
-              <div className="relative flex items-center">
-                <div className="flex w-full bg-muted/50 rounded-full px-4 py-3">
-                  <Input
-                    value={message}
-                    onChange={e => setMessage(e.target.value)}
-                    className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground"
-                    placeholder="Ask about your business..."
-                    onKeyDown={e => e.key === 'Enter' && handleValidatedSendMessage()}
-                  />
-                  <button
-                    onClick={handleValidatedSendMessage}
-                    disabled={!message.trim()}
-                    className="text-primary hover:text-primary/80 ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Send size={20} className="transform rotate-45" />
-                  </button>
+              <div className="p-3">
+                <div className="relative flex items-center">
+                  <div className="flex w-full bg-muted/50 rounded-full px-4 py-3">
+                    <Input
+                      value={message}
+                      onChange={e => setMessage(e.target.value)}
+                      className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground"
+                      placeholder="Ask about your business..."
+                      onKeyDown={e => e.key === 'Enter' && handleValidatedSendMessage()}
+                    />
+                    <button
+                      onClick={handleValidatedSendMessage}
+                      disabled={!message.trim()}
+                      className="text-primary hover:text-primary/80 ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Send size={20} className="transform rotate-45" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
     </Card>
   );
