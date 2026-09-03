@@ -1,12 +1,30 @@
 
 /**
  * Environment configuration for the application
- * 
+ *
  * In a production environment, these values should be injected at build time
  * via environment variables or fetched from a secure backend service.
  */
 
 import { SubscriptionTier } from '@/utils/piNetwork/types';
+
+/**
+ * Exact hostnames that should run the Pi SDK against real Pi Network mainnet
+ * (sandbox: false). Every other hostname (localhost, previews, testnet.avantemaps.com,
+ * etc.) runs sandboxed. Exact-match only — do NOT switch this back to a suffix/includes
+ * check, since "endsWith('.avantemaps.com')" previously misclassified
+ * testnet.avantemaps.com as mainnet.
+ *
+ * Single source of truth: consumed by src/routes/__root.tsx's inline PI_INIT_SCRIPT
+ * (interpolated at build time, since that script runs before the JS bundle loads and
+ * can't import this at runtime) and by the runtime fallback in
+ * src/utils/piNetwork/core.ts's determineSandboxMode(). Add new mainnet hostnames here
+ * only — never re-hardcode a second list.
+ */
+export const MAINNET_PI_HOSTNAMES = ['avantemaps.com', 'mainnet.avantemaps.com'] as const;
+
+export const isMainnetPiHost = (hostname: string): boolean =>
+  (MAINNET_PI_HOSTNAMES as readonly string[]).includes(hostname);
 
 // Build-time security check: Ensure auth bypass is never enabled in production builds
 if (import.meta.env.PROD) {

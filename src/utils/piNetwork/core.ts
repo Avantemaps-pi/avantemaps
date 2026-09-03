@@ -4,6 +4,7 @@
  */
 
 import type { AuthResult, PaymentDTO, PaymentCallbacks, PaymentData, Scope } from './types';
+import { isMainnetPiHost } from '@/config/environment';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // State Machine
@@ -76,10 +77,9 @@ export const determineSandboxMode = (): boolean => {
     return (window as any).__piSandboxMode;
   }
   
-  // Fallback: only production domain uses sandbox: false
-  const host = window.location.hostname;
-  const isProduction = host === 'avantemaps.com' || host.endsWith('.avantemaps.com');
-  return !isProduction;
+  // Fallback: only the exact mainnet hostnames use sandbox: false (single source of
+  // truth in src/config/environment.ts — keep in sync with __root.tsx's PI_INIT_SCRIPT).
+  return !isMainnetPiHost(window.location.hostname);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

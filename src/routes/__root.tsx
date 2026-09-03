@@ -24,26 +24,35 @@ import { initializePiNetwork } from "@/utils/piNetwork";
 import { prefetchHighPriorityRoutes } from "@/lib/routePrefetch";
 import { markAppHydrated } from "@/utils/hydrationSignal";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
+import { MAINNET_PI_HOSTNAMES } from "@/config/environment";
 
 import appCss from "../styles.css?url";
 import heroIcon72 from "@/assets/avante-icon-72.webp";
 import heroIcon144 from "@/assets/avante-icon-144.webp";
 
 // Preserved verbatim from the Classic index.html — Pi SDK is initialized exactly
-// ONCE here; sandbox is FALSE only on avantemaps.com domains.
+// ONCE here; sandbox is FALSE only on the exact mainnet hostnames below.
+//
+// Hostname list is interpolated at build time from MAINNET_PI_HOSTNAMES
+// (src/config/environment.ts) — the single source of truth also used by
+// src/utils/piNetwork/core.ts's determineSandboxMode() fallback. This script itself
+// stays a raw inline string (it must run before the JS bundle loads, so it can't
+// import that constant at runtime) — do not hardcode a second hostname list here.
 const PI_INIT_SCRIPT = `
-      // Sandbox detection: ONLY production domain uses sandbox: false
-      // All other environments (localhost, preview, testnet) use sandbox: true
+      // Sandbox detection: ONLY the exact mainnet hostnames below use sandbox: false.
+      // Every other hostname (localhost, preview, testnet.avantemaps.com, etc.) uses
+      // sandbox: true. Exact-match only — a suffix/endsWith check previously and
+      // incorrectly classified testnet.avantemaps.com as mainnet.
       const hostname = window.location.hostname;
-      const isProduction = hostname === "avantemaps.com" || hostname.endsWith(".avantemaps.com");
-      const isSandbox = !isProduction;
+      const isMainnetHost = ${JSON.stringify(MAINNET_PI_HOSTNAMES)}.includes(hostname);
+      const isSandbox = !isMainnetHost;
 
       // Initialize Pi SDK immediately when script loads (not on window.load)
       // This ensures Pi.init() is called before any authenticate() calls
       // IMPORTANT: This is the ONLY place Pi.init() should be called
       (function initPiSdk() {
         if (window.Pi) {
-          console.log("🔧 Pi SDK Init:", { hostname, isProduction, sandbox: isSandbox });
+          console.log("🔧 Pi SDK Init:", { hostname, isMainnetHost, sandbox: isSandbox });
           Pi.init({
             version: "2.0",
             sandbox: isSandbox,
