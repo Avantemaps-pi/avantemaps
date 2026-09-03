@@ -31,3 +31,8 @@ verify_jwt = false
 
 [functions.public-businesses]
 verify_jwt = false
+
+# TEMPORARY diagnostic endpoint — see supabase/functions/telemetry-beacon/index.ts.
+# Must stay unverified: navigator.sendBeacon() cannot attach an Authorization header.
+[functions.telemetry-beacon]
+verify_jwt = false
