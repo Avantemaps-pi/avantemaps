@@ -15,11 +15,11 @@
 // caller sends) so beacon-sourced rows are unambiguous in analysis:
 //   select * from reauth_telemetry where metadata->>'via' = 'beacon_fallback'
 //   order by created_at desc;
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { checkRateLimit, createRateLimitResponse, getClientIP } from "../_shared/rateLimit.ts";
-import { corsHeaders } from "../_shared/cors.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { checkRateLimit, createRateLimitResponse, getClientIP } from '../_shared/rateLimit.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
-const ALLOWED_EVENT_TYPES = ["pi_auth_timeout", "pi_auth_resolved", "pi_auth_error"] as const;
+const ALLOWED_EVENT_TYPES = ['pi_auth_timeout', 'pi_auth_resolved', 'pi_auth_error'] as const;
 type AllowedEventType = (typeof ALLOWED_EVENT_TYPES)[number];
 
 const truncate = (value: unknown, maxLen: number): string | null => {
@@ -33,17 +33,17 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // auth_uid is a uuid column — reject anything that isn't shaped like one rather
 // than letting a malformed value fail the whole insert.
 const asUuidOrNull = (value: unknown): string | null =>
-  typeof value === "string" && UUID_RE.test(value) ? value : null;
+  typeof value === 'string' && UUID_RE.test(value) ? value : null;
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "POST only" }), {
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'POST only' }), {
       status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -62,21 +62,21 @@ Deno.serve(async (req) => {
     if (!ALLOWED_EVENT_TYPES.includes(eventType)) {
       return new Response(
         JSON.stringify({
-          error: `event_type must be one of: ${ALLOWED_EVENT_TYPES.join(", ")}`,
+          error: `event_type must be one of: ${ALLOWED_EVENT_TYPES.join(', ')}`,
         }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
     const rawMetadata =
-      body?.metadata && typeof body.metadata === "object" && !Array.isArray(body.metadata)
+      body?.metadata && typeof body.metadata === 'object' && !Array.isArray(body.metadata)
         ? body.metadata
         : {};
 
     const payload = {
       event_type: eventType as AllowedEventType,
       business_id:
-        typeof body?.business_id === "number" && Number.isFinite(body.business_id)
+        typeof body?.business_id === 'number' && Number.isFinite(body.business_id)
           ? body.business_id
           : null,
       local_uid: truncate(body?.local_uid, 200),
@@ -87,35 +87,35 @@ Deno.serve(async (req) => {
       // Always stamped server-side, regardless of what the client sent, so
       // beacon-sourced rows are unambiguous even if the client-side tagging
       // is ever removed or changed.
-      metadata: { ...rawMetadata, via: "beacon_fallback" },
+      metadata: { ...rawMetadata, via: 'beacon_fallback' },
       user_agent: truncate(body?.user_agent, 500),
       url: truncate(body?.url, 500),
     };
 
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const { error } = await supabase.from("reauth_telemetry").insert(payload);
+    const { error } = await supabase.from('reauth_telemetry').insert(payload);
 
     if (error) {
-      console.error("Failed to insert beacon telemetry:", error);
-      return new Response(JSON.stringify({ error: "Failed to persist telemetry" }), {
+      console.error('Failed to insert beacon telemetry:', error);
+      return new Response(JSON.stringify({ error: 'Failed to persist telemetry' }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    console.error("telemetry-beacon error:", err);
-    return new Response(JSON.stringify({ error: "Internal error" }), {
+    console.error('telemetry-beacon error:', err);
+    return new Response(JSON.stringify({ error: 'Internal error' }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
