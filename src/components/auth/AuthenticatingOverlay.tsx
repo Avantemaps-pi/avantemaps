@@ -131,7 +131,7 @@ const AuthenticatingOverlay: React.FC = () => {
             </div>
 
             {/* Center loading indicator */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
               <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
               <p className="text-sm text-muted-foreground font-medium">
                 {progress < 30
@@ -140,6 +140,16 @@ const AuthenticatingOverlay: React.FC = () => {
                   ? 'Verifying credentials...'
                   : 'Preparing your map...'}
               </p>
+              {isSlow && (
+                <>
+                  <p className="text-xs text-muted-foreground max-w-xs">
+                    This is taking longer than usual. Check Pi Browser for an approval prompt, or cancel and try again.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={cancelLogin}>
+                    Cancel
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
