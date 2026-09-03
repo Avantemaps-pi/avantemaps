@@ -1,19 +1,26 @@
-// TEMPORARY DIAGNOSTIC ENDPOINT — safe to remove once the "does Pi Browser's
-// mainnet webview silently block fetch() to Supabase?" question is answered.
+// Permanent insert path for pi_auth_timeout / pi_auth_resolved / pi_auth_error
+// (see src/utils/telemetry/reauthTelemetry.ts, BEACON_ONLY_EVENT_TYPES).
 //
-// Accepts a POST from navigator.sendBeacon() (which cannot set an Authorization
-// header, so this must stay verify_jwt = false — see supabase/config.toml) and
-// inserts a row into reauth_telemetry using the service role key, bypassing RLS.
-// This is necessary regardless of the webview theory: the anon role is flatly
-// rejected by reauth_telemetry's existing INSERT policy (confirmed via a direct
-// RLS test), since pi_auth_timeout/pi_auth_resolved can fire before any Supabase
-// auth session exists. The existing RLS policy on reauth_telemetry is untouched —
-// this function does not loosen it, it is a separate, narrowly-scoped path.
+// These three events fire from inside performLogin() *before*
+// supabase.auth.setSession() is ever reached, at a point where the Supabase
+// client structurally has no authenticated-role session — confirmed directly
+// against reauth_telemetry's RLS (SET LOCAL ROLE anon → 42501, and the
+// INSERT policy is `TO authenticated` only). This is true on every platform,
+// not a mainnet/webview-specific issue, and has been the case since these
+// event types were added. The normal client-side insert() can never succeed
+// for these three, so they route here exclusively instead.
 //
-// Only accepts the three event types this diagnostic cares about, and always
-// stamps metadata.via = "beacon_fallback" server-side (regardless of what the
-// caller sends) so beacon-sourced rows are unambiguous in analysis:
-//   select * from reauth_telemetry where metadata->>'via' = 'beacon_fallback'
+// Accepts a POST from navigator.sendBeacon() (which cannot set an
+// Authorization header, so this must stay verify_jwt = false — see
+// supabase/config.toml) and inserts a row into reauth_telemetry using the
+// service role key, deliberately bypassing RLS for this narrow, validated
+// path. The existing RLS policy on reauth_telemetry itself is untouched.
+//
+// Only accepts the three event types above — this is not a general-purpose
+// anonymous insert endpoint for the table — and always stamps
+// metadata.via = "beacon" server-side (regardless of what the caller sends)
+// so beacon-sourced rows are identifiable for data-provenance purposes:
+//   select * from reauth_telemetry where metadata->>'via' = 'beacon'
 //   order by created_at desc;
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkRateLimit, createRateLimitResponse, getClientIP } from '../_shared/rateLimit.ts';
@@ -21,6 +28,11 @@ import { corsHeaders } from '../_shared/cors.ts';
 
 const ALLOWED_EVENT_TYPES = ['pi_auth_timeout', 'pi_auth_resolved', 'pi_auth_error'] as const;
 type AllowedEventType = (typeof ALLOWED_EVENT_TYPES)[number];
+
+// Generous for this payload shape (a handful of short strings + a small
+// metadata object) — real bodies are well under 2KB. Rejects abuse attempts
+// before they ever reach JSON.parse.
+const MAX_BODY_BYTES = 20_000;
 
 const truncate = (value: unknown, maxLen: number): string | null => {
   if (value === null || value === undefined) return null;
@@ -35,61 +47,112 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const asUuidOrNull = (value: unknown): string | null =>
   typeof value === 'string' && UUID_RE.test(value) ? value : null;
 
+const jsonResponse = (body: unknown, status: number): Response =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'POST only' }), {
-      status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: 'POST only' }, 405);
   }
 
-  // Public, unauthenticated endpoint (sendBeacon can't attach a JWT) — rate
-  // limit by IP to bound abuse of this diagnostic-only insert path.
   const ip = getClientIP(req);
-  const rl = checkRateLimit(`telemetry-beacon:${ip}`, { windowMs: 60_000, maxRequests: 20 });
-  if (!rl.allowed) {
-    return createRateLimitResponse(rl.retryAfter ?? 60, undefined, corsHeaders);
+
+  // Public, unauthenticated endpoint by necessity (sendBeacon can't attach a
+  // JWT) using the service role internally — treat it with the scrutiny of
+  // any other public unauthenticated write surface. There's no platform-level
+  // per-function rate limit on Supabase Edge Functions (only generic
+  // project-wide quota/DDoS protection at the edge, not something a function
+  // can configure) — this in-memory per-IP check is the same hand-rolled
+  // approach every other public function in this repo already uses
+  // (see log-error, verify-business, etc.).
+  const ipLimit = checkRateLimit(`telemetry-beacon:ip:${ip}`, { windowMs: 60_000, maxRequests: 20 });
+  if (!ipLimit.allowed) {
+    console.warn('telemetry-beacon rate limited (ip)', { ip });
+    return createRateLimitResponse(ipLimit.retryAfter ?? 60, undefined, corsHeaders);
+  }
+
+  const contentLength = Number(req.headers.get('content-length') ?? '0');
+  if (contentLength > MAX_BODY_BYTES) {
+    console.warn('telemetry-beacon rejected oversized body', { ip, contentLength });
+    return jsonResponse({ error: 'Payload too large' }, 413);
   }
 
   try {
-    const body = await req.json();
+    const rawText = await req.text();
+    if (rawText.length > MAX_BODY_BYTES) {
+      console.warn('telemetry-beacon rejected oversized body (no content-length header)', {
+        ip,
+        length: rawText.length,
+      });
+      return jsonResponse({ error: 'Payload too large' }, 413);
+    }
 
-    const eventType = body?.event_type;
-    if (!ALLOWED_EVENT_TYPES.includes(eventType)) {
-      return new Response(
-        JSON.stringify({
-          error: `event_type must be one of: ${ALLOWED_EVENT_TYPES.join(', ')}`,
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    let body: unknown;
+    try {
+      body = JSON.parse(rawText);
+    } catch {
+      return jsonResponse({ error: 'Malformed JSON body' }, 400);
+    }
+
+    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+      return jsonResponse({ error: 'Body must be a JSON object' }, 400);
+    }
+    const parsedBody = body as Record<string, unknown>;
+
+    const eventType = parsedBody.event_type;
+    if (!ALLOWED_EVENT_TYPES.includes(eventType as AllowedEventType)) {
+      return jsonResponse(
+        { error: `event_type must be one of: ${ALLOWED_EVENT_TYPES.join(', ')}` },
+        400,
       );
     }
 
+    // Secondary rate limit scoped to the reported local_uid, when present —
+    // catches abuse from a single client cycling IPs while claiming the same
+    // local_uid. local_uid is client-supplied and not cryptographically
+    // verified (there's no session to verify it against, by design — see the
+    // file header), so this is defense-in-depth, not an identity boundary.
+    const localUid = typeof parsedBody.local_uid === 'string' ? parsedBody.local_uid : null;
+    if (localUid) {
+      const uidLimit = checkRateLimit(`telemetry-beacon:uid:${localUid}`, {
+        windowMs: 60_000,
+        maxRequests: 10,
+      });
+      if (!uidLimit.allowed) {
+        console.warn('telemetry-beacon rate limited (local_uid)', { ip, localUid });
+        return createRateLimitResponse(uidLimit.retryAfter ?? 60, undefined, corsHeaders);
+      }
+    }
+
     const rawMetadata =
-      body?.metadata && typeof body.metadata === 'object' && !Array.isArray(body.metadata)
-        ? body.metadata
+      parsedBody.metadata && typeof parsedBody.metadata === 'object' && !Array.isArray(parsedBody.metadata)
+        ? (parsedBody.metadata as Record<string, unknown>)
         : {};
 
     const payload = {
       event_type: eventType as AllowedEventType,
       business_id:
-        typeof body?.business_id === 'number' && Number.isFinite(body.business_id)
-          ? body.business_id
+        typeof parsedBody.business_id === 'number' && Number.isFinite(parsedBody.business_id)
+          ? parsedBody.business_id
           : null,
-      local_uid: truncate(body?.local_uid, 200),
-      auth_uid: asUuidOrNull(body?.auth_uid),
-      retry_reason: truncate(body?.retry_reason, 200),
-      is_retry: body?.is_retry === true,
-      message: truncate(body?.message, 1000),
+      local_uid: truncate(localUid, 200),
+      auth_uid: asUuidOrNull(parsedBody.auth_uid),
+      retry_reason: truncate(parsedBody.retry_reason, 200),
+      is_retry: parsedBody.is_retry === true,
+      message: truncate(parsedBody.message, 1000),
       // Always stamped server-side, regardless of what the client sent, so
       // beacon-sourced rows are unambiguous even if the client-side tagging
       // is ever removed or changed.
-      metadata: { ...rawMetadata, via: 'beacon_fallback' },
-      user_agent: truncate(body?.user_agent, 500),
-      url: truncate(body?.url, 500),
+      metadata: { ...rawMetadata, via: 'beacon' },
+      user_agent: truncate(parsedBody.user_agent, 500),
+      url: truncate(parsedBody.url, 500),
     };
 
     const supabase = createClient(
@@ -99,23 +162,24 @@ Deno.serve(async (req) => {
 
     const { error } = await supabase.from('reauth_telemetry').insert(payload);
 
+    // sendBeacon gives the caller zero visibility into success/failure — log
+    // with enough context to actually triage from Supabase's function logs,
+    // since this is now the *only* write path for these three event types.
     if (error) {
-      console.error('Failed to insert beacon telemetry:', error);
-      return new Response(JSON.stringify({ error: 'Failed to persist telemetry' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      console.error('telemetry-beacon: failed to insert row', {
+        ip,
+        eventType,
+        error: error.message,
       });
+      return jsonResponse({ error: 'Failed to persist telemetry' }, 500);
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ success: true }, 200);
   } catch (err) {
-    console.error('telemetry-beacon error:', err);
-    return new Response(JSON.stringify({ error: 'Internal error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    console.error('telemetry-beacon: unhandled error', {
+      ip,
+      error: err instanceof Error ? err.message : String(err),
     });
+    return jsonResponse({ error: 'Internal error' }, 500);
   }
 });

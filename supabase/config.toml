@@ -32,7 +32,8 @@ verify_jwt = false
 [functions.public-businesses]
 verify_jwt = false
 
-# TEMPORARY diagnostic endpoint — see supabase/functions/telemetry-beacon/index.ts.
+# Permanent insert path for pi_auth_timeout/pi_auth_resolved/pi_auth_error —
+# see supabase/functions/telemetry-beacon/index.ts for why.
 # Must stay unverified: navigator.sendBeacon() cannot attach an Authorization header.
 [functions.telemetry-beacon]
 verify_jwt = false
