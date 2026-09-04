@@ -5,19 +5,27 @@
  * Production incident this covers: multiple users are hitting the
  * "Pi Network didn't respond" timeout with retry not resolving it, and the
  * only diagnostic signal used to be secureLogger's console output — invisible
- * to us once it happens in someone else's browser. authService.ts now records
- * a 'pi_auth_timeout' telemetry event (via recordReauthEvent /
- * reauth_telemetry) the moment the 60s watchdog fires, and a 'pi_auth_resolved'
- * event when Pi.authenticate() succeeds, so we can tell server-side whether
- * Pi.authenticate() is hanging vs. failing fast for affected users.
+ * to us once it happens in someone else's browser. authService.ts records a
+ * 'pi_auth_timeout' telemetry event the moment the 60s watchdog fires (and
+ * 'pi_auth_resolved' when Pi.authenticate() succeeds), so we can tell
+ * server-side whether Pi.authenticate() is hanging vs. failing fast.
+ *
+ * pi_auth_timeout / pi_auth_resolved / pi_auth_error fire from inside
+ * performLogin() before supabase.auth.setSession() is ever reached, at a
+ * point where the Supabase client structurally has no authenticated-role
+ * session — confirmed directly against reauth_telemetry's RLS (it's
+ * `TO authenticated` only; SET LOCAL ROLE anon -> 42501). The normal
+ * client-side insert() can never pass RLS for these three event types, on any
+ * platform, so recordReauthEvent() (reauthTelemetry.ts) routes them
+ * exclusively through supabase/functions/telemetry-beacon via
+ * navigator.sendBeacon() instead, which inserts with the service role key.
+ * This test asserts both halves of that: the beacon request actually fires,
+ * and — just as importantly — no direct insert to reauth_telemetry is ever
+ * attempted for this event type (it would be wasted, since it cannot succeed).
  *
  * This test simulates a hung Pi.authenticate() call (mirrors the window.Pi
  * stubbing pattern from reauth-false-success.spec.ts, but the stub's
- * authenticate() never resolves or rejects instead of rejecting immediately)
- * and asserts that exactly one 'pi_auth_timeout' telemetry insert reaches
- * Supabase, with sensible metadata, once the 60s window elapses — without
- * writing to the real reauth_telemetry table (the insert is intercepted and
- * fulfilled locally).
+ * authenticate() never resolves or rejects instead of rejecting immediately).
  */
 import { test, expect } from '@playwright/test';
 
@@ -26,22 +34,31 @@ import { test, expect } from '@playwright/test';
 // from button click to the recorded event can run somewhat past 60s.
 test.setTimeout(150_000);
 
-test('hung Pi.authenticate() records exactly one pi_auth_timeout telemetry event', async ({ page }) => {
-  const telemetryInserts: any[] = [];
+test('hung Pi.authenticate() records exactly one pi_auth_timeout event via the beacon path, never the direct insert', async ({
+  page,
+}) => {
+  const beaconPayloads: any[] = [];
+  const directInsertAttempts: string[] = [];
 
-  // Intercept the reauth_telemetry insert so this test never writes to the
-  // real production table — just observes what authService.ts would have sent.
-  await page.route('**/rest/v1/reauth_telemetry**', async (route) => {
+  // Intercept the beacon edge function so this test never writes to the real
+  // production table — just observes what recordReauthEvent() would have sent.
+  await page.route('**/functions/v1/telemetry-beacon**', async (route) => {
     if (route.request().method() === 'POST') {
-      // supabase-js sends insert([payload]) as a JSON array body, even for a
-      // single row — spread it so telemetryInserts holds the row objects
-      // themselves, not the wrapping array.
-      const body = route.request().postDataJSON();
-      telemetryInserts.push(...body);
-      await route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
+      const body = JSON.parse(route.request().postData() ?? '{}');
+      beaconPayloads.push(body);
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{"success":true}' });
     } else {
       await route.continue();
     }
+  });
+
+  // pi_auth_timeout must NEVER attempt the direct insert path (it's beacon-only
+  // now) — track any attempt so it fails the test rather than silently passing.
+  await page.route('**/rest/v1/reauth_telemetry**', async (route) => {
+    if (route.request().method() === 'POST') {
+      directInsertAttempts.push(route.request().url());
+    }
+    await route.continue();
   });
 
   // Block the real Pi SDK so it can't overwrite the stub below.
@@ -73,15 +90,16 @@ test('hung Pi.authenticate() records exactly one pi_auth_timeout telemetry event
   // The 60s watchdog (PI_AUTH_TIMEOUT_MS) must fire and surface the existing
   // user-facing error — unchanged by this instrumentation. It shows up in
   // multiple places at once (toast + overlay + dialog), so just wait for the
-  // telemetry insert itself rather than pin down one specific element.
+  // beacon payload itself rather than pin down one specific element.
   await expect
-    .poll(() => telemetryInserts.some((row) => row?.event_type === 'pi_auth_timeout'), {
+    .poll(() => beaconPayloads.some((row) => row?.event_type === 'pi_auth_timeout'), {
       timeout: 120_000,
     })
     .toBe(true);
 
-  // Exactly one pi_auth_timeout event, with sensible metadata.
-  const timeoutEvents = telemetryInserts.filter((row) => row?.event_type === 'pi_auth_timeout');
+  // Exactly one pi_auth_timeout event, with sensible metadata, tagged as
+  // beacon-sourced.
+  const timeoutEvents = beaconPayloads.filter((row) => row?.event_type === 'pi_auth_timeout');
   expect(timeoutEvents).toHaveLength(1);
 
   const [event] = timeoutEvents;
@@ -93,6 +111,10 @@ test('hung Pi.authenticate() records exactly one pi_auth_timeout telemetry event
   expect(event.is_retry).toBe(false);
 
   // No spurious success/error events for this hung attempt.
-  expect(telemetryInserts.filter((row) => row?.event_type === 'pi_auth_resolved')).toHaveLength(0);
-  expect(telemetryInserts.filter((row) => row?.event_type === 'pi_auth_error')).toHaveLength(0);
+  expect(beaconPayloads.filter((row) => row?.event_type === 'pi_auth_resolved')).toHaveLength(0);
+  expect(beaconPayloads.filter((row) => row?.event_type === 'pi_auth_error')).toHaveLength(0);
+
+  // The direct insert path must never be attempted for pi_auth_timeout — it
+  // is beacon-only, since it structurally cannot pass reauth_telemetry's RLS.
+  expect(directInsertAttempts).toHaveLength(0);
 });
