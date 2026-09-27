@@ -226,6 +226,18 @@ const LoginDialog: React.FC<LoginDialogProps> = ({
     }
   }, [open, refreshPreflight]);
 
+  // A terminal authError means AuthenticatingOverlay is now showing its own
+  // full-screen error card with the real retry/dismiss actions. Radix portals
+  // this dialog's modal to the end of <body>, so leaving it open would paint
+  // it on top of (and aria-hide) that overlay, making its buttons unreachable
+  // by mouse, keyboard, or screen reader. Close it so the overlay is the sole
+  // modal.
+  useEffect(() => {
+    if (open && authError) {
+      onOpenChange(false);
+    }
+  }, [open, authError, onOpenChange]);
+
   // Tick down the cooldown every second while active and dialog is open
   useEffect(() => {
     if (!open || cooldownRemaining <= 0) return;
