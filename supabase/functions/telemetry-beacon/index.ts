@@ -10,17 +10,20 @@
 // event types were added. The normal client-side insert() can never succeed
 // for these three, so they route here exclusively instead.
 //
-// Accepts a POST from navigator.sendBeacon() (which cannot set an
-// Authorization header, so this must stay verify_jwt = false — see
-// supabase/config.toml) and inserts a row into reauth_telemetry using the
+// Accepts a POST from a keepalive fetch() or navigator.sendBeacon() (neither
+// sends an Authorization header, so this must stay verify_jwt = false — see
+// supabase/config.toml). The body is read as raw text and parsed as JSON
+// whatever the Content-Type, so text/plain (no CORS preflight) works. It
+// inserts a row into reauth_telemetry using the
 // service role key, deliberately bypassing RLS for this narrow, validated
 // path. The existing RLS policy on reauth_telemetry itself is untouched.
 //
 // Only accepts the three event types above — this is not a general-purpose
 // anonymous insert endpoint for the table — and always stamps
-// metadata.via = "beacon" server-side (regardless of what the caller sends)
-// so beacon-sourced rows are identifiable for data-provenance purposes:
-//   select * from reauth_telemetry where metadata->>'via' = 'beacon'
+// metadata.via server-side ('beacon-fetch' / 'beacon-sendbeacon' when the
+// caller reports one of those, otherwise 'beacon') so beacon-sourced rows are
+// identifiable for data-provenance purposes:
+//   select * from reauth_telemetry where metadata->>'via' like 'beacon%'
 //   order by created_at desc;
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkRateLimit, createRateLimitResponse, getClientIP } from '../_shared/rateLimit.ts';
@@ -33,6 +36,11 @@ type AllowedEventType = (typeof ALLOWED_EVENT_TYPES)[number];
 // metadata object) — real bodies are well under 2KB. Rejects abuse attempts
 // before they ever reach JSON.parse.
 const MAX_BODY_BYTES = 20_000;
+
+// Which client transport delivered the row. Anything else (including older
+// clients that send no/other value) is stamped as plain 'beacon'.
+const ALLOWED_VIA = ['beacon-fetch', 'beacon-sendbeacon'] as const;
+type AllowedVia = (typeof ALLOWED_VIA)[number];
 
 const truncate = (value: unknown, maxLen: number): string | null => {
   if (value === null || value === undefined) return null;
@@ -147,10 +155,13 @@ Deno.serve(async (req) => {
       retry_reason: truncate(parsedBody.retry_reason, 200),
       is_retry: parsedBody.is_retry === true,
       message: truncate(parsedBody.message, 1000),
-      // Always stamped server-side, regardless of what the client sent, so
-      // beacon-sourced rows are unambiguous even if the client-side tagging
-      // is ever removed or changed.
-      metadata: { ...rawMetadata, via: 'beacon' },
+      // Always stamped server-side from a fixed allowlist, so beacon-sourced
+      // rows are unambiguous (and prefixed 'beacon') even if the client-side
+      // tagging is ever removed or changed.
+      metadata: {
+        ...rawMetadata,
+        via: ALLOWED_VIA.includes(parsedBody.via as AllowedVia) ? (parsedBody.via as AllowedVia) : 'beacon',
+      },
       user_agent: truncate(parsedBody.user_agent, 500),
       url: truncate(parsedBody.url, 500),
     };
