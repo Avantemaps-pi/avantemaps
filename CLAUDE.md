@@ -17,16 +17,17 @@ I'm working on **Avante Maps** — a Pi Network-powered business directory web a
 
 ## Tech Stack
 
-- **Framework:** React 18.3.1 + TypeScript 5.5.3 + Vite 5.4.1 (SWC plugin)
-- **Routing:** React Router DOM 7.18.1, routes lazy-loaded via `React.lazy()` + `Suspense`
+- **Framework:** TanStack Start (`@tanstack/react-start`) with server-side rendering — NOT a client-only SPA. React 19 + TypeScript 5.8 + Vite 8, configured through `@lovable.dev/vite-tanstack-config` in `vite.config.ts` (it already bundles the React, Tailwind, nitro and TanStack plugins — don't add them again). `src/server.ts` is the SSR server entry.
+- **Routing:** TanStack Router (`@tanstack/react-router`), file-based routes in `src/routes/` (`src/routeTree.gen.ts` is generated — don't hand-edit). NOT React Router. `src/lib/router-compat.tsx` is a shim that maps React Router v6-style calls (`useNavigate`, `Link`, etc.) onto TanStack Router, so older components still import from `@/lib/router-compat`.
 - **Backend:** Supabase (Postgres + Auth + Edge Functions + Realtime), client `@supabase/supabase-js` 2.110.0
+- **Supabase URL/project is hardcoded**, not read from env: `src/config/supabase.ts` (`SUPABASE_CONFIG`) holds the URL, anon key and project ID for `xvpwbocwasbtzrzrxyvu`, and `useBusinessRegistration.ts` / `useChatState.tsx` also hardcode full function URLs. `VITE_SUPABASE_URL` in `.env` is NOT read by any client code, so changing env vars in a deployment does not change which project it talks to — every build uses this one project.
 - **Data fetching:** TanStack Query (React Query) 5.56.2 — used across all major hooks with `staleTime`/`gcTime` caching
 - **Forms/validation:** React Hook Form 7.53.0 + Zod 3.23.8
 - **UI:** Tailwind CSS 3.4.11 + shadcn/ui (Radix UI primitives) + Lucide React icons + Sonner for toasts
 - **Maps:** Leaflet 1.9.4 + React Leaflet 4.2.1 + React Leaflet Cluster 2.1.0, OpenStreetMap tiles (NOTE: `@googlemaps/react-wrapper` is in package.json but UNUSED — the entire map is Leaflet-based, this dependency is dead weight)
 - **Charts:** Recharts 2.15.4 (business analytics dashboards)
 - **Testing:** Playwright configured (`playwright.config.ts` → `tests/e2e/`) but test coverage appears minimal/possibly empty — verify before assuming tests exist
-- **Package manager:** Bun (bun.lock/bun.lockb present alongside package-lock.json)
+- **Package manager:** Bun. `bun.lock` is the ONLY lockfile — `package-lock.json` was deliberately removed (and is gitignored), and `bun.lockb` was superseded by the text-format `bun.lock`. Don't commit a second lockfile.
 - **Hosting:** Vercel (via GitHub), Supabase Edge Functions on Deno runtime
 - **Payments/blockchain:** Pi Network SDK
 
