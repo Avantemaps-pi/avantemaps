@@ -28,7 +28,7 @@ I'm working on **Avante Maps** — a Pi Network-powered business directory web a
 - **Charts:** Recharts 2.15.4 (business analytics dashboards)
 - **Testing:** Playwright configured (`playwright.config.ts` → `tests/e2e/`) but test coverage appears minimal/possibly empty — verify before assuming tests exist
 - **Package manager:** Bun. `bun.lock` is the ONLY lockfile — `package-lock.json` was deliberately removed (and is gitignored), and `bun.lockb` was superseded by the text-format `bun.lock`. Don't commit a second lockfile.
-- **Hosting:** Vercel (via GitHub), Supabase Edge Functions on Deno runtime
+- **Hosting:** Vercel (via GitHub) for both `mainnet.avantemaps.com` and `testnet.avantemaps.com` (confirmed via `server: Vercel` / `x-vercel-id` response headers), with SSR running as a Vercel function. The build's Cloudflare target in `@lovable.dev/vite-tanstack-config` is only nitro's *fallback* when no provider is detected; on Vercel, nitro auto-detects Vercel and builds for it. Local builds fall back to Cloudflare output (`.output/`). Supabase Edge Functions run on Deno.
 - **Payments/blockchain:** Pi Network SDK
 
 ---
