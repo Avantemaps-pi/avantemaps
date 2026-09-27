@@ -72,43 +72,12 @@ const safeMetadata = (
 // delivered the row; the edge function copies it into metadata.via.
 const BEACON_CONTENT_TYPE = 'text/plain;charset=UTF-8';
 
-const sendBeaconOnlyEvent = (
+const sendViaSendBeacon = (
   eventType: ReauthEventType,
   payload: Record<string, unknown>,
 ): void => {
-  if (typeof fetch === 'function') {
-    try {
-      void fetch(BEACON_ENDPOINT_URL, {
-        method: 'POST',
-        keepalive: true,
-        credentials: 'omit',
-        headers: { 'Content-Type': BEACON_CONTENT_TYPE },
-        body: JSON.stringify({ ...payload, via: 'beacon-fetch' }),
-      })
-        .then((res) => {
-          if (!res.ok) {
-            console.warn('[telemetry] beacon-fetch rejected by telemetry-beacon', {
-              eventType,
-              status: res.status,
-            });
-          }
-        })
-        .catch((fetchErr) => {
-          console.warn('[telemetry] beacon-fetch request failed', { eventType, error: fetchErr });
-        });
-      return;
-    } catch (fetchErr) {
-      console.warn('[telemetry] fetch threw synchronously — falling back to sendBeacon', {
-        eventType,
-        error: fetchErr,
-      });
-    }
-  }
-
   if (typeof navigator === 'undefined' || typeof navigator.sendBeacon !== 'function') {
-    console.warn('[telemetry] fetch and sendBeacon both unavailable — beacon-only event dropped', {
-      eventType,
-    });
+    console.warn('[telemetry] sendBeacon unavailable — beacon-only event dropped', { eventType });
     return;
   }
 
@@ -128,6 +97,53 @@ const sendBeaconOnlyEvent = (
       eventType,
       error: beaconErr,
     });
+  }
+};
+
+// Any fetch failure (missing, synchronous throw, rejected promise, non-2xx)
+// falls back to sendBeacon. A request that reached the server but whose
+// response was lost can produce a duplicate row; that's accepted, and the two
+// rows are distinguishable by metadata.via.
+const sendBeaconOnlyEvent = (
+  eventType: ReauthEventType,
+  payload: Record<string, unknown>,
+): void => {
+  if (typeof fetch !== 'function') {
+    sendViaSendBeacon(eventType, payload);
+    return;
+  }
+
+  try {
+    void fetch(BEACON_ENDPOINT_URL, {
+      method: 'POST',
+      keepalive: true,
+      credentials: 'omit',
+      headers: { 'Content-Type': BEACON_CONTENT_TYPE },
+      body: JSON.stringify({ ...payload, via: 'beacon-fetch' }),
+    }).then(
+      (res) => {
+        if (!res.ok) {
+          console.warn('[telemetry] beacon-fetch rejected by telemetry-beacon — falling back to sendBeacon', {
+            eventType,
+            status: res.status,
+          });
+          sendViaSendBeacon(eventType, payload);
+        }
+      },
+      (fetchErr) => {
+        console.warn('[telemetry] beacon-fetch request failed — falling back to sendBeacon', {
+          eventType,
+          error: fetchErr,
+        });
+        sendViaSendBeacon(eventType, payload);
+      },
+    );
+  } catch (fetchErr) {
+    console.warn('[telemetry] fetch threw synchronously — falling back to sendBeacon', {
+      eventType,
+      error: fetchErr,
+    });
+    sendViaSendBeacon(eventType, payload);
   }
 };
 
