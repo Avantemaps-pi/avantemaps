@@ -33,9 +33,11 @@ export interface ReauthEventContext {
 // types — this is not a mainnet/webview issue, it is true everywhere and has
 // been since PR #72. They route exclusively through
 // supabase/functions/telemetry-beacon instead, which inserts with the service
-// role key (bypassing RLS) via navigator.sendBeacon() (no session/JWT needed).
-// Query beacon-sourced rows via:
-//   select * from reauth_telemetry where metadata->>'via' = 'beacon'
+// role key (bypassing RLS). Sent via keepalive fetch(), falling back to
+// navigator.sendBeacon() (no session/JWT needed on either path).
+// metadata.via is 'beacon-fetch' / 'beacon-sendbeacon' (or plain 'beacon' for
+// rows from older clients). Query beacon-sourced rows via:
+//   select * from reauth_telemetry where metadata->>'via' like 'beacon%'
 //   order by created_at desc;
 const BEACON_ENDPOINT_URL = `${getSupabaseFunctionsUrl()}/telemetry-beacon`;
 const BEACON_ONLY_EVENT_TYPES = new Set<ReauthEventType>([
@@ -61,6 +63,88 @@ const safeMetadata = (
     }
   }
   return meta;
+};
+
+// text/plain + credentials: 'omit' makes this a CORS "simple" request, so no
+// preflight is needed on any browser (telemetry-beacon parses the raw text as
+// JSON regardless of Content-Type). keepalive lets the request outlive a page
+// unload the same way sendBeacon does. `via` records which transport
+// delivered the row; the edge function copies it into metadata.via.
+const BEACON_CONTENT_TYPE = 'text/plain;charset=UTF-8';
+
+const sendViaSendBeacon = (
+  eventType: ReauthEventType,
+  payload: Record<string, unknown>,
+): void => {
+  if (typeof navigator === 'undefined' || typeof navigator.sendBeacon !== 'function') {
+    console.warn('[telemetry] sendBeacon unavailable — beacon-only event dropped', { eventType });
+    return;
+  }
+
+  try {
+    // A string body is sent as text/plain;charset=UTF-8 — no preflight.
+    const queued = navigator.sendBeacon(
+      BEACON_ENDPOINT_URL,
+      JSON.stringify({ ...payload, via: 'beacon-sendbeacon' }),
+    );
+    if (!queued) {
+      console.warn('[telemetry] sendBeacon refused to queue beacon-only event — dropped', {
+        eventType,
+      });
+    }
+  } catch (beaconErr) {
+    console.warn('[telemetry] sendBeacon threw — beacon-only event dropped', {
+      eventType,
+      error: beaconErr,
+    });
+  }
+};
+
+// Any fetch failure (missing, synchronous throw, rejected promise, non-2xx)
+// falls back to sendBeacon. A request that reached the server but whose
+// response was lost can produce a duplicate row; that's accepted, and the two
+// rows are distinguishable by metadata.via.
+const sendBeaconOnlyEvent = (
+  eventType: ReauthEventType,
+  payload: Record<string, unknown>,
+): void => {
+  if (typeof fetch !== 'function') {
+    sendViaSendBeacon(eventType, payload);
+    return;
+  }
+
+  try {
+    void fetch(BEACON_ENDPOINT_URL, {
+      method: 'POST',
+      keepalive: true,
+      credentials: 'omit',
+      headers: { 'Content-Type': BEACON_CONTENT_TYPE },
+      body: JSON.stringify({ ...payload, via: 'beacon-fetch' }),
+    }).then(
+      (res) => {
+        if (!res.ok) {
+          console.warn('[telemetry] beacon-fetch rejected by telemetry-beacon — falling back to sendBeacon', {
+            eventType,
+            status: res.status,
+          });
+          sendViaSendBeacon(eventType, payload);
+        }
+      },
+      (fetchErr) => {
+        console.warn('[telemetry] beacon-fetch request failed — falling back to sendBeacon', {
+          eventType,
+          error: fetchErr,
+        });
+        sendViaSendBeacon(eventType, payload);
+      },
+    );
+  } catch (fetchErr) {
+    console.warn('[telemetry] fetch threw synchronously — falling back to sendBeacon', {
+      eventType,
+      error: fetchErr,
+    });
+    sendViaSendBeacon(eventType, payload);
+  }
 };
 
 /**
@@ -105,23 +189,7 @@ export const recordReauthEvent = (
     // structurally cannot pass reauth_telemetry's RLS via the normal
     // authenticated-session insert, so don't waste a network call on a path
     // that's guaranteed to fail — route through the beacon edge function only.
-    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-      try {
-        const blob = new Blob(
-          [JSON.stringify({ ...payload, via: 'beacon' })],
-          { type: 'application/json' },
-        );
-        navigator.sendBeacon(BEACON_ENDPOINT_URL, blob);
-      } catch (beaconErr) {
-        // eslint-disable-next-line no-console
-        console.warn('[telemetry] threw while sending beacon-only event', beaconErr);
-      }
-    } else {
-      // eslint-disable-next-line no-console
-      console.warn('[telemetry] navigator.sendBeacon unavailable — beacon-only event dropped', {
-        eventType,
-      });
-    }
+    sendBeaconOnlyEvent(eventType, payload);
     return;
   }
 

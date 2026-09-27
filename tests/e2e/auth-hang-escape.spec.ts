@@ -14,6 +14,11 @@
 import { test, expect } from '@playwright/test';
 
 test('hung Pi handshake surfaces an escape hatch, then a dismissible error', async ({ page }) => {
+  // The 60s timeout records pi_auth_timeout; answer the beacon locally so
+  // test runs never write rows to the production reauth_telemetry table.
+  await page.route('**/functions/v1/telemetry-beacon**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: '{"success":true}' }),
+  );
   // Block the real SDK so the stub below survives.
   await page.route('**/pi-sdk.js', (route) => route.abort());
   await page.addInitScript(() => {
