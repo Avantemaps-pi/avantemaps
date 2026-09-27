@@ -13,6 +13,11 @@
  */
 import { test, expect } from '@playwright/test';
 
+// Generous budget: the 60s PI_AUTH_TIMEOUT_MS watchdog only starts once
+// requestAuthPermissions + the SDK-ready checks have run, so wall-clock time
+// from button click to the error card can run somewhat past 60s.
+test.setTimeout(150_000);
+
 test('hung Pi handshake surfaces an escape hatch, then a dismissible error', async ({ page }) => {
   // The 60s timeout records pi_auth_timeout; answer the beacon locally so
   // test runs never write rows to the production reauth_telemetry table.

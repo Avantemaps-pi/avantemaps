@@ -26,3 +26,11 @@ playwright-report/
 *.njsproj
 *.sln
 *.sw?
+
+# Build / tool output (regenerated locally, never commit)
+.output/
+.wrangler/deploy/config.json
+supabase/.temp/
+
+# bun.lock is the only lockfile
+package-lock.json
