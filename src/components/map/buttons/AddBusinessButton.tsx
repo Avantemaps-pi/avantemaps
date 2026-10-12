@@ -104,17 +104,19 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
     return () => { cancelled = true; };
   }, [isAuthenticated, user?.uid]);
 
-  const positionClass = selectedPlace ? 'right-16 md:right-[calc(50%+200px)]' : 'right-6';
+  const positionClass = selectedPlace ? 'right-16 md:right-[calc(50%+200px)]' : 'right-4';
+  // 96px clears the 64px bottom nav and the map attribution pill above it
+  const bottomClass = 'bottom-[calc(6rem+env(safe-area-inset-bottom))]';
 
   if (isLoading) {
     return (
       <div
         data-add-business-button
-        className={`absolute bottom-20 sm:bottom-24 ${positionClass} z-20`}
+        className={`absolute ${bottomClass} ${positionClass} z-20`}
       >
         <Button
           disabled
-          className="h-12 w-12 p-0 rounded-full bg-primary/60 opacity-70 shadow-lg flex items-center justify-center cursor-not-allowed"
+          className="h-14 w-14 sm:h-14 sm:w-14 p-0 rounded-full bg-primary/60 opacity-70 shadow-float flex items-center justify-center cursor-not-allowed"
           aria-label="Loading"
         >
           <Loader2 className="h-5 w-5 animate-spin" />
@@ -126,14 +128,14 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
   // State 1: expanded pill
   if (fabState === 'expanded') {
     return (
-      <div data-add-business-button className={`absolute bottom-20 sm:bottom-24 ${positionClass} z-20 transition-all duration-300`}>
+      <div data-add-business-button className={`absolute ${bottomClass} ${positionClass} z-20 transition-all duration-300`}>
         <Link to="/registration">
           <Button
-            className="h-14 pl-4 pr-6 rounded-full bg-primary hover:bg-primary/90 shadow-lg flex items-center gap-2 transition-all duration-300"
+            className="h-14 sm:h-14 pl-4 pr-6 rounded-full bg-primary text-primary-foreground hover:bg-primary-hover shadow-float flex items-center gap-2 transition-all duration-300 [&_svg]:size-[18px] sm:[&_svg]:size-[18px]"
             aria-label="Register a business"
           >
-            <Plus className="h-6 w-6 flex-shrink-0" />
-            <span className="text-sm font-medium whitespace-nowrap">Register Business</span>
+            <Plus className="flex-shrink-0" />
+            <span className="text-sm font-semibold whitespace-nowrap">Register business</span>
           </Button>
         </Link>
       </div>
@@ -141,7 +143,7 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
   }
 
   // State 2 / 3: collapsed icon with speed dial
-  const registerLabel = fabState === 'hasBusiness' ? 'Add Another Business' : 'Register Business';
+  const registerLabel = fabState === 'hasBusiness' ? 'Add another business' : 'Register business';
 
   const handleRegisterExpand = () => {
     setSpeedDialOpen(false);
@@ -170,25 +172,25 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
     return (
       <div
         data-add-business-button
-        className={`absolute bottom-20 sm:bottom-24 ${positionClass} z-30`}
+        className={`absolute ${bottomClass} ${positionClass} z-30`}
       >
         <Button
           disabled
           style={{ animation: 'fab-expand 600ms ease-out forwards' }}
-          className="h-14 pl-4 pr-6 rounded-full bg-primary shadow-lg flex items-center gap-2 overflow-hidden"
+          className="h-14 sm:h-14 pl-4 pr-6 rounded-full bg-primary text-primary-foreground shadow-float flex items-center gap-2 overflow-hidden [&_svg]:size-[18px] sm:[&_svg]:size-[18px]"
           aria-label={registerLabel}
         >
-          <Plus className="h-6 w-6 flex-shrink-0" />
+          <Plus className="flex-shrink-0" />
           <span
             style={{ animation: 'fab-label-fade 500ms ease-out 250ms forwards', opacity: 0 }}
-            className="text-sm font-medium whitespace-nowrap"
+            className="text-sm font-semibold whitespace-nowrap"
           >
             {registerLabel}
           </span>
         </Button>
         <style>{`
           @keyframes fab-expand {
-            from { width: 3rem; padding-left: 0; padding-right: 0; }
+            from { width: 3.5rem; padding-left: 0; padding-right: 0; }
             to { width: auto; padding-left: 1rem; padding-right: 1.5rem; }
           }
           @keyframes fab-label-fade {
@@ -204,14 +206,14 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
     <>
       {speedDialOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-[25] animate-fade-in"
+          className="fixed inset-0 bg-overlay z-[25] animate-fade-in"
           onClick={() => setSpeedDialOpen(false)}
           aria-hidden="true"
         />
       )}
       <div
         data-add-business-button
-        className={`absolute bottom-20 sm:bottom-24 ${positionClass} z-30 flex flex-col items-end gap-3`}
+        className={`absolute ${bottomClass} ${positionClass} z-30 flex flex-col items-end gap-3`}
       >
         {speedDialOpen && (
           <div className="flex flex-col items-end gap-3 mb-1 animate-fade-in">
@@ -219,14 +221,14 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
               const Icon = action.icon;
               return (
                 <div key={action.label} className="flex items-center gap-3">
-                  <span className="bg-background text-foreground text-sm font-medium px-3 py-1.5 rounded-md shadow-md whitespace-nowrap">
+                  <span className="bg-surface-float text-foreground text-sm font-medium px-3 py-1.5 rounded-md shadow-float whitespace-nowrap">
                     {action.label}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleActionClick(action)}
                     aria-label={action.label}
-                    className="h-12 w-12 rounded-full bg-background hover:bg-muted shadow-lg flex items-center justify-center text-foreground transition-colors"
+                    className="h-12 w-12 rounded-full bg-surface-float border border-border hover:bg-accent shadow-float flex items-center justify-center text-foreground transition-colors"
                   >
                     <Icon className="h-5 w-5" />
                   </button>
@@ -239,7 +241,7 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
           onClick={() => setSpeedDialOpen((s) => !s)}
           aria-label={speedDialOpen ? 'Close menu' : 'Open quick actions'}
           aria-expanded={speedDialOpen}
-          className="h-12 w-12 p-0 rounded-full bg-primary hover:bg-primary/90 shadow-lg flex items-center justify-center"
+          className="h-14 w-14 sm:h-14 sm:w-14 p-0 rounded-full bg-primary text-primary-foreground hover:bg-primary-hover shadow-float flex items-center justify-center"
         >
           {speedDialOpen ? (
             <X className="h-5 w-5 transition-transform duration-300" />

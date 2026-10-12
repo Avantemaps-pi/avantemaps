@@ -132,16 +132,7 @@ const PageHeader = ({
           
           {showSearch && isIndexPage && onSearch && (
             <div className="max-w-md w-full mx-4">
-              <SearchBar 
-                onSearch={onSearch} 
-                placeholders={[
-                  "Search for Address", 
-                  "Search for Business name", 
-                  "Search for Business Type", 
-                  "Search for Keywords"
-                ]} 
-                cycleInterval={3000} 
-              />
+              <SearchBar onSearch={onSearch} />
             </div>
           )}
         </div>

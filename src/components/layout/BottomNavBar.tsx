@@ -38,7 +38,7 @@ const BottomNavBar: React.FC = () => {
   return (
     <nav
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-xs transition-transform duration-300",
+        "fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface-float shadow-sheet transition-transform duration-300",
         visible ? "translate-y-0" : "translate-y-[calc(100%+env(safe-area-inset-bottom))]"
       )}
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -52,19 +52,21 @@ const BottomNavBar: React.FC = () => {
               to={to}
               aria-label={label}
               className={cn(
-                'flex flex-col items-center justify-center flex-1 h-full text-[11px] font-medium transition-colors',
+                'flex flex-col items-center justify-center gap-1 flex-1 h-full text-xs transition-colors',
                 isActive
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'text-primary font-semibold'
+                  : 'text-muted-foreground font-medium hover:text-foreground'
               )}
             >
-              <span className="relative flex flex-col items-center justify-center gap-0.5 px-3 py-2 rounded-xl">
-                {isActive && (
-                  <span className="absolute inset-0 bg-primary/15 rounded-xl" />
+              <span
+                className={cn(
+                  'flex h-7 w-14 items-center justify-center rounded-full',
+                  isActive && 'bg-accent'
                 )}
-                <Icon className="h-5 w-5 relative z-10" strokeWidth={isActive ? 2.5 : 2} />
-                <span className="relative z-10 leading-none">{label}</span>
+              >
+                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
               </span>
+              <span className="leading-none">{label}</span>
             </Link>
           );
         })}

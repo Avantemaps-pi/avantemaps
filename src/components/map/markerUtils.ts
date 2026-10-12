@@ -1,6 +1,6 @@
 
 import { Icon } from 'leaflet';
-import { MARKER_COLORS } from './mapConfig';
+import { PIN_COLORS } from './mapConfig';
 
 interface MarkerOptions {
   isActive?: boolean;
@@ -10,34 +10,64 @@ interface MarkerOptions {
   verificationStatus?: 'pending' | 'verified' | 'rejected' | null | undefined;
 }
 
+type PinKind = 'user' | 'certified' | 'verified' | 'pending' | 'unverified';
+
+const PIN_BODY = 'M12 23s9-7 9-13.5a9 9 0 0 0-18 0C3 16 12 23 12 23z';
+const SHIELD = 'M12 5.5c1.3 1 2.7 1.6 4 1.6v3.1c0 2.7-1.8 4.1-4 4.9-2.2-.8-4-2.2-4-4.9V7.1c1.3 0 2.7-.6 4-1.6z';
+const CHECK = 'm8.5 9.5 2.5 2.5 4.5-4.5';
+
+const { PRIMARY, NAVY, WHITE, PENDING, UNVERIFIED } = PIN_COLORS;
+
+// Body + inner mark for each status
+const PIN_SHAPES: Record<PinKind, string> = {
+  user:
+    `<path d="${PIN_BODY}" stroke-linejoin="round" fill="${WHITE}" stroke="${PRIMARY}" stroke-width="2.5"/>` +
+    `<circle cx="12" cy="9.5" r="3.5" fill="${PRIMARY}"/>`,
+  certified:
+    `<path d="${PIN_BODY}" stroke-linejoin="round" fill="${NAVY}" stroke="${WHITE}" stroke-width="1.5"/>` +
+    `<path d="${SHIELD}" fill="${WHITE}"/>`,
+  verified:
+    `<path d="${PIN_BODY}" stroke-linejoin="round" fill="${PRIMARY}" stroke="${WHITE}" stroke-width="1.5"/>` +
+    `<path d="${CHECK}" fill="none" stroke="${WHITE}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+  pending:
+    `<path d="${PIN_BODY}" stroke-linejoin="round" fill="${WHITE}" stroke="${PENDING}" stroke-width="2" stroke-dasharray="3 2.2"/>` +
+    `<circle cx="12" cy="9.5" r="2.2" fill="${PENDING}"/>`,
+  unverified:
+    `<path d="${PIN_BODY}" stroke-linejoin="round" fill="${UNVERIFIED}" stroke="${WHITE}" stroke-width="1.5"/>` +
+    `<circle cx="12" cy="9.5" r="2.5" fill="${WHITE}"/>`,
+};
+
+const getPinKind = ({ isUserBusiness, isCertified, isVerified, verificationStatus }: MarkerOptions): PinKind => {
+  if (isUserBusiness) return 'user';
+  if (isCertified) return 'certified';
+  if (isVerified) return 'verified';
+  if (verificationStatus === 'pending') return 'pending';
+  return 'unverified';
+};
+
+// Icons are identical per status/active pair, so share instances
+const iconCache = new Map<string, Icon>();
+
 // Function to create marker icon based on verification status
 export const createMarkerIcon = (options: MarkerOptions = {}) => {
-  const { isUserBusiness, isVerified, isCertified, verificationStatus } = options;
-  
-  // Determine fill color based on verification status
-  let fillColor = MARKER_COLORS.DEFAULT; // Gray for not verified
-  
-  if (isUserBusiness) {
-    fillColor = MARKER_COLORS.USER_BUSINESS; // Gold for user's own businesses
-  } else if (isCertified) {
-    fillColor = MARKER_COLORS.CERTIFIED; // Green for certified
-  } else if (isVerified) {
-    fillColor = MARKER_COLORS.VERIFIED; // Blue for verified
-  } else if (verificationStatus === 'pending') {
-    fillColor = MARKER_COLORS.PENDING; // Amber for pending verification
-  }
-  // Otherwise stays DEFAULT (gray) for not verified
-  
-  const iconUrl = `data:image/svg+xml,
-    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="${fillColor}" stroke="%23FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="10" r="3"/>
-      <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 6.9 8 11.7z"/>
-    </svg>`;
+  const kind = getPinKind(options);
+  const isActive = !!options.isActive;
+  const key = `${kind}:${isActive}`;
+  const cached = iconCache.get(key);
+  if (cached) return cached;
 
-  return new Icon({
-    iconUrl,
-    iconSize: [36, 36],
-    iconAnchor: [18, 36],
-    popupAnchor: [0, -36],
+  const size = isActive ? 48 : 40;
+  // 1 unit of padding on every side so the strokes aren't clipped at the tip;
+  // the tip (12,23) lands at [20,37] (40px) / [24,44] (48px)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="-1 -1 26 26">${PIN_SHAPES[kind]}</svg>`;
+
+  const icon = new Icon({
+    iconUrl: `data:image/svg+xml,${encodeURIComponent(svg)}`,
+    iconSize: [size, size],
+    iconAnchor: isActive ? [24, 44] : [20, 37],
+    popupAnchor: [0, isActive ? -44 : -37],
+    className: 'am-pin',
   });
+  iconCache.set(key, icon);
+  return icon;
 };
