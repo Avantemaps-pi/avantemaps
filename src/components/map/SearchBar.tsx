@@ -42,7 +42,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   onSearch,
   onPlaceSelect,
   onBusinessSelect,
-  placeholder = 'Search businesses, categories, keywords',
+  placeholder = 'Search businesses',
   enableAutocomplete = true,
   autocompleteMode = 'business',
   businesses = [],

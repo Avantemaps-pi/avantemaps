@@ -63,7 +63,7 @@ const LocationBanner: React.FC<Props> = ({ className }) => {
         <LocateFixed className="h-[18px] w-[18px]" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-foreground">See businesses near you</p>
+        <p className="text-sm font-semibold text-foreground">Businesses near you</p>
         <p className="text-xs text-muted-foreground">Only used to centre the map.</p>
       </div>
       <Button

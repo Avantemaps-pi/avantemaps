@@ -118,7 +118,6 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
     };
   }, []);
 
-  if (!enabled) return null;
   const useIpFallback = async () => {
     toast.loading('Resolving your approximate location…', {
       id: TOAST_ID,
@@ -255,6 +254,9 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
     window.addEventListener('trigger-locate-me', trigger as EventListener);
     return () => window.removeEventListener('trigger-locate-me', trigger as EventListener);
   }, []);
+
+  // Early return only after every hook, so hook order is stable when the setting toggles
+  if (!enabled) return null;
 
   return (
     <button

@@ -26,12 +26,6 @@
   transition: transform 0.2s;
 }
 
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .leaflet-marker-icon:hover {
-    transform: scale(1.1);
-  }
-}
-
 /* Map pins: soft shadow (the SVG itself can't read CSS variables) */
 .am-pin {
   filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.35));
