@@ -18,7 +18,7 @@ const TOAST_ID = 'locate-me';
 interface CachedLocation { lat: number; lng: number; ts: number }
 
 const dispatchCenter = (lat: number, lng: number) => {
-  window.dispatchEvent(new CustomEvent('centerMap', { detail: { lat, lng } }));
+  window.dispatchEvent(new CustomEvent('centerMap', { detail: { lat, lng, zoom: 15 } }));
 };
 
 // CORS-friendly IP fallback (ipwho.is free plan blocks CORS)
