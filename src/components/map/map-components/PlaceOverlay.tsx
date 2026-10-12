@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from '@/lib/router-compat';
 import { Place } from '@/types/business';
 import { CircleCheck, Clock, ImageIcon, Mail, MapPin, Phone, Shield, Star, X } from 'lucide-react';
@@ -26,20 +26,42 @@ const NO_IMAGE = '/placeholder.svg';
 const NO_ADDRESS = 'No address provided';
 const NO_DESCRIPTION = 'No description provided';
 
+// Stable reference: with an inline array vaul re-snaps on every render, which
+// blocks dragging for 500ms each time.
+const SNAP_POINTS = [0.45, 1];
+
 const PlaceOverlay: React.FC<PlaceOverlayProps> = ({
   selectedPlace,
   showPopover,
   onOverlayClick,
   detailCardRef
 }) => {
+  // Controlled snap point: dragging down moves 1 -> 0.45, and dragging again closes
+  const [activeSnapPoint, setActiveSnapPoint] = useState<number | string | null>(1);
+
+  // vaul 1.1.2 memoises its snap handler on a ref that is still null on the first
+  // render, so the first re-render after opening re-snaps and blocks dragging for
+  // 500ms. Without this nudge that re-render is the user's first press, so the
+  // first swipe-down is ignored; re-render once right after opening instead.
+  const [, setOpenedAt] = useState(0);
+
+  // Open fully whenever a place (or the same place again) opens
+  useEffect(() => {
+    if (!showPopover) return;
+    setActiveSnapPoint(1);
+    const frame = requestAnimationFrame(() => setOpenedAt(Date.now()));
+    return () => cancelAnimationFrame(frame);
+  }, [selectedPlace?.id, showPopover]);
+
   if (!selectedPlace) return null;
 
   return (
     <Drawer
       open={showPopover}
       onOpenChange={(open) => { if (!open) onOverlayClick(); }}
-      snapPoints={[0.45, 1]}
-      activeSnapPoint={1}
+      snapPoints={SNAP_POINTS}
+      activeSnapPoint={activeSnapPoint}
+      setActiveSnapPoint={setActiveSnapPoint}
       modal={true}
       dismissible={true}
       fadeFromIndex={0}
@@ -86,6 +108,10 @@ const PlaceOverlayContent: React.FC<{
   const address = place.address && place.address !== NO_ADDRESS ? place.address : '';
   const description = place.description && place.description !== NO_DESCRIPTION ? place.description.trim() : '';
   const hours = formatHours(place.hours);
+  const trimmedName = place.name.trim();
+  const lastSpace = trimmedName.lastIndexOf(' ');
+  const nameHead = trimmedName.slice(0, lastSpace + 1);
+  const nameLast = trimmedName.slice(lastSpace + 1);
   const [firstHours, ...otherHours] = hours;
 
   const handleReviews = () => {
@@ -97,9 +123,11 @@ const PlaceOverlayContent: React.FC<{
       navigate('/', { state: { selectedPlaceId: place.id } });
       return;
     }
-    // LeafletMap's zoomToPlace listener re-opens the drawer; onClose in the same
-    // click is batched after it, so the drawer ends up closed.
-    window.dispatchEvent(new CustomEvent('zoomToPlace', { detail: { placeId: place.id, zoom: true } }));
+    const lat = place.position?.lat ?? place.location?.lat;
+    const lng = place.position?.lng ?? place.location?.lng;
+    if (lat !== undefined && lng !== undefined) {
+      window.dispatchEvent(new CustomEvent('centerMap', { detail: { lat, lng, zoom: 17 } }));
+    }
     onClose();
   };
 
@@ -109,12 +137,18 @@ const PlaceOverlayContent: React.FC<{
       <div className="flex items-start gap-1">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <DrawerTitle className="text-xl leading-7 font-semibold tracking-normal text-foreground break-words">
-            {place.name}
-            {place.isVerified && (
+            {place.isVerified ? (
               <>
-                <CircleCheck className="ml-1 inline-block h-5 w-5 align-[-3px] text-primary" aria-hidden="true" />
+                {nameHead}
+                {/* Keep the check attached to the last word so it never wraps on its own */}
+                <span className="whitespace-nowrap">
+                  {nameLast}
+                  <CircleCheck className="ml-1 inline-block h-5 w-5 align-[-3px] text-primary" aria-hidden="true" />
+                </span>
                 <span className="sr-only"> (Verified)</span>
               </>
+            ) : (
+              place.name
             )}
           </DrawerTitle>
           <DrawerDescription className="sr-only">
