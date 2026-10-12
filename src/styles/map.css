@@ -26,13 +26,76 @@
   transition: transform 0.2s;
 }
 
-.leaflet-marker-icon:hover {
-  transform: scale(1.1);
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .leaflet-marker-icon:hover {
+    transform: scale(1.1);
+  }
+}
+
+/* Map pins: soft shadow (the SVG itself can't read CSS variables) */
+.am-pin {
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.35));
+}
+
+/* Cluster bubbles */
+.leaflet-marker-icon.am-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 3px solid hsl(var(--background));
+  box-shadow: var(--shadow-float);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.leaflet-marker-icon.am-cluster-small,
+.leaflet-marker-icon.am-cluster-medium {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.leaflet-marker-icon.am-cluster-large {
+  background: hsl(var(--brand-navy));
+  color: hsl(var(--background));
+}
+
+/* OpenStreetMap attribution pill, kept clear of the bottom nav on mobile */
+.leaflet-container .leaflet-bottom .leaflet-control-attribution {
+  margin: 0 0 16px 16px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: hsl(var(--surface-float));
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.leaflet-container .leaflet-bottom .leaflet-control-attribution a {
+  color: inherit;
+}
+
+@media (max-width: 767px) {
+  .leaflet-container .leaflet-bottom .leaflet-control-attribution {
+    margin-bottom: calc(70px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Dark mode: only the tiles are filtered; markers, clusters, popups and controls are not */
+.dark .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(200deg) brightness(0.85) contrast(0.9) saturate(0.5);
+}
+
+.dark .leaflet-container {
+  background: hsl(var(--background));
 }
 
 .leaflet-control-container {
   position: absolute;
+  inset: 0;
   z-index: 1000;
+  pointer-events: none;
 }
 
 /* Hide zoom controls */
@@ -56,7 +119,7 @@
   right: 0;
   bottom: 0;
   z-index: 1000;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: hsl(var(--surface-float));
   display: flex;
   align-items: center;
   justify-content: center;

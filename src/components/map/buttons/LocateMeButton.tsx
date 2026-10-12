@@ -261,18 +261,18 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
       type="button"
       onClick={handleClick}
       disabled={loading}
-      aria-label={loading ? 'Resolving your location' : 'Locate me'}
+      aria-label="Show my location"
       aria-busy={loading}
-      title={loading ? 'Resolving your location…' : 'Locate me'}
+      title={loading ? 'Resolving your location…' : 'Show my location'}
       className={cn(
-        'h-10 w-10 rounded-full bg-background/95 backdrop-blur-xs border border-border shadow-md flex items-center justify-center text-foreground hover:bg-accent transition-colors disabled:opacity-70 disabled:cursor-progress',
+        'h-11 w-11 rounded-full bg-surface-float border border-border shadow-float flex items-center justify-center text-foreground hover:bg-accent transition-colors disabled:opacity-70 disabled:cursor-progress',
         className
       )}
     >
       {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Loader2 className="h-5 w-5 animate-spin" />
       ) : (
-        <LocateFixed className="h-4 w-4" />
+        <LocateFixed className="h-5 w-5" />
       )}
     </button>
   );

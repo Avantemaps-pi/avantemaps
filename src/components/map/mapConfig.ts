@@ -16,11 +16,12 @@ export const OSM_TILE_LAYER = {
   noWrap: true // Prevent tile wrapping
 };
 
-// Marker colors based on verification status
-export const MARKER_COLORS = {
-  CERTIFIED: '%2322c55e',    // Green for certified (URL encoded #)
-  VERIFIED: '%233b82f6',     // Blue for verified
-  PENDING: '%23f59e0b',      // Amber/orange for pending verification
-  DEFAULT: '%236b7280',      // Gray for unverified
-  USER_BUSINESS: '%23eab308' // Gold for user's own businesses
+// Pin colors (hex because pins are SVG data URIs, which can't read CSS variables).
+// Status is told apart by shape and lightness, not hue.
+export const PIN_COLORS = {
+  PRIMARY: '#2563eb',    // Your business ring/dot, verified body
+  NAVY: '#1e3a8a',       // Certified body
+  WHITE: '#ffffff',
+  PENDING: '#7b8ba3',    // Dashed outline + dot for pending verification
+  UNVERIFIED: '#64748b', // Unverified body
 };

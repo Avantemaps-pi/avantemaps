@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 const COUNTRY_ZOOM = 5;
 
 /** Vertical gap between the + (Add Business) button and the zoom control. */
-const GAP_PX = 16;
+const GAP_PX = 12;
 /** Fallback offset (px from viewport bottom) if the + button isn't found. */
 const FALLBACK_BOTTOM = 152;
 
@@ -26,7 +26,7 @@ const CountryZoomControl: React.FC = () => {
   const map = useMap();
   const [zoom, setZoom] = useState<number>(map.getZoom());
   const [bottom, setBottom] = useState<number>(FALLBACK_BOTTOM);
-  const [right, setRight] = useState<number>(24);
+  const [right, setRight] = useState<number>(16);
   // Dynamically computed z-index that always sits above Leaflet's panes and
   // controls so other overlays can't hide the control.
   const [zIndex, setZIndex] = useState<number>(1000);
@@ -125,8 +125,8 @@ const CountryZoomControl: React.FC = () => {
     ];
 
     /** Estimated control size (w x h) — kept in sync with the rendered markup. */
-    const CONTROL_W = 36;
-    const CONTROL_H = 72;
+    const CONTROL_W = 44;
+    const CONTROL_H = 90;
     /** Min margins from map edges. */
     const EDGE_MARGIN = 12;
 
@@ -378,10 +378,10 @@ const CountryZoomControl: React.FC = () => {
   };
 
   const btnBase =
-    'w-9 h-9 flex items-center justify-center transition-colors ' +
-    'bg-background text-foreground hover:bg-accent hover:text-accent-foreground ' +
-    'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ' +
-    'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-background disabled:hover:text-foreground';
+    'w-11 h-11 flex items-center justify-center transition-colors ' +
+    'text-foreground hover:bg-accent hover:text-accent-foreground ' +
+    'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ' +
+    'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-foreground';
 
   // Render via portal directly into the Leaflet map container so the absolute
   // positioning isn't affected by Leaflet's pane transforms (which would
@@ -399,7 +399,7 @@ const CountryZoomControl: React.FC = () => {
       }}
       className={cn(
         'absolute transition-shadow select-none',
-        atCountry && 'ring-2 ring-primary/60 rounded-md shadow-lg'
+        atCountry && 'ring-2 ring-primary/60 rounded-full'
       )}
       style={{
         bottom,
@@ -427,7 +427,7 @@ const CountryZoomControl: React.FC = () => {
       onContextMenu={(e) => e.stopPropagation()}
       onWheel={(e) => e.stopPropagation()}
     >
-      <div className="rounded-md overflow-hidden border border-border shadow-md bg-background">
+      <div className="w-11 rounded-full overflow-hidden border border-border shadow-float bg-surface-float">
         <button
           type="button"
           aria-label="Zoom in"
@@ -442,7 +442,7 @@ const CountryZoomControl: React.FC = () => {
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
           className={cn(btnBase, 'border-b border-border')}
         >
-          <Plus className="w-4 h-4 pointer-events-none" />
+          <Plus className="w-5 h-5 pointer-events-none" />
         </button>
         <button
           type="button"
@@ -458,7 +458,7 @@ const CountryZoomControl: React.FC = () => {
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
           className={cn(btnBase)}
         >
-          <Minus className="w-4 h-4 pointer-events-none" />
+          <Minus className="w-5 h-5 pointer-events-none" />
         </button>
       </div>
     </div>,

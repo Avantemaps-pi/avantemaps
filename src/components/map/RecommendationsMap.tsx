@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { MARKER_COLORS, defaultCenter, defaultZoom, OSM_TILE_LAYER, worldBounds, maxBoundsViscosity } from './mapConfig';
+import { defaultCenter, defaultZoom, OSM_TILE_LAYER, worldBounds, maxBoundsViscosity } from './mapConfig';
 import 'leaflet/dist/leaflet.css';
 import { Place } from '@/types/business';
 
@@ -137,6 +137,7 @@ const RecommendationsMap: React.FC<RecommendationsMapProps> = ({
         
         <TileLayer
           url={OSM_TILE_LAYER.url}
+          attribution={OSM_TILE_LAYER.attribution}
         />
         
         {allPlaces.map((place) => (

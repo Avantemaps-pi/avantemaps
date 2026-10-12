@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, AttributionControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Place } from '@/types/business';
 import { toast } from 'sonner';
@@ -11,9 +11,21 @@ import CountryZoomControl from './map-components/CountryZoomControl';
 import PlaceOverlay from './map-components/PlaceOverlay';
 import LoadingOverlay from './map-components/LoadingOverlay';
 import EmptyMapState from './EmptyMapState';
-import { LatLngTuple } from 'leaflet';
+import L, { LatLngTuple } from 'leaflet';
 import '@/lib/fix-leaflet-icons';
 import MarkerClusterGroup from 'react-leaflet-cluster';
+
+// Cluster bubbles: token-styled in map.css, sized by count
+const createClusterIcon = (cluster: { getChildCount: () => number }) => {
+  const count = cluster.getChildCount();
+  const size = count < 10 ? 'small' : count < 100 ? 'medium' : 'large';
+  const px = count < 10 ? 36 : count < 100 ? 40 : 46;
+  return L.divIcon({
+    html: `<span>${count}</span>`,
+    className: `am-cluster am-cluster-${size}`,
+    iconSize: L.point(px, px),
+  });
+};
 
 interface LeafletMapProps {
   places?: Place[]; 
@@ -182,10 +194,13 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         maxZoom={maxZoom}
         maxBounds={worldBounds}
         maxBoundsViscosity={maxBoundsViscosity}
+        attributionControl={false}
       >
         <TileLayer 
           url={OSM_TILE_LAYER.url}
+          attribution={OSM_TILE_LAYER.attribution}
         />
+        <AttributionControl position="bottomleft" prefix={false} />
         
         <MapViewUpdater center={mapCenter} zoom={zoom} />
         <CountryClickFocus />
@@ -201,6 +216,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
           removeOutsideVisibleBounds
           disableClusteringAtZoom={17}
           animate={displayPlaces.length < 500}
+          iconCreateFunction={createClusterIcon}
         >
           <MapMarkers places={displayPlaces} activeMarkerId={activeMarker} onMarkerClick={handleMarkerClick} />
         </MarkerClusterGroup>

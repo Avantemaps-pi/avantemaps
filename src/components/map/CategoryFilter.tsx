@@ -26,13 +26,12 @@ interface CategoryFilterProps {
 
 const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategoryId, onSelect, className }) => {
   return (
-    <div className={cn('relative bg-background/80 backdrop-blur-xs shadow-xs rounded-xl', className)}>
-      <div
-        className="flex gap-2 overflow-x-auto no-scrollbar flex-nowrap scroll-smooth px-3 py-2 pb-3 pr-12"
-        role="tablist"
-        aria-label="Filter businesses by category"
-      >
-        {CATEGORY_OPTIONS.map(({ id, label, icon: Icon }) => {
+    <div
+      className={cn('flex gap-2 overflow-x-auto no-scrollbar flex-nowrap scroll-smooth', className)}
+      role="tablist"
+      aria-label="Filter businesses by category"
+    >
+      {CATEGORY_OPTIONS.map(({ id, label, icon: Icon }) => {
         const active = id === selectedCategoryId;
         return (
           <button
@@ -42,22 +41,20 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategoryId, onS
             aria-selected={active}
             onClick={() => onSelect(id)}
             className={cn(
-              'flex items-center gap-1.5 flex-none rounded-full border px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap shadow-xs backdrop-blur-xs',
+              // 36px pill; ::after extends the hit area to 44px (my-1 keeps it inside the scroller)
+              'relative my-1 flex h-9 flex-none items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-sm font-semibold transition-colors',
+              "after:absolute after:inset-x-0 after:-inset-y-1 after:content-['']",
+              'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               active
                 ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-white/90 text-foreground border-border hover:bg-accent'
+                : 'bg-surface-float text-foreground border-input hover:bg-accent hover:text-accent-foreground'
             )}
           >
-            <Icon className="h-3.5 w-3.5" />
+            <Icon className="h-4 w-4" />
             {label}
           </button>
         );
-        })}
-      </div>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-background/80 via-background/50 to-transparent"
-      />
+      })}
     </div>
   );
 };

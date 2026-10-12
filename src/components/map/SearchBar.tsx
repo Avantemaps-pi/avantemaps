@@ -30,8 +30,7 @@ interface SearchBarProps {
   onSearch?: (searchTerm: string) => void;
   onPlaceSelect?: (place: { name: string; lat: number; lng: number }) => void;
   onBusinessSelect?: (business: BusinessSuggestion) => void;
-  placeholders?: string[];
-  cycleInterval?: number;
+  placeholder?: string;
   enableAutocomplete?: boolean;
   autocompleteMode?: 'address' | 'business';
   businesses?: Place[];
@@ -43,13 +42,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   onSearch,
   onPlaceSelect,
   onBusinessSelect,
-  placeholders = [
-    "Search for business name",
-    "Search by location",
-    "Search by keywords (e.g., coffee, haircut)",
-    "Search by description"
-  ],
-  cycleInterval = 3000,
+  placeholder = 'Search businesses, categories, keywords',
   enableAutocomplete = true,
   autocompleteMode = 'business',
   businesses = [],
@@ -57,7 +50,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
   countrycodes
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -130,14 +122,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
       debouncedSearch.cancel();
     };
   }, [debouncedAddressAutocomplete, debouncedBusinessAutocomplete, debouncedSearch]);
-
-  // Effect to cycle through placeholders
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setCurrentPlaceholderIndex(prevIndex => (prevIndex + 1) % placeholders.length);
-    }, cycleInterval);
-    return () => clearInterval(intervalId);
-  }, [placeholders.length, cycleInterval]);
 
   // Show/hide dropdown based on suggestions
   useEffect(() => {
@@ -273,20 +257,21 @@ const SearchBar: React.FC<SearchBarProps> = ({
           id="searchBarInput"
           name="searchBarInput"
           type="text"
-          placeholder={placeholders[currentPlaceholderIndex]}
+          placeholder={placeholder}
+          aria-label="Search businesses"
           value={searchTerm}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          className="w-full pl-12 h-10 bg-white/90 backdrop-blur-xs shadow-md transition-all duration-300 border-gray-200 px-[40px] mx-0"
+          className="w-full h-11 sm:h-11 rounded-full bg-surface-float border-input shadow-float pl-10 pr-4 text-base text-foreground placeholder:text-muted-foreground focus-visible:ring-offset-2"
           autoComplete="off"
         />
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <Search className="h-4 w-4 text-gray-500" />
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+          <Search className="h-[18px] w-[18px] text-muted-foreground" />
         </div>
       </form>
 
       {enableAutocomplete && showDropdown && currentSuggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-lg shadow-lg max-h-[300px] overflow-y-auto z-[2000]">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg max-h-[300px] overflow-y-auto z-[2000]">
           {autocompleteMode === 'business' ? (
             // Business suggestions
             businessSuggestions.map((suggestion, index) => (
@@ -295,8 +280,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
                 type="button"
                 onClick={() => handleBusinessSuggestionClick(suggestion)}
                 className={cn(
-                  "w-full px-4 py-3 text-left hover:bg-accent transition-colors flex items-start gap-3 border-b border-border last:border-b-0",
-                  selectedIndex === index && "bg-accent"
+                  "w-full px-4 py-3 text-left hover:bg-accent hover:text-accent-foreground transition-colors flex items-start gap-3 border-b border-border last:border-b-0",
+                  selectedIndex === index && "bg-accent text-accent-foreground"
                 )}
               >
                 <Store className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
@@ -323,8 +308,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
                 type="button"
                 onClick={() => handleAddressPredictionClick(prediction.placeId, prediction.description)}
                 className={cn(
-                  "w-full px-4 py-3 text-left hover:bg-accent transition-colors flex items-start gap-3 border-b border-border last:border-b-0",
-                  selectedIndex === index && "bg-accent"
+                  "w-full px-4 py-3 text-left hover:bg-accent hover:text-accent-foreground transition-colors flex items-start gap-3 border-b border-border last:border-b-0",
+                  selectedIndex === index && "bg-accent text-accent-foreground"
                 )}
               >
                 <MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
