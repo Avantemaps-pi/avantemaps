@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useSwipeable } from 'react-swipeable';
 import PlaceCardImage from './PlaceCardImage';
 import PlaceCardActions from './PlaceCardActions';
@@ -14,10 +14,9 @@ interface SwipeableImageGalleryProps {
   previewMode?: boolean | undefined;
   imageClassName?: string | undefined;
   hideIndicators?: boolean | undefined;
+  /** No-op: photos only change on swipe or dot tap. Kept for existing callers. */
   paused?: boolean | undefined;
 }
-
-const STORY_DURATION = 3000; // 3 seconds per image
 
 const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
   images,
@@ -30,61 +29,11 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
   previewMode = false,
   imageClassName,
   hideIndicators = false,
-  paused = false,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const animationRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number>(0);
-  const pausedRef = useRef(false);
-  const remainingTimeRef = useRef(STORY_DURATION);
-
-  // Auto-advance timer with smooth progress
-  useEffect(() => {
-    if (images.length <= 1) return;
-    if (paused) {
-      // Cancel any running animation when paused
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-      return;
-    }
-    const animate = (timestamp: number) => {
-      if (!startTimeRef.current) startTimeRef.current = timestamp;
-      if (pausedRef.current) {
-        startTimeRef.current = timestamp - (STORY_DURATION - remainingTimeRef.current);
-        animationRef.current = requestAnimationFrame(animate);
-        return;
-      }
-      
-      const elapsed = timestamp - startTimeRef.current;
-      const newProgress = Math.min(elapsed / STORY_DURATION, 1);
-      setProgress(newProgress);
-
-      if (newProgress >= 1) {
-        // Move to next image or loop
-        setCurrentIndex(prev => {
-          if (prev < images.length - 1) return prev + 1;
-          return 0;
-        });
-        startTimeRef.current = 0;
-        remainingTimeRef.current = STORY_DURATION;
-        setProgress(0);
-      }
-      
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    startTimeRef.current = 0;
-    remainingTimeRef.current = STORY_DURATION;
-    setProgress(0);
-    animationRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    };
-  }, [currentIndex, images.length, paused]);
 
   const goToNext = useCallback(() => {
     if (currentIndex < images.length - 1 && !isAnimating) {
@@ -101,15 +50,6 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
       setTimeout(() => setIsAnimating(false), 300);
     }
   }, [currentIndex, isAnimating]);
-
-  const handlePause = useCallback(() => {
-    pausedRef.current = true;
-    remainingTimeRef.current = STORY_DURATION * (1 - progress);
-  }, [progress]);
-
-  const handleResume = useCallback(() => {
-    pausedRef.current = false;
-  }, []);
 
   const handlers = useSwipeable({
     onSwipedLeft: () => {
@@ -193,15 +133,10 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
       className="relative overflow-hidden rounded-lg" 
       {...handlers}
       onClick={previewMode ? handleClick : undefined}
-      onMouseDown={images.length > 1 ? handlePause : undefined}
-      onMouseUp={images.length > 1 ? handleResume : undefined}
-      onMouseLeave={images.length > 1 ? handleResume : undefined}
-      onTouchStart={images.length > 1 ? handlePause : undefined}
-      onTouchEnd={images.length > 1 ? handleResume : undefined}
     >
       {/* Images container */}
       <div 
-        className="flex transition-transform duration-300 ease-out"
+        className="flex transition-transform duration-300 ease-out motion-reduce:transition-none"
         style={{ 
           transform: `translateX(calc(-${currentIndex * 100}% + ${swipeOffset}px))`,
           transitionDuration: swipeOffset !== 0 ? '0ms' : '300ms',
@@ -230,30 +165,34 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
         ))}
       </div>
 
-      {/* Story-style indicator bars at top */}
       {images.length > 1 && !hideIndicators && (
-        <div className="absolute top-0 left-0 right-0 flex gap-1 px-2 pt-2 z-10">
-          {images.map((_, index) => (
-            <button
-              key={index}
-              onClick={(e) => handleIndicatorClick(index, e)}
-              className="h-[3px] flex-1 rounded-full bg-white/30 overflow-hidden"
-              aria-label={`View image ${index + 1} of ${images.length}`}
-            >
-              <div
-                className="h-full rounded-full bg-white"
-                style={{
-                  width: index < currentIndex
-                    ? '100%'
-                    : index === currentIndex
-                      ? `${progress * 100}%`
-                      : '0%',
-                  transition: index === currentIndex ? 'none' : 'width 0.3s ease',
-                }}
-              />
-            </button>
-          ))}
-        </div>
+        <>
+          <span
+            aria-hidden="true"
+            className="absolute top-2 right-2 z-10 rounded-full bg-overlay px-2 py-0.5 text-xs text-white"
+          >
+            {currentIndex + 1} / {images.length}
+          </span>
+          {/* Dots: 44px-tall hit row, dots sit 10px from the bottom */}
+          <div className="absolute inset-x-0 bottom-0 z-10 flex h-11 justify-center">
+            {images.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={(e) => handleIndicatorClick(index, e)}
+                aria-label={`Photo ${index + 1} of ${images.length}`}
+                aria-current={index === currentIndex}
+                className="flex h-11 items-end justify-center px-1 pb-2.5"
+              >
+                <span
+                  className={`block h-1.5 rounded-full ring-1 ring-overlay transition-all motion-reduce:transition-none ${
+                    index === currentIndex ? 'w-[18px] bg-white' : 'w-1.5 bg-white/70'
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
