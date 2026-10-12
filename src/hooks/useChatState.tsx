@@ -137,10 +137,15 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
     if (!user?.uid) return [];
 
     try {
+      // Ownership must use the Supabase user ID (RLS: owner_id = auth.uid()), never the Pi ID
+      const { data: { session } } = await supabase.auth.getSession();
+      const ownerId = session?.user?.id;
+      if (!ownerId) return [];
+
       const { data, error } = await supabase
         .from('businesses')
         .select('id, business_name, verification_status, is_verified, created_at')
-        .eq('owner_id', user.uid)
+        .eq('owner_id', ownerId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;

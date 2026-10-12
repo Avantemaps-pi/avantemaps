@@ -54,8 +54,10 @@ I'm working on **Avante Maps** — a Pi Network-powered business directory web a
 
 **There are TWO different ID systems in this app that must NEVER be confused:**
 
-1. **Pi Network UID** (`user.uid`) — comes from Pi Network authentication
+1. **Pi Network UID** (`user.pi_uid`) — comes from Pi Network authentication
 2. **Supabase Auth UUID** (`session.user.id`) — comes from `supabase.auth.getSession()`
+
+Since 2 June 2026, `user.uid` (the `PiUser` from `useAuth()`) holds the Supabase user ID after a normal login: `verify-pi-auth` returns it, and `authService.ts` stores it as `uid`, with the Pi ID in `pi_uid`. But `user.uid` can still hold the Pi ID if the backend check fails at login (it falls back to the Pi UID), and a saved login can be stale against the live session. So `user.uid` is not a reliable ownership ID; read it from the session instead.
 
 **Rule: ALWAYS use the Supabase UUID for any database ownership check, RLS policy, or `.eq('owner_id', ...)` / `.eq('customer_id', ...)` type query. NEVER use `user.uid` for database queries.**
 

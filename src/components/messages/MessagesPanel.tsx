@@ -49,10 +49,17 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
   useEffect(() => {
     if (!uid) return;
     (async () => {
+      // Ownership must use the Supabase user ID (RLS: owner_id = auth.uid()), never the Pi ID
+      const { data: { session } } = await supabase.auth.getSession();
+      const ownerId = session?.user?.id;
+      if (!ownerId) {
+        setOwnedBusinesses([]);
+        return;
+      }
       const { data } = await supabase
         .from('businesses')
         .select('id,business_name')
-        .eq('owner_id', uid)
+        .eq('owner_id', ownerId)
         .order('business_name');
       setOwnedBusinesses(data ?? []);
     })();

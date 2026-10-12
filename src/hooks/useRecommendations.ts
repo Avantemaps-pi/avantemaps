@@ -16,7 +16,12 @@ interface UserSearchedBusiness {
   last_searched_at: string;
 }
 
-const fetchUserSearches = async (userId: string): Promise<number[]> => {
+const fetchUserSearches = async (): Promise<number[]> => {
+  // The RPC raises "Access denied" unless p_user_id = auth.uid(), so pass the Supabase user ID
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session?.user?.id;
+  if (!userId) return [];
+
   const { data, error } = await supabase
     .rpc('get_user_recommended_businesses', { 
       p_user_id: userId, 
@@ -39,7 +44,7 @@ export const useRecommendations = () => {
 
   const { data: userSearchedBusinessIds = [], isLoading: isLoadingSearches } = useQuery({
     queryKey: ['userSearches', user?.uid],
-    queryFn: () => fetchUserSearches(user!.uid),
+    queryFn: fetchUserSearches,
     enabled: !!user?.uid,
     staleTime: 5 * 60 * 1000,
   });

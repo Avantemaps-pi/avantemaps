@@ -12,11 +12,12 @@ interface AddBusinessButtonProps {
 type FabState = 'expanded' | 'collapsed' | 'hasBusiness';
 
 const FIRST_VISIT_KEY = 'fab_first_visit';
-const BUSINESS_COUNT_CACHE_KEY = 'fab_business_count_cache';
+// _v2: keyed by the Supabase user ID; ignores counts cached under the old key
+const BUSINESS_COUNT_CACHE_KEY = 'fab_business_count_cache_v2';
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
 interface BusinessCountCache {
-  uid: string;
+  ownerId: string;
   count: number;
   timestamp: string;
 }
@@ -54,12 +55,20 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
       let hasBusiness = false;
 
       if (isAuthenticated && user?.uid) {
+        // Ownership must use the Supabase user ID (RLS: owner_id = auth.uid()), never the Pi ID
+        const { data: { session } } = await supabase.auth.getSession();
+        const ownerId = session?.user?.id;
+        if (!ownerId) {
+          if (!cancelled) applyState(false, firstVisit);
+          return;
+        }
+
         // Try cache first for instant state
         try {
           const raw = localStorage.getItem(BUSINESS_COUNT_CACHE_KEY);
           if (raw) {
             const cache: BusinessCountCache = JSON.parse(raw);
-            if (cache.uid === user.uid) {
+            if (cache.ownerId === ownerId) {
               hasBusiness = cache.count > 0;
             }
           }
@@ -75,12 +84,12 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
           const { count } = await supabase
             .from('businesses')
             .select('id', { count: 'exact', head: true })
-            .eq('owner_id', user.uid);
+            .eq('owner_id', ownerId);
           const freshHasBusiness = (count ?? 0) > 0;
 
           // Update cache
           const cache: BusinessCountCache = {
-            uid: user.uid,
+            ownerId,
             count: count ?? 0,
             timestamp: new Date().toISOString(),
           };
