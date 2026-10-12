@@ -37,11 +37,16 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
       }
 
       try {
+        // Ownership must use the Supabase user ID (RLS: owner_id = auth.uid()), never the Pi ID
+        const { data: { session } } = await supabase.auth.getSession();
+        const ownerId = session?.user?.id;
+        if (!ownerId) return;
+
         // Fetch businesses
         const { data, error } = await supabase
           .from('businesses')
           .select('id, business_name')
-          .eq('owner_id', user.uid);
+          .eq('owner_id', ownerId);
 
         if (error) {
           console.error('Error fetching businesses:', error);
@@ -54,7 +59,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
         const { data: subData, error: subError } = await supabase
           .from('subscriptions')
           .select('id')
-          .eq('user_id', user.uid)
+          .eq('user_id', ownerId)
           .eq('plan', 'annual');
 
         if (!subError && subData) {
