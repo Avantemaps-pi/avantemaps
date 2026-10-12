@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { CircleCheck, Shield, Clock, XCircle } from 'lucide-react';
+import { CircleCheck, Shield } from 'lucide-react';
 import { CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import CategoryBadge from './CategoryBadge';
 import HighlightText from './HighlightText';
 
 interface PlaceCardTitleProps {
@@ -22,40 +22,22 @@ const PlaceCardTitle: React.FC<PlaceCardTitleProps> = ({
   verificationStatus = null,
   highlightQuery,
 }) => {
-  // Determine verification status display
+  // One indicator, same priority as before: Certified (navy badge) > Verified (check) > Pending (outline badge)
   const getStatusIndicator = () => {
     if (isCertified) {
-      return (
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <Shield className="h-4 w-4 text-emerald-500" />
-          <Badge variant="outline" className="text-xs border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400">
-            Certified
-          </Badge>
-        </div>
-      );
+      return <CategoryBadge category="Certified" tone="navy" icon={Shield} className="flex-shrink-0" />;
     }
     if (isVerified) {
       return (
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <CircleCheck className="h-4 w-4 text-blue-500" />
-          <Badge variant="outline" className="text-xs border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950 dark:text-blue-400">
-            Verified
-          </Badge>
-        </div>
+        <span className="flex flex-shrink-0 items-center">
+          <CircleCheck className="h-5 w-5 text-primary" aria-hidden="true" />
+          <span className="sr-only">Verified</span>
+        </span>
       );
     }
-    // Pending verification - only show if explicitly pending
     if (verificationStatus === 'pending') {
-      return (
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <Clock className="h-4 w-4 text-amber-500" />
-          <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950 dark:text-amber-400">
-            Pending
-          </Badge>
-        </div>
-      );
+      return <CategoryBadge category="Pending verification" tone="outline" className="flex-shrink-0" />;
     }
-    // Not verified (never requested, rejected, or null)
     return null;
   };
 

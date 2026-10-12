@@ -52,18 +52,18 @@ const PlaceCardPopup = forwardRef<HTMLDivElement, PlaceCardPopupProps>(({
   };
 
   return (
-    <Card className="w-[300px] shadow-md border-gray-200 place-popup z-[100]" ref={ref}>
+    <Card className="w-[300px] shadow-md border-border place-popup z-[100]" ref={ref}>
       <CardHeader className="pb-2 px-3 pt-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             {location.isCertified && (
               <div className="flex-shrink-0">
-                <Shield className="h-5 w-5 text-blue-500" />
+                <Shield className="h-5 w-5 text-primary" />
               </div>
             )}
             {location.isVerified && (
               <div className="flex-shrink-0">
-                <CircleCheck className="h-5 w-5 text-green-500" />
+                <CircleCheck className="h-5 w-5 text-primary" />
               </div>
             )}
             <CardTitle 

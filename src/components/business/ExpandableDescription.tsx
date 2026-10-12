@@ -18,7 +18,7 @@ const ExpandableDescription: React.FC<ExpandableDescriptionProps> = ({
 
   return (
     <p
-      className={`text-sm text-gray-700 dark:text-gray-300 break-words ${lineClampClass} ${className}`}
+      className={`text-sm text-foreground break-words ${lineClampClass} ${className}`}
     >
       <HighlightText text={text} query={highlightQuery} />
     </p>

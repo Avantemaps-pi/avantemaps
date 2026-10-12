@@ -10,11 +10,11 @@ interface PlaceAddressProps {
 const PlaceAddress: React.FC<PlaceAddressProps> = ({ address, onClick }) => {
   return (
     <div 
-      className="flex items-center gap-1 text-sm text-gray-600 mb-2 cursor-pointer hover:text-primary transition-colors"
+      className="flex items-center gap-1 text-sm text-muted-foreground mb-2 cursor-pointer hover:text-primary transition-colors"
       onClick={onClick}
     >
       <MapPin className="h-4 w-4" />
-      <span className="text-xs">{address}</span>
+      <span className="text-sm">{address}</span>
     </div>
   );
 };

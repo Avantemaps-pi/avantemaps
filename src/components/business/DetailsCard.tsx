@@ -41,10 +41,10 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place, className }) => {
           {/* Left Column - Trading Hours */}
           <div className="min-w-0">
             <div className="flex items-center space-x-1.5 mb-1.5">
-              <Clock className="h-4 w-4 text-avante-blue flex-shrink-0" />
+              <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <h3 className="text-xs font-medium text-foreground">Trading Hours</h3>
             </div>
-            <div className="text-[11px] space-y-0.5 text-muted-foreground">
+            <div className="text-xs space-y-0.5 text-muted-foreground">
               {formattedHours ? (
                 formattedHours.map(({ day, hours }) => (
                   <p key={day} className="truncate">
@@ -62,10 +62,10 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place, className }) => {
             {/* Categories */}
             <div>
               <div className="flex items-center space-x-1.5 mb-1.5">
-                <Tag className="h-4 w-4 text-avante-purple flex-shrink-0" />
+                <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <h3 className="text-xs font-medium text-foreground">Categories</h3>
               </div>
-              <div className="text-[11px] space-y-0.5 text-muted-foreground">
+              <div className="text-xs space-y-0.5 text-muted-foreground">
                 {categories.length > 0 ? (
                   categories.map((category, index) => (
                     <p key={index} className="truncate">{category}</p>
@@ -79,10 +79,10 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place, className }) => {
             {/* Contact Details */}
             <div>
               <div className="flex items-center space-x-1.5 mb-1.5">
-                <Phone className="h-4 w-4 text-avante-teal flex-shrink-0" />
+                <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <h3 className="text-xs font-medium text-foreground">Contact</h3>
               </div>
-              <div className="text-[11px] space-y-0.5 text-muted-foreground overflow-hidden">
+              <div className="text-xs space-y-0.5 text-muted-foreground overflow-hidden">
                 {place.phone ? (
                   <p className="truncate">{place.phone}</p>
                 ) : (
@@ -98,14 +98,14 @@ const DetailsCard: React.FC<DetailsCardProps> = ({ place, className }) => {
             {place.website && (
               <div>
                 <div className="flex items-center space-x-1.5 mb-1.5">
-                  <Globe className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <Globe className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <h3 className="text-xs font-medium text-foreground">Website</h3>
                 </div>
                 <a 
                   href={place.website}
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-avante-blue flex items-center text-[11px] hover:underline truncate"
+                  className="text-primary flex items-center text-xs hover:underline truncate"
                 >
                   <span className="truncate">{place.website.replace(/(^\w+:|^)\/\//, '')}</span>
                   <ExternalLink className="h-3 w-3 ml-1 flex-shrink-0" />

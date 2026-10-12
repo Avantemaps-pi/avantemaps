@@ -1,43 +1,35 @@
 
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
+import type { LucideIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-// Available colors for category badges
-const badgeColors = [
-  'bg-purple-100 text-purple-800 hover:bg-purple-200',
-  'bg-blue-100 text-blue-800 hover:bg-blue-200',
-  'bg-green-100 text-green-800 hover:bg-green-200',
-  'bg-red-100 text-red-800 hover:bg-red-200',
-  'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
-  'bg-indigo-100 text-indigo-800 hover:bg-indigo-200',
-  'bg-pink-100 text-pink-800 hover:bg-pink-200',
-  'bg-orange-100 text-orange-800 hover:bg-orange-200',
-  'bg-teal-100 text-teal-800 hover:bg-teal-200',
-  'bg-cyan-100 text-cyan-800 hover:bg-cyan-200',
-];
+const toneClasses = {
+  default: 'bg-secondary text-secondary-foreground',
+  outline: 'bg-transparent text-foreground ring-1 ring-inset ring-input',
+  navy: 'bg-brand-navy text-background',
+};
 
 interface CategoryBadgeProps {
   category: string;
+  tone?: keyof typeof toneClasses;
+  icon?: LucideIcon;
+  className?: string;
 }
 
-const CategoryBadge: React.FC<CategoryBadgeProps> = ({ category }) => {
-  // Create a consistent color based on the category name
-  const getColorIndex = (categoryName: string) => {
-    let sum = 0;
-    for (let i = 0; i < categoryName.length; i++) {
-      sum += categoryName.charCodeAt(i);
-    }
-    return sum % badgeColors.length;
-  };
-
-  // Get a consistent color for the category
-  const colorIndex = getColorIndex(category);
-  const badgeColor = badgeColors[colorIndex];
+const CategoryBadge: React.FC<CategoryBadgeProps> = ({ category, tone = 'default', icon: Icon, className }) => {
+  if (!category.trim()) return null;
 
   return (
-    <Badge className={`text-xs px-3 py-0.5 h-6 rounded-md border-0 inline-flex w-auto ${badgeColor}`}>
+    <span
+      className={cn(
+        'inline-flex w-auto items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold leading-4',
+        toneClasses[tone],
+        className
+      )}
+    >
+      {Icon && <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
       {category}
-    </Badge>
+    </span>
   );
 };
 
