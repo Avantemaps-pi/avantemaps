@@ -15,13 +15,21 @@ interface PlaceCardButtonRowProps {
   disabled?: boolean;
   className?: string;
   detailsElement?: React.ReactNode;
+  /** Rendered in the second column next to Message (e.g. a Reviews button in the map drawer) */
+  secondaryAction?: React.ReactNode;
 }
+
+const buttonBase =
+  'inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed [&_svg]:h-[18px] [&_svg]:w-[18px] [&_svg]:shrink-0';
+const messageClass = 'bg-primary text-primary-foreground hover:bg-primary-hover';
+const linkClass = 'border border-input bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground';
 
 const PlaceCardButtonRow: React.FC<PlaceCardButtonRowProps> = ({ 
   place, 
   disabled = false, 
   className,
-  detailsElement 
+  detailsElement,
+  secondaryAction,
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -61,100 +69,78 @@ const PlaceCardButtonRow: React.FC<PlaceCardButtonRowProps> = ({
     window.open(place.website, '_blank', 'noopener,noreferrer');
   };
 
-  if (!canMessage && !hasWebsite && !detailsElement) return null;
+  if (!canMessage && !hasWebsite && !detailsElement && !secondaryAction) return null;
 
-  const messageButton = canMessage ? (
+  const renderMessageButton = (extraClass?: string | false) => (
     <button
       type="button"
       onClick={handleMessage}
       disabled={disabled || pending}
       aria-disabled={disabled || pending}
-      className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors py-2 min-h-[40px] font-medium disabled:opacity-60 disabled:cursor-not-allowed w-full"
-      style={{ fontSize: '12px', fontWeight: 500 }}
+      className={cn(buttonBase, messageClass, extraClass)}
     >
       {pending ? (
         <>
-          <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />
+          <Loader2 className="animate-spin" />
           Messaging…
         </>
       ) : (
         <>
-          <MessageCircle style={{ width: 14, height: 14 }} />
+          <MessageCircle />
           Message
         </>
       )}
     </button>
-  ) : null;
+  );
 
-  const linkButton = hasWebsite ? (
+  const renderLinkButton = (extraClass?: string | false) => (
     <button
       type="button"
       onClick={handleWebsite}
       disabled={disabled}
-      className="inline-flex items-center justify-center gap-1.5 rounded-md bg-transparent border border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors py-2 min-h-[40px] font-medium disabled:opacity-60 disabled:cursor-not-allowed w-full"
-      style={{ fontSize: '12px', fontWeight: 500 }}
+      className={cn(buttonBase, linkClass, extraClass)}
     >
-      <ExternalLink style={{ width: 13, height: 13 }} />
+      <ExternalLink />
       Link
     </button>
-  ) : null;
+  );
+
+  if (secondaryAction) {
+    return (
+      <div
+        className={cn(
+          'grid gap-2',
+          canMessage && hasWebsite
+            ? 'grid-cols-[minmax(0,1fr)_auto_auto]'
+            : canMessage || hasWebsite
+              ? 'grid-cols-[minmax(0,1fr)_auto]'
+              : 'grid-cols-1',
+          className
+        )}
+      >
+        {canMessage && renderMessageButton('w-full')}
+        {hasWebsite && renderLinkButton()}
+        {secondaryAction}
+      </div>
+    );
+  }
 
   if (detailsElement) {
     return (
       <div className={cn('grid grid-cols-2 gap-2 items-end', className)}>
-        <div>{messageButton}</div>
+        <div>{canMessage && renderMessageButton('w-full')}</div>
         <div className="flex flex-col items-end gap-1">
           {detailsElement}
-          {linkButton}
+          {hasWebsite && renderLinkButton('w-full')}
         </div>
       </div>
     );
   }
 
-  const messageFull = !hasWebsite;
-
   return (
     <div className={cn('grid grid-cols-2 gap-2', className)}>
-      {canMessage && (
-        <button
-          type="button"
-          onClick={handleMessage}
-          disabled={disabled || pending}
-          aria-disabled={disabled || pending}
-          className={cn(
-            'inline-flex items-center justify-center gap-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors py-2 min-h-[40px] font-medium disabled:opacity-60 disabled:cursor-not-allowed',
-            messageFull && 'col-span-2'
-          )}
-          style={{ fontSize: '12px', fontWeight: 500 }}
-        >
-          {pending ? (
-            <>
-              <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />
-              Messaging…
-            </>
-          ) : (
-            <>
-              <MessageCircle style={{ width: 14, height: 14 }} />
-              Message
-            </>
-          )}
-        </button>
-      )}
-      {hasWebsite && (
-        <button
-          type="button"
-          onClick={handleWebsite}
-          disabled={disabled}
-          className={cn(
-            'inline-flex items-center justify-center gap-1.5 rounded-md bg-transparent border border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors py-2 min-h-[40px] font-medium disabled:opacity-60 disabled:cursor-not-allowed',
-            !canMessage && 'col-span-2'
-          )}
-          style={{ fontSize: '12px', fontWeight: 500 }}
-        >
-          <ExternalLink style={{ width: 13, height: 13 }} />
-          Link
-        </button>
-      )}
+      {canMessage && renderMessageButton(!hasWebsite && 'col-span-2')}
+      {hasWebsite && renderLinkButton(!canMessage && 'col-span-2')}
     </div>
   );
 };

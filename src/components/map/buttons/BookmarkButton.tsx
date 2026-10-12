@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bookmark, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/auth';
+import { cn } from '@/lib/utils';
 
 interface BookmarkButtonProps {
   isBookmarked: boolean;
@@ -28,33 +29,26 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({ isBookmarked, onToggle,
       disabled={disabled}
       aria-pressed={isBookmarked}
       aria-busy={isLoading}
-      aria-label={
-        isLoading
-          ? 'Saving bookmark'
-          : isBookmarked
-          ? 'Remove bookmark'
-          : 'Add bookmark'
-      }
-      className={`inline-flex items-center gap-1 z-[101] bg-transparent p-0 border-0 transition-colors ${
-        disabled ? 'cursor-not-allowed' : 'cursor-pointer'
-      } ${isLoading ? 'opacity-70' : ''} ${
-        !isAuthenticated && !isLoading ? 'opacity-70' : ''
-      }`}
+      aria-label={isBookmarked ? 'Remove from saved' : 'Save business'}
+      className={cn(
+        'z-[101] inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-accent',
+        disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+        (isLoading || !isAuthenticated) && 'opacity-70'
+      )}
     >
       {isLoading ? (
         <>
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          <span className="text-xs text-muted-foreground" aria-live="polite">
+          <Loader2 className="h-[22px] w-[22px] animate-spin text-muted-foreground" />
+          <span className="sr-only" aria-live="polite">
             Saving…
           </span>
         </>
       ) : (
         <Bookmark
-          className={`h-5 w-5 transition-colors ${
-            isBookmarked
-              ? 'text-primary fill-primary'
-              : 'text-gray-400 hover:text-gray-600'
-          }`}
+          className={cn(
+            'h-[22px] w-[22px] transition-colors',
+            isBookmarked ? 'text-primary fill-current' : 'text-muted-foreground'
+          )}
         />
       )}
     </button>
