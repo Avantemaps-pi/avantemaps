@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { MapPin, X } from 'lucide-react';
+import { LocateFixed, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const DISMISS_KEY = 'location_banner_dismissed';
@@ -54,27 +55,35 @@ const LocationBanner: React.FC<Props> = ({ className }) => {
     <div
       role="status"
       className={cn(
-        'absolute left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-3 py-2 rounded-full bg-background/95 backdrop-blur-xs border border-border shadow-md text-xs sm:text-sm max-w-[92vw]',
+        'flex items-center gap-3 rounded-xl bg-surface-float border border-border shadow-float py-2 pl-3 pr-1',
         className
       )}
     >
-      <MapPin className="h-4 w-4 text-primary shrink-0" />
-      <span className="text-foreground truncate">Enable location for better results</span>
-      <button
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-primary">
+        <LocateFixed className="h-[18px] w-[18px]" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-foreground">Businesses near you</p>
+        <p className="text-xs text-muted-foreground">Only used to centre the map.</p>
+      </div>
+      <Button
         type="button"
+        variant="secondary"
         onClick={enable}
-        className="ml-1 px-2 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
+        className="h-11 sm:h-11 shrink-0 rounded-full px-4 text-sm font-semibold"
       >
-        Enable
-      </button>
-      <button
+        Allow
+      </Button>
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onClick={dismiss}
         aria-label="Dismiss"
-        className="p-1 rounded-full hover:bg-accent transition-colors"
+        className="h-11 w-11 sm:h-11 sm:w-11 shrink-0 rounded-full text-muted-foreground [&_svg]:size-5 sm:[&_svg]:size-5"
       >
-        <X className="h-3.5 w-3.5 text-muted-foreground" />
-      </button>
+        <X />
+      </Button>
     </div>
   );
 };

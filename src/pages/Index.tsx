@@ -9,7 +9,6 @@ import CategoryFilter, { CATEGORY_OPTIONS } from '@/components/map/CategoryFilte
 import LocateMeButton from '@/components/map/buttons/LocateMeButton';
 import LocationBanner from '@/components/map/LocationBanner';
 import { useSidebar } from '@/components/ui/sidebar';
-import AvanteMapLogo from '@/components/layout/header/AvanteMapLogo';
 import AppSidebar from '@/components/layout/AppSidebar';
 import BottomNavBar from '@/components/layout/BottomNavBar';
 import PlaceCardSEO from '@/components/seo/PlaceCardSEO';
@@ -216,22 +215,18 @@ const Index = () => {
       </div>
       
       {/* Floating UI - responsive positioning with proper spacing for sidebar */}
-      <div className="absolute top-0 left-0 right-0 z-20 px-2 sm:px-4 md:pl-[280px] lg:pl-[280px] py-2 sm:py-4 flex items-center">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleMenuClick}
-          className="mr-2 bg-white/80 shadow-xs flex-shrink-0 sm:hidden"
-        >
-          <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
-        </Button>
-        
-        <div className="mr-2 flex-shrink-0 md:hidden">
-          <AvanteMapLogo size="small" />
-        </div>
-        
-        <div className="flex-1 min-w-0">
-          <div className="space-y-2">
+      <div className="absolute top-0 left-0 right-0 z-20 px-4 md:pl-[280px] lg:pl-[280px] pt-3 sm:pt-4 flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleMenuClick}
+            aria-label="Open menu"
+            className="h-11 w-11 sm:h-11 sm:w-11 rounded-full flex-shrink-0 bg-surface-float border border-border shadow-float text-foreground sm:hidden [&_svg]:size-5 sm:[&_svg]:size-5"
+          >
+            <Menu />
+          </Button>
+          <div className="flex-1 min-w-0">
             <SearchBar 
               onSearch={handleSearchChange}
               onPlaceSelect={handlePlaceSelect}
@@ -239,61 +234,57 @@ const Index = () => {
               enableAutocomplete={true}
               autocompleteMode="business"
               businesses={places}
-              placeholders={[
-                "Search for Business name", 
-                "Search by Category", 
-                "Search by Keywords"
-              ]} 
-              cycleInterval={3000} 
-            />
-            {!isLoading && visiblePlaces.length === 0 && (searchTerm || selectedCategoryId !== 'all') && (() => {
-              const categoryLabel = CATEGORY_OPTIONS.find(o => o.id === selectedCategoryId)?.label;
-              const hasSearch = !!searchTerm;
-              const hasCategory = selectedCategoryId !== 'all';
-              const searchHasMatchesInAll = hasSearch && filteredPlaces.length > 0;
-              let reason = '';
-              if (hasSearch && hasCategory) {
-                reason = searchHasMatchesInAll
-                  ? `No results for "${searchTerm}" in ${categoryLabel}. Matches exist in other categories.`
-                  : `No businesses match "${searchTerm}" in ${categoryLabel}.`;
-              } else if (hasSearch) {
-                reason = `No businesses match "${searchTerm}".`;
-              } else {
-                reason = `No businesses found in ${categoryLabel}.`;
-              }
-              return (
-                <div className="bg-background/95 backdrop-blur-xs rounded-lg px-4 py-3 shadow-xs border border-border flex items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">No matching businesses</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{reason}</p>
-                  </div>
-                  {hasCategory && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="flex-shrink-0"
-                      onClick={() => setSelectedCategoryId('all')}
-                    >
-                      Show All
-                    </Button>
-                  )}
-                </div>
-              );
-            })()}
-            <CategoryFilter
-              selectedCategoryId={selectedCategoryId}
-              onSelect={setSelectedCategoryId}
             />
           </div>
         </div>
+        {!isLoading && visiblePlaces.length === 0 && (searchTerm || selectedCategoryId !== 'all') && (() => {
+          const categoryLabel = CATEGORY_OPTIONS.find(o => o.id === selectedCategoryId)?.label;
+          const hasSearch = !!searchTerm;
+          const hasCategory = selectedCategoryId !== 'all';
+          const searchHasMatchesInAll = hasSearch && filteredPlaces.length > 0;
+          let reason = '';
+          if (hasSearch && hasCategory) {
+            reason = searchHasMatchesInAll
+              ? `No results for "${searchTerm}" in ${categoryLabel}. Matches exist in other categories.`
+              : `No businesses match "${searchTerm}" in ${categoryLabel}.`;
+          } else if (hasSearch) {
+            reason = `No businesses match "${searchTerm}".`;
+          } else {
+            reason = `No businesses found in ${categoryLabel}.`;
+          }
+          return (
+            <div className="bg-surface-float rounded-xl px-4 py-3 shadow-float border border-border flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">No matching businesses</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{reason}</p>
+              </div>
+              {hasCategory && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="flex-shrink-0 h-11 sm:h-11"
+                  onClick={() => setSelectedCategoryId('all')}
+                >
+                  Show All
+                </Button>
+              )}
+            </div>
+          );
+        })()}
+        {/* Chips bleed to the right edge; -ml-1/pl-1 leaves room for the focus ring */}
+        <CategoryFilter
+          selectedCategoryId={selectedCategoryId}
+          onSelect={setSelectedCategoryId}
+          className="-ml-1 pl-1 -mr-4 pr-4 -my-1"
+        />
+        <LocationBanner />
       </div>
       
       <Suspense fallback={null}>
         <AddBusinessButton selectedPlace={selectedPlace} />
       </Suspense>
-      {/* Sits above the country zoom +/- control (which itself sits above the Add Business button). */}
-      <LocateMeButton className="absolute right-6 bottom-60 sm:bottom-44 z-20" />
-      <LocationBanner className="bottom-44 sm:bottom-28" />
+      {/* Top of the right-hand column: FAB (bottom 96px, 56px tall) + 12px gap + zoom group (90px) + 12px gap = 266px */}
+      <LocateMeButton className="absolute right-4 bottom-[calc(266px+env(safe-area-inset-bottom))] z-20" />
       <BottomNavBar />
     </div>
   );
