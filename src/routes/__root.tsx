@@ -39,30 +39,38 @@ import heroIcon144 from "@/assets/avante-icon-144.webp";
 // stays a raw inline string (it must run before the JS bundle loads, so it can't
 // import that constant at runtime) — do not hardcode a second hostname list here.
 const PI_INIT_SCRIPT = `
-      // Sandbox detection: ONLY the exact mainnet hostnames below use sandbox: false.
-      // Every other hostname (localhost, preview, testnet.avantemaps.com, etc.) uses
-      // sandbox: true. Exact-match only — a suffix/endsWith check previously and
-      // incorrectly classified testnet.avantemaps.com as mainnet.
-      const hostname = window.location.hostname;
-      const isMainnetHost = ${JSON.stringify(MAINNET_PI_HOSTNAMES)}.includes(hostname);
-      const isSandbox = !isMainnetHost;
+      // Wrapped in an IIFE so nothing is declared at the top level: the router can
+      // re-insert head scripts on client-side navigation, and a second top-level
+      // "const hostname" would throw. The flag keeps Pi.init() to once per page load.
+      (function () {
+        if (window.__piInitScriptRan) return;
+        window.__piInitScriptRan = true;
 
-      // Initialize Pi SDK immediately when script loads (not on window.load)
-      // This ensures Pi.init() is called before any authenticate() calls
-      // IMPORTANT: This is the ONLY place Pi.init() should be called
-      (function initPiSdk() {
-        if (window.Pi) {
-          console.log("🔧 Pi SDK Init:", { hostname, isMainnetHost, sandbox: isSandbox });
-          Pi.init({
-            version: "2.0",
-            sandbox: isSandbox,
-          });
-          window.__piInitialized = true;
-          window.__piSandboxMode = isSandbox;
-        } else {
-          // Retry after a short delay if SDK isn't ready yet
-          setTimeout(initPiSdk, 50);
-        }
+        // Sandbox detection: ONLY the exact mainnet hostnames below use sandbox: false.
+        // Every other hostname (localhost, preview, testnet.avantemaps.com, etc.) uses
+        // sandbox: true. Exact-match only — a suffix/endsWith check previously and
+        // incorrectly classified testnet.avantemaps.com as mainnet.
+        const hostname = window.location.hostname;
+        const isMainnetHost = ${JSON.stringify(MAINNET_PI_HOSTNAMES)}.includes(hostname);
+        const isSandbox = !isMainnetHost;
+
+        // Initialize Pi SDK immediately when script loads (not on window.load)
+        // This ensures Pi.init() is called before any authenticate() calls
+        // IMPORTANT: This is the ONLY place Pi.init() should be called
+        (function initPiSdk() {
+          if (window.Pi) {
+            console.log("🔧 Pi SDK Init:", { hostname, isMainnetHost, sandbox: isSandbox });
+            Pi.init({
+              version: "2.0",
+              sandbox: isSandbox,
+            });
+            window.__piInitialized = true;
+            window.__piSandboxMode = isSandbox;
+          } else {
+            // Retry after a short delay if SDK isn't ready yet
+            setTimeout(initPiSdk, 50);
+          }
+        })();
       })();
 `;
 
