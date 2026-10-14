@@ -39,7 +39,7 @@ const fetchUserSearches = async (): Promise<number[]> => {
 };
 
 export const useRecommendations = () => {
-  const { places, isLoading: placesLoading } = useBusinessData();
+  const { places, isLoading: placesLoading, isError, refetch } = useBusinessData();
   const { user } = useAuth();
 
   const { data: userSearchedBusinessIds = [], isLoading: isLoadingSearches } = useQuery({
@@ -78,6 +78,8 @@ export const useRecommendations = () => {
 
   return {
     ...recommendations,
-    isLoading: placesLoading || isLoadingSearches
+    isLoading: placesLoading || isLoadingSearches,
+    isError,
+    refetch
   };
 };

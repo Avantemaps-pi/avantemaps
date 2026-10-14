@@ -2,12 +2,10 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from '@/lib/router-compat';
 import AppLayout from '@/components/layout/AppLayout';
 import PlaceCard from '@/components/business/PlaceCard';
-import { useIsMobile } from '@/hooks/use-mobile';
 import RecommendationsSEO from '@/components/seo/RecommendationsSEO';
 import { useRecommendations } from '@/hooks/useRecommendations';
-import RecommendationSkeleton from '@/components/recommendations/RecommendationSkeleton';
-import EmptyRecommendationSection from '@/components/recommendations/EmptyRecommendationSection';
-import { Award, Star, ChevronDown, Check, Lock, ArrowRight, ArrowLeft, Inbox } from 'lucide-react';
+import BusinessCardSkeleton from '@/components/business/BusinessCardSkeleton';
+import { ChevronDown, Check, Lock, ArrowRight, ArrowLeft, AlertCircle, SearchX, Store } from 'lucide-react';
 import MetaTags from '@/components/seo/MetaTags';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -17,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { StateBlock } from '@/components/ui/state-block';
 import { useBusinessData } from '@/hooks/useBusinessData';
 import { useAuth } from '@/context/auth';
 import LoginDialog from '@/components/auth/LoginDialog';
@@ -24,7 +23,6 @@ import { getOrigin } from '@/utils/browserEnv';
 
 const Recommendations = () => {
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -46,7 +44,8 @@ const Recommendations = () => {
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'rating'>('rating');
-  const { avanteTopChoice, recommendedForYou, isLoading } = useRecommendations();
+  const { avanteTopChoice, recommendedForYou, isLoading, isError, refetch } = useRecommendations();
+  const [retrying, setRetrying] = useState(false);
   const { places } = useBusinessData();
   const recommendedForYouRef = useRef<HTMLElement>(null);
 
@@ -103,6 +102,28 @@ const Recommendations = () => {
     });
   };
 
+  // One page state, and exactly one UI for it
+  const bothEmpty = filteredData.avanteTopChoice.length === 0 && filteredData.recommendedForYou.length === 0;
+  // A refetch with no data goes back to loading, so keep the error up while Try again runs
+  const pageState: 'loading' | 'error' | 'none' | 'no-match' | 'ok' = retrying && bothEmpty
+    ? 'error'
+    : isLoading
+      ? 'loading'
+      : isError && bothEmpty
+        ? 'error'
+        : bothEmpty
+          ? (selectedCategories.length > 0 ? 'no-match' : 'none')
+          : 'ok';
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      await refetch();
+    } finally {
+      setRetrying(false);
+    }
+  };
+
   const handleMouseEnter = (section: string) => {
     setActiveSection(section);
   };
@@ -136,23 +157,13 @@ const Recommendations = () => {
 
       {!authLoading && !isAuthenticated ? (
         <div className="w-full mx-auto pb-6 px-4 md:px-[15px] flex items-center justify-center min-h-[60vh]">
-          <div className="max-w-md w-full text-center bg-card border rounded-xl p-6 shadow-xs">
-            <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Lock className="h-6 w-6 text-primary" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Sign in to view Pi recommendations</h2>
-            <p className="text-sm text-muted-foreground mb-5">
-              Pi-accepting business recommendations are available to authenticated Pi Network users. Sign in to discover top-rated Pi-accepting businesses curated for you.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2 justify-center">
-              <Button onClick={() => setShowLogin(true)} className="w-full sm:w-auto">
-                Login with Pi Network
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/')} className="w-full sm:w-auto">
-                Back to map
-              </Button>
-            </div>
-          </div>
+          <StateBlock
+            kind="empty"
+            icon={Lock}
+            title="Sign in to see recommendations"
+            body="Recommendations are for signed-in Pi Network users."
+            action={{ label: 'Sign in with Pi', onClick: () => setShowLogin(true) }}
+          />
           <LoginDialog open={showLogin} onOpenChange={setShowLogin} />
         </div>
       ) : (
@@ -171,18 +182,39 @@ const Recommendations = () => {
           </div>
         )}
 
-        {/* Combined empty state when both sections have no data */}
-        {!isLoading && filteredData.avanteTopChoice.length === 0 && filteredData.recommendedForYou.length === 0 && (
+        {pageState === 'loading' && (
+          <div role="status" className="sr-only">Loading businesses…</div>
+        )}
+
+        {(pageState === 'error' || pageState === 'none' || pageState === 'no-match') && (
           <div className="flex items-center justify-center min-h-[50vh] px-4">
-            <div className="text-center max-w-sm">
-              <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                <Inbox className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No recommendations yet</h3>
-              <p className="text-sm text-muted-foreground">
-                Check back as more businesses join Avante Maps.
-              </p>
-            </div>
+            {pageState === 'error' && (
+              <StateBlock
+                kind="error"
+                icon={AlertCircle}
+                title="Couldn't load recommendations"
+                body="Check your connection, then try again."
+                action={{ label: 'Try again', onClick: handleRetry, loading: retrying }}
+              />
+            )}
+            {pageState === 'none' && (
+              <StateBlock
+                kind="empty"
+                icon={Store}
+                title="No recommendations yet"
+                body="Check back as more businesses join Avante Maps."
+                action={{ label: 'Explore the map', onClick: () => navigate('/') }}
+              />
+            )}
+            {pageState === 'no-match' && (
+              <StateBlock
+                kind="empty"
+                icon={SearchX}
+                title="No businesses in these categories"
+                body="Try other categories, or clear them to see everything."
+                action={{ label: 'Clear categories', onClick: () => setSelectedCategories([]) }}
+              />
+            )}
           </div>
         )}
 
@@ -192,21 +224,13 @@ const Recommendations = () => {
               title: 'Avante Top Choice',
               data: filteredData.avanteTopChoice,
               key: 'avanteTopChoice',
-              icon: Award,
-              emptyMessage: selectedCategories.length > 0
-                ? 'No businesses match your selected categories.'
-                : 'No verified and certified businesses yet. Check back soon!'
             },
             {
               title: 'Recommended for you',
               data: filteredData.recommendedForYou,
               key: 'recommendedForYou',
-              icon: Star,
-              emptyMessage: selectedCategories.length > 0
-                ? 'No businesses match your selected categories.'
-                : 'No recommendations available yet.'
             }
-          ].filter(({ data }) => isLoading || data.length > 0).map(({ title, data, key, icon, emptyMessage }) => {
+          ].filter(({ data }) => pageState === 'loading' || (pageState === 'ok' && data.length > 0)).map(({ title, data, key }) => {
             const isExpanded = !!expandedSections[key];
             return (
             <section
@@ -218,30 +242,29 @@ const Recommendations = () => {
               onTouchStart={() => handleMouseEnter(key)}
               className="relative w-full overflow-x-hidden scroll-mt-20"
             >
-              <div className="flex items-center justify-between mb-4 px-4 md:px-[15px]">
-                <h2 className="text-xl font-semibold flex items-start min-w-0 flex-1 mr-2">
-                  <span className="bg-primary h-4 w-1 rounded-full mr-2 mt-2 flex-shrink-0"></span>
-                  <span className="min-w-0 whitespace-nowrap">
-                    {title}
-                    <button
-                      type="button"
-                      onClick={() => toggleExpanded(key)}
-                      aria-label={isExpanded ? `Collapse ${title}` : `View all ${title}`}
-                      aria-expanded={isExpanded}
-                      className="ml-1.5 inline-flex items-center justify-center h-6 w-6 rounded-full text-primary hover:bg-primary/10 transition-colors align-middle"
-                    >
-                      {isExpanded ? (
-                        <ArrowLeft className="h-4 w-4" />
-                      ) : (
-                        <ArrowRight className="h-4 w-4" />
-                      )}
-                    </button>
-                  </span>
+              {/* Wraps so the Categories button drops below the title when there isn't room */}
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2 mb-4 px-4 md:px-[15px]">
+                <h2 className="text-xl leading-7 font-semibold text-foreground flex items-center flex-1">
+                  <span className="bg-primary h-4 w-1 rounded-full mr-2 flex-shrink-0"></span>
+                  <span className="whitespace-nowrap">{title}</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(key)}
+                    aria-label={isExpanded ? `Collapse ${title}` : `View all ${title}`}
+                    aria-expanded={isExpanded}
+                    className="ml-0.5 inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-primary hover:bg-accent transition-colors"
+                  >
+                    {isExpanded ? (
+                      <ArrowLeft className="h-5 w-5" />
+                    ) : (
+                      <ArrowRight className="h-5 w-5" />
+                    )}
+                  </button>
                 </h2>
                 {key === 'avanteTopChoice' && categories.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="bg-background text-sm">
+                      <Button variant="outline" className="h-11 sm:h-11 px-4 text-sm font-semibold">
                         Categories
                         {selectedCategories.length > 0 && (
                           <Badge variant="secondary" className="ml-2 px-1.5 py-0 text-xs">
@@ -274,70 +297,44 @@ const Recommendations = () => {
               {isExpanded ? (
                 /* Vertical grid showing all matches, scrollable up/down with the page */
                 <div className="px-4 md:px-[15px]">
-                  {isLoading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <RecommendationSkeleton />
-                      <RecommendationSkeleton />
-                      <RecommendationSkeleton />
-                    </div>
-                  ) : data.length === 0 ? (
-                    <EmptyRecommendationSection
-                      title={title}
-                      message={emptyMessage}
-                      icon={icon}
-                    />
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {data.map(place => (
-                        <div key={place.id} className="w-full">
-                          <PlaceCard
-                            place={place}
-                            onPlaceClick={handlePlaceClick}
-                            className="w-full h-full"
-                            showDetails={true}
-                            hideGalleryIndicators
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* Horizontal Scroll Snap Slider for Place Cards Only */
-                <div className="relative overflow-x-hidden">
-                  <div
-                    style={{
-                      paddingLeft: isMobile ? '1rem' : '0',
-                      paddingRight: isMobile ? '1rem' : '0'
-                    }}
-                    className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide px-0 mx-[15px]"
-                  >
-                    {isLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {pageState === 'loading' ? (
                       <>
-                        <RecommendationSkeleton />
-                        <RecommendationSkeleton />
-                        <RecommendationSkeleton />
+                        <BusinessCardSkeleton className="w-full" />
+                        <BusinessCardSkeleton className="w-full" />
+                        <BusinessCardSkeleton className="w-full" />
                       </>
-                    ) : data.length === 0 ? (
-                      <EmptyRecommendationSection
-                        title={title}
-                        message={emptyMessage}
-                        icon={icon}
-                      />
                     ) : (
                       data.map(place => (
-                        <div key={place.id} className="flex-none w-80 snap-start">
-                          <PlaceCard
-                            place={place}
-                            onPlaceClick={handlePlaceClick}
-                            className="w-full h-full"
-                            showDetails={true}
-                            hideGalleryIndicators
-                          />
-                        </div>
+                        <PlaceCard
+                          key={place.id}
+                          place={place}
+                          onPlaceClick={handlePlaceClick}
+                          className="w-full h-full"
+                        />
                       ))
                     )}
                   </div>
+                </div>
+              ) : (
+                /* Horizontal scroll-snap row; 300px cards so the next one peeks at 375px */
+                <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-px-4 pb-2 scrollbar-hide px-4 md:px-[15px]">
+                  {pageState === 'loading' ? (
+                    <>
+                      <BusinessCardSkeleton className="w-[300px] flex-none" />
+                      <BusinessCardSkeleton className="w-[300px] flex-none" />
+                      <BusinessCardSkeleton className="w-[300px] flex-none" />
+                    </>
+                  ) : (
+                    data.map(place => (
+                      <PlaceCard
+                        key={place.id}
+                        place={place}
+                        onPlaceClick={handlePlaceClick}
+                        className="w-[300px] flex-none snap-start h-full"
+                      />
+                    ))
+                  )}
                 </div>
               )}
             </section>
