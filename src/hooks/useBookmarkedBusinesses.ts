@@ -144,7 +144,7 @@ export const useBookmarkedBusinesses = () => {
     }
   }, [queryClient]);
 
-  const { data: bookmarkedPlaces = [], isLoading } = useQuery({
+  const { data: bookmarkedPlaces = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['bookmarked-businesses'],
     queryFn: async () => {
       const { data: { user: sessionUser }, error: sessionErr } = await supabase.auth.getUser();
@@ -176,5 +176,5 @@ export const useBookmarkedBusinesses = () => {
     gcTime: 5 * 60 * 1000,
   });
 
-  return { bookmarkedPlaces, isLoading };
+  return { bookmarkedPlaces, isLoading, isError, refetch };
 };

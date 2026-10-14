@@ -1,74 +1,65 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { useNavigate, useLocation } from '@/lib/router-compat';
+import React from 'react';
+import { useNavigate } from '@/lib/router-compat';
 import { Place } from '@/types/business';
 import CategoryBadge from '@/components/business/CategoryBadge';
-import ExpandableDescription from './ExpandableDescription';
-import { useIsMobile } from '@/hooks/use-mobile';
-import PlaceCardImage from './PlaceCardImage';
-import PlaceCardTitle from './PlaceCardTitle';
-import PlaceCardAddress from './PlaceCardAddress';
+import ProgressiveImage from './ProgressiveImage';
+import HighlightText from './HighlightText';
 import PlaceCardRating from './PlaceCardRating';
 import PlaceCardButtonRow from './PlaceCardButtonRow';
-import PlaceCardDetails from './PlaceCardDetails';
-import DetailsCard from './DetailsCard';
 import { useBookmark } from '@/hooks/useBookmark';
-import { useSharePlace } from '@/hooks/useSharePlace';
-import SwipeableImageGallery from './SwipeableImageGallery';
 import BookmarkButton from '@/components/map/buttons/BookmarkButton';
-import { Info, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CircleCheck, Info, MapPin, ShieldCheck, Store } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface PlaceCardProps {
   place: Place;
   onPlaceClick: (placeId: string, zoomToLocation?: boolean) => void;
   onRemove?: (placeId: string) => void;
   className?: string;
+  /** @deprecated Ignored: details now open in the map drawer. */
   showDetails?: boolean;
   isBookmarked?: boolean;
   previewMode?: boolean;
   disableRating?: boolean;
   disableBookmark?: boolean;
+  /** @deprecated Ignored: list cards always show one photo. */
   singleImageOnly?: boolean;
+  /** @deprecated Ignored: list cards have no gallery. */
   hideGalleryIndicators?: boolean;
   highlightQuery?: string;
 }
 
-const PlaceCard: React.FC<PlaceCardProps> = ({ 
-  place, 
-  onPlaceClick, 
-  onRemove, 
+const PLACEHOLDER = '/placeholder.svg';
+
+const PlaceCard: React.FC<PlaceCardProps> = ({
+  place,
+  onPlaceClick,
+  onRemove,
   className,
-  showDetails = false,
   isBookmarked: initialIsBookmarked = false,
   previewMode = false,
   disableRating = false,
   disableBookmark = false,
-  singleImageOnly = false,
-  hideGalleryIndicators = false,
   highlightQuery,
 }) => {
   const navigate = useNavigate();
-  const routerLocation = useLocation();
-  const isMobile = useIsMobile();
-  const [detailsOverlayOpen, setDetailsOverlayOpen] = useState(false);
-  
-  // Use our custom hooks
+
   const { isBookmarked, handleBookmarkToggle, isLoading: isBookmarkLoading } = useBookmark({
     initialIsBookmarked,
     onRemove,
     id: place.id
   });
-  
-  const { handleShare } = useSharePlace(place.name, place.id);
-  
+
   const handleRatingClick = () => {
-    navigate(`/review/${place.id}`, { 
-      state: { 
+    navigate(`/review/${place.id}`, {
+      state: {
         businessDetails: place
       }
     });
   };
 
+  // Details, the name and the photo all open the business's drawer on the map
   const handlePlaceClick = () => {
     if (window.location.pathname === '/') {
       onPlaceClick(place.id);
@@ -77,119 +68,129 @@ const PlaceCard: React.FC<PlaceCardProps> = ({
     }
   };
 
-  const handleAddressClick = () => {
-    if (window.location.pathname === '/') {
-      onPlaceClick(place.id, true);
-    } else {
-      navigate('/', { state: { selectedPlaceId: place.id, zoomToLocation: true } });
-    }
-  };
-  
-  // Check if we're on the recommendations page (SSR-safe via router location)
-  const isRecommendationsPage = routerLocation.pathname === '/recommendations';
+  const category = place.category.split(',').map(cat => cat.trim()).find(Boolean) ?? '';
+  const image = place.images?.[0] || place.image;
+  const hasImage = !!image && image !== PLACEHOLDER;
+  const isPending = place.verificationStatus === 'pending' && !place.isVerified;
 
-  // Parse categories and limit to 2
-  const categories = place.category.split(',')
-    .map(cat => cat.trim())
-    .filter(Boolean)
-    .slice(0, 2); // Limit to 2 categories
+  // Keep the status icon attached to the last word so it never wraps on its own
+  const trimmedName = place.name.trim();
+  const lastSpace = trimmedName.lastIndexOf(' ');
+  const nameHead = trimmedName.slice(0, lastSpace + 1);
+  const nameLast = trimmedName.slice(lastSpace + 1);
+  const StatusIcon = place.isCertified ? ShieldCheck : place.isVerified ? CircleCheck : null;
+  const statusLabel = place.isCertified ? 'Certified' : 'Verified';
+  const titleId = `place-card-title-${place.id}`;
 
-  // Use images array if available, otherwise fall back to single image
-  // If singleImageOnly, only use the first image
-  const allImages = place.images && place.images.length > 0 
-    ? place.images 
-    : (place.image ? [place.image] : []);
-  const images = singleImageOnly ? allImages.slice(0, 1) : allImages;
+  const name = (
+    <>
+      <HighlightText text={nameHead} query={highlightQuery} />
+      <span className="whitespace-nowrap">
+        <HighlightText text={nameLast} query={highlightQuery} />
+        {StatusIcon && (
+          <>
+            <StatusIcon className="ml-1 inline-block h-[18px] w-[18px] align-[-3px] text-primary" aria-hidden="true" />
+            <span className="sr-only"> ({statusLabel})</span>
+          </>
+        )}
+      </span>
+    </>
+  );
 
   return (
-    <Card 
-      key={place.id} 
-      className={`material-card ${previewMode ? '' : 'card-hover'} w-full ${className || ''} place-card-container`}
+    <article
+      aria-labelledby={titleId}
+      className={cn(
+        'flex flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-card',
+        className
+      )}
     >
-      {/* Title + Bookmark above image (matching homepage popup) */}
-      <CardHeader className={`pb-2 px-3 pt-3 ${previewMode ? 'pointer-events-none select-none' : ''}`}>
-        <div className="flex items-start justify-between">
-          <PlaceCardTitle 
-            name={place.name} 
-            onClick={previewMode ? undefined : handlePlaceClick} 
-            isVerified={place.isVerified} 
-            isCertified={place.isCertified}
-            verificationStatus={place.verificationStatus}
-            highlightQuery={highlightQuery}
+      {/* Media: decorative duplicate of the name/Details action, so hidden from AT */}
+      <div
+        aria-hidden="true"
+        onClick={previewMode ? undefined : handlePlaceClick}
+        className={cn('relative aspect-video bg-muted', !previewMode && 'cursor-pointer')}
+      >
+        {hasImage ? (
+          <ProgressiveImage
+            src={image}
+            alt=""
+            className="h-full w-full object-cover"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.src = PLACEHOLDER;
+            }}
           />
-          {!disableBookmark && (
-            <BookmarkButton 
-              isBookmarked={isBookmarked} 
-              onToggle={handleBookmarkToggle}
-              isLoading={isBookmarkLoading}
-            />
-          )}
-        </div>
-      </CardHeader>
-
-      {/* Image gallery with optional details overlay */}
-      <div className="relative">
-        <SwipeableImageGallery
-          images={images}
-          name={place.name}
-          isBookmarked={isBookmarked}
-          onBookmarkToggle={handleBookmarkToggle}
-          onShare={handleShare}
-          placeId={place.id}
-          onClick={singleImageOnly ? undefined : handlePlaceClick}
-          previewMode={previewMode ? false : true}
-          hideIndicators={hideGalleryIndicators}
-          paused={detailsOverlayOpen}
-        />
-        
-        {/* Details overlay on top of images */}
-        {detailsOverlayOpen && (
-          <div className="absolute inset-0 z-20 bg-background/95 backdrop-blur-xs rounded-lg overflow-y-auto flex flex-col">
-            <button
-              onClick={() => setDetailsOverlayOpen(false)}
-              className="absolute top-1 right-1 z-30 p-1 rounded-full bg-muted hover:bg-muted/80 transition-colors"
-            >
-              <X className="h-4 w-4 text-foreground" />
-            </button>
-            <div className="flex-1 flex items-center justify-center p-2">
-              <DetailsCard place={place} className="shadow-none border-0 bg-transparent" />
-            </div>
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <Store className="h-8 w-8 text-muted-foreground" />
           </div>
         )}
       </div>
-      
-      <CardContent className="pt-3 px-3 space-y-3">
-        <div className={previewMode ? 'pointer-events-none select-none' : ''}>
-          <PlaceCardAddress address={place.address} onClick={previewMode ? undefined : handleAddressClick} highlightQuery={highlightQuery} />
-        </div>
 
-        <div className={`relative h-20 overflow-hidden ${previewMode ? 'select-none' : ''}`}>
-          <ExpandableDescription text={place.description} maxLines={4} highlightQuery={highlightQuery} />
-          <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-        </div>
-
-        <div className="flex justify-between items-start gap-2">
-          <div className={`flex flex-col items-start gap-2 ${previewMode ? 'pointer-events-none select-none' : ''}`}>
-            <PlaceCardRating rating={place.rating} totalReviews={place.totalReviews} onClick={(previewMode || disableRating) ? undefined : handleRatingClick} />
-            <CategoryBadge category={categories[0] || ''} />
-          </div>
-        </div>
-
-        <PlaceCardButtonRow 
-          place={place} 
-          disabled={previewMode} 
-          detailsElement={showDetails ? (
-            <div
-              className="text-primary font-medium text-xs cursor-pointer flex items-center whitespace-nowrap"
-              onClick={() => setDetailsOverlayOpen(!detailsOverlayOpen)}
-            >
-              <Info className="h-3 w-3 mr-1" />
-              Details
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <h3 id={titleId} className="min-w-0 flex-1 text-[17px] leading-6 font-semibold text-foreground break-words">
+            {previewMode ? (
+              name
+            ) : (
+              <button
+                type="button"
+                onClick={handlePlaceClick}
+                className="rounded-sm bg-transparent p-0 text-left"
+              >
+                {name}
+              </button>
+            )}
+          </h3>
+          {!disableBookmark && (
+            <div className="-mt-2.5 -mr-2.5 shrink-0" inert={previewMode || undefined}>
+              <BookmarkButton
+                isBookmarked={isBookmarked}
+                onToggle={handleBookmarkToggle}
+                isLoading={isBookmarkLoading}
+              />
             </div>
-          ) : undefined}
-        />
-      </CardContent>
-    </Card>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <PlaceCardRating
+            rating={place.rating}
+            totalReviews={place.totalReviews}
+            onClick={(previewMode || disableRating) ? undefined : handleRatingClick}
+          />
+          <CategoryBadge category={category} />
+          {isPending && <CategoryBadge category="Pending verification" tone="outline" />}
+        </div>
+
+        {place.address && (
+          <div className="flex items-start gap-1">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <span className="line-clamp-2 text-sm leading-5 text-muted-foreground">
+              <HighlightText text={place.address} query={highlightQuery} />
+            </span>
+          </div>
+        )}
+
+        <div className="mt-auto pt-2" inert={previewMode || undefined}>
+          <PlaceCardButtonRow
+            place={place}
+            secondaryAction={
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePlaceClick}
+                className="h-11 sm:h-11 rounded-md border-input bg-transparent px-4 text-sm font-semibold text-foreground hover:bg-accent [&_svg]:size-[18px] sm:[&_svg]:size-[18px]"
+              >
+                <Info />
+                Details
+              </Button>
+            }
+          />
+        </div>
+      </div>
+    </article>
   );
 };
 

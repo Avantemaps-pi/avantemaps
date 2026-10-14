@@ -101,7 +101,7 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
               place={previewPlace}
               onPlaceClick={() => {}}
               showDetails={true}
-              previewMode={false}
+              previewMode
               disableRating={true}
               disableBookmark={true}
               className="shadow-lg"
