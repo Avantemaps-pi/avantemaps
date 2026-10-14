@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Place } from '@/types/business';
-import { toast } from 'sonner';
 
 interface PublicBusinessInfo {
   id: number;
@@ -125,14 +124,12 @@ const fetchBusinesses = async (): Promise<Place[]> => {
 };
 
 export const useBusinessData = () => {
-  const { data: places = [], isLoading } = useQuery({
+  // isLoading: first load with no data yet. Errors are shown by the map's own error card.
+  const { data: places = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['businesses'],
     queryFn: fetchBusinesses,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-    meta: {
-      onError: () => toast.error('Failed to load businesses'),
-    },
   });
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -167,6 +164,8 @@ export const useBusinessData = () => {
     places,
     filteredPlaces,
     isLoading,
+    isError,
+    refetch,
     handleSearch
   };
 };

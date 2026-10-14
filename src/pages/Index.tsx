@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { useLocation } from '@/lib/router-compat';
+import { useLocation, useNavigate } from '@/lib/router-compat';
 import { useBusinessData } from '@/hooks/useBusinessData';
-import { Menu } from 'lucide-react';
+import { AlertCircle, Loader2, Menu, SearchX, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { StateBlock, type StateBlockProps } from '@/components/ui/state-block';
 import SearchBar from '@/components/map/SearchBar';
 import CategoryFilter, { CATEGORY_OPTIONS } from '@/components/map/CategoryFilter';
 import LocateMeButton from '@/components/map/buttons/LocateMeButton';
@@ -27,10 +28,14 @@ const AddBusinessButton = lazy(() => import('@/components/map/buttons/AddBusines
 const Index = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
-  const { places = [], filteredPlaces = [], isLoading = false, handleSearch } = useBusinessData();
+  const { places = [], filteredPlaces = [], isLoading = false, isError, refetch, handleSearch } = useBusinessData();
+  const [retrying, setRetrying] = useState(false);
+  // Bumped to remount SearchBar, which clears its input (it keeps its own value)
+  const [searchResetKey, setSearchResetKey] = useState(0);
   const { setOpenMobile } = useSidebar();
   const { trackBusinessSearch } = useSearchTracking();
 
@@ -143,6 +148,86 @@ const Index = () => {
     });
   }, [basePlaces, selectedCategoryId]);
 
+  // One state for the map screen, and exactly one message for it
+  const hasSearch = searchTerm.trim() !== '';
+  const hasCategory = selectedCategoryId !== 'all';
+  // A refetch with no data puts the query back to pending (isLoading), so keep the
+  // error card up while Try again runs, with the button showing its loading state.
+  const mapState: 'loading' | 'error' | 'none' | 'no-match' | 'ok' = retrying && places.length === 0
+    ? 'error'
+    : isLoading
+      ? 'loading'
+      : isError && places.length === 0
+        ? 'error'
+      : places.length === 0 && !hasSearch && !hasCategory
+        ? 'none'
+        : visiblePlaces.length === 0 && (hasSearch || hasCategory)
+          ? 'no-match'
+          : 'ok';
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      await refetch();
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const clearSearch = () => {
+    handleSearchChange('');
+    setSearchResetKey(k => k + 1);
+  };
+
+  const showAllCategories = () => setSelectedCategoryId('all');
+
+  const getStateCard = (): StateBlockProps | null => {
+    if (mapState === 'error') {
+      return {
+        kind: 'error',
+        icon: AlertCircle,
+        title: "Couldn't load businesses",
+        body: 'Check your connection, then try again. The map itself still works.',
+        action: { label: 'Try again', onClick: handleRetry, loading: retrying },
+      };
+    }
+    if (mapState === 'none') {
+      return {
+        kind: 'empty',
+        icon: Store,
+        title: 'No businesses on the map yet',
+        body: "Register yours and it'll be the first one people find here.",
+        action: { label: 'Register business', onClick: () => navigate('/registration') },
+      };
+    }
+    if (mapState === 'no-match') {
+      const category = CATEGORY_OPTIONS.find(o => o.id === selectedCategoryId);
+      if (!hasSearch) {
+        return {
+          kind: 'empty',
+          icon: category?.icon ?? SearchX,
+          title: `No ${(category?.label ?? 'matching').toLowerCase()} businesses yet`,
+          body: 'Try another category, or check back soon.',
+          action: { label: 'Show all categories', onClick: showAllCategories },
+        };
+      }
+      const matchesInOtherCategories = hasCategory && filteredPlaces.length > 0;
+      return {
+        kind: 'empty',
+        icon: SearchX,
+        title: `No results for "${searchTerm.trim()}"`,
+        body: matchesInOtherCategories
+          ? 'There are matches in other categories.'
+          : 'Check the spelling or try another name.',
+        action: matchesInOtherCategories
+          ? { label: 'Show all categories', onClick: showAllCategories }
+          : { label: 'Clear search', onClick: clearSearch },
+      };
+    }
+    return null;
+  };
+  const stateCard = getStateCard();
+
   // Find the selected place for SEO
   const selectedPlaceData = [...places, ...filteredPlaces].find(place => place.id === selectedPlace);
 
@@ -215,8 +300,9 @@ const Index = () => {
       </div>
       
       {/* Floating UI - responsive positioning with proper spacing for sidebar */}
-      <div className="absolute top-0 left-0 right-0 z-20 px-4 md:pl-[280px] lg:pl-[280px] pt-3 sm:pt-4 flex flex-col gap-3">
-        <div className="flex items-center gap-2">
+      {/* pointer-events-none so the map stays draggable in the gaps; each row opts back in */}
+      <div className="absolute top-0 left-0 right-0 z-20 px-4 md:pl-[280px] lg:pl-[280px] pt-3 sm:pt-4 flex flex-col gap-3 pointer-events-none">
+        <div className="flex items-center gap-2 pointer-events-auto">
           <Button
             variant="ghost"
             size="icon"
@@ -228,6 +314,7 @@ const Index = () => {
           </Button>
           <div className="flex-1 min-w-0">
             <SearchBar 
+              key={searchResetKey}
               onSearch={handleSearchChange}
               onPlaceSelect={handlePlaceSelect}
               onBusinessSelect={handleBusinessSelect}
@@ -237,48 +324,34 @@ const Index = () => {
             />
           </div>
         </div>
-        {!isLoading && visiblePlaces.length === 0 && (searchTerm || selectedCategoryId !== 'all') && (() => {
-          const categoryLabel = CATEGORY_OPTIONS.find(o => o.id === selectedCategoryId)?.label;
-          const hasSearch = !!searchTerm;
-          const hasCategory = selectedCategoryId !== 'all';
-          const searchHasMatchesInAll = hasSearch && filteredPlaces.length > 0;
-          let reason = '';
-          if (hasSearch && hasCategory) {
-            reason = searchHasMatchesInAll
-              ? `No results for "${searchTerm}" in ${categoryLabel}. Matches exist in other categories.`
-              : `No businesses match "${searchTerm}" in ${categoryLabel}.`;
-          } else if (hasSearch) {
-            reason = `No businesses match "${searchTerm}".`;
-          } else {
-            reason = `No businesses found in ${categoryLabel}.`;
-          }
-          return (
-            <div className="bg-surface-float rounded-xl px-4 py-3 shadow-float border border-border flex items-start gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">No matching businesses</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{reason}</p>
-              </div>
-              {hasCategory && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="flex-shrink-0 h-11 sm:h-11"
-                  onClick={() => setSelectedCategoryId('all')}
-                >
-                  Show All
-                </Button>
-              )}
-            </div>
-          );
-        })()}
         {/* Chips bleed to the right edge; -ml-1/pl-1 leaves room for the focus ring */}
         <CategoryFilter
           selectedCategoryId={selectedCategoryId}
           onSelect={setSelectedCategoryId}
-          className="-ml-1 pl-1 -mr-4 pr-4 -my-1"
+          className="-ml-1 pl-1 -mr-4 pr-4 -my-1 pointer-events-auto"
         />
-        <LocationBanner />
+        {mapState === 'loading' && (
+          <div className="flex justify-center">
+            <div
+              role="status"
+              className="flex h-10 items-center gap-2 rounded-full border border-border bg-surface-float px-4 shadow-float"
+            >
+              <Loader2 className="h-[18px] w-[18px] text-primary motion-safe:animate-spin" aria-hidden="true" />
+              <span className="text-sm font-semibold text-foreground">Loading businesses…</span>
+            </div>
+          </div>
+        )}
+        <LocationBanner className="pointer-events-auto" />
       </div>
+
+      {/* Error / empty / no-match card: below the top stack, only the card takes taps */}
+      {stateCard && (
+        <div className="absolute inset-x-0 top-[248px] z-10 flex justify-center px-4 md:pl-[280px] pointer-events-none">
+          <div className="pointer-events-auto w-full max-w-sm rounded-xl border border-border bg-card text-card-foreground shadow-float">
+            <StateBlock {...stateCard} />
+          </div>
+        </div>
+      )}
       
       <Suspense fallback={null}>
         <AddBusinessButton selectedPlace={selectedPlace} />

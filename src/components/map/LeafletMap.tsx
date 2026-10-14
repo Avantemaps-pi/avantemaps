@@ -9,8 +9,6 @@ import MapViewUpdater from './map-components/MapViewUpdater';
 import CountryClickFocus from './map-components/CountryClickFocus';
 import CountryZoomControl from './map-components/CountryZoomControl';
 import PlaceOverlay from './map-components/PlaceOverlay';
-import LoadingOverlay from './map-components/LoadingOverlay';
-import EmptyMapState from './EmptyMapState';
 import L, { LatLngTuple } from 'leaflet';
 import '@/lib/fix-leaflet-icons';
 import MarkerClusterGroup from 'react-leaflet-cluster';
@@ -182,8 +180,6 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
 
   return (
     <div className="w-full h-full relative">
-      {isLoading && <LoadingOverlay />}
-      {!isLoading && displayPlaces.length === 0 && <EmptyMapState />}
       
       <MapContainer 
         style={{ height: '100%', width: '100%', zIndex: 1 }}
