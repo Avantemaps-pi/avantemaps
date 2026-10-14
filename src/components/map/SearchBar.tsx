@@ -170,6 +170,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
         clearAddressSuggestions();
       }
       setShowDropdown(false);
+      // Box emptied: drop any pending search for the old term and reset the search
+      debouncedSearch.cancel();
+      if (onSearch) {
+        onSearch('');
+      }
     }
   };
 
