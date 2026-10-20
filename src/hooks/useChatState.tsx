@@ -6,6 +6,7 @@ import { VerificationMetrics } from '@/components/chat/VerificationResultCard';
 import { useToast } from '@/hooks/use-toast';
 import { ChatMode } from '@/components/chat/ChatInterface';
 import { supabase } from '@/integrations/supabase/client';
+import { SUPABASE_CONFIG } from '@/config/supabase';
 import { useAuth } from '@/context/auth';
 
 const CHAT_STORAGE_PREFIX = 'avante-chat-messages-v2';
@@ -216,10 +217,15 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
 
       const CHAT_URL = `https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/chat-ai`;
 
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+
       const response = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          apikey: SUPABASE_CONFIG.anonKey,
+          ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
         },
         body: JSON.stringify({ messages: apiMessages }),
       });

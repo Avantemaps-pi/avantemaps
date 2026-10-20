@@ -75,7 +75,7 @@ export const verifyPiAuthentication = async (
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${SUPABASE_CONFIG.anonKey}`,
+            apikey: SUPABASE_CONFIG.anonKey,
           },
           body: JSON.stringify(payload),
         });
