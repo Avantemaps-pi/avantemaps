@@ -95,7 +95,6 @@ const Index = () => {
     if (lastCenteredKeyRef.current === key) return;
     lastCenteredKeyRef.current = key;
 
-    setSelectedPlace(best.id);
     window.dispatchEvent(new CustomEvent('centerMap', {
       detail: { lat, lng, zoom: 14 },
     }));
