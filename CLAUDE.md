@@ -20,7 +20,7 @@ I'm working on **Avante Maps** — a Pi Network-powered business directory web a
 - **Framework:** TanStack Start (`@tanstack/react-start`) with server-side rendering — NOT a client-only SPA. React 19 + TypeScript 5.8 + Vite 8, configured through `@lovable.dev/vite-tanstack-config` in `vite.config.ts` (it already bundles the React, Tailwind, nitro and TanStack plugins — don't add them again). `src/server.ts` is the SSR server entry.
 - **Routing:** TanStack Router (`@tanstack/react-router`), file-based routes in `src/routes/` (`src/routeTree.gen.ts` is generated — don't hand-edit). NOT React Router. `src/lib/router-compat.tsx` is a shim that maps React Router v6-style calls (`useNavigate`, `Link`, etc.) onto TanStack Router, so older components still import from `@/lib/router-compat`.
 - **Backend:** Supabase (Postgres + Auth + Edge Functions + Realtime), client `@supabase/supabase-js` 2.110.0
-- **Supabase URL/project is hardcoded**, not read from env: `src/config/supabase.ts` (`SUPABASE_CONFIG`) holds the URL, anon key and project ID for `xvpwbocwasbtzrzrxyvu`, and `useBusinessRegistration.ts` / `useChatState.tsx` also hardcode full function URLs. `VITE_SUPABASE_URL` in `.env` is NOT read by any client code, so changing env vars in a deployment does not change which project it talks to — every build uses this one project.
+- **Supabase URL/project is hardcoded**, not read from env: `src/config/supabase.ts` (`SUPABASE_CONFIG`) holds the URL, publishable key (`sb_publishable_…`, in the field still named `anonKey`) and project ID for `xvpwbocwasbtzrzrxyvu`, and `useBusinessRegistration.ts` / `useChatState.tsx` also hardcode full function URLs. `VITE_SUPABASE_URL` in `.env` is NOT read by any client code, so changing env vars in a deployment does not change which project it talks to — every build uses this one project.
 - **Data fetching:** TanStack Query (React Query) 5.56.2 — used across all major hooks with `staleTime`/`gcTime` caching
 - **Forms/validation:** React Hook Form 7.53.0 + Zod 3.23.8
 - **UI:** Tailwind CSS 3.4.11 + shadcn/ui (Radix UI primitives) + Lucide React icons + Sonner for toasts
@@ -90,6 +90,18 @@ Known policy behavior as of this writing:
 - **`users`** — SELECT/UPDATE/DELETE scoped to `id = auth.uid()`, anonymous access explicitly denied. **Critically: the UPDATE policy's `with_check` blocks a user from changing their own `subscription` or `pi_uid` columns**, even on their own row — those must be changed via a `SECURITY DEFINER` function/Edge Function, never a direct client-side `.update()`. If a subscription upgrade/downgrade isn't taking effect, this is the first thing to check.
 
 **Rule of thumb:** if a query/mutation "should work" but returns no data or a silent no-op, check RLS before assuming it's an application bug. Use `Supabase:get_advisors` (type: `security`) after any schema change to catch missing/misconfigured policies.
+
+---
+
+## Supabase keys (since 21 Oct 2026)
+
+- **Legacy JWT-based API keys are disabled.** The `eyJ…` anon and service_role keys were turned off in Supabase because the service_role key leaked in this public repo's git history. Any request that uses an `eyJ…` API key fails.
+- **The app uses the publishable key** (`sb_publishable_…`) in `src/config/supabase.ts` and `.env`. Never put an `eyJ…` key back.
+- **Direct `fetch` calls to edge functions** send `apikey: <publishable key>`, plus `Authorization: Bearer <user access token>` only when signed in. Never send the publishable key as a Bearer token — it isn't a JWT.
+- **Never write any secret into any file in the repo, including `.env`** — `sb_secret_…`, service role, JWT secret, cron secret, third-party API keys. Secrets live in Supabase (Edge Functions → Secrets, Vault) and Vercel env vars. The repo is public and GitHub push protection is on.
+- **Edge functions read `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY`**; Supabase fills them with the new keys. Don't add custom secrets with those names.
+- **Merging to `Dev` doesn't deploy edge functions or apply migrations** — they're deployed separately (`supabase functions deploy <name> --project-ref xvpwbocwasbtzrzrxyvu`, and migrations applied by hand).
+- **Cron-triggered functions authenticate with the `X-Cron-Secret` header**, checked via `public.verify_cron_secret` (`supabase/functions/_shared/cronAuth.ts`). pg_cron jobs read the secret from Vault (`cron_shared_secret`); don't send an `Authorization` header from cron.
 
 ---
 
