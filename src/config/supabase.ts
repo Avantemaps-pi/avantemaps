@@ -10,7 +10,7 @@
 
 export const SUPABASE_CONFIG = {
   url: 'https://xvpwbocwasbtzrzrxyvu.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cHdib2N3YXNidHpyenJ4eXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI4MDE2NjUsImV4cCI6MjA1ODM3NzY2NX0.J8yp04TRmdyM_l5FaOFP7Elz16n1ZlQkawH5Xp1vCs0',
+  anonKey: 'sb_publishable_Syh_HcsQ3A-lzsB7476gUQ_57t4L-Yl',
   projectId: 'xvpwbocwasbtzrzrxyvu'
 } as const;
 
