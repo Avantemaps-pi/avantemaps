@@ -210,10 +210,10 @@ const RegisteredBusiness = () => {
       <AppLayout title="Avante Maps">
         <div className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-4xl font-bold tracking-tight text-gray-900">
+            <h2 className="text-4xl font-bold tracking-tight text-foreground">
               Sign In to View Your Businesses
             </h2>
-            <p className="mt-6 text-xl text-gray-500">
+            <p className="mt-6 text-xl text-muted-foreground">
               Please log in to view and manage your registered businesses on Avante Maps.
             </p>
             <div className="mt-8">
@@ -235,7 +235,7 @@ const RegisteredBusiness = () => {
   if (isLoading) {
     return (
       <AppLayout title="Avante Maps">
-        <div className="max-w-5xl mx-auto py-6 px-4 sm:px-6 lg:px-8 bg-slate-50">
+        <div className="max-w-5xl mx-auto py-6 px-4 sm:px-6 lg:px-8 bg-muted">
           <BusinessHeader 
             title="My Businesses" 
             subtitle="Add and manage your businesses listed on Avante Maps."
@@ -271,7 +271,7 @@ const RegisteredBusiness = () => {
 
   return (
     <AppLayout title="Avante Maps">
-      <div className="max-w-5xl mx-auto py-6 px-4 sm:px-6 lg:px-8 bg-slate-50">
+      <div className="max-w-5xl mx-auto py-6 px-4 sm:px-6 lg:px-8 bg-muted">
         <BusinessHeader 
           title="My Businesses" 
           subtitle="Add and manage your businesses listed on Avante Maps."
@@ -295,8 +295,8 @@ const RegisteredBusiness = () => {
 
         {/* Approaching limit warning */}
         {isApproachingLimit && (
-          <div className="mb-4 flex items-start gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
-            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <div className="mb-4 flex items-start gap-2 rounded-md border border-input bg-muted p-3 text-sm text-foreground">
+            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
             <span>You're approaching your plan limit. <button onClick={() => navigate('/pricing')} className="underline font-medium">Upgrade</button> to add more businesses.</span>
           </div>
         )}
@@ -339,7 +339,7 @@ const RegisteredBusiness = () => {
         {businesses.length === 0 ? (
           <EmptyBusinessState />
         ) : filteredBusinesses.length === 0 ? (
-          <div className="p-6 text-center text-gray-500 bg-white rounded-md shadow-xs">
+          <div className="p-6 text-center text-muted-foreground bg-card rounded-md shadow-xs">
             <p>Select a business from the dropdown to view its details</p>
           </div>
         ) : (

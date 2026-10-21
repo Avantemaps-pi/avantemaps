@@ -90,7 +90,7 @@ const BarChartComponent: React.FC<BarChartComponentProps> = React.memo(({
           data={formattedData} 
           margin={{ top: 15, right: 30, left: 0, bottom: 25 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis 
             dataKey="displayName" 
             tick={{ fontSize: 12 }} 
@@ -107,9 +107,9 @@ const BarChartComponent: React.FC<BarChartComponentProps> = React.memo(({
           />
           <Tooltip />
           <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 15 }} />
-          <Bar dataKey="views" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="clicks" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="bookmarks" fill="#10b981" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="views" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="clicks" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="bookmarks" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

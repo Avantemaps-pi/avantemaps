@@ -21,14 +21,14 @@ export const rankingData = [
 ];
 
 export const sourceDistribution = [
-  { name: 'Direct Search', value: 42, color: '#3b82f6' },
-  { name: 'Map Browse', value: 28, color: '#8b5cf6' },
-  { name: 'Recommendations', value: 18, color: '#10b981' },
-  { name: 'External Link', value: 12, color: '#f97316' },
+  { name: 'Direct Search', value: 42, color: 'hsl(var(--chart-2))' },
+  { name: 'Map Browse', value: 28, color: 'hsl(var(--chart-1))' },
+  { name: 'Recommendations', value: 18, color: 'hsl(var(--chart-3))' },
+  { name: 'External Link', value: 12, color: 'hsl(var(--chart-5))' },
 ];
 
 export const deviceDistribution = [
-  { name: 'Mobile', value: 65, color: '#3b82f6' },
-  { name: 'Desktop', value: 25, color: '#8b5cf6' },
-  { name: 'Tablet', value: 10, color: '#10b981' },
+  { name: 'Mobile', value: 65, color: 'hsl(var(--chart-2))' },
+  { name: 'Desktop', value: 25, color: 'hsl(var(--chart-1))' },
+  { name: 'Tablet', value: 10, color: 'hsl(var(--chart-3))' },
 ];

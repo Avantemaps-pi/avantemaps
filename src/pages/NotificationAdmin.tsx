@@ -529,8 +529,8 @@ function ABTestingTab() {
               {variants.map((v) => {
                 const m = calcMetrics(v);
                 return (
-                  <Card key={v.id} className={test.winner_variant_id === v.id ? 'border-yellow-500' : ''}>
-                    <CardHeader><CardTitle className="flex items-center justify-between text-base">{v.name}{test.winner_variant_id === v.id && <Trophy className="h-5 w-5 text-yellow-500" />}</CardTitle></CardHeader>
+                  <Card key={v.id} className={test.winner_variant_id === v.id ? 'border-primary' : ''}>
+                    <CardHeader><CardTitle className="flex items-center justify-between text-base">{v.name}{test.winner_variant_id === v.id && <Trophy className="h-5 w-5 text-primary" />}</CardTitle></CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div><p className="text-muted-foreground">Sent</p><p className="font-bold">{v.sent_count}</p></div>

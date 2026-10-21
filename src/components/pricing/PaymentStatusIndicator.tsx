@@ -55,13 +55,13 @@ export const PaymentStatusIndicator: React.FC<PaymentStatusIndicatorProps> = ({
   }
 
   return (
-    <Card className="mb-4 border-yellow-200 bg-yellow-50">
+    <Card className="mb-4 border-input bg-muted text-foreground">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+          <AlertTriangle className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="flex-1">
-            <h3 className="font-medium text-yellow-800">Payment Issue Detected</h3>
-            <p className="text-sm text-yellow-700 mt-1">
+            <h3 className="font-medium text-foreground">Payment Issue Detected</h3>
+            <p className="text-sm text-muted-foreground mt-1">
               You have pending payments that need to be resolved before making new payments.
             </p>
             <div className="flex gap-2 mt-3">
@@ -70,7 +70,6 @@ export const PaymentStatusIndicator: React.FC<PaymentStatusIndicatorProps> = ({
                 disabled={isResolving}
                 size="sm"
                 variant="outline"
-                className="border-yellow-300 text-yellow-700 hover:bg-yellow-100"
               >
                 {isResolving ? (
                   <>
@@ -86,7 +85,6 @@ export const PaymentStatusIndicator: React.FC<PaymentStatusIndicatorProps> = ({
                 disabled={isCheckingStatus}
                 size="sm"
                 variant="ghost"
-                className="text-yellow-700 hover:bg-yellow-100"
               >
                 {isCheckingStatus ? (
                   <RefreshCw className="h-4 w-4 animate-spin" />

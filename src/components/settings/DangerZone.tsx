@@ -67,7 +67,7 @@ const DangerZone = ({
       </CardHeader>
       <CardContent className="space-y-4">
         {isAccountDeleted && formattedDate && (
-          <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+          <div className="p-3 rounded-md bg-destructive/10 border border-destructive/30 text-sm text-foreground">
             Your account is scheduled for permanent deletion on <strong>{formattedDate}</strong>. 
             You can reinstate it before that date.
           </div>

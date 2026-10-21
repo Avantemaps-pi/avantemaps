@@ -107,17 +107,17 @@ const About = () => {
         <div className="flex flex-col items-center justify-center space-y-4 py-8">
           <h2 className="text-2xl font-semibold">Connect With Us</h2>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="rounded-full hover:text-green-600" asChild>
+            <Button variant="outline" size="icon" className="rounded-full hover:text-primary" asChild>
               <a href="https://wa.me/27683422444" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
                 <MessageCircle className="h-5 w-5" />
               </a>
             </Button>
-            <Button variant="outline" size="icon" className="rounded-full hover:text-blue-500" asChild>
+            <Button variant="outline" size="icon" className="rounded-full hover:text-primary" asChild>
               <a href="https://x.com/Avantemaps" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
                 <Twitter className="h-5 w-5" />
               </a>
             </Button>
-            <Button variant="outline" size="icon" className="rounded-full hover:text-blue-600" asChild>
+            <Button variant="outline" size="icon" className="rounded-full hover:text-primary" asChild>
               <a href="https://web.facebook.com/profile.php?id=61570803414310" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                 <Facebook className="h-5 w-5" />
               </a>

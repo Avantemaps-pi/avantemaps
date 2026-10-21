@@ -287,11 +287,11 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
                 {phoneLength > 0 && (
                   <div className="flex items-center gap-1.5 mt-1">
                     {isValid ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
                     ) : (
                       <XCircle className="h-4 w-4 text-destructive" />
                     )}
-                    <span className={`text-xs font-medium ${isValid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                    <span className={`text-xs font-medium ${isValid ? 'text-primary' : 'text-destructive'}`}>
                       {isValid ? 'Valid' : isPossible ? 'Incomplete' : 'Invalid'} — {phoneLength} digit{phoneLength !== 1 ? 's' : ''}
                     </span>
                   </div>
@@ -351,7 +351,6 @@ const ContactTab: React.FC<ContactTabProps> = ({ onNext, onPrevious, disabled })
           </Button>
           <Button
             type="button"
-            className="bg-avante-blue hover:bg-avante-blue/90"
             onClick={onNext}
             disabled={disabled}
           >

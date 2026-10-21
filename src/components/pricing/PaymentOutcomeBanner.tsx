@@ -26,7 +26,7 @@ interface PaymentOutcomeBannerProps {
 interface OutcomeMeta {
   title: string;
   description: string;
-  tone: 'success' | 'warning' | 'destructive' | 'info';
+  tone: 'success' | 'pending' | 'destructive' | 'info';
   Icon: React.ComponentType<{ className?: string }>;
   /** Whether retrying is appropriate without risking a double charge. */
   canRetry: boolean;
@@ -45,7 +45,7 @@ const OUTCOMES: Record<TerminalReason, OutcomeMeta> = {
     title: 'Payment cancelled',
     description:
       'The payment was cancelled before any Pi was transferred. You can safely try again.',
-    tone: 'warning',
+    tone: 'pending',
     Icon: XCircle,
     canRetry: true,
   },
@@ -53,7 +53,7 @@ const OUTCOMES: Record<TerminalReason, OutcomeMeta> = {
     title: 'Payment voided',
     description:
       'The payment expired without completing. No Pi was transferred. You can safely try again.',
-    tone: 'warning',
+    tone: 'pending',
     Icon: AlertTriangle,
     canRetry: true,
   },
@@ -76,15 +76,15 @@ const OUTCOMES: Record<TerminalReason, OutcomeMeta> = {
 };
 
 const toneClasses: Record<OutcomeMeta['tone'], string> = {
-  success: 'border-emerald-500/30 bg-emerald-500/5',
-  warning: 'border-amber-500/30 bg-amber-500/5',
-  destructive: 'border-destructive/30 bg-destructive/5',
-  info: 'border-primary/30 bg-primary/5',
+  success: 'border-primary/30 bg-accent text-accent-foreground',
+  pending: 'border-input bg-muted text-foreground',
+  destructive: 'border-destructive/30 bg-destructive/10 text-foreground',
+  info: 'bg-secondary text-secondary-foreground',
 };
 
 const iconToneClasses: Record<OutcomeMeta['tone'], string> = {
-  success: 'text-emerald-600',
-  warning: 'text-amber-600',
+  success: 'text-primary',
+  pending: 'text-muted-foreground',
   destructive: 'text-destructive',
   info: 'text-primary',
 };
@@ -101,9 +101,9 @@ export const PaymentOutcomeBanner: React.FC<PaymentOutcomeBannerProps> = ({
   // Active polling state — show a non-dismissible "in progress" indicator.
   if (isPolling && !isTerminal) {
     return (
-      <Card className="mb-4 border-primary/30 bg-primary/5">
+      <Card className="mb-4 border-input bg-muted text-foreground">
         <CardContent className="flex items-start gap-3 p-4">
-          <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-primary" />
+          <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-muted-foreground" />
           <div className="flex-1">
             <h3 className="text-sm font-medium">Confirming payment…</h3>
             <p className="mt-1 text-xs text-muted-foreground">

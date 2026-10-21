@@ -65,7 +65,7 @@ const UpdateDetailsTab: React.FC<UpdateDetailsTabProps> = ({
         </Button>
         <Button 
           type="submit" 
-          className="bg-avante-blue hover:bg-avante-blue/90 min-w-40"
+          className="min-w-40"
           disabled={disabled}
         >
           Submit

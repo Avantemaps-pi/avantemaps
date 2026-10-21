@@ -62,32 +62,9 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     }
   };
 
-  const getIconColor = () => {
-    switch (type) {
-      case 'message':
-        return 'text-blue-500 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/50';
-      case 'review':
-        return 'text-yellow-500 bg-yellow-50 dark:text-yellow-400 dark:bg-yellow-950/50';
-      case 'business':
-        return 'text-green-500 bg-green-50 dark:text-green-400 dark:bg-green-950/50';
-      case 'follower':
-        return 'text-purple-500 bg-purple-50 dark:text-purple-400 dark:bg-purple-950/50';
-      case 'like':
-        return 'text-pink-500 bg-pink-50 dark:text-pink-400 dark:bg-pink-950/50';
-      case 'verification':
-        return 'text-emerald-500 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/50';
-      case 'certification':
-        return 'text-indigo-500 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-950/50';
-      case 'payment':
-        return 'text-amber-500 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/50';
-      case 'bookmark':
-        return 'text-cyan-500 bg-cyan-50 dark:text-cyan-400 dark:bg-cyan-950/50';
-      case 'system':
-        return 'text-slate-500 bg-slate-50 dark:text-slate-400 dark:bg-slate-950/50';
-      default:
-        return 'text-muted-foreground bg-muted';
-    }
-  };
+  // Every type shares one colour; the icon shape tells the types apart.
+  const getIconColor = () =>
+    read ? 'text-muted-foreground bg-muted' : 'text-primary bg-accent';
 
   const handleClick = () => {
     if (isSwiping) return;
@@ -157,11 +134,11 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
       {/* Left action - Mark as read */}
       <div 
         className={cn(
-          "absolute left-0 top-0 bottom-0 w-24 flex items-center justify-center bg-emerald-500 transition-opacity",
+          "absolute left-0 top-0 bottom-0 w-24 flex items-center justify-center bg-primary transition-opacity",
           showMarkAsReadAction ? "opacity-100" : "opacity-0"
         )}
       >
-        <Check className="h-6 w-6 text-white" />
+        <Check className="h-6 w-6 text-primary-foreground" />
       </div>
 
       {/* Main content */}

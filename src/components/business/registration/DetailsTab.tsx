@@ -77,7 +77,7 @@ const DetailsTab: React.FC<DetailsTabProps> = ({
         </Button>
         <Button 
           type="button" 
-          className="bg-avante-blue hover:bg-avante-blue/90 min-w-40"
+          className="min-w-40"
           onClick={onNext}
           disabled={disabled}
         >

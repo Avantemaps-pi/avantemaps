@@ -58,8 +58,8 @@ export function PricingCard({
 
       <div className="space-y-6">
         <div>
-          <h3 className="text-2xl font-semibold text-gray-900">{tier.name}</h3>
-          <p className="mt-2 text-gray-500">{tier.description}</p>
+          <h3 className="text-2xl font-semibold text-foreground">{tier.name}</h3>
+          <p className="mt-2 text-muted-foreground">{tier.description}</p>
         </div>
         
         <div className="flex flex-col gap-1">
@@ -96,12 +96,12 @@ export function PricingCard({
             </div>
           ) : (
             <div className="flex items-baseline">
-              {!isCustom && <span className="text-3xl text-gray-900">$</span>}
-              <span className="text-5xl font-bold tracking-tight text-gray-900">
+              {!isCustom && <span className="text-3xl text-foreground">$</span>}
+              <span className="text-5xl font-bold tracking-tight text-foreground">
                 {price}
               </span>
               {!isCustom && (
-                <span className="ml-1 text-base font-normal text-gray-500">
+                <span className="ml-1 text-base font-normal text-muted-foreground">
                   / {paymentFrequency}
                 </span>
               )}
@@ -113,20 +113,20 @@ export function PricingCard({
           {tier.features.map(feature => (
             <li key={feature} className="flex items-center gap-3">
               <Check className="h-5 w-5 flex-shrink-0 text-primary" />
-              <span className="text-gray-600">{feature}</span>
+              <span className="text-foreground">{feature}</span>
             </li>
           ))}
           {tier.limitations?.map(limitation => (
             <li key={limitation} className="flex items-center gap-3">
-              <X className="h-5 w-5 flex-shrink-0 text-gray-400" />
-              <span className="text-gray-400 italic">{limitation}</span>
+              <X className="h-5 w-5 flex-shrink-0 text-input" />
+              <span className="text-muted-foreground italic">{limitation}</span>
             </li>
           ))}
         </ul>
 
         {tier.id === 'individual' && (
-          <div className="flex items-start gap-2 rounded-md bg-primary/10 border border-primary/20 p-3 text-sm text-brand-ink">
-            <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" />
+          <div className="flex items-start gap-2 rounded-md bg-secondary border border-secondary p-3 text-sm text-secondary-foreground">
+            <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-secondary-foreground" />
             <span>Need more than 1 listing? Upgrade to Small Business for up to 3.</span>
           </div>
         )}

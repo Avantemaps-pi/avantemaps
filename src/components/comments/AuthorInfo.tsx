@@ -42,7 +42,7 @@ const AuthorInfo: React.FC<AuthorInfoProps> = ({ author, timestamp }) => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <CheckCircle className="h-3.5 w-3.5 ml-1 text-blue-500" />
+                  <CheckCircle className="h-3.5 w-3.5 ml-1 text-primary" />
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Verified Pi Network User</p>

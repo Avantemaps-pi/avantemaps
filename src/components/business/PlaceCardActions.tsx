@@ -43,25 +43,25 @@ const PlaceCardActions: React.FC<PlaceCardActionsProps> = ({
         <Button 
           variant="secondary" 
           size="icon" 
-          className={`rounded-full w-8 h-8 bg-white/80 backdrop-blur-xs text-gray-800 hover:bg-white ${
+          className={`rounded-full w-8 h-8 bg-surface-float backdrop-blur-xs text-foreground hover:bg-card ${
             isLoading ? 'opacity-70 cursor-wait' : ''
           }`}
           onClick={onBookmarkToggle}
           disabled={isLoading}
         >
           <Bookmark 
-            className={`h-4 w-4 ${isBookmarked ? 'text-primary fill-primary' : 'text-gray-600'}`}
+            className={`h-4 w-4 ${isBookmarked ? 'text-primary fill-primary' : 'text-muted-foreground'}`}
           />
         </Button>
         <Button 
           variant="secondary" 
           size="icon" 
-          className="rounded-full w-8 h-8 bg-white/80 backdrop-blur-xs text-gray-800 hover:bg-white"
+          className="rounded-full w-8 h-8 bg-surface-float backdrop-blur-xs text-foreground hover:bg-card"
           onClick={handleShareClick}
           title="Share this place"
           aria-label="Share this place"
         >
-          <Share2 className="h-4 w-4 text-gray-600" />
+          <Share2 className="h-4 w-4 text-muted-foreground" />
         </Button>
       </div>
 

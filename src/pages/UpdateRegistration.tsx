@@ -69,7 +69,7 @@ const UpdateRegistration = () => {
             onSuccess={handleSuccess}
           />
         ) : (
-          <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+          <div className="bg-destructive/10 border border-destructive/30 text-foreground p-4 rounded-md">
             Failed to load business information. Please try again.
           </div>
         )}

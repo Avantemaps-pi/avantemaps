@@ -302,8 +302,8 @@ const Review = () => {
                             key={i}
                             className={`h-4 w-4 ${
                               i < Math.floor(businessStats?.rating || 0)
-                                ? 'text-yellow-400 fill-yellow-400'
-                                : 'text-gray-300'
+                                ? 'text-primary fill-primary'
+                                : 'text-input'
                             }`}
                           />
                         ))}
@@ -328,13 +328,13 @@ const Review = () => {
                         onClick={() => setRating(star)}
                         onMouseEnter={() => setHoverRating(star)}
                         onMouseLeave={() => setHoverRating(0)}
-                        className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                        className="p-1 rounded-full hover:bg-accent transition-colors"
                       >
                         <StarIcon
                           className={`h-8 w-8 ${
                             star <= (hoverRating || rating)
-                              ? 'text-yellow-400 fill-yellow-400'
-                              : 'text-gray-300'
+                              ? 'text-primary fill-primary'
+                              : 'text-input'
                           }`}
                         />
                       </button>

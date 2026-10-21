@@ -72,8 +72,8 @@ const DesktopSidebar = ({
 
           {isAuthenticated && (
             <div className="mt-4 pt-4 border-t border-sidebar-border">
-              <Button onClick={handleLogout} disabled={isLoading} className="w-full bg-white hover:bg-gray-100 border border-red-500 text-red-500">
-                <LogOut className="h-4 w-4 mr-2 text-red-500" />
+              <Button onClick={handleLogout} disabled={isLoading} variant="outline" className="w-full">
+                <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
             </div>

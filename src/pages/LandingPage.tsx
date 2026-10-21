@@ -37,7 +37,7 @@ const LandingPage: React.FC = () => {
 
   const Logo = ({ light = false }: { light?: boolean }) => (
     <div className="flex items-center gap-2.5">
-      <div className={light ? 'bg-background rounded-full p-1 flex items-center justify-center' : ''}>
+      <div className={light ? 'bg-white rounded-full p-1 flex items-center justify-center' : ''}>
         <img
           src={avanteIcon72}
           srcSet={`${avanteIcon72} 72w, ${avanteIcon144} 144w`}
@@ -50,7 +50,7 @@ const LandingPage: React.FC = () => {
           className="h-9 w-9 rounded-full object-contain"
         />
       </div>
-      <span className={`font-semibold text-lg tracking-tight ${light ? 'text-primary-foreground' : 'text-brand-navy'}`}>
+      <span className={`font-semibold text-lg tracking-tight ${light ? 'text-white dark:text-foreground' : 'text-brand-navy'}`}>
         Avante Maps
       </span>
     </div>
@@ -73,7 +73,7 @@ const LandingPage: React.FC = () => {
       </header>
 
       {/* HERO */}
-      <section className="relative overflow-hidden bg-brand-navy">
+      <section className="relative overflow-hidden bg-brand-navy text-white dark:bg-card dark:text-foreground dark:border-b dark:border-border">
         <div
           aria-hidden
           className="absolute inset-0 opacity-[0.06] pointer-events-none"
@@ -81,16 +81,16 @@ const LandingPage: React.FC = () => {
             backgroundImage:
               'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
             backgroundSize: '48px 48px',
-            color: 'hsl(var(--primary-foreground))',
+            color: 'currentColor',
           }}
         />
         <div className="relative max-w-5xl mx-auto px-5 sm:px-6 py-20 sm:py-28 md:py-36">
           <div className="flex flex-col md:flex-row items-center gap-12 md:gap-16">
             <div className="flex-1 max-w-2xl text-center md:text-left mx-auto md:mx-0">
-              <h1 className="font-semibold text-primary-foreground tracking-tight text-[34px] leading-[1.1] sm:text-5xl md:text-[56px] md:leading-[1.05]">
+              <h1 className="font-semibold text-white dark:text-foreground tracking-tight text-[34px] leading-[1.1] sm:text-5xl md:text-[56px] md:leading-[1.05]">
                 A Business Directory Built By One Person, For The Pi Community
               </h1>
-              <p className="mt-6 text-primary-foreground/75 leading-relaxed text-base sm:text-lg max-w-xl mx-auto md:mx-0">
+              <p className="mt-6 text-white/75 dark:text-muted-foreground leading-relaxed text-base sm:text-lg max-w-xl mx-auto md:mx-0">
                 I'm building the map I wish existed when I started using Pi — a real place to find, message, and support businesses that accept it. No corporate backing. Just one developer and a community that showed up.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-center md:justify-start max-w-xs sm:max-w-none mx-auto md:mx-0">
@@ -105,7 +105,7 @@ const LandingPage: React.FC = () => {
                   onClick={scrollToFeatures}
                   variant="ghost"
                   size="lg"
-                  className="w-full sm:w-auto text-primary-foreground/90 hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                  className="w-full sm:w-auto text-white/90 hover:bg-white/10 hover:text-white dark:text-foreground dark:hover:bg-accent dark:hover:text-accent-foreground"
                 >
                   Learn More
                 </Button>
@@ -195,40 +195,40 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* FOOTER */}
-      <footer className="mt-auto py-16 px-5 sm:px-6 bg-brand-navy text-primary-foreground">
+      <footer className="mt-auto py-16 px-5 sm:px-6 bg-brand-navy text-white dark:bg-card dark:text-foreground dark:border-t dark:border-border">
         <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-3 gap-10 text-center sm:text-left">
           <div className="col-span-2 sm:col-span-1 flex flex-col items-center sm:items-start">
             <Logo light />
-            <p className="mt-4 text-primary-foreground/70 text-sm leading-relaxed max-w-xs">
+            <p className="mt-4 text-white/70 dark:text-muted-foreground text-sm leading-relaxed max-w-xs">
               Discover. Connect. Transact. — Built solo, one commit at a time.
             </p>
           </div>
           <div>
-            <h4 className="font-medium mb-4 text-xs uppercase tracking-widest text-primary-foreground/60">Company</h4>
-            <ul className="space-y-2.5 text-sm text-primary-foreground/75">
-              <li><Link to="/pricing" className="hover:text-primary-foreground">Pricing</Link></li>
-              <li><Link to="/privacy" className="hover:text-primary-foreground">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="hover:text-primary-foreground">Terms of Service</Link></li>
-              <li><Link to="/cookies" className="hover:text-primary-foreground">Cookie Policy</Link></li>
+            <h4 className="font-medium mb-4 text-xs uppercase tracking-widest text-white/60 dark:text-muted-foreground">Company</h4>
+            <ul className="space-y-2.5 text-sm text-white/75 dark:text-muted-foreground">
+              <li><Link to="/pricing" className="hover:text-white dark:hover:text-foreground">Pricing</Link></li>
+              <li><Link to="/privacy" className="hover:text-white dark:hover:text-foreground">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-white dark:hover:text-foreground">Terms of Service</Link></li>
+              <li><Link to="/cookies" className="hover:text-white dark:hover:text-foreground">Cookie Policy</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="font-medium mb-4 text-xs uppercase tracking-widest text-primary-foreground/60">Support</h4>
-            <ul className="space-y-2.5 text-sm text-primary-foreground/75">
+            <h4 className="font-medium mb-4 text-xs uppercase tracking-widest text-white/60 dark:text-muted-foreground">Support</h4>
+            <ul className="space-y-2.5 text-sm text-white/75 dark:text-muted-foreground">
               <li>
-                <Link to="/contact" className="hover:text-primary-foreground inline-flex items-center gap-2">
+                <Link to="/contact" className="hover:text-white dark:hover:text-foreground inline-flex items-center gap-2">
                   <Mail className="h-4 w-4" /> Contact Us
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-primary-foreground inline-flex items-center gap-2">
+                <Link to="/contact" className="hover:text-white dark:hover:text-foreground inline-flex items-center gap-2">
                   <LifeBuoy className="h-4 w-4" /> Help & Support
                 </Link>
               </li>
             </ul>
           </div>
         </div>
-        <div className="max-w-5xl mx-auto mt-12 pt-6 border-t border-primary-foreground/15 text-center text-xs text-primary-foreground/60">
+        <div className="max-w-5xl mx-auto mt-12 pt-6 border-t border-white/15 dark:border-border text-center text-xs text-white/60 dark:text-muted-foreground">
           © 2026 Avante Maps. Built on the Pi Network.
         </div>
       </footer>

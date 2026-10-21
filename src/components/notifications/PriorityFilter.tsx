@@ -16,9 +16,9 @@ const PriorityFilter: React.FC<PriorityFilterProps> = ({
 }) => {
   const priorities: { value: PriorityFilterValue; label: string; color: string }[] = [
     { value: 'all', label: 'All priorities', color: 'text-muted-foreground' },
-    { value: 'high', label: 'High', color: 'text-destructive' },
-    { value: 'medium', label: 'Medium', color: 'text-warning' },
-    { value: 'low', label: 'Low', color: 'text-muted-foreground' }
+    { value: 'high', label: 'High', color: 'text-primary' },
+    { value: 'medium', label: 'Medium', color: 'text-muted-foreground' },
+    { value: 'low', label: 'Low', color: 'text-input' }
   ];
 
   return (

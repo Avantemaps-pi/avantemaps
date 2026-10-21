@@ -23,7 +23,7 @@ const VerificationInfo = () => {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="h-6 w-6 text-green-500" />
+                  <CheckCircle className="h-6 w-6 text-primary" />
                   <CardTitle className="text-xl">Verification</CardTitle> <span className="text-lg">(Free)</span>
                 </div>
                 <CardDescription>
@@ -56,7 +56,7 @@ const VerificationInfo = () => {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <Shield className="h-6 w-6 text-blue-500" />
+                  <Shield className="h-6 w-6 text-primary" />
                   <CardTitle className="text-xl">Certification</CardTitle>
                 </div>
                 <CardDescription>
@@ -100,18 +100,18 @@ const VerificationInfo = () => {
               </AlertDescription>
             </Alert>
 
-            <Alert variant="default" className="bg-primary/10 border-primary/20">
-              <CheckCircle className="h-4 w-4 text-primary" />
-              <AlertTitle className="text-brand-ink">Verification Timeline</AlertTitle>
-              <AlertDescription className="text-primary">
+            <Alert variant="default" className="bg-secondary text-secondary-foreground border-secondary">
+              <CheckCircle className="h-4 w-4 text-secondary-foreground" />
+              <AlertTitle>Verification Timeline</AlertTitle>
+              <AlertDescription className="text-secondary-foreground">
                 The verification process typically takes 24 - 72 hours from Submission of Response.
               </AlertDescription>
             </Alert>
 
-            <Alert variant="default" className="bg-green-50 border-green-200">
-              <Shield className="h-4 w-4 text-green-500" />
-              <AlertTitle className="text-green-700">Certification Timeline</AlertTitle>
-              <AlertDescription className="text-green-600">
+            <Alert variant="default" className="bg-secondary text-secondary-foreground border-secondary">
+              <Shield className="h-4 w-4 text-secondary-foreground" />
+              <AlertTitle>Certification Timeline</AlertTitle>
+              <AlertDescription className="text-secondary-foreground">
                 The certification process typically takes 15-30 days and includes an on-site or virtual inspection.
               </AlertDescription>
             </Alert>

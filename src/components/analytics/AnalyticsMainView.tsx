@@ -103,7 +103,7 @@ const AnalyticsMainView: React.FC<AnalyticsMainViewProps> = ({ handleExport }) =
   return (
     <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-7xl min-w-0 overflow-x-hidden">
       {isDemoMode && (
-        <div className="mb-3 px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 text-xs rounded-lg text-center">
+        <div className="mb-3 px-3 py-2 bg-secondary text-secondary-foreground text-xs rounded-lg text-center">
           Demo Mode — showing sample data for preview testing
         </div>
       )}

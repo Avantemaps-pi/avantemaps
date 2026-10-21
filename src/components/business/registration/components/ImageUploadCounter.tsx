@@ -8,7 +8,7 @@ interface ImageUploadCounterProps {
 
 const ImageUploadCounter: React.FC<ImageUploadCounterProps> = ({ currentCount, maxCount }) => {
   return (
-    <span className="text-sm text-gray-500 mt-1 block">
+    <span className="text-sm text-muted-foreground mt-1 block">
       ({currentCount}/{maxCount})
     </span>
   );

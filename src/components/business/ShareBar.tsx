@@ -27,7 +27,7 @@ const ShareBar: React.FC<ShareBarProps> = ({
       name: 'WhatsApp',
       icon: MessageCircle,
       ariaLabel: 'Share on WhatsApp',
-      color: 'hover:text-green-600',
+      color: 'hover:text-primary',
       action: () => {
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`Check this out on Avante Maps! ${shareUrl}`)}`;
         window.open(whatsappUrl, '_blank');
@@ -37,7 +37,7 @@ const ShareBar: React.FC<ShareBarProps> = ({
       name: 'X',
       icon: Twitter,
       ariaLabel: 'Share on X (Twitter)',
-      color: 'hover:text-blue-500',
+      color: 'hover:text-primary',
       action: () => {
         const twitterText = encodeURIComponent(`${text} 🗺️`);
         const twitterUrl = `https://twitter.com/intent/tweet?text=${twitterText}&url=${encodeURIComponent(shareUrl)}`;
@@ -48,7 +48,7 @@ const ShareBar: React.FC<ShareBarProps> = ({
       name: 'Facebook',
       icon: Facebook,
       ariaLabel: 'Share on Facebook',
-      color: 'hover:text-blue-600',
+      color: 'hover:text-primary',
       action: () => {
         const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
         window.open(facebookUrl, '_blank', 'width=600,height=400');
@@ -58,7 +58,7 @@ const ShareBar: React.FC<ShareBarProps> = ({
       name: 'Email',
       icon: Mail,
       ariaLabel: 'Share via email',
-      color: 'hover:text-red-600',
+      color: 'hover:text-primary',
       action: () => {
         const subject = encodeURIComponent(title);
         const body = encodeURIComponent(`${text}\n\nView here: ${shareUrl}`);
