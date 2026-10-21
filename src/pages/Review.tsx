@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Place } from '@/types/business';
 import { useReviewSubmission } from '@/hooks/useReviewSubmission';
 import { useReviewStats } from '@/hooks/useReviewStats';
+import { getSessionUserId } from '@/lib/sessionUserId';
 
 const MAX_REVIEW_LENGTH = 2000;
 
@@ -62,8 +63,9 @@ const Review = () => {
         try {
           // Use the SECURITY DEFINER RPC so sensitive fields (pi_wallet_address)
           // are never exposed; this also works for non-owners viewing the page.
+          const sessionUserId = await getSessionUserId();
           const { data: rows, error } = await supabase
-            .rpc('get_public_business_info', user?.uid ? { user_uuid: user.uid } : {});
+            .rpc('get_public_business_info', sessionUserId ? { user_uuid: sessionUserId } : {});
 
           if (error) throw error;
           const data = (rows ?? []).find((r: any) => r.id === parseInt(businessId));
@@ -135,7 +137,7 @@ const Review = () => {
     const loadExistingReview = async () => {
       if (!user?.uid || !businessId || existingReviewLoaded) return;
       
-      const existingReview = await fetchUserReview(parseInt(businessId), user.uid);
+      const existingReview = await fetchUserReview(parseInt(businessId));
       if (existingReview) {
         setRating(existingReview.rating);
         setReview(existingReview.content || '');
@@ -167,8 +169,7 @@ const Review = () => {
         rating,
         content: review.trim() || undefined,
         businessId: parseInt(businessId),
-      },
-      user.uid
+      }
     );
   };
 

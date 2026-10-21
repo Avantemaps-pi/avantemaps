@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { containsInappropriateContent, filterInappropriateContent } from '@/utils/contentFilter';
+import { getSessionUserId } from '@/lib/sessionUserId';
 
 // Review validation schema
 export const reviewSchema = z.object({
@@ -24,7 +25,14 @@ export function useReviewSubmission(options?: UseReviewSubmissionOptions) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const submitReview = async (input: ReviewInput, userId: string): Promise<boolean> => {
+  const submitReview = async (input: ReviewInput): Promise<boolean> => {
+    // RLS checks user_id = auth.uid(), so use the live session ID, not user.uid.
+    const userId = await getSessionUserId();
+    if (!userId) {
+      toast.error("Unable to submit review. Please try again.");
+      return false;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -104,7 +112,10 @@ export function useReviewSubmission(options?: UseReviewSubmissionOptions) {
     }
   };
 
-  const fetchUserReview = async (businessId: number, userId: string) => {
+  const fetchUserReview = async (businessId: number) => {
+    const userId = await getSessionUserId();
+    if (!userId) return null;
+
     const { data, error } = await supabase
       .from('reviews')
       .select('id, rating, content, created_at')

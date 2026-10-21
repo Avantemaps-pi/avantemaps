@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getSessionUserId } from '@/lib/sessionUserId';
 import { useAuth } from '@/context/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -55,15 +56,25 @@ const PaymentHistory: React.FC = () => {
   const [rows, setRows] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasSession, setHasSession] = useState(true);
 
   const load = async () => {
     if (!user?.uid) return;
     setLoading(true);
     setError(null);
+    // RLS checks user_id = auth.uid(); user.uid can be the Pi ID or stale.
+    const userId = await getSessionUserId();
+    if (!userId) {
+      setHasSession(false);
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+    setHasSession(true);
     const { data, error: dbError } = await supabase
       .from('payments')
       .select('id, payment_id, amount, memo, txid, status, created_at, updated_at')
-      .eq('user_id', user.uid)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(PAGE_SIZE);
 
@@ -81,7 +92,7 @@ const PaymentHistory: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
 
-  if (!user?.uid) {
+  if (!user?.uid || !hasSession) {
     return (
       <p className="text-sm text-muted-foreground">
         Sign in to view your payment history.

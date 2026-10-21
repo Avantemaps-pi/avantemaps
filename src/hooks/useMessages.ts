@@ -8,6 +8,7 @@ import {
   setConversationRunner,
 } from '@/lib/pendingConversationQueue';
 import { recordReauthEvent, type ReauthEventType } from '@/utils/telemetry/reauthTelemetry';
+import { getSessionUserId } from '@/lib/sessionUserId';
 
 export interface Conversation {
   id: string;
@@ -505,12 +506,19 @@ export function useMessages(inbox: Inbox | null) {
       if (!trimmed) return false;
       const sender_role = inbox.kind === 'customer' ? 'customer' : 'business';
 
+      // RLS checks sender_id = auth.uid(); uid can be the Pi ID or stale.
+      const senderId = await getSessionUserId();
+      if (!senderId) {
+        toast.error('Failed to send', { id: 'msg:send-failed', duration: 4000 });
+        return false;
+      }
+
       // Optimistic append: show the message immediately, roll back on error.
       const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const optimisticMsg: MessageRow = {
         id: tempId,
         conversation_id: activeConvId,
-        sender_id: uid,
+        sender_id: senderId,
         sender_role,
         body: trimmed,
         read_at: null,
@@ -522,7 +530,7 @@ export function useMessages(inbox: Inbox | null) {
         .from('messages')
         .insert({
           conversation_id: activeConvId,
-          sender_id: uid,
+          sender_id: senderId,
           sender_role,
           body: trimmed,
         })
