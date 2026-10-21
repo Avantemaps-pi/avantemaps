@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { getSessionUserId } from '@/lib/sessionUserId';
 import {
   Accordion,
   AccordionContent,
@@ -180,10 +181,13 @@ const Settings = () => {
   useEffect(() => {
     const checkDeletionStatus = async () => {
       if (!user?.uid) return;
+      // RLS checks id = auth.uid(); user.uid can be the Pi ID or stale.
+      const userId = await getSessionUserId();
+      if (!userId) return;
       const { data, error } = await supabase
         .from('users')
         .select('scheduled_deletion_at')
-        .eq('id', user.uid)
+        .eq('id', userId)
         .single();
 
       if (!error && data?.scheduled_deletion_at) {

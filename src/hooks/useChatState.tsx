@@ -178,24 +178,6 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
     }
   };
 
-  // Log verification request to audit table
-  const logVerificationRequest = async (businessId: number, action: string) => {
-    if (!user?.uid) return;
-
-    try {
-      await supabase
-        .from('verification_audit')
-        .insert({
-          business_id: businessId,
-          performed_by: user.uid,
-          action: action,
-          notes: `Verification request submitted via chat interface`
-        });
-    } catch (error) {
-      console.error('Error logging verification request:', error);
-    }
-  };
-
   const streamAIResponse = async (conversationMessages: typeof messages) => {
     try {
       const aiMessageId = conversationMessages.length + 1;
@@ -669,8 +651,7 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
           throw new Error(result.error || 'Verification request failed');
         }
 
-        // Log the verification request
-        await logVerificationRequest(business.id, 'verification_requested');
+        // Audit trail belongs in the verify-business edge function (service role); RLS blocks client inserts and it doesn't log it today.
 
         // Handle blockchain verification results
         const bizResult = result.results?.[0];
@@ -748,7 +729,7 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
       
       setAwaitingVerificationBusinessSelection(false);
     }
-  }, [awaitingVerificationBusinessSelection, updateVerificationStatus, logVerificationRequest, toast]);
+  }, [awaitingVerificationBusinessSelection, updateVerificationStatus, toast]);
 
   // Show certification "coming soon" message
   const triggerCertificationFlow = useCallback(() => {
