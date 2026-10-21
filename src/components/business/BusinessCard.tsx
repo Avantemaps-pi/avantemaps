@@ -112,7 +112,7 @@ const BusinessCard = ({ business, onEdit, onDeleted }: BusinessCardProps) => {
             <BusinessVerificationStatus isCertification={true} />
             
             <div className="flex items-center">
-              <Clock className="h-5 w-5 mr-2 text-gray-500" />
+              <Clock className="h-5 w-5 mr-2 text-muted-foreground" />
               <div>
                 <span className="text-sm font-medium">Registration Date</span>
                 <p className="text-sm text-muted-foreground">July 15, 2023</p>

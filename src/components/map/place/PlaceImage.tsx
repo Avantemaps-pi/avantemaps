@@ -14,7 +14,7 @@ const PlaceImage: React.FC<PlaceImageProps> = ({ src, alt, onClick }) => {
       className="h-40 overflow-hidden px-3 cursor-pointer"
       onClick={onClick}
     >
-      <div className="bg-gray-100 h-full flex items-center justify-center rounded-md">
+      <div className="bg-muted h-full flex items-center justify-center rounded-md">
         <ProgressiveImage
           src={src}
           alt={alt}

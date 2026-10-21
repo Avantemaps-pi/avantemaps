@@ -28,7 +28,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ isMobile, disabled }) => 
                 value={tab.value}
                 className={cn(
                   "flex-1 text-sm whitespace-nowrap relative z-10 rounded-md",
-                  "data-[state=active]:bg-avante-blue data-[state=active]:text-white",
+                  "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
                   "data-[state=inactive]:bg-muted data-[state=inactive]:text-muted-foreground"
                 )}
                 disabled={disabled}
@@ -48,7 +48,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ isMobile, disabled }) => 
                 value={tab.value}
                 className={cn(
                   "flex-1 text-sm whitespace-nowrap relative z-10 rounded-md",
-                  "data-[state=active]:bg-avante-blue data-[state=active]:text-white",
+                  "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
                   "data-[state=inactive]:bg-muted data-[state=inactive]:text-muted-foreground"
                 )}
                 disabled={disabled}
@@ -73,7 +73,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ isMobile, disabled }) => 
             value={tab.value}
             className={cn(
               "flex-1 text-sm whitespace-nowrap relative z-10 rounded-md",
-              "data-[state=active]:bg-avante-blue data-[state=active]:text-white",
+              "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
               "data-[state=inactive]:bg-muted data-[state=inactive]:text-muted-foreground"
             )}
             disabled={disabled}

@@ -35,7 +35,6 @@ const AddressTab: React.FC<AddressTabProps> = ({
           </Button>
           <Button 
             type="button" 
-            className="bg-avante-blue hover:bg-avante-blue/90"
             onClick={onNext} 
             disabled={disabled}
           >

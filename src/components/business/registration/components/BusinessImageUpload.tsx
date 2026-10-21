@@ -103,7 +103,7 @@ const StatusIcon: React.FC<{ status: ImageUploadStatus['status'] }> = ({ status 
     case 'uploading':
       return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
     case 'success':
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
+      return <CheckCircle className="h-4 w-4 text-primary" />;
     case 'error':
       return <AlertCircle className="h-4 w-4 text-destructive" />;
     default:
@@ -118,7 +118,7 @@ const StatusLabel: React.FC<{ status: ImageUploadStatus['status']; error?: strin
     case 'uploading':
       return <span className="text-xs text-muted-foreground">Uploading...</span>;
     case 'success':
-      return <span className="text-xs text-green-600">Ready</span>;
+      return <span className="text-xs text-primary">Ready</span>;
     case 'error':
       return (
         <span className="text-xs text-destructive truncate max-w-[80px]" title={error}>
@@ -249,7 +249,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
                 return (
                   <div
                     key={`existing-${index}`}
-                    className="relative aspect-square rounded-lg overflow-hidden border-2 border-green-500 bg-green-50 dark:bg-green-950/20"
+                    className="relative aspect-square rounded-lg overflow-hidden border-2 border-primary/30 bg-accent"
                   >
                     <img
                       src={imageUrl}
@@ -263,8 +263,8 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
                     {/* Status Overlay */}
                     <div className="absolute bottom-0 left-0 right-0 bg-background/90 backdrop-blur-xs px-2 py-1.5 flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-xs text-green-600">Saved</span>
+                        <CheckCircle className="h-4 w-4 text-primary" />
+                        <span className="text-xs text-primary">Saved</span>
                       </div>
                       {index === 0 && activeExistingImages.length > 0 && images.length === 0 && (
                         <span className="text-xs font-medium text-primary">Main</span>
@@ -296,7 +296,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
                     image.status === 'error' 
                       ? "border-destructive bg-destructive/10" 
                       : image.status === 'success'
-                      ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                      ? "border-primary/30 bg-accent"
                       : "border-border bg-muted/30"
                   )}
                 >

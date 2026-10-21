@@ -119,7 +119,6 @@ const PreviewTab: React.FC<PreviewTabProps> = ({
           </Button>
           <Button 
             type="submit" 
-            className="bg-avante-blue hover:bg-avante-blue/90"
             disabled={disabled}
           >
             Submit Registration

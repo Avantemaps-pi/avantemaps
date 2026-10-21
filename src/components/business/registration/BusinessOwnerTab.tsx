@@ -65,7 +65,7 @@ const BusinessOwnerTab: React.FC<BusinessOwnerTabProps> = ({ onNext, disabled })
         <Button 
           type="button" 
           onClick={onNext}
-          className="bg-avante-blue hover:bg-avante-blue/90 min-w-24"
+          className="min-w-24"
           disabled={disabled}
         >
           Next

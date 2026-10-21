@@ -158,7 +158,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
               "w-2 h-2 p-0 rounded-full",
               index === currentIndex 
                 ? "bg-primary hover:bg-primary/90" 
-                : "bg-gray-200 hover:bg-gray-300"
+                : "bg-input/40 hover:bg-input/60"
             )}
             onClick={() => onImageChange(index)}
           />

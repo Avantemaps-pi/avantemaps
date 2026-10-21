@@ -31,11 +31,11 @@ export class ErrorBoundary extends React.Component<
   override render() {
     if (this.state.hasError) {
       return (
-        <div className="w-full h-screen flex flex-col justify-center items-center bg-purple-700 text-white">
+        <div className="w-full h-screen flex flex-col justify-center items-center bg-background text-foreground">
           <h1 className="text-2xl font-semibold">Something went wrong</h1>
-          <p className="mt-2">{this.state.error?.message}</p>
+          <p className="mt-2 text-muted-foreground">{this.state.error?.message}</p>
           <button
-            className="mt-4 px-4 py-2 bg-white text-purple-700 rounded"
+            className="mt-4 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary-hover rounded"
             onClick={() => window.location.reload()}
           >
             Reload App

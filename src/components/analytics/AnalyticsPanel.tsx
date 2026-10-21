@@ -81,7 +81,7 @@ const Stat: React.FC<{ label: string; value: number; trend?: number }> = ({ labe
           <span
             className={cn(
               'flex items-center gap-0.5 text-[11px] font-semibold',
-              trend > 0 ? 'text-analytics-success' : 'text-analytics-danger'
+              trend > 0 ? 'text-analytics-success' : 'text-analytics-text-muted'
             )}
           >
             <TrendIcon className="h-3 w-3" />

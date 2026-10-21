@@ -46,7 +46,7 @@ const RankingChart: React.FC<RankingChartProps> = ({ data, title, description })
                 </TableCell>
                 <TableCell>{item.searches}</TableCell>
                 <TableCell>
-                  <span className={item.change > 0 ? "text-green-500" : item.change < 0 ? "text-red-500" : "text-gray-500"}>
+                  <span className={item.change > 0 ? "text-primary" : item.change < 0 ? "text-foreground" : "text-muted-foreground"}>
                     {item.change > 0 ? '↑' : item.change < 0 ? '↓' : '→'} 
                     {Math.abs(item.change)}
                   </span>

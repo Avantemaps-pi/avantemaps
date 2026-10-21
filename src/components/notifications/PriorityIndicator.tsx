@@ -14,22 +14,22 @@ const PriorityIndicator: React.FC<PriorityIndicatorProps> = ({
 }) => {
   const priorityConfig = {
     high: {
-      color: 'bg-destructive',
-      textColor: 'text-destructive',
+      color: 'bg-primary',
+      textColor: 'text-primary',
       label: 'High',
       icon: AlertCircle,
-      badgeVariant: 'destructive' as const
+      badgeVariant: 'default' as const
     },
     medium: {
-      color: 'bg-warning',
-      textColor: 'text-warning',
+      color: 'bg-muted-foreground',
+      textColor: 'text-muted-foreground',
       label: 'Medium',
       icon: AlertTriangle,
       badgeVariant: 'secondary' as const
     },
     low: {
-      color: 'bg-muted',
-      textColor: 'text-muted-foreground',
+      color: 'bg-input',
+      textColor: 'text-input',
       label: 'Low',
       icon: Info,
       badgeVariant: 'outline' as const

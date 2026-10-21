@@ -38,7 +38,7 @@ const CommentItem: React.FC<CommentProps> = ({ comment, onVote, onReport }) => {
   };
 
   return (
-    <Card className="border-gray-200">
+    <Card className="border-border">
       <CardContent className="pt-4">
         <div className="flex items-start justify-between">
           <AuthorInfo 

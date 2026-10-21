@@ -101,9 +101,7 @@ const MobileSidebar = ({
                   <span 
                     className={cn(
                       "cursor-pointer hover:text-primary transition-colors",
-                      user?.subscriptionTier === 'organization' && "text-purple-500 font-medium",
-                      user?.subscriptionTier === 'small-business' && "text-blue-500 font-medium",
-                      user?.subscriptionTier === 'individual' && "text-green-500"
+                      (user?.subscriptionTier === 'organization' || user?.subscriptionTier === 'small-business') && "text-primary font-medium"
                     )}
                     onClick={handleIndividualPlanClick}
                   >
@@ -140,8 +138,8 @@ const MobileSidebar = ({
 
             {isAuthenticated && (
               <div className="mt-auto px-2 pt-4">
-                <Button onClick={handleLogout} disabled={isLoading} className="w-full bg-white hover:bg-gray-100 border border-red-500 text-red-500">
-                  <LogOut className="h-4 w-4 mr-2 text-red-500" />
+                <Button onClick={handleLogout} disabled={isLoading} variant="outline" className="w-full">
+                  <LogOut className="h-4 w-4 mr-2" />
                   Logout
                 </Button>
               </div>

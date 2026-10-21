@@ -21,7 +21,7 @@ const VoteActions: React.FC<VoteActionsProps> = ({ comment, onVote, onReport }) 
       <Button 
         variant="outline" 
         size="sm" 
-        className={`px-3 py-1 ${comment.userVote === 'up' ? 'bg-green-50 text-green-600 border-green-200' : ''}`}
+        className={`px-3 py-1 ${comment.userVote === 'up' ? 'bg-accent text-primary border-primary/30' : ''}`}
         onClick={() => onVote(comment.id, 'up')}
       >
         <ThumbsUp className="h-4 w-4 mr-2" />
@@ -31,7 +31,7 @@ const VoteActions: React.FC<VoteActionsProps> = ({ comment, onVote, onReport }) 
       <Button 
         variant="outline" 
         size="sm" 
-        className={`px-3 py-1 ${comment.userVote === 'down' ? 'bg-red-50 text-red-600 border-red-200' : ''}`}
+        className={`px-3 py-1 ${comment.userVote === 'down' ? 'bg-muted text-foreground border-input' : ''}`}
         onClick={() => onVote(comment.id, 'down')}
       >
         <ThumbsDown className="h-4 w-4 mr-2" />

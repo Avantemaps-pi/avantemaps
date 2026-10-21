@@ -10,7 +10,6 @@ export const PiAuthButton = () => {
     <Button
       onClick={loginWithPi}
       disabled={loading}
-      className="bg-[#5a00cc] hover:bg-[#4a00aa] text-white"
     >
       {loading ? (
         <>

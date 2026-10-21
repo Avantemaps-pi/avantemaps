@@ -15,10 +15,10 @@ export function Tab({ text, selected, setSelected, discount = false, discountAmo
     <button
       onClick={() => setSelected(text.toLowerCase())}
       className={cn(
-        "relative flex h-10 items-center justify-center gap-2 rounded-full px-6 text-sm font-medium transition text-gray-600",
+        "relative flex h-10 items-center justify-center gap-2 rounded-full px-6 text-sm font-medium transition text-muted-foreground",
         selected
-          ? "bg-white text-black shadow-xs"
-          : "hover:text-black"
+          ? "bg-background text-foreground shadow-xs"
+          : "hover:text-foreground"
       )}
     >
       {text}

@@ -27,11 +27,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ text, sender, timestamp }) =>
         className={`max-w-[80%] px-4 py-2 rounded-lg transition-opacity ${
           isUser
             ? 'bg-primary text-primary-foreground'
-            : sender === 'system'
-              ? 'bg-gray-200 text-gray-800'
-              : sender === 'live-support'
-                ? 'bg-red-100 border border-red-300 text-gray-800'
-                : 'bg-gray-100 text-gray-800'
+            : sender === 'live-support'
+              ? 'bg-secondary text-secondary-foreground'
+              : 'bg-muted text-foreground'
         }`}
       >
         {isStreamingPlaceholder ? (
