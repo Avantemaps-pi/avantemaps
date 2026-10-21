@@ -1163,6 +1163,14 @@ export type Database = {
       }
     }
     Views: {
+      business_review_stats: {
+        Row: {
+          average_rating: number | null
+          business_id: number
+          review_count: number
+        }
+        Relationships: []
+      }
       geography_columns: {
         Row: {
           coord_dimension: number | null

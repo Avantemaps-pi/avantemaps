@@ -13,6 +13,7 @@ import { useAuth } from '@/context/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Place } from '@/types/business';
 import { useReviewSubmission } from '@/hooks/useReviewSubmission';
+import { useReviewStats } from '@/hooks/useReviewStats';
 
 const MAX_REVIEW_LENGTH = 2000;
 
@@ -28,6 +29,7 @@ const Review = () => {
   const [business, setBusiness] = useState<Place | null>(null);
   const [businessLoading, setBusinessLoading] = useState(true);
   const [existingReviewLoaded, setExistingReviewLoaded] = useState(false);
+  const reviewStats = useReviewStats();
   
   const { submitReview, fetchUserReview, isSubmitting } = useReviewSubmission({
     onSuccess: () => {
@@ -251,6 +253,8 @@ const Review = () => {
     );
   }
 
+  const businessStats = reviewStats.get(business.id);
+
   return (
     <AppLayout 
       title={`Review ${business.name}`}
@@ -296,16 +300,16 @@ const Review = () => {
                           <StarIcon
                             key={i}
                             className={`h-4 w-4 ${
-                              i < Math.floor(business.rating || 0)
+                              i < Math.floor(businessStats?.rating || 0)
                                 ? 'text-yellow-400 fill-yellow-400'
                                 : 'text-gray-300'
                             }`}
                           />
                         ))}
-                        <span className="text-sm ml-1">{(business.rating || 0).toFixed(1)}</span>
+                        <span className="text-sm ml-1">{(businessStats?.rating || 0).toFixed(1)}</span>
                       </div>
                       <span className="text-sm text-muted-foreground">
-                        ({business.totalReviews || 0} reviews)
+                        ({businessStats?.totalReviews || 0} reviews)
                       </span>
                     </div>
                   </div>
