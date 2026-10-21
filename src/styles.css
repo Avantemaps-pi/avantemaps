@@ -181,7 +181,7 @@
 
   --brand-navy: 224 64.3% 32.9%;
   --brand-ink: 207 35% 13%;
-  --gradient-brand: linear-gradient(160deg, hsl(208 25% 48%), hsl(209 35% 31%));
+  --gradient-brand: linear-gradient(160deg, hsl(224 64.3% 32.9%), hsl(221 83.2% 53.3%));
 
   --secondary: 214 94.6% 92.7%;
   --secondary-foreground: 224 64.3% 32.9%;
@@ -237,7 +237,7 @@
 
   --brand-navy: 213 96.9% 87.3%;
   --brand-ink: 208 38% 20%;
-  --gradient-brand: linear-gradient(160deg, hsl(208 30% 55%), hsl(210 33% 44%));
+  --gradient-brand: linear-gradient(160deg, hsl(212 96.4% 78.4%), hsl(213 93.9% 67.8%));
 
   --secondary: 226 57% 21%;
   --secondary-foreground: 214 94.6% 92.7%;
