@@ -207,7 +207,7 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
                           <p className="text-sm font-medium truncate">
                             {isBusinessInbox
                               ? `Customer ${c.customer_id.slice(0, 6)}`
-                              : c.business_name ?? `Business #${c.business_id}`}
+                              : c.business_name ?? 'Business no longer listed'}
                           </p>
                           <span className="text-[10px] text-muted-foreground flex-shrink-0">
                             {formatTime(c.last_message_at)}

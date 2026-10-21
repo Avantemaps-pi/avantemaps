@@ -52,6 +52,13 @@ export function useMessages(inbox: Inbox | null) {
   const inFlightRef = useRef<Map<number, Promise<string | null>>>(new Map());
   const dedupeTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
   const mountedRef = useRef(true);
+  // Customers can't read other people's businesses (RLS), so the embedded
+  // join returns null for them; names come from the public RPC instead.
+  // Cached for the life of the hook, including businesses with no row.
+  const businessInfoRef = useRef<Map<number, { name?: string; image: string | null }>>(new Map());
+  // Incremented on every loadConversations run so an older run that finishes
+  // late doesn't overwrite a newer list.
+  const loadRunRef = useRef(0);
   // Time window (ms) during which a completed call is reused for the same businessId.
   const DEDUPE_TTL_MS = 4000;
   // Hard timeout (ms) after which a hung in-flight call resolves to null.
@@ -106,6 +113,7 @@ export function useMessages(inbox: Inbox | null) {
       if (!customerId) return;
     }
 
+    const runId = ++loadRunRef.current;
     setLoadingConvs(true);
     let query = supabase
       .from('conversations')
@@ -122,17 +130,48 @@ export function useMessages(inbox: Inbox | null) {
     }
 
     const { data, error } = await query;
+    if (runId !== loadRunRef.current) return;
     if (error) {
       console.error(error);
       toast.error('Failed to load conversations', { id: 'msg:load-convs-failed', duration: 4000 });
       setLoadingConvs(false);
       return;
     }
-    const mapped: Conversation[] = (data ?? []).map((r: any) => ({
+    let mapped: Conversation[] = (data ?? []).map((r: any) => ({
       ...r,
       business_name: r.businesses?.business_name,
       business_image: r.businesses?.images?.[0] ?? null,
     }));
+
+    if (inbox.kind === 'customer') {
+      const cache = businessInfoRef.current;
+      const missing = [
+        ...new Set(
+          mapped
+            .filter((c) => !c.business_name && !cache.has(c.business_id))
+            .map((c) => c.business_id),
+        ),
+      ];
+      await Promise.all(
+        missing.map(async (id) => {
+          const { data: rows, error: rpcError } = await supabase.rpc('get_public_business_detail', {
+            business_id: id,
+          });
+          if (rpcError) {
+            console.warn('[loadConversations] get_public_business_detail failed', { businessId: id, rpcError });
+            return;
+          }
+          const row = rows?.[0];
+          cache.set(id, row ? { name: row.name, image: row.images?.[0] ?? null } : { image: null });
+        }),
+      );
+      if (runId !== loadRunRef.current) return;
+      mapped = mapped.map((c) => {
+        const info = c.business_name ? undefined : cache.get(c.business_id);
+        return info?.name ? { ...c, business_name: info.name, business_image: info.image } : c;
+      });
+    }
+
     setConversations(mapped);
     setLoadingConvs(false);
   }, [uid, inbox, refreshUserData]);
