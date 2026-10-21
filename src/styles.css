@@ -181,7 +181,7 @@
 
   --brand-navy: 224 64.3% 32.9%;
   --brand-ink: 207 35% 13%;
-  --gradient-brand: linear-gradient(160deg, hsl(224 64.3% 32.9%), hsl(221 83.2% 53.3%));
+  --gradient-brand: linear-gradient(160deg, hsl(224 64.3% 32.9%), hsl(224 76.3% 48%));
 
   --secondary: 214 94.6% 92.7%;
   --secondary-foreground: 224 64.3% 32.9%;
