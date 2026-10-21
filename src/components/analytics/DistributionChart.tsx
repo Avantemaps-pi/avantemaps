@@ -179,7 +179,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ data, title, desc
                 cy="50%"
                 labelLine={false}
                 outerRadius={80}
-                fill="#8884d8"
+                fill="hsl(var(--chart-2))"
                 dataKey="value"
                 label={renderCustomizedLabel}
                 onMouseEnter={handleMouseEnter}
@@ -192,7 +192,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ data, title, desc
                       <path 
                         d={`M${cx},${cy} L${cx + outerRadius * Math.cos(-startAngle * RADIAN)},${cy + outerRadius * Math.sin(-startAngle * RADIAN)} A${outerRadius},${outerRadius} 0 ${endAngle - startAngle > 180 ? 1 : 0},0 ${cx + outerRadius * Math.cos(-endAngle * RADIAN)},${cy + outerRadius * Math.sin(-endAngle * RADIAN)} Z`} 
                         fill={fill}
-                        stroke="#fff"
+                        stroke="hsl(var(--card))"
                         strokeWidth={2}
                       />
                     </g>
@@ -203,7 +203,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ data, title, desc
                   <Cell 
                     key={`cell-${index}`} 
                     fill={entry.color} 
-                    stroke={activeIndex === index ? "#ffffff" : "transparent"} 
+                    stroke={activeIndex === index ? "hsl(var(--card))" : "transparent"} 
                     strokeWidth={activeIndex === index ? 2 : 0}
                   />
                 ))}
