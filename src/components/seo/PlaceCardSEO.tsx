@@ -85,10 +85,12 @@ const PlaceCardSEO: React.FC<PlaceCardSEOProps> = ({ place, isActive }) => {
             "@type": "PostalAddress",
             "streetAddress": place.address
           },
-          "aggregateRating": place.rating ? {
+          "aggregateRating": place.totalReviews && place.totalReviews > 0 ? {
             "@type": "AggregateRating",
             "ratingValue": place.rating,
-            "ratingCount": "1"
+            "reviewCount": place.totalReviews,
+            "bestRating": 5,
+            "worstRating": 1
           } : undefined,
           "geo": place.position ? {
             "@type": "GeoCoordinates",

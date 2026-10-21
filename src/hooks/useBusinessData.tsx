@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Place } from '@/types/business';
+import { applyReviewStats, useReviewStats } from '@/hooks/useReviewStats';
 
 interface PublicBusinessInfo {
   id: number;
@@ -125,12 +126,16 @@ const fetchBusinesses = async (): Promise<Place[]> => {
 
 export const useBusinessData = () => {
   // isLoading: first load with no data yet. Errors are shown by the map's own error card.
-  const { data: places = [], isLoading, isError, refetch } = useQuery({
+  const { data: rawPlaces = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['businesses'],
     queryFn: fetchBusinesses,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
   });
+
+  // Ratings load separately and never hold up the map.
+  const reviewStats = useReviewStats();
+  const places = useMemo(() => applyReviewStats(rawPlaces, reviewStats), [rawPlaces, reviewStats]);
 
   const [searchTerm, setSearchTerm] = useState('');
 

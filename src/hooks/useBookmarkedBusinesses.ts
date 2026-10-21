@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Place } from '@/types/business';
 import { useAuth } from '@/context/auth';
 import { BOOKMARK_DATA_VERSION } from '@/hooks/useBusinessBookmarks';
+import { applyReviewStats, useReviewStats } from '@/hooks/useReviewStats';
 
 interface BookmarkedBusiness {
   id: number;
@@ -144,7 +145,7 @@ export const useBookmarkedBusinesses = () => {
     }
   }, [queryClient]);
 
-  const { data: bookmarkedPlaces = [], isLoading, isError, refetch } = useQuery({
+  const { data: rawBookmarkedPlaces = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['bookmarked-businesses'],
     queryFn: async () => {
       const { data: { user: sessionUser }, error: sessionErr } = await supabase.auth.getUser();
@@ -175,6 +176,12 @@ export const useBookmarkedBusinesses = () => {
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
+
+  const reviewStats = useReviewStats();
+  const bookmarkedPlaces = useMemo(
+    () => applyReviewStats(rawBookmarkedPlaces, reviewStats),
+    [rawBookmarkedPlaces, reviewStats],
+  );
 
   return { bookmarkedPlaces, isLoading, isError, refetch };
 };

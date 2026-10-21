@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { z } from 'zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { containsInappropriateContent, filterInappropriateContent } from '@/utils/contentFilter';
@@ -19,6 +20,7 @@ interface UseReviewSubmissionOptions {
 }
 
 export function useReviewSubmission(options?: UseReviewSubmissionOptions) {
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,6 +84,8 @@ export function useReviewSubmission(options?: UseReviewSubmissionOptions) {
         toast.success("Review submitted successfully!");
       }
 
+      // Show the new rating on cards and the drawer straight away.
+      queryClient.invalidateQueries({ queryKey: ['review-stats'] });
       options?.onSuccess?.();
       return true;
     } catch (err) {
