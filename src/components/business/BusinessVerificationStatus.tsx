@@ -42,7 +42,7 @@ const BusinessVerificationStatus = ({ isCertification = false }: BusinessVerific
             </Button>
           </div>
           <div className="mt-1 flex flex-col pl-7">
-            <Badge variant="outline" className="bg-muted text-foreground border-input border-dashed flex items-center gap-1 self-start mb-1 w-32 justify-center">
+            <Badge variant="outline" className="bg-muted text-foreground border-muted-foreground/70 border-dashed flex items-center gap-1 self-start mb-1 w-32 justify-center">
               <AlertTriangle className="h-3 w-3 text-muted-foreground" />
               Not Verified
             </Badge>
@@ -82,7 +82,7 @@ const BusinessVerificationStatus = ({ isCertification = false }: BusinessVerific
             </TooltipProvider>
           </div>
           <div className="mt-1 pl-7">
-            <Badge variant="outline" className="bg-muted text-foreground border-input border-dashed flex items-center gap-1 self-start mb-1 w-32 justify-center">
+            <Badge variant="outline" className="bg-muted text-foreground border-muted-foreground/70 border-dashed flex items-center gap-1 self-start mb-1 w-32 justify-center">
               <AlertTriangle className="h-3 w-3 text-muted-foreground" />
               Not Certified
             </Badge>

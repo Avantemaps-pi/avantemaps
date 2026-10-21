@@ -324,7 +324,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
 
                   {/* Error Message */}
                   {image.status === 'error' && image.error && (
-                    <div className="absolute top-0 left-0 right-0 bg-destructive/90 px-2 py-1">
+                    <div className="absolute top-0 left-0 right-0 bg-destructive px-2 py-1">
                       <p className="text-xs text-destructive-foreground truncate">
                         {image.error}
                       </p>
