@@ -545,7 +545,7 @@ export const refreshUserData = async (
     }
 
     // Fetch current subscription tier from the database
-    const subscriptionTier = await getUserSubscription(user.uid);
+    const subscriptionTier = await getUserSubscription(session.user.id);
 
     // updateUserData re-fetches roles from the database internally
     await updateUserData({ ...user, subscriptionTier }, setUser);
