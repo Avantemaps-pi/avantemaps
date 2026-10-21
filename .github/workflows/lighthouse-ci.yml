@@ -15,6 +15,9 @@ on:
       - '.github/workflows/lighthouse-ci.yml'
       - 'lighthouserc.json'
 
+permissions:
+  contents: read
+
 jobs:
   lighthouse:
     name: Mobile performance audit
