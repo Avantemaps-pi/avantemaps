@@ -10,12 +10,20 @@
 const LIFECYCLE_HEADER = 'x-lifecycle-id';
 const CORRELATION_HEADER = 'x-correlation-id';
 
+function randomId(): string {
+  if (typeof crypto !== 'undefined') {
+    if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+    if (typeof crypto.getRandomValues === 'function') {
+      const bytes = crypto.getRandomValues(new Uint8Array(16));
+      return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    }
+  }
+  // Last resort when no Web Crypto is available at all.
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export function generateLifecycleId(prefix = 'pay'): string {
-  const uuid =
-    typeof crypto !== 'undefined' && 'randomUUID' in crypto
-      ? crypto.randomUUID()
-      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-  return `${prefix}_${uuid}`;
+  return `${prefix}_${randomId()}`;
 }
 
 /** Backwards-compatible alias. */
