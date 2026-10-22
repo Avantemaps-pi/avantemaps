@@ -275,9 +275,9 @@ const Review = () => {
         </Button>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full mb-4">
-            <TabsTrigger value="review" className="flex-1">Write Review</TabsTrigger>
-            <TabsTrigger value="reviews" className="flex-1">View Reviews</TabsTrigger>
+          <TabsList className="w-full mb-4 h-auto">
+            <TabsTrigger value="review" className="flex-1 min-h-11 text-sm">Write Review</TabsTrigger>
+            <TabsTrigger value="reviews" className="flex-1 min-h-11 text-sm">View Reviews</TabsTrigger>
           </TabsList>
           
           <TabsContent value="review" className="w-full">
