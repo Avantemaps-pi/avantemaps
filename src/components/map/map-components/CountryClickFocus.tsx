@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 
@@ -288,6 +288,7 @@ const CountryClickFocus: React.FC = () => {
   const lastClickRef = useRef<number>(0);
   const lastCountryRef = useRef<string | null>(null);
   const layerRef = useRef<L.GeoJSON | null>(null);
+  const mountedRef = useRef(true);
 
   // Client-only cache hydration; runs in an effect (not the render body) so
   // no localStorage access happens during render.
@@ -313,6 +314,8 @@ const CountryClickFocus: React.FC = () => {
       try {
         const { lat, lng } = e.latlng;
         const { countryCode, data } = await fetchCountry(lat, lng);
+        // The map may have unmounted while the lookup was in flight.
+        if (!mountedRef.current) return;
 
         if (!countryCode || !data) {
           if (layerRef.current) {
@@ -358,6 +361,21 @@ const CountryClickFocus: React.FC = () => {
       }
     },
   });
+
+  // On unmount: stop flyToBounds and remove the highlight layer, so no animation step or
+  // layer runs against a removed map. A layout-effect cleanup runs before MapContainer's
+  // map.remove(), so the map is still alive here (MapViewUpdater also ends zoom animations).
+  useLayoutEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      map.stop();
+      if (layerRef.current) {
+        layerRef.current.remove();
+        layerRef.current = null;
+      }
+    };
+  }, [map]);
 
   return null;
 };
