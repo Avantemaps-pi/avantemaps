@@ -201,8 +201,14 @@ export function useMessages(inbox: Inbox | null) {
   // Realtime: refresh on new messages affecting any of our conversations
   useEffect(() => {
     if (!uid || !inboxKey) return;
+    // This effect re-runs when activeConvId changes; removeChannel only drops the old
+    // channel once the server confirms, so reusing the name could return the old one.
+    const suffix =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2);
     const channel = supabase
-      .channel(`messages-${inboxKey === 'customer' ? `c-${uid}` : `b-${inboxKey}`}`)
+      .channel(`messages-${inboxKey === 'customer' ? `c-${uid}` : `b-${inboxKey}`}-${suffix}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages' },
