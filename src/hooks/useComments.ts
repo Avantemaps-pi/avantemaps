@@ -75,10 +75,17 @@ export const useComments = (businessId: string | undefined) => {
   });
 
   // Realtime subscription: invalidate cache on updates.
+  // supabase.channel() returns the existing channel for a name that's still in use, and
+  // useComments can be mounted twice for one business (CommentSection + CommentList), so
+  // each subscription gets its own name. queryKey isn't stable, so it stays out of the deps.
   useEffect(() => {
     if (!businessId) return;
+    const suffix =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2);
     const channel = supabase
-      .channel(`comments-changes-${businessId}`)
+      .channel(`comments-changes-${businessId}-${suffix}`)
       .on(
         'postgres_changes',
         {
