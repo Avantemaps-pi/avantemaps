@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { StarIcon, ChevronLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import CommentSection from '@/components/comments/CommentSection';
+import ReviewList from '@/components/reviews/ReviewList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/auth';
@@ -30,6 +30,7 @@ const Review = () => {
   const [business, setBusiness] = useState<Place | null>(null);
   const [businessLoading, setBusinessLoading] = useState(true);
   const [existingReviewLoaded, setExistingReviewLoaded] = useState(false);
+  const [activeTab, setActiveTab] = useState('review');
   const reviewStats = useReviewStats();
   
   const { submitReview, fetchUserReview, isSubmitting } = useReviewSubmission({
@@ -273,10 +274,10 @@ const Review = () => {
           <ChevronLeft className="h-4 w-4 mr-2" /> Back
         </Button>
         
-        <Tabs defaultValue="review" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full mb-4">
             <TabsTrigger value="review" className="flex-1">Write Review</TabsTrigger>
-            <TabsTrigger value="comments" className="flex-1">View Reviews</TabsTrigger>
+            <TabsTrigger value="reviews" className="flex-1">View Reviews</TabsTrigger>
           </TabsList>
           
           <TabsContent value="review" className="w-full">
@@ -392,8 +393,8 @@ const Review = () => {
             </Card>
           </TabsContent>
           
-          <TabsContent value="comments" className="w-full">
-            <CommentSection businessId={business.id} />
+          <TabsContent value="reviews" className="w-full">
+            <ReviewList businessId={business.id} onWriteReview={() => setActiveTab('review')} />
           </TabsContent>
         </Tabs>
       </div>

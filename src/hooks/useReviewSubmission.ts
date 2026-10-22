@@ -94,6 +94,7 @@ export function useReviewSubmission(options?: UseReviewSubmissionOptions) {
 
       // Show the new rating on cards and the drawer straight away.
       queryClient.invalidateQueries({ queryKey: ['review-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['reviews', String(validatedData.businessId)] });
       options?.onSuccess?.();
       return true;
     } catch (err) {
