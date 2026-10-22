@@ -162,7 +162,7 @@ const { data: bizRow } = await supabase
 2. **Auth flow specifics:**
    - No `supabase.auth.signOut()` before `setSession()` (creates a session gap)
    - No `Pi.authenticate()` calls during silent background refresh
-   - 150ms delay exists in `authUtils.ts` before profile sync RPC (race condition mitigation — do not remove, but don't increase either)
+   - The browser doesn't write the `users` row: `verify-pi-auth` (service role) does. `upsert_user_profile` is service-role only and must not be called from the browser or granted to `authenticated`.
    - Sandbox/dev login bypass exists (`isSandbox` check) — only visible when `window.Pi` is unavailable, hidden in production Pi Browser
 
 3. **CommuniCon (messaging) live mode:**
