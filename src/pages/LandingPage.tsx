@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { MapPin, Bookmark, MessageCircle, Star, Mail, LifeBuoy, BarChart3 } from 'lucide-react';
 import { Link } from '@/lib/router-compat';
 import { Button } from '@/components/ui/button';
+import AvanteMark from '@/components/brand/AvanteMark';
 import LoginDialog from '@/components/auth/LoginDialog';
-import avanteIcon72 from '@/assets/avante-icon-72.webp';
-import avanteIcon144 from '@/assets/avante-icon-144.webp';
 import mapPreview from '@/assets/map-preview.jpg';
 import piNetworkLogo from '@/assets/pi-network-logo.png';
 
@@ -37,19 +36,13 @@ const LandingPage: React.FC = () => {
 
   const Logo = ({ light = false }: { light?: boolean }) => (
     <div className="flex items-center gap-2.5">
-      <div className={light ? 'bg-white rounded-full p-1 flex items-center justify-center' : ''}>
-        <img
-          src={avanteIcon72}
-          srcSet={`${avanteIcon72} 72w, ${avanteIcon144} 144w`}
-          sizes="36px"
-          alt="Avante Maps logo"
-          width={36}
-          height={36}
-          decoding="async"
-          fetchPriority="high"
-          className="h-9 w-9 rounded-full object-contain"
-        />
-      </div>
+      {light ? (
+        <div className="h-10 w-10 rounded-full bg-white/10 dark:bg-accent flex items-center justify-center">
+          <AvanteMark weight="bold" className="h-7 w-7 text-white dark:text-primary" />
+        </div>
+      ) : (
+        <AvanteMark className="h-9 w-9 text-primary" />
+      )}
       <span className={`font-semibold text-lg tracking-tight ${light ? 'text-white dark:text-foreground' : 'text-brand-navy'}`}>
         Avante Maps
       </span>

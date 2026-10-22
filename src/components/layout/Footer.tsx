@@ -1,21 +1,11 @@
 import React from 'react';
 import { Link } from '@/lib/router-compat';
 import { Mail, LifeBuoy } from 'lucide-react';
-import avanteIcon72 from '@/assets/avante-icon-72.webp';
-import avanteIcon144 from '@/assets/avante-icon-144.webp';
+import AvanteMark from '@/components/brand/AvanteMark';
 
 const Logo: React.FC = () => (
   <div className="flex items-center gap-2">
-    <img
-      src={avanteIcon72}
-      srcSet={`${avanteIcon72} 72w, ${avanteIcon144} 144w`}
-      sizes="36px"
-      alt="Avante Maps logo"
-      width={36}
-      height={36}
-      decoding="async"
-      className="h-9 w-9 rounded-full object-contain filter brightness-0 invert"
-    />
+    <AvanteMark className="h-9 w-9 text-white dark:text-primary" />
     <span className="font-bold text-lg text-white dark:text-foreground">Avante Maps</span>
   </div>
 );
