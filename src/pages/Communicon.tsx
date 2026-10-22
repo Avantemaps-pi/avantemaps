@@ -133,6 +133,8 @@ const Communicon = () => {
     const state = location.state as any;
     if (!state) return;
     if (state.chatMode !== 'live') return;
+    // MessagesPanel already opened (or reported) the conversation and cleared its ID.
+    if (state.openConversationHandled === true) return;
     const openConversationId = state.openConversationId ?? null;
     const inboxBusinessId = state.inboxBusinessId ?? null;
     const hasValidConvId =

@@ -14,7 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Send, MessageSquare, User as UserIcon, Store } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from '@/lib/router-compat';
+import { useLocation, useNavigate } from '@/lib/router-compat';
 
 type OwnedBusiness = { id: number; business_name: string };
 
@@ -39,6 +39,7 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
   const { user } = useAuth();
   const uid = user?.uid;
   const navigate = useNavigate();
+  const location = useLocation();
   const [ownedBusinesses, setOwnedBusinesses] = useState<OwnedBusiness[]>([]);
   const [inboxKey, setInboxKey] = useState<string>(
     initialInboxBusinessId ? `b:${initialInboxBusinessId}` : 'customer',
@@ -78,22 +79,23 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
     setActiveConvId,
     messages,
     loadingConvs,
+    convsLoaded,
     loadingMsgs,
     openConversation,
     sendMessage,
   } = useMessages(inbox);
 
-  // Auto-open initial conversation once
+  // Auto-open initial conversation once, after this inbox's conversation list has loaded
+  // (before that, an empty list doesn't mean the conversation is missing).
   useEffect(() => {
     if (initOpenedRef.current) return;
     if (!initialConversationId) return;
-    if (loadingConvs) return;
+    if (!convsLoaded) return;
+    initOpenedRef.current = true;
     const match = conversations.find((c) => c.id === initialConversationId);
     if (match) {
-      initOpenedRef.current = true;
       openConversation(initialConversationId);
     } else {
-      initOpenedRef.current = true;
       console.error(
         JSON.stringify({
           ts: new Date().toISOString(),
@@ -116,7 +118,13 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
         duration: 5000,
       });
     }
-  }, [initialConversationId, conversations, loadingConvs, openConversation]);
+    // Handled: drop openConversationId from the history entry so remounts and later visits
+    // don't repeat it. Communicon skips its missing-conversation log when it sees the marker.
+    const nextState: Record<string, unknown> = { ...((location.state as Record<string, unknown> | null) ?? {}) };
+    delete nextState['openConversationId'];
+    nextState['openConversationHandled'] = true;
+    navigate(location.pathname, { replace: true, state: nextState });
+  }, [initialConversationId, conversations, convsLoaded, openConversation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   useEffect(() => {

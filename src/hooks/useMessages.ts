@@ -45,6 +45,9 @@ export function useMessages(inbox: Inbox | null) {
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [loadingConvs, setLoadingConvs] = useState(false);
+  // Inbox key ('customer' | 'business:<id>') whose conversation list has loaded successfully.
+  // Lets callers tell "not loaded yet" apart from "loaded and empty".
+  const [convsLoadedFor, setConvsLoadedFor] = useState<string | null>(null);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const channelRef = useRef<any>(null);
   // Deduplicate in-flight startConversationWithBusiness calls per businessId.
@@ -174,6 +177,7 @@ export function useMessages(inbox: Inbox | null) {
     }
 
     setConversations(mapped);
+    setConvsLoadedFor(inbox.kind === 'customer' ? 'customer' : `business:${inbox.businessId}`);
     setLoadingConvs(false);
   }, [uid, inbox, refreshUserData]);
 
@@ -579,6 +583,7 @@ export function useMessages(inbox: Inbox | null) {
     setActiveConvId,
     messages,
     loadingConvs,
+    convsLoaded: inboxKey !== null && convsLoadedFor === inboxKey,
     loadingMsgs,
     totalUnread,
     openConversation,
