@@ -1,6 +1,5 @@
 import React from 'react';
-import avanteIcon72 from '@/assets/avante-icon-72.webp';
-import avanteIcon144 from '@/assets/avante-icon-144.webp';
+import AvanteMark from '@/components/brand/AvanteMark';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail, MessageCircle, Facebook, Twitter } from 'lucide-react';
@@ -23,12 +22,7 @@ const About = () => {
         <Card className="material-card">
           <CardHeader>
            <CardTitle className="text-xl font-semibold flex items-center gap-2">
-               <img
-                 src={avanteIcon72}
-                 srcSet={`${avanteIcon72} 72w, ${avanteIcon144} 144w`}
-                 alt="Avante Maps Icon"
-                 className="h-10 w-10"
-               />
+               <AvanteMark className="h-10 w-10 text-primary" />
               Our Mission
             </CardTitle>
             <CardDescription>
