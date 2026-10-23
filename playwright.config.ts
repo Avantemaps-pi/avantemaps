@@ -3,11 +3,11 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Playwright config for end-to-end / perf tests.
  *
- * By default we target the local Vite dev server at http://localhost:5173.
+ * By default we target the local Vite dev server at http://localhost:8080.
  * To run against the deployed preview, set PREVIEW_URL, e.g.:
  *   PREVIEW_URL=https://avantemaps.lovable.app bun playwright test
  */
-const baseURL = process.env.PREVIEW_URL ?? 'http://localhost:5173';
+const baseURL = process.env.PREVIEW_URL ?? 'http://localhost:8080';
 
 export default defineConfig({
   testDir: './tests/e2e',
