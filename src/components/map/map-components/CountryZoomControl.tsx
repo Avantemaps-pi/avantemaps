@@ -4,6 +4,7 @@ import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Plus, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
 
 /** Zoom level considered "country view". */
 const COUNTRY_ZOOM = 5;
@@ -31,6 +32,7 @@ const CountryZoomControl: React.FC = () => {
   // controls so other overlays can't hide the control.
   const [zIndex, setZIndex] = useState<number>(1000);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const keyboardOpen = useKeyboardOpen();
 
   // Track zoom level for enable/disable state
   useEffect(() => {
@@ -398,8 +400,9 @@ const CountryZoomControl: React.FC = () => {
         }
       }}
       className={cn(
-        'absolute transition-shadow select-none',
-        atCountry && 'ring-2 ring-primary/60 rounded-full'
+        'absolute transition-[box-shadow,opacity] duration-150 motion-reduce:transition-none select-none',
+        atCountry && 'ring-2 ring-primary/60 rounded-full',
+        keyboardOpen && 'opacity-0'
       )}
       style={{
         bottom,
@@ -407,14 +410,16 @@ const CountryZoomControl: React.FC = () => {
         zIndex,
         // Block native gestures (pan/zoom/pinch) from reaching the map
         touchAction: 'none',
-        // Ensure the container always captures pointer events
-        pointerEvents: 'auto',
+        // Ensure the container always captures pointer events (none while hidden for the keyboard)
+        pointerEvents: keyboardOpen ? 'none' : 'auto',
         WebkitTapHighlightColor: 'transparent',
         WebkitUserSelect: 'none',
         userSelect: 'none',
         overscrollBehavior: 'contain',
       }}
       aria-label={atCountry ? 'Map is at country zoom level' : undefined}
+      aria-hidden={keyboardOpen || undefined}
+      inert={keyboardOpen}
       // Belt-and-braces: stop common event types at the React layer too.
       onPointerDown={(e) => e.stopPropagation()}
       onPointerUp={(e) => e.stopPropagation()}

@@ -3,6 +3,7 @@ import { Link, useLocation } from '@/lib/router-compat';
 import { Map, LayoutGrid, Bookmark, Wallet, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
 
 const navItems = [
   { to: '/recommendations', icon: LayoutGrid, label: 'Discover' },
@@ -16,6 +17,7 @@ const BottomNavBar: React.FC = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
   const [visible, setVisible] = useState(true);
+  const keyboardOpen = useKeyboardOpen();
   const lastScrollY = useRef(0);
 
   useEffect(() => {
@@ -35,13 +37,18 @@ const BottomNavBar: React.FC = () => {
 
   if (!isMobile) return null;
 
+  // Off-screen while scrolled away or while the on-screen keyboard is open
+  const hidden = !visible || keyboardOpen;
+
   return (
     <nav
       className={cn(
         "fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface-float shadow-sheet transition-transform duration-300",
-        visible ? "translate-y-0" : "translate-y-[calc(100%+env(safe-area-inset-bottom))]"
+        hidden ? "translate-y-[calc(100%+env(safe-area-inset-bottom))]" : "translate-y-0"
       )}
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      aria-hidden={hidden || undefined}
+      inert={hidden}
     >
       <div className="flex items-center justify-around h-16">
         {navItems.map(({ to, icon: Icon, label }) => {

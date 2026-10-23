@@ -3,6 +3,7 @@ import { LocateFixed, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { secureLog } from '@/utils/secureLogger';
+import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
 
 const isPiBrowser = () => typeof window !== 'undefined' && !!(window as any).Pi;
 const logCtx = () => ({
@@ -92,6 +93,7 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
   // SSR-safe deterministic defaults; real prefs hydrate from localStorage in
   // the mount effect below so server and first client render stay identical.
   const [enabled, setEnabled] = useState<boolean>(true);
+  const keyboardOpen = useKeyboardOpen();
 
   React.useEffect(() => {
     const sync = () => {
@@ -250,9 +252,13 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
       disabled={loading}
       aria-label="Show my location"
       aria-busy={loading}
+      // Hidden, not unmounted, while the keyboard is open so trigger-locate-me still works
+      aria-hidden={keyboardOpen || undefined}
+      inert={keyboardOpen}
       title={loading ? 'Resolving your location…' : 'Show my location'}
       className={cn(
-        'h-11 w-11 rounded-full bg-surface-float border border-border shadow-float flex items-center justify-center text-foreground hover:bg-accent transition-colors disabled:opacity-70 disabled:cursor-progress',
+        'h-11 w-11 rounded-full bg-surface-float border border-border shadow-float flex items-center justify-center text-foreground hover:bg-accent transition-[color,background-color,border-color,opacity] duration-150 motion-reduce:transition-none disabled:opacity-70 disabled:cursor-progress',
+        keyboardOpen && 'opacity-0 disabled:opacity-0 pointer-events-none',
         className
       )}
     >
