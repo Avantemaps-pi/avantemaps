@@ -12,6 +12,7 @@ import PlaceOverlay from './map-components/PlaceOverlay';
 import L, { LatLngTuple } from 'leaflet';
 import '@/lib/fix-leaflet-icons';
 import MarkerClusterGroup from 'react-leaflet-cluster';
+import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
 
 // Cluster bubbles: token-styled in map.css, sized by count
 const createClusterIcon = (cluster: { getChildCount: () => number }) => {
@@ -46,6 +47,8 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const [showPopover, setShowPopover] = useState(false);
   const [mapCenter, setMapCenter] = useState<LatLngTuple>([defaultCenter.lat, defaultCenter.lng]); // San Francisco by default
   const [zoom, setZoom] = useState(defaultZoom);
+  // Drops the OSM attribution pill to just above the on-screen keyboard (map.css)
+  const keyboardOpen = useKeyboardOpen();
 
   // Use provided places - memoized to prevent infinite re-renders
   const displayPlaces = useMemo(() => {
@@ -208,7 +211,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const selectedPlace = activeMarker ? (displayPlaces.find(place => place.id === activeMarker) ?? null) : null;
 
   return (
-    <div className="w-full h-full relative">
+    <div className={`w-full h-full relative${keyboardOpen ? ' keyboard-open' : ''}`}>
       
       <MapContainer 
         style={{ height: '100%', width: '100%', zIndex: 1 }}

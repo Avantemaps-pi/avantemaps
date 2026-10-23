@@ -118,6 +118,31 @@ test('keyboard open on map search hides bottom controls; search and chips stay p
   for (const el of mapControls(page)) await expectShown(el);
 });
 
+test('keyboard open: OSM attribution stays visible just above the keyboard', async ({ page }) => {
+  await openMap(page);
+  const attribution = page.locator('.leaflet-control-attribution');
+  await expect(attribution).toBeVisible();
+
+  await search(page).focus();
+  await page.setViewportSize(WITH_KEYBOARD);
+  await expect(attribution).toBeVisible();
+  await expect
+    .poll(async () => {
+      const box = (await attribution.boundingBox())!;
+      return WITH_KEYBOARD.height - (box.y + box.height);
+    })
+    .toBeLessThanOrEqual(16);
+
+  // Keyboard closed: back above the bottom nav
+  await page.setViewportSize(PHONE);
+  await expect
+    .poll(async () => {
+      const box = (await attribution.boundingBox())!;
+      return PHONE.height - (box.y + box.height);
+    })
+    .toBeGreaterThan(64);
+});
+
 test('focus without a shrinking viewport (hardware keyboard) hides nothing', async ({ page }) => {
   await openMap(page);
   await search(page).focus();

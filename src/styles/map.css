@@ -74,6 +74,11 @@
   .leaflet-container .leaflet-bottom .leaflet-control-attribution {
     margin-bottom: calc(70px + env(safe-area-inset-bottom));
   }
+
+  /* Bottom nav is hidden while the on-screen keyboard is open: sit just above the keyboard */
+  .keyboard-open .leaflet-container .leaflet-bottom .leaflet-control-attribution {
+    margin-bottom: 8px;
+  }
 }
 
 /* Dark mode: only the tiles are filtered; markers, clusters, popups and controls are not */
