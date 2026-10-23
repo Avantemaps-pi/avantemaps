@@ -117,8 +117,8 @@ const state = (page: Page) =>
 
 const locate = (page: Page) => page.getByRole('button', { name: 'Show my location' });
 
-// The map itself also calls getCurrentPosition on mount (LeafletMap.tsx), so
-// only calls made from the tap onwards count as the locate button's.
+// The map can also call getCurrentPosition on load (LeafletMap.tsx, when
+// permission is already granted), so only calls from the tap onwards count.
 async function tapLocate(page: Page) {
   await page.waitForLoadState('networkidle');
   const before = (await state(page)).geoCalls;
@@ -187,4 +187,41 @@ test('"Use my location" off hides the button; turning it on asks once on the nex
   await expect(page.getByText('Centered on your location', { exact: true })).toBeVisible();
   expect(await calls()).toBe(1);
   expect(await page.evaluate(() => localStorage.getItem('geolocation_prompted'))).toBe('1');
+});
+
+// Map load (LeafletMap.tsx) auto-centres only with permission already granted
+// and the setting on, once per session, and never shows a prompt.
+const mapLoaded = async (page: Page) => {
+  await expect(page.locator('.leaflet-container')).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(1_000);
+};
+
+test('map load with permission "prompt": no getCurrentPosition call', async ({ page }) => {
+  await setup(page, { permission: 'prompt', result: 'success' });
+  await page.goto('/');
+  await mapLoaded(page);
+  expect((await state(page)).geoCalls).toBe(0);
+});
+
+test('map load with permission granted and setting on: centres once per session', async ({ page }) => {
+  await setup(page, { permission: 'granted', result: 'success' });
+  await page.goto('/');
+  await mapLoaded(page);
+  const s = await state(page);
+  expect(s.geoCalls).toBe(1);
+  expect(s.centers).toContainEqual(GPS);
+
+  // Coming back to the map in the same session doesn't re-centre
+  await page.goto('/settings');
+  await page.goto('/');
+  await mapLoaded(page);
+  expect((await state(page)).geoCalls).toBe(0);
+});
+
+test('map load with "Use my location" off: no getCurrentPosition call', async ({ page }) => {
+  await setup(page, { permission: 'granted', result: 'success', storage: { use_location_focus: '0' } });
+  await page.goto('/');
+  await mapLoaded(page);
+  expect((await state(page)).geoCalls).toBe(0);
 });
