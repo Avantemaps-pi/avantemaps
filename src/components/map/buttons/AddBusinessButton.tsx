@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, X, Store, Loader2, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth/useAuth';
+import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
 
 interface AddBusinessButtonProps {
   selectedPlace: string | null;
@@ -29,6 +30,12 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanding, setIsExpanding] = useState(false);
+  const keyboardOpen = useKeyboardOpen();
+
+  // Close the speed dial when the on-screen keyboard opens
+  useEffect(() => {
+    if (keyboardOpen) setSpeedDialOpen(false);
+  }, [keyboardOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,12 +123,16 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
   const positionClass = selectedPlace ? 'right-16 md:right-[calc(50%+200px)]' : 'right-4';
   // 96px clears the 64px bottom nav and the map attribution pill above it
   const bottomClass = 'bottom-[calc(6rem+env(safe-area-inset-bottom))]';
+  // Faded out, not unmounted, while the on-screen keyboard is open
+  const keyboardClass = keyboardOpen ? 'opacity-0 pointer-events-none' : '';
+  const keyboardProps = { 'aria-hidden': keyboardOpen || undefined, inert: keyboardOpen };
 
   if (isLoading) {
     return (
       <div
         data-add-business-button
-        className={`absolute ${bottomClass} ${positionClass} z-20`}
+        className={`absolute ${bottomClass} ${positionClass} z-20 transition-opacity duration-150 motion-reduce:transition-none ${keyboardClass}`}
+        {...keyboardProps}
       >
         <Button
           disabled
@@ -137,7 +148,7 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
   // State 1: expanded pill
   if (fabState === 'expanded') {
     return (
-      <div data-add-business-button className={`absolute ${bottomClass} ${positionClass} z-20 transition-all duration-300`}>
+      <div data-add-business-button className={`absolute ${bottomClass} ${positionClass} z-20 transition-all duration-300 motion-reduce:transition-none ${keyboardClass}`} {...keyboardProps}>
         <Link to="/registration">
           <Button
             className="h-14 sm:h-14 pl-4 pr-6 rounded-full bg-primary text-primary-foreground hover:bg-primary-hover shadow-float flex items-center gap-2 transition-all duration-300 [&_svg]:size-[18px] sm:[&_svg]:size-[18px]"
@@ -181,7 +192,8 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
     return (
       <div
         data-add-business-button
-        className={`absolute ${bottomClass} ${positionClass} z-30`}
+        className={`absolute ${bottomClass} ${positionClass} z-30 transition-opacity duration-150 motion-reduce:transition-none ${keyboardClass}`}
+        {...keyboardProps}
       >
         <Button
           disabled
@@ -222,7 +234,8 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
       )}
       <div
         data-add-business-button
-        className={`absolute ${bottomClass} ${positionClass} z-30 flex flex-col items-end gap-3`}
+        className={`absolute ${bottomClass} ${positionClass} z-30 flex flex-col items-end gap-3 transition-opacity duration-150 motion-reduce:transition-none ${keyboardClass}`}
+        {...keyboardProps}
       >
         {speedDialOpen && (
           <div className="flex flex-col items-end gap-3 mb-1 animate-fade-in">
