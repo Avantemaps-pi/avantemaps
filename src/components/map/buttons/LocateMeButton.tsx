@@ -76,14 +76,6 @@ const readUseLocationPref = () => {
   }
 };
 
-const readUseDeviceGps = () => {
-  try {
-    return localStorage.getItem('use_device_gps') === '1';
-  } catch {
-    return false;
-  }
-};
-
 // Tracks whether we've ever surfaced the browser's geolocation prompt to the
 // user. We only show it once — either the first time they ever use the
 // feature, or after they re-enable a location setting that had been turned
@@ -100,21 +92,17 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
   // SSR-safe deterministic defaults; real prefs hydrate from localStorage in
   // the mount effect below so server and first client render stay identical.
   const [enabled, setEnabled] = useState<boolean>(true);
-  const [gpsOptIn, setGpsOptIn] = useState<boolean>(false);
 
   React.useEffect(() => {
     const sync = () => {
       setEnabled(readUseLocationPref());
-      setGpsOptIn(readUseDeviceGps());
     };
     sync();
     window.addEventListener('storage', sync);
     window.addEventListener('use_location_focus_changed', sync as EventListener);
-    window.addEventListener('use_device_gps_changed', sync as EventListener);
     return () => {
       window.removeEventListener('storage', sync);
       window.removeEventListener('use_location_focus_changed', sync as EventListener);
-      window.removeEventListener('use_device_gps_changed', sync as EventListener);
     };
   }, []);
 
@@ -184,46 +172,43 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
     setLoading(true);
 
     try {
-      secureLog.info('LocateMe: clicked', { gpsOptIn, ...logCtx() });
+      secureLog.info('LocateMe: clicked', logCtx());
 
-      // Only use precise device GPS when the user has explicitly opted in
-      if (gpsOptIn) {
-        // Check permission state first
-        let permissionState: PermissionState | 'unknown' = 'unknown';
-        try {
-          if (navigator.permissions?.query) {
-            const status = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
-            permissionState = status.state;
-          }
-        } catch (err: any) {
-          secureLog.debug('LocateMe: permissions.query threw', { error: err?.message });
+      // Check permission state first
+      let permissionState: PermissionState | 'unknown' = 'unknown';
+      try {
+        if (navigator.permissions?.query) {
+          const status = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+          permissionState = status.state;
         }
-        secureLog.info('LocateMe: permission state', { permissionState, ...logCtx() });
+      } catch (err: any) {
+        secureLog.debug('LocateMe: permissions.query threw', { error: err?.message });
+      }
+      secureLog.info('LocateMe: permission state', { permissionState, ...logCtx() });
 
-        if (permissionState === 'denied') {
-          secureLog.warn('LocateMe: geolocation permission denied — using IP fallback', logCtx());
-        }
+      if (permissionState === 'denied') {
+        secureLog.warn('LocateMe: geolocation permission denied — using IP fallback', logCtx());
+      }
 
-        // Show the browser prompt only when:
-        //   - permission is already 'granted' (no prompt actually shown), OR
-        //   - permission is 'prompt' AND we have never asked before / the
-        //     user just re-enabled the setting (flag cleared by Settings).
-        const shouldRequest =
-          permissionState === 'granted' ||
-          (permissionState === 'prompt' && !hasPrompted()) ||
-          (permissionState !== 'denied' && permissionState !== 'prompt' && !hasPrompted());
+      // Show the browser prompt only when:
+      //   - permission is already 'granted' (no prompt actually shown), OR
+      //   - permission is 'prompt' AND we have never asked before / the
+      //     user just re-enabled the setting (flag cleared by Settings).
+      const shouldRequest =
+        permissionState === 'granted' ||
+        (permissionState === 'prompt' && !hasPrompted()) ||
+        (permissionState !== 'denied' && permissionState !== 'prompt' && !hasPrompted());
 
-        if (shouldRequest && 'geolocation' in navigator) {
-          toast.loading(
-            permissionState === 'granted' ? 'Getting your location…' : 'Requesting location permission…',
-            { id: TOAST_ID, description: permissionState === 'prompt' ? 'Please allow location access in the prompt.' : undefined }
-          );
-          if (permissionState !== 'granted') markPrompted();
-          const ok = await usePreciseLocation();
-          if (ok) return;
-        } else if (permissionState === 'prompt' && hasPrompted()) {
-          secureLog.info('LocateMe: skipping repeat geolocation prompt — using IP fallback', logCtx());
-        }
+      if (shouldRequest && 'geolocation' in navigator) {
+        toast.loading(
+          permissionState === 'granted' ? 'Getting your location…' : 'Requesting location permission…',
+          { id: TOAST_ID, description: permissionState === 'prompt' ? 'Please allow location access in the prompt.' : undefined }
+        );
+        if (permissionState !== 'granted') markPrompted();
+        const ok = await usePreciseLocation();
+        if (ok) return;
+      } else if (permissionState === 'prompt' && hasPrompted()) {
+        secureLog.info('LocateMe: skipping repeat geolocation prompt — using IP fallback', logCtx());
       }
 
       // Fallback: cached IP location

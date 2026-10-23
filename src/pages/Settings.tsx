@@ -29,16 +29,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 const Settings = () => {
   const isMobile = useIsMobile();
@@ -59,8 +49,6 @@ const Settings = () => {
   // Deterministic SSR default: opt-in (true). Real value is hydrated from
   // localStorage after mount to keep server and first client render identical.
   const [useLocation, setUseLocation] = useState<boolean>(true);
-  const [useDeviceGps, setUseDeviceGps] = useState<boolean>(false);
-  const [gpsConsentOpen, setGpsConsentOpen] = useState(false);
 
   // Hydrate from localStorage on mount (client-only)
   useEffect(() => {
@@ -68,8 +56,9 @@ const Settings = () => {
     try {
       const stored = window.localStorage?.getItem('use_location_focus');
       if (stored === '0') setUseLocation(false);
-      const gps = window.localStorage?.getItem('use_device_gps');
-      if (gps === '1') setUseDeviceGps(true);
+      // Keys left over from the removed "Use device GPS" setting
+      window.localStorage?.removeItem('use_device_gps');
+      window.localStorage?.removeItem('location_gps_autoenabled');
       const savedScheme = window.localStorage?.getItem('colorScheme');
       if (savedScheme === 'light' || savedScheme === 'dark' || savedScheme === 'system') {
         setColorScheme(savedScheme);
@@ -82,17 +71,11 @@ const Settings = () => {
   }, []);
 
   const handleUseLocationChange = (value: boolean) => {
-    let shouldAutoEnableGps = false;
     setUseLocation((prev) => {
       // Re-arm the one-time geolocation prompt when toggling from off → on
       // so the user is asked exactly once after re-enabling the setting.
       if (!prev && value) {
         try { window.localStorage?.removeItem('geolocation_prompted'); } catch { /* ignore */ }
-        try {
-          if (window.localStorage?.getItem('location_gps_autoenabled') !== '1') {
-            shouldAutoEnableGps = true;
-          }
-        } catch { /* ignore */ }
       }
       return value;
     });
@@ -107,46 +90,8 @@ const Settings = () => {
     } catch {
       // ignore storage errors (private mode, quota, etc.)
     }
-    if (shouldAutoEnableGps) {
-      try { window.localStorage?.setItem('location_gps_autoenabled', '1'); } catch { /* ignore */ }
-      persistGpsPref(true);
-    }
   };
 
-  const persistGpsPref = (value: boolean) => {
-    setUseDeviceGps((prev) => {
-      // Re-arm the one-time browser geolocation prompt when turning Device
-      // GPS on from off, so we ask the user again exactly once.
-      if (!prev && value) {
-        try { window.localStorage?.removeItem('geolocation_prompted'); } catch { /* ignore */ }
-      }
-      return value;
-    });
-    try {
-      window.localStorage?.setItem('use_device_gps', value ? '1' : '0');
-      window.dispatchEvent(new Event('use_device_gps_changed'));
-    } catch {
-      // ignore
-    }
-    if (value) {
-      toast.success('Device GPS enabled', {
-        description: "Tap the locate button on the map — your browser will ask for permission once.",
-      });
-    } else {
-      toast.message('Device GPS disabled', {
-        description: 'Falling back to approximate IP-based location.',
-      });
-    }
-  };
-
-  const handleUseDeviceGpsChange = (value: boolean) => {
-    if (value) {
-      // Require explicit consent before enabling
-      setGpsConsentOpen(true);
-    } else {
-      persistGpsPref(false);
-    }
-  };
   // Sync the toggle across tabs/windows via the storage event
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -360,8 +305,6 @@ const Settings = () => {
                 onColorSchemeChange={handleColorSchemeChange} 
                 useLocation={useLocation}
                 onUseLocationChange={handleUseLocationChange}
-                useDeviceGps={useDeviceGps}
-                onUseDeviceGpsChange={handleUseDeviceGpsChange}
               />
             </AccordionContent>
           </AccordionItem>
@@ -448,31 +391,6 @@ const Settings = () => {
 
         </Accordion>
       </div>
-
-      <AlertDialog open={gpsConsentOpen} onOpenChange={setGpsConsentOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Use your device's GPS?</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p>
-                  Enabling precise location lets Avante Maps center the map on your exact position when you tap the locate button.
-                </p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Your browser will ask for location permission the first time.</li>
-                  <li>Coordinates are used only to move the map view on your device.</li>
-                  <li>We do <strong>not</strong> store, transmit, or share your GPS coordinates.</li>
-                  <li>You can turn this off any time in Settings.</li>
-                </ul>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => persistGpsPref(false)}>Not now</AlertDialogCancel>
-            <AlertDialogAction onClick={() => persistGpsPref(true)}>I agree, enable GPS</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </AppLayout>
   );
 };

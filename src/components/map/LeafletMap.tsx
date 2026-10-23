@@ -61,26 +61,55 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // Auto-center on user's geolocation if permission granted (silent fallback)
+  // Auto-center on user's geolocation once per session, only when "Use my
+  // location" is on and permission is already granted — never prompts.
   useEffect(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        window.dispatchEvent(
-          new CustomEvent('centerMap', {
-            detail: {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              zoom: 14,
-            },
-          })
-        );
-      },
-      () => {
-        // silent fallback — keep default world view
-      },
-      { timeout: 8000, maximumAge: 300000, enableHighAccuracy: false }
-    );
+    try {
+      if (localStorage.getItem('use_location_focus') === '0') return;
+      if (sessionStorage.getItem('gps_autocentered') === '1') return;
+    } catch {
+      // storage unavailable — setting defaults to on
+    }
+    let cancelled = false;
+    (async () => {
+      let state: PermissionState | undefined;
+      try {
+        state = (
+          await navigator.permissions?.query({ name: 'geolocation' as PermissionName })
+        )?.state;
+      } catch {
+        // query unsupported — treat as not granted
+      }
+      if (cancelled) return;
+      try {
+        sessionStorage.setItem('gps_autocentered', '1');
+      } catch {
+        // ignore
+      }
+      if (state !== 'granted') return;
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          if (cancelled) return;
+          window.dispatchEvent(
+            new CustomEvent('centerMap', {
+              detail: {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                zoom: 14,
+              },
+            })
+          );
+        },
+        () => {
+          // silent fallback — keep default world view
+        },
+        { timeout: 8000, maximumAge: 300000, enableHighAccuracy: false }
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Ensure map centers on San Francisco or a selected place, and handle zoom accordingly
