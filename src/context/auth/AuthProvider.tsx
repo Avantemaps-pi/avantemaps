@@ -262,7 +262,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         if (Date.now() - userData.lastAuthenticated < 24 * 60 * 60 * 1000) {
           secureLog.info('Restoring user from cached session');
-          safeSetUser(userData);
+          // Sliding 24h window: opening the app counts as activity, so only people away
+          // for more than 24h have to sign in again.
+          const refreshedUser: PiUser = { ...userData, lastAuthenticated: Date.now() };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(refreshedUser));
+          safeSetUser(refreshedUser);
         } else {
           secureLog.info('Cached session expired');
           localStorage.removeItem(STORAGE_KEY);
@@ -285,6 +289,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     return cancel;
   }, [safeSetUser]);
+
+  // Sliding 24h window: a Supabase token refresh for the same user also counts as activity.
+  // Synchronous callback (no awaits inside onAuthStateChange).
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== 'TOKEN_REFRESHED' || !session?.user?.id) return;
+      try {
+        const cached = localStorage.getItem(STORAGE_KEY);
+        if (!cached) return;
+        const userData = JSON.parse(cached) as PiUser;
+        if (userData.uid !== session.user.id) return;
+        const lastAuthenticated = Date.now();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...userData, lastAuthenticated }));
+        if (isMountedRef.current) {
+          setUser((prev) => (prev && prev.uid === session.user.id ? { ...prev, lastAuthenticated } : prev));
+        }
+      } catch {
+        // Unreadable cache: leave it to restoreSession.
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   // --- Robust SDK initialization helper (retries + timeout) ---
   const ensureSdkInitialized = useCallback(async (maxAttempts = 3, delayMs = 700): Promise<boolean> => {
