@@ -12,7 +12,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Send, MessageSquare, User as UserIcon, Store } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Send, MessageSquare, User as UserIcon, Store } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { StateBlock } from '@/components/ui/state-block';
 import { toast } from 'sonner';
 import { useLocation, useNavigate } from '@/lib/router-compat';
 
@@ -78,8 +80,9 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
     activeConvId,
     setActiveConvId,
     messages,
-    loadingConvs,
     convsLoaded,
+    convsError,
+    refresh,
     loadingMsgs,
     openConversation,
     sendMessage,
@@ -151,21 +154,21 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Inbox switcher — styled as a second row of the branded header above it */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
         <Select value={inboxKey} onValueChange={(v) => { setInboxKey(v); setActiveConvId(null); }}>
-          <SelectTrigger className="h-8 text-xs w-full max-w-[260px]">
+          <SelectTrigger className="h-11 text-sm w-full max-w-[280px]" aria-label="Inbox">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="customer">
+            <SelectItem value="customer" className="min-h-11 text-sm">
               <span className="flex items-center gap-2">
-                <UserIcon className="h-3.5 w-3.5" /> My messages
+                <UserIcon className="h-4 w-4" /> My messages
               </span>
             </SelectItem>
             {ownedBusinesses.map((b) => (
-              <SelectItem key={b.id} value={`b:${b.id}`}>
+              <SelectItem key={b.id} value={`b:${b.id}`} className="min-h-11 text-sm">
                 <span className="flex items-center gap-2">
-                  <Store className="h-3.5 w-3.5" /> {b.business_name}
+                  <Store className="h-4 w-4" /> {b.business_name}
                 </span>
               </SelectItem>
             ))}
@@ -176,77 +179,99 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
       {/* Body */}
       {!activeConvId ? (
         <div className="flex-1 overflow-y-auto">
-          {loadingConvs ? (
-            <div className="p-4 space-y-2">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-14 rounded-md bg-muted animate-pulse" />
-              ))}
-            </div>
-          ) : conversations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-3">
-              <MessageSquare className="h-10 w-10 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                {isBusinessInbox
-                  ? 'No customer messages yet for this business.'
-                  : 'No conversations yet. Open a business listing and tap Message to start one.'}
-              </p>
-              {!isBusinessInbox && (
-                <Button size="sm" variant="outline" onClick={() => navigate('/')}>
-                  Browse businesses
-                </Button>
-              )}
-            </div>
-          ) : (
-            <ul className="divide-y">
-              {conversations.map((c) => {
-                const unread = isBusinessInbox ? c.business_unread : c.customer_unread;
-                return (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      onClick={() => openConversation(c.id)}
-                      className="w-full flex items-start gap-3 px-3 py-3 hover:bg-muted/50 transition-colors text-left"
-                    >
-                      <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
-                        {isBusinessInbox ? <UserIcon className="h-4 w-4" /> : <Store className="h-4 w-4" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-medium truncate">
-                            {isBusinessInbox
-                              ? `Customer ${c.customer_id.slice(0, 6)}`
-                              : c.business_name ?? 'Business no longer listed'}
-                          </p>
-                          <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                            {formatTime(c.last_message_at)}
-                          </span>
+          {convsLoaded ? (
+            conversations.length === 0 ? (
+              <StateBlock
+                kind="empty"
+                icon={MessageSquare}
+                title="No conversations yet"
+                body={
+                  isBusinessInbox
+                    ? 'No customer messages yet for this business.'
+                    : 'Open a business listing and tap Message to start one.'
+                }
+                {...(!isBusinessInbox ? { action: { label: 'Browse businesses', onClick: () => navigate('/') } } : {})}
+              />
+            ) : (
+              <ul className="divide-y divide-border">
+                {conversations.map((c) => {
+                  const unread = isBusinessInbox ? c.business_unread : c.customer_unread;
+                  return (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        onClick={() => openConversation(c.id)}
+                        className="w-full min-h-16 flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                      >
+                        <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                          {isBusinessInbox ? <UserIcon className="h-5 w-5" /> : <Store className="h-5 w-5" />}
                         </div>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {c.last_message_preview ?? 'No messages yet'}
-                        </p>
-                      </div>
-                      {unread > 0 && (
-                        <Badge className="h-5 min-w-5 px-1.5 text-[10px]">{unread}</Badge>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="text-base font-semibold text-foreground truncate">
+                              {isBusinessInbox
+                                ? `Customer ${c.customer_id.slice(0, 6)}`
+                                : c.business_name ?? 'Business no longer listed'}
+                            </p>
+                            <span className="text-xs text-muted-foreground flex-shrink-0">
+                              {formatTime(c.last_message_at)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm text-muted-foreground truncate">
+                              {c.last_message_preview ?? 'No messages yet'}
+                            </p>
+                            {unread > 0 && (
+                              <Badge
+                                className="h-5 min-w-5 px-1.5 justify-center text-xs flex-shrink-0"
+                                aria-label={`${unread} unread`}
+                              >
+                                {unread}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )
+          ) : convsError ? (
+            <StateBlock
+              kind="error"
+              icon={AlertCircle}
+              title="Couldn't load conversations"
+              body="Check your connection and try again."
+              action={{ label: 'Try again', onClick: () => void refresh() }}
+            />
+          ) : (
+            <ul className="divide-y divide-border" aria-busy="true" aria-label="Loading conversations">
+              {[0, 1, 2].map((i) => (
+                <li key={i} className="min-h-16 flex items-center gap-3 px-4 py-3">
+                  <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-2/5" />
+                    <Skeleton className="h-3.5 w-3/4" />
+                  </div>
+                </li>
+              ))}
             </ul>
           )}
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-2 px-3 py-2 border-b">
+          <div className="flex items-center gap-1 px-1 py-1 border-b border-border">
             <Button
               size="icon"
               variant="ghost"
-              className="h-7 w-7"
+              className="h-11 w-11 flex-shrink-0"
               onClick={() => setActiveConvId(null)}
+              aria-label="Back to conversations"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-5 w-5" />
             </Button>
-            <p className="text-sm font-medium truncate">
+            <p className="text-base font-semibold text-foreground truncate">
               {isBusinessInbox
                 ? `Customer ${activeConv?.customer_id.slice(0, 6) ?? ''}`
                 : activeConv?.business_name ?? 'Conversation'}
@@ -255,10 +280,10 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
 
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {loadingMsgs ? (
-              <div className="space-y-2">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-10 rounded-md bg-muted animate-pulse" />
-                ))}
+              <div className="space-y-3" aria-busy="true" aria-label="Loading messages">
+                <Skeleton className="h-12 w-3/5 rounded-2xl" />
+                <Skeleton className="h-12 w-1/2 rounded-2xl ml-auto" />
+                <Skeleton className="h-12 w-2/3 rounded-2xl" />
               </div>
             ) : messages.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground py-6">
@@ -272,12 +297,14 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
                 return (
                   <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${
-                        mine ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                      className={`max-w-[80%] px-3.5 py-2 rounded-2xl text-base ${
+                        mine
+                          ? 'bg-primary text-primary-foreground rounded-br-md'
+                          : 'bg-muted text-foreground rounded-bl-md'
                       }`}
                     >
                       <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                      <p className={`text-[10px] mt-1 ${mine ? 'opacity-80' : 'opacity-60'}`}>
+                      <p className={`text-xs mt-1 ${mine ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
                         {formatTime(m.created_at)}
                       </p>
                     </div>
@@ -288,8 +315,8 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="border-t p-3 space-y-2">
-            <div className="flex items-center gap-2 bg-muted/50 rounded-full px-4 py-2">
+          <div className="sticky bottom-0 border-t border-border bg-background px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div className="flex items-center gap-2">
               <Input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -300,15 +327,19 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
                   }
                 }}
                 placeholder={isBusinessInbox ? 'Reply as your business...' : 'Type a message...'}
-                className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                aria-label="Message"
+                className="flex-1 h-11 sm:h-11 rounded-full bg-muted border-0 px-4 text-base md:text-base focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
               />
-              <button
+              <Button
+                type="button"
+                size="icon"
                 onClick={handleSend}
                 disabled={!draft.trim()}
-                className="text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Send message"
+                className="h-11 w-11 rounded-full flex-shrink-0"
               >
-                <Send size={20} className="transform rotate-45" />
-              </button>
+                <Send className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         </>

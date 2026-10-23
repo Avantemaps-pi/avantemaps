@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 
 import ChatInterface from '@/components/chat/ChatInterface';
@@ -12,7 +12,10 @@ const Communicon = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const initialChatMode = (location.state as any)?.chatMode === 'live' ? 'live' : 'ai';
+  // Always start in 'ai' so the first client render matches the server, which has no
+  // history state. An incoming chatMode: 'live' is applied after mount by the effect below.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const {
     message,
@@ -32,7 +35,7 @@ const Communicon = () => {
     isValidatingConversation,
     conversationValidated,
     validateConversation,
-  } = useChatState(initialChatMode);
+  } = useChatState('ai');
 
   useEffect(() => {
     if (window) {
@@ -98,6 +101,11 @@ const Communicon = () => {
 
     if (incomingMode === 'live') {
       const openConversationId = (location.state as any)?.openConversationId;
+      // MessagesPanel already opened (or reported) this conversation and cleared its ID.
+      if ((location.state as any)?.openConversationHandled === true && !openConversationId) {
+        handleChatModeChange('live');
+        return;
+      }
       if (
         openConversationId === null ||
         openConversationId === undefined ||
@@ -191,7 +199,11 @@ const Communicon = () => {
   return (
     <AppLayout title="CommuniCon" hideBottomNav={true}>
       <div className="max-w-4xl mx-auto">
-        {isValidatingConversation ? (
+        {!mounted ? (
+          <div className="flex items-center justify-center py-16" aria-busy="true">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden="true" />
+          </div>
+        ) : isValidatingConversation ? (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             <p className="mt-3 text-sm text-muted-foreground">Verifying conversation...</p>

@@ -48,6 +48,8 @@ export function useMessages(inbox: Inbox | null) {
   // Inbox key ('customer' | 'business:<id>') whose conversation list has loaded successfully.
   // Lets callers tell "not loaded yet" apart from "loaded and empty".
   const [convsLoadedFor, setConvsLoadedFor] = useState<string | null>(null);
+  // True when the last conversation-list request failed (cleared on the next success).
+  const [convsError, setConvsError] = useState(false);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const channelRef = useRef<any>(null);
   // Deduplicate in-flight startConversationWithBusiness calls per businessId.
@@ -138,6 +140,7 @@ export function useMessages(inbox: Inbox | null) {
     if (error) {
       console.error(error);
       toast.error('Failed to load conversations', { id: 'msg:load-convs-failed', duration: 4000 });
+      setConvsError(true);
       setLoadingConvs(false);
       return;
     }
@@ -178,6 +181,7 @@ export function useMessages(inbox: Inbox | null) {
 
     setConversations(mapped);
     setConvsLoadedFor(inbox.kind === 'customer' ? 'customer' : `business:${inbox.businessId}`);
+    setConvsError(false);
     setLoadingConvs(false);
   }, [uid, inbox, refreshUserData]);
 
@@ -584,6 +588,7 @@ export function useMessages(inbox: Inbox | null) {
     messages,
     loadingConvs,
     convsLoaded: inboxKey !== null && convsLoadedFor === inboxKey,
+    convsError,
     loadingMsgs,
     totalUnread,
     openConversation,
