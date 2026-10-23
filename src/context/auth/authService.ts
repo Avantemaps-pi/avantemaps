@@ -442,8 +442,15 @@ export const performLogin = async (
       // RLS-protected mutations (e.g. starting a conversation) compare this
       // against supabase.auth.getSession().user.id; a mismatch triggers a
       // re-auth loop and prevents navigation to /communicon.
+      // The session was set above, so prefer its user id; then verify-pi-auth's user.uid;
+      // the Pi uid only as a last resort (it makes the reload restore check sign the user out).
+      const { data: { session: liveSession } } = await supabase.auth.getSession();
+      const sessionUid = liveSession?.user?.id ?? null;
+      if (!sessionUid && !verificationResult?.user?.uid) {
+        secureLog.warn("No Supabase user id from the session or verify-pi-auth; falling back to the Pi uid");
+      }
       const supabaseUid: string =
-        verificationResult?.user?.uid ?? authResult.user.uid;
+        sessionUid ?? verificationResult?.user?.uid ?? authResult.user.uid;
       const piUid: string =
         verificationResult?.user?.pi_uid ?? authResult.user.uid;
 
