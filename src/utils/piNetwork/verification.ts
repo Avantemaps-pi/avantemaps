@@ -14,6 +14,8 @@ export interface VerificationResult {
   error?: string;
   details?: string;
   traceId?: string;
+  /** User returned by verify-pi-auth; uid is the Supabase user id, pi_uid the Pi id. */
+  user?: { uid: string; pi_uid?: string; username?: string; wallet_address?: string | null } | null;
 }
 
 /**
@@ -151,6 +153,7 @@ export const verifyPiAuthentication = async (
         supabaseToken: data.supabase_token ?? data.supabaseToken ?? null,
         refreshToken: data.refresh_token ?? data.refreshToken ?? null,
         traceId: data.traceId,
+        user: data.user ?? null,
       };
     }
 

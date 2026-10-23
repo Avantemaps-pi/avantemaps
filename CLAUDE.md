@@ -57,7 +57,7 @@ I'm working on **Avante Maps** — a Pi Network-powered business directory web a
 1. **Pi Network UID** (`user.pi_uid`) — comes from Pi Network authentication
 2. **Supabase Auth UUID** (`session.user.id`) — comes from `supabase.auth.getSession()`
 
-Since 2 June 2026, `user.uid` (the `PiUser` from `useAuth()`) holds the Supabase user ID after a normal login: `verify-pi-auth` returns it, and `authService.ts` stores it as `uid`, with the Pi ID in `pi_uid`. But `user.uid` can still hold the Pi ID if the backend check fails at login (it falls back to the Pi UID), and a saved login can be stale against the live session. So `user.uid` is not a reliable ownership ID; read it from the session instead.
+After a normal login, `user.uid` (the `PiUser` from `useAuth()`) holds the Supabase user ID, with the Pi ID in `pi_uid`. This is guaranteed by `verification.ts` passing `verify-pi-auth`'s `user` through (it used to drop it, so `uid` fell back to the Pi ID) and by `authService.ts` taking `uid` from the live session (`session.user.id`) once it has set it. `AuthProvider`'s reload restore relies on this: it drops the cached user when `session.user.id !== user.uid`. But `user.uid` can still be the Pi ID if no Supabase session could be set at login, and a saved login can be stale against the live session. So `user.uid` is not a reliable ownership ID; read it from the session instead.
 
 **Rule: ALWAYS use the Supabase UUID for any database ownership check, RLS policy, or `.eq('owner_id', ...)` / `.eq('customer_id', ...)` type query. NEVER use `user.uid` for database queries.**
 
