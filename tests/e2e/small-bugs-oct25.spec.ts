@@ -166,3 +166,38 @@ test.describe('2. search with a category active', () => {
     await expect(page.getByRole('dialog').getByText(GADGETS.name).first()).toBeVisible();
   });
 });
+
+test.describe('3. "Businesses near you" banner', () => {
+  const banner = (page: Page) => page.getByText('Businesses near you');
+
+  test('permission "prompt": shows despite the IP focus flag; Allow asks for GPS once; never again', async ({ page }) => {
+    await setup(page, { permission: 'prompt', session: { ip_location_focused: '1' } });
+    await openMap(page);
+    await expect(banner(page)).toBeVisible({ timeout: 6_000 });
+    const before = (await counters(page)).geoCalls;
+
+    await page.getByRole('button', { name: 'Allow' }).tap();
+    await expect(banner(page)).toHaveCount(0);
+    await expect.poll(async () => (await counters(page)).geoCalls - before).toBe(1);
+    expect(await page.evaluate(() => localStorage.getItem('location_banner_seen'))).toBe('1');
+
+    await page.reload();
+    await expect(search(page)).toBeVisible();
+    await page.waitForTimeout(3_500);
+    await expect(banner(page)).toHaveCount(0);
+  });
+
+  test('permission "granted": no banner', async ({ page }) => {
+    await setup(page, { permission: 'granted' });
+    await openMap(page);
+    await page.waitForTimeout(3_500);
+    await expect(banner(page)).toHaveCount(0);
+  });
+
+  test('"Use my location" off: no banner', async ({ page }) => {
+    await setup(page, { permission: 'prompt', storage: { use_location_focus: '0' } });
+    await openMap(page);
+    await page.waitForTimeout(3_500);
+    await expect(banner(page)).toHaveCount(0);
+  });
+});

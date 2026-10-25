@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const DISMISS_KEY = 'location_banner_dismissed';
-const SESSION_FOCUS_KEY = 'ip_location_focused';
 const SETTING_KEY = 'use_location_focus';
+// Set by LocateMeButton once it has shown the browser's location prompt
+const PROMPTED_KEY = 'geolocation_prompted';
 // Persistent flag — once the user has seen the location prompt, never show it again.
 const SEEN_KEY = 'location_banner_seen';
 
@@ -17,21 +18,30 @@ const LocationBanner: React.FC<Props> = ({ className }) => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const evaluate = () => {
+    let cancelled = false;
+    // The one invitation to allow device location: shown once ever, only while
+    // "Use my location" is on and the browser would still ask for permission.
+    const evaluate = async () => {
       try {
-        // Only ever show this prompt on the user's first login.
         if (localStorage.getItem(SEEN_KEY) === '1') return false;
         if (sessionStorage.getItem(DISMISS_KEY) === '1') return false;
-        if (sessionStorage.getItem(SESSION_FOCUS_KEY) === '1') return false;
         if (localStorage.getItem(SETTING_KEY) === '0') return false;
-        return true;
+        if (localStorage.getItem(PROMPTED_KEY) === '1') return false;
+        const status = await navigator.permissions?.query({ name: 'geolocation' as PermissionName });
+        return status?.state === 'prompt';
       } catch {
         return false;
       }
     };
 
-    const t = setTimeout(() => setVisible(evaluate()), 2500);
-    return () => clearTimeout(t);
+    const t = setTimeout(async () => {
+      const show = await evaluate();
+      if (!cancelled) setVisible(show);
+    }, 2500);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, []);
 
   if (!visible) return null;
