@@ -54,7 +54,8 @@ test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true
 
 type Setup = {
   signedIn?: boolean;
-  permission?: 'granted' | 'prompt' | 'denied';
+  // 'none': the browser has no Permissions API
+  permission?: 'granted' | 'prompt' | 'denied' | 'none';
   storage?: Record<string, string>;
   session?: Record<string, string>;
 };
@@ -90,7 +91,7 @@ async function setup(page: Page, opts: Setup = {}) {
       window.addEventListener('centerMap', () => { w.__centers += 1; });
       Object.defineProperty(navigator, 'permissions', {
         configurable: true,
-        value: { query: async () => ({ state: permission }) },
+        value: permission === 'none' ? undefined : { query: async () => ({ state: permission }) },
       });
       Object.defineProperty(navigator, 'geolocation', {
         configurable: true,
@@ -183,6 +184,39 @@ test.describe('3. "Businesses near you" banner', () => {
 
     await page.reload();
     await expect(search(page)).toBeVisible();
+    await page.waitForTimeout(3_500);
+    await expect(banner(page)).toHaveCount(0);
+  });
+
+  test('no Permissions API: shows once; Allow and it does not return', async ({ page }) => {
+    await setup(page, { permission: 'none' });
+    await openMap(page);
+    await expect(banner(page)).toBeVisible({ timeout: 6_000 });
+    await page.getByRole('button', { name: 'Allow' }).tap();
+    await expect(banner(page)).toHaveCount(0);
+
+    await page.reload();
+    await expect(search(page)).toBeVisible();
+    await page.waitForTimeout(3_500);
+    await expect(banner(page)).toHaveCount(0);
+  });
+
+  test('no Permissions API: dismissed with ✕, it does not return', async ({ page }) => {
+    await setup(page, { permission: 'none' });
+    await openMap(page);
+    await expect(banner(page)).toBeVisible({ timeout: 6_000 });
+    await page.getByRole('button', { name: 'Dismiss' }).tap();
+    await expect(banner(page)).toHaveCount(0);
+
+    await page.reload();
+    await expect(search(page)).toBeVisible();
+    await page.waitForTimeout(3_500);
+    await expect(banner(page)).toHaveCount(0);
+  });
+
+  test('no Permissions API, Locate already asked: no banner', async ({ page }) => {
+    await setup(page, { permission: 'none', storage: { geolocation_prompted: '1' } });
+    await openMap(page);
     await page.waitForTimeout(3_500);
     await expect(banner(page)).toHaveCount(0);
   });
