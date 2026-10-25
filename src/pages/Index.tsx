@@ -355,9 +355,10 @@ const Index = () => {
         <LocationBanner className="pointer-events-auto" />
       </div>
 
-      {/* Error / empty / no-match card: below the top stack, only the card takes taps */}
+      {/* Error / empty / no-match card: below the top stack, only the card takes taps.
+          Mobile: pr-[76px] keeps it left of the Locate/zoom column (44px + 16px edge + gap) */}
       {stateCard && (
-        <div className="absolute inset-x-0 top-[248px] z-10 flex justify-center px-4 md:pl-[280px] pointer-events-none">
+        <div className="absolute inset-x-0 top-[248px] z-10 flex justify-center pl-4 pr-[76px] md:pr-4 md:pl-[280px] pointer-events-none">
           <div className="pointer-events-auto w-full max-w-sm rounded-xl border border-border bg-card text-card-foreground shadow-float">
             <StateBlock {...stateCard} />
           </div>
