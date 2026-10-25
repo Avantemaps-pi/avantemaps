@@ -4,7 +4,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { StarIcon, ChevronLeft, Loader2 } from 'lucide-react';
+import { StarIcon, ChevronLeft, Loader2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import ReviewList from '@/components/reviews/ReviewList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,8 +15,12 @@ import { Place } from '@/types/business';
 import { useReviewSubmission } from '@/hooks/useReviewSubmission';
 import { useReviewStats } from '@/hooks/useReviewStats';
 import { getSessionUserId } from '@/lib/sessionUserId';
+import { StateBlock } from '@/components/ui/state-block';
+import LoginDialog from '@/components/auth/LoginDialog';
 
 const MAX_REVIEW_LENGTH = 2000;
+// How long a cached sign-in may take to restore after a direct page load
+const RESTORE_WAIT_MS = 3000;
 
 const Review = () => {
   const { businessId } = useParams();
@@ -32,6 +36,10 @@ const Review = () => {
   const [existingReviewLoaded, setExistingReviewLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState('review');
   const reviewStats = useReviewStats();
+  const [showLogin, setShowLogin] = useState(false);
+  // AuthProvider restores a cached sign-in after hydration, so on a direct
+  // load user is briefly null; wait for it before showing the signed-out state
+  const [restoreWindowOver, setRestoreWindowOver] = useState(false);
   
   const { submitReview, fetchUserReview, isSubmitting } = useReviewSubmission({
     onSuccess: () => {
@@ -39,14 +47,20 @@ const Review = () => {
     },
   });
 
-  // Redirect to home if not authenticated (only when we're sure there's no user)
   useEffect(() => {
-    // Only redirect if auth check is complete AND no user
-    if (!user && !isLoading) {
-      toast.error("Please log in to write a review");
-      navigate('/');
+    let hasCachedSignIn = false;
+    try {
+      hasCachedSignIn = !!localStorage.getItem('avante_maps_auth');
+    } catch {
+      // storage unavailable — nothing to restore
     }
-  }, [user, isLoading, navigate]);
+    if (!hasCachedSignIn) {
+      setRestoreWindowOver(true);
+      return;
+    }
+    const timer = setTimeout(() => setRestoreWindowOver(true), RESTORE_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, []);
   
   // Load business data from state or fetch from database
   useEffect(() => {
@@ -174,9 +188,9 @@ const Review = () => {
     );
   };
 
-  // Show loading state only when checking auth AND no user yet
+  // Show loading state while a cached sign-in may still be restoring
   // If user is already set, skip the auth loading screen
-  if (isLoading && !user) {
+  if (!user && (isLoading || !restoreWindowOver)) {
     return (
       <AppLayout 
         title="Loading..."
@@ -195,21 +209,24 @@ const Review = () => {
     );
   }
 
-  // Show loading spinner while redirecting (user not authenticated)
   if (!user) {
     return (
       <AppLayout 
-        title="Redirecting..."
+        title="Write a Review"
         withHeader={false} 
         fullHeight={false}
         fullWidth={true}
         className="px-0"
       >
-        <div className="w-full h-[50vh] flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            <p className="text-muted-foreground">Redirecting...</p>
-          </div>
+        <div className="w-full px-4 flex items-center justify-center min-h-[60vh]">
+          <StateBlock
+            kind="empty"
+            icon={Lock}
+            title="Sign in to write a review"
+            body="Reviews are written by signed-in Pi Network users."
+            action={{ label: 'Sign in with Pi', onClick: () => setShowLogin(true) }}
+          />
+          <LoginDialog open={showLogin} onOpenChange={setShowLogin} />
         </div>
       </AppLayout>
     );
