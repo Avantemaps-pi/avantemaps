@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from '@/lib/router-compat';
 import { Place } from '@/types/business';
 import { CircleCheck, Clock, ImageIcon, Mail, MapPin, Phone, Shield, Star, X } from 'lucide-react';
@@ -26,45 +26,22 @@ const NO_IMAGE = '/placeholder.svg';
 const NO_ADDRESS = 'No address provided';
 const NO_DESCRIPTION = 'No description provided';
 
-// Stable reference: with an inline array vaul re-snaps on every render, which
-// blocks dragging for 500ms each time.
-const SNAP_POINTS = [0.45, 1];
-
 const PlaceOverlay: React.FC<PlaceOverlayProps> = ({
   selectedPlace,
   showPopover,
   onOverlayClick,
   detailCardRef
 }) => {
-  // Controlled snap point: dragging down moves 1 -> 0.45, and dragging again closes
-  const [activeSnapPoint, setActiveSnapPoint] = useState<number | string | null>(1);
-
-  // vaul 1.1.2 memoises its snap handler on a ref that is still null on the first
-  // render, so the first re-render after opening re-snaps and blocks dragging for
-  // 500ms. Without this nudge that re-render is the user's first press, so the
-  // first swipe-down is ignored; re-render once right after opening instead.
-  const [, setOpenedAt] = useState(0);
-
-  // Open fully whenever a place (or the same place again) opens
-  useEffect(() => {
-    if (!showPopover) return;
-    setActiveSnapPoint(1);
-    const frame = requestAnimationFrame(() => setOpenedAt(Date.now()));
-    return () => cancelAnimationFrame(frame);
-  }, [selectedPlace?.id, showPopover]);
-
   if (!selectedPlace) return null;
 
   return (
     <Drawer
       open={showPopover}
       onOpenChange={(open) => { if (!open) onOverlayClick(); }}
-      snapPoints={SNAP_POINTS}
-      activeSnapPoint={activeSnapPoint}
-      setActiveSnapPoint={setActiveSnapPoint}
+      // No half-height snap point: one swipe down closes. A modal drawer parked
+      // at a lower snap left the map and search untappable behind it.
       modal={true}
       dismissible={true}
-      fadeFromIndex={0}
     >
       <DrawerContent className="z-50 max-h-[96vh] focus:outline-hidden">
         <PlaceOverlayContent
