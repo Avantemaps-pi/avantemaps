@@ -66,7 +66,7 @@ const AppPreferences = ({
                 Use my location
               </Label>
               <p className="text-muted-foreground text-sm">
-                Centre the map near you when you sign in, and use your device's location when you tap Locate. Your browser asks for permission first. Your location stays on your device.
+                Centre the map near you when you sign in, and use your device's location when you tap Locate. Your browser asks for permission first. Avante Maps doesn't store your location.
               </p>
             </div>
             <Switch
