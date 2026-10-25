@@ -41,17 +41,17 @@ const AuthTroubleshooting: React.FC<AuthTroubleshootingProps> = ({ isVisible }) 
   const StatusIcon = ({ status }: { status: boolean | 'loading' }) => {
     if (status === 'loading') return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
     return status ? (
-      <CheckCircle className="h-4 w-4 text-green-500" />
+      <CheckCircle className="h-4 w-4 text-primary" />
     ) : (
-      <XCircle className="h-4 w-4 text-red-500" />
+      <XCircle className="h-4 w-4 text-destructive" />
     );
   };
 
   return (
-    <Card className="w-full mt-4 border-yellow-200 dark:border-yellow-800">
+    <Card className="w-full mt-4 border-border">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+          <AlertCircle className="h-5 w-5 text-primary" />
           <CardTitle className="text-lg">Troubleshooting</CardTitle>
         </div>
         <CardDescription>
@@ -90,8 +90,8 @@ const AuthTroubleshooting: React.FC<AuthTroubleshootingProps> = ({ isVisible }) 
         </div>
 
         {!checks.piSdkAvailable && (
-          <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md border border-yellow-200 dark:border-yellow-800">
-            <p className="text-xs text-yellow-800 dark:text-yellow-300">
+          <div className="mt-4 p-3 bg-secondary rounded-md border border-border">
+            <p className="text-xs text-secondary-foreground">
               <strong>Tip:</strong> Avante Maps requires the official Pi Browser app for authentication.
               Please open this app in the Pi Browser to continue.
             </p>
@@ -99,8 +99,8 @@ const AuthTroubleshooting: React.FC<AuthTroubleshootingProps> = ({ isVisible }) 
         )}
 
         {!checks.onlineStatus && (
-          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-800">
-            <p className="text-xs text-red-800 dark:text-red-300">
+          <div className="mt-4 p-3 bg-destructive/10 rounded-md border border-destructive/40">
+            <p className="text-xs text-foreground">
               <strong>Connection Issue:</strong> You appear to be offline. Please check your
               internet connection and try again.
             </p>

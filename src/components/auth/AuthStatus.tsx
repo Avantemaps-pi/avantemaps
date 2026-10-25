@@ -15,7 +15,7 @@ const AuthStatus: React.FC = () => {
 
   if (isOffline) {
     return (
-      <div className="flex items-center space-x-1 text-sm text-amber-500">
+      <div className="flex items-center space-x-1 text-sm text-muted-foreground">
         <WifiOff className="h-4 w-4" />
         <span>Offline</span>
       </div>
@@ -26,7 +26,7 @@ const AuthStatus: React.FC = () => {
     return (
       <div className="flex items-center space-x-2">
         {shouldBypassAuth() && (
-          <div className="flex items-center space-x-1 text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded">
+          <div className="flex items-center space-x-1 text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">
             <Code className="h-3 w-3" />
             <span>DEV</span>
           </div>
