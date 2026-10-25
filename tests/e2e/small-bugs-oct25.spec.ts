@@ -141,3 +141,28 @@ test.describe('1. review link opened directly', () => {
     expect(new URL(page.url()).pathname).toBe(`/review/${BAKERY.id}`);
   });
 });
+
+test.describe('2. search with a category active', () => {
+  test('a match the category hides does not move the map; its suggestion resets the category', async ({ page }) => {
+    await setup(page);
+    await openMap(page);
+    await page.getByRole('tab', { name: /Food/ }).tap();
+    await expect(page.getByRole('tab', { name: /Food/ })).toHaveAttribute('aria-selected', 'true');
+    await page.waitForTimeout(500);
+    const before = (await counters(page)).centers;
+
+    await search(page).tap();
+    await search(page).pressSequentially('Zebra', { delay: 50 });
+    await page.waitForTimeout(1_000);
+    expect((await counters(page)).centers).toBe(before);
+
+    const suggestion = page.getByRole('button', { name: /Zebra Gadgets/ });
+    await expect(suggestion).toBeVisible();
+    await suggestion.tap();
+    // CSS locator: the open (modal) drawer hides the chips from role queries
+    const allChip = page.locator('[role="tab"]').filter({ hasText: 'All' });
+    await expect(allChip).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('dialog').getByText(GADGETS.name).first()).toBeVisible();
+  });
+});

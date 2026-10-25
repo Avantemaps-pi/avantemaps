@@ -21,9 +21,26 @@ import LandingPage from './LandingPage';
 import { useIpLocationFocus } from '@/hooks/useIpLocationFocus';
 import '../styles/map.css';
 import { getOrigin } from '@/utils/browserEnv';
+import { Place } from '@/types/business';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
 const AddBusinessButton = lazy(() => import('@/components/map/buttons/AddBusinessButton'));
+
+// Whether a place shows under a category chip ('all' shows everything)
+const matchesCategory = (place: Place, categoryId: string) => {
+  if (categoryId === 'all') return true;
+  const opt = CATEGORY_OPTIONS.find(o => o.id === categoryId);
+  if (!opt || opt.match.length === 0) return true;
+  const haystack = [
+    place.category,
+    ...(place.business_types || []),
+    ...(place.keywords || []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return opt.match.some(m => haystack.includes(m));
+};
 
 const Index = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -65,6 +82,12 @@ const Index = () => {
     // Track the business search for personalized recommendations
     trackBusinessSearch(Number(business.id), business.name);
     
+    // Show all categories if the active one would hide its pin behind the drawer
+    const place = places.find(p => p.id === business.id);
+    if (place && !matchesCategory(place, selectedCategoryId)) {
+      setSelectedCategoryId('all');
+    }
+
     // Set selected place and zoom to it
     setSelectedPlace(business.id);
     window.dispatchEvent(new CustomEvent('centerMap', { 
@@ -76,29 +99,6 @@ const Index = () => {
     setSearchTerm(term);
     handleSearch(term);
   };
-
-  // When the search results update, sync the map viewport to the best match
-  // (the first item in filteredPlaces — useBusinessData orders by relevance).
-  const lastCenteredKeyRef = React.useRef<string>('');
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      lastCenteredKeyRef.current = '';
-      return;
-    }
-    const best = filteredPlaces[0];
-    if (!best) return;
-    const lat = best.position?.lat ?? best.location?.lat;
-    const lng = best.position?.lng ?? best.location?.lng;
-    if (lat == null || lng == null) return;
-
-    const key = `${searchTerm}::${best.id}`;
-    if (lastCenteredKeyRef.current === key) return;
-    lastCenteredKeyRef.current = key;
-
-    window.dispatchEvent(new CustomEvent('centerMap', {
-      detail: { lat, lng, zoom: 14 },
-    }));
-  }, [searchTerm, filteredPlaces]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -130,22 +130,34 @@ const Index = () => {
 
   // Apply category filter on top of search filter
   const basePlaces = filteredPlaces.length > 0 || searchTerm ? filteredPlaces : places;
-  const visiblePlaces = React.useMemo(() => {
-    if (selectedCategoryId === 'all') return basePlaces;
-    const opt = CATEGORY_OPTIONS.find(o => o.id === selectedCategoryId);
-    if (!opt || opt.match.length === 0) return basePlaces;
-    return basePlaces.filter(p => {
-      const haystack = [
-        p.category,
-        ...(p.business_types || []),
-        ...(p.keywords || []),
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return opt.match.some(m => haystack.includes(m));
-    });
-  }, [basePlaces, selectedCategoryId]);
+  const visiblePlaces = React.useMemo(
+    () => basePlaces.filter(p => matchesCategory(p, selectedCategoryId)),
+    [basePlaces, selectedCategoryId]
+  );
+
+  // When the search results update, sync the map viewport to the best match the
+  // map actually shows (first of visiblePlaces: search results, relevance order,
+  // narrowed by the category). No visible match: leave the map; the no-match card shows.
+  const lastCenteredKeyRef = React.useRef<string>('');
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      lastCenteredKeyRef.current = '';
+      return;
+    }
+    const best = visiblePlaces[0];
+    if (!best) return;
+    const lat = best.position?.lat ?? best.location?.lat;
+    const lng = best.position?.lng ?? best.location?.lng;
+    if (lat == null || lng == null) return;
+
+    const key = `${searchTerm}::${selectedCategoryId}::${best.id}`;
+    if (lastCenteredKeyRef.current === key) return;
+    lastCenteredKeyRef.current = key;
+
+    window.dispatchEvent(new CustomEvent('centerMap', {
+      detail: { lat, lng, zoom: 14 },
+    }));
+  }, [searchTerm, selectedCategoryId, visiblePlaces]);
 
   // One state for the map screen, and exactly one message for it
   const hasSearch = searchTerm.trim() !== '';
