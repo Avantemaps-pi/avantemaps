@@ -48,6 +48,7 @@ const PlaceCardActions: React.FC<PlaceCardActionsProps> = ({
           }`}
           onClick={onBookmarkToggle}
           disabled={isLoading}
+          aria-label={isBookmarked ? 'Remove from saved' : 'Save business'}
         >
           <Bookmark 
             className={`h-4 w-4 ${isBookmarked ? 'text-primary fill-primary' : 'text-muted-foreground'}`}

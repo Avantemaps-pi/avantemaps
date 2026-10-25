@@ -115,7 +115,7 @@ const MobileSidebar = ({
                 </span>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close sidebar">
               <X className="h-5 w-5" />
             </Button>
           </div>

@@ -101,14 +101,14 @@ const PageHeader = ({
           
           {/* Index page menu button */}
           {isIndexPage && (
-            <Button variant="ghost" size="icon" onClick={handleMenuClick} className="mr-2 sm:hidden">
+            <Button variant="ghost" size="icon" onClick={handleMenuClick} className="mr-2 sm:hidden" aria-label="Open menu">
               <Menu className="h-5 w-5" />
             </Button>
           )}
           
           {/* Consolidated back button for all pages that need it */}
           {(isAnalyticsPage || isRegistrationPage || isUpdateRegistrationPage || isVerificationInfoPage || backButton) && (
-            <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-2">
+            <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-2" aria-label="Go back">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
