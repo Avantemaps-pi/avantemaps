@@ -54,11 +54,11 @@ const PageHeader = ({
     // Default titles for other routes
     switch (location.pathname) {
       case '/recommendations':
-        return "Recommendations";
+        return "Discover";
       case '/bookmarks':
-        return "Bookmarks";
+        return "Saved";
       case '/communicon':
-        return "Communicon";
+        return "CommuniCon";
       case '/notifications':
         return "Notifications";
       case '/registered-business':
