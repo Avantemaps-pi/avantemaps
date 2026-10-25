@@ -227,14 +227,14 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
     <>
       {speedDialOpen && (
         <div
-          className="fixed inset-0 bg-overlay z-[25] animate-fade-in"
+          className="fixed inset-0 bg-overlay z-[55] animate-fade-in"
           onClick={() => setSpeedDialOpen(false)}
           aria-hidden="true"
         />
       )}
       <div
         data-add-business-button
-        className={`absolute ${bottomClass} ${positionClass} z-30 flex flex-col items-end gap-3 transition-opacity duration-150 motion-reduce:transition-none ${keyboardClass}`}
+        className={`absolute ${bottomClass} ${positionClass} ${speedDialOpen ? 'z-[56]' : 'z-30'} flex flex-col items-end gap-3 transition-opacity duration-150 motion-reduce:transition-none ${keyboardClass}`}
         {...keyboardProps}
       >
         {speedDialOpen && (

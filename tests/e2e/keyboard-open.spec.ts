@@ -194,6 +194,33 @@ test('FAB speed dial closes when the keyboard opens', async ({ page }) => {
   await expect(dial).toHaveAttribute('aria-expanded', 'false');
 });
 
+test('quick actions open: the scrim dims the bottom nav, and tapping it closes the dial', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('fab_first_visit', new Date(Date.now() - 2 * 86_400_000).toISOString());
+  });
+  await openMap(page);
+  const dial = page.getByRole('button', { name: 'Open quick actions' });
+  await dial.click();
+  const close = fab(page).getByRole('button', { name: 'Close menu' });
+  await expect(close).toBeVisible();
+
+  const topAt = (selector: string) =>
+    page.locator(selector).first().evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return hit === el || el.contains(hit) ? 'self' : String(hit?.className ?? '');
+    });
+  // Nav sits under the scrim; the dial's actions and × stay above it
+  expect(await topAt('nav a[aria-label="Wallet"]')).toContain('bg-overlay');
+  expect(await topAt('[data-add-business-button] button[aria-label="CommuniCon"]')).toBe('self');
+  expect(await topAt('[data-add-business-button] button[aria-label="Close menu"]')).toBe('self');
+
+  const wallet = (await page.locator('nav a[aria-label="Wallet"]').boundingBox())!;
+  await page.mouse.click(wallet.x + wallet.width / 2, wallet.y + wallet.height / 2);
+  await expect(dial).toHaveAttribute('aria-expanded', 'false');
+  expect(new URL(page.url()).pathname).toBe('/');
+});
+
 test('Contact message box with the keyboard open hides the bottom nav', async ({ page }) => {
   await page.goto('/contact');
   await expect(nav(page)).toBeVisible();
