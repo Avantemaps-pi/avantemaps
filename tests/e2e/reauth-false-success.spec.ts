@@ -72,6 +72,8 @@ test('failed re-auth on Message tap shows honest failure, not false success', as
     test.skip(true, 'No business markers available on the map');
   }
   await marker.click({ force: true });
+  // A pin tap shows the card strip; its first card opens the drawer with Message
+  await page.locator('[data-strip-card] button').first().click({ force: true });
 
   const messageButton = page.getByRole('button', { name: 'Message' }).first();
   await messageButton.waitFor({ state: 'visible', timeout: 15_000 });
