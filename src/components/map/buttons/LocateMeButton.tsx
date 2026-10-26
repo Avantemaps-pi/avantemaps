@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { secureLog } from '@/utils/secureLogger';
 import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
+import { hasGranted, markGranted, clearGranted } from '@/lib/gpsGrant';
 
 const isPiBrowser = () => typeof window !== 'undefined' && !!(window as any).Pi;
 const logCtx = () => ({
@@ -87,19 +88,6 @@ const hasPrompted = () => {
 };
 const markPrompted = () => {
   try { localStorage.setItem(PROMPTED_KEY, '1'); } catch { /* ignore */ }
-};
-// Remembers that the user allowed GPS, for browsers without a Permissions API
-// (permission state stays 'unknown', so the prompted flag alone would block GPS
-// on every later tap). Settings clears it when "Use my location" is turned off.
-const GRANTED_KEY = 'geolocation_granted';
-const hasGranted = () => {
-  try { return localStorage.getItem(GRANTED_KEY) === '1'; } catch { return false; }
-};
-const markGranted = () => {
-  try { localStorage.setItem(GRANTED_KEY, '1'); } catch { /* ignore */ }
-};
-const clearGranted = () => {
-  try { localStorage.removeItem(GRANTED_KEY); } catch { /* ignore */ }
 };
 const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
   const [loading, setLoading] = useState(false);

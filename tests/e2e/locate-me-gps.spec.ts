@@ -35,18 +35,23 @@ type GeoMock = {
   // 'none': the browser has no Permissions API (state reads as 'unknown')
   permission: 'granted' | 'prompt' | 'denied' | 'none';
   // What getCurrentPosition does when called
-  result: 'success' | 'denied';
+  result: 'success' | 'denied' | 'timeout';
   storage?: Record<string, string>;
   auth?: Record<string, string>;
 };
 
+// Requests to the IP providers, per page
+const ipRequests = new WeakMap<Page, number>();
+
 async function setup(page: Page, mock: GeoMock) {
   await page.route('**/pi-sdk.js', (route) => route.abort());
+  ipRequests.set(page, 0);
   // Every IP provider (sign-in focus and the locate fallback) returns IP
   for (const url of ['https://ipapi.co/json/', 'https://get.geojs.io/v1/ip/geo.json', 'https://ipwho.is/**']) {
-    await page.route(url, (route) =>
-      route.fulfill({ json: { success: true, latitude: IP.lat, longitude: IP.lng } }),
-    );
+    await page.route(url, (route) => {
+      ipRequests.set(page, (ipRequests.get(page) ?? 0) + 1);
+      return route.fulfill({ json: { success: true, latitude: IP.lat, longitude: IP.lng } });
+    });
   }
   await page.addInitScript((m: GeoMock) => {
     const w = window as unknown as {
@@ -88,6 +93,8 @@ async function setup(page: Page, mock: GeoMock) {
           setTimeout(() => {
             if (m.result === 'success') {
               ok({ coords: { latitude: 51.5007, longitude: -0.1246, accuracy: 10 } });
+            } else if (m.result === 'timeout') {
+              fail({ code: 3, message: 'timeout', PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 });
             } else {
               fail({ code: 1, message: 'denied', PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 });
             }
@@ -271,4 +278,53 @@ test('no Permissions API, GPS already allowed: the toast says "Getting your loca
   const { toasts } = await state(page);
   expect(toasts).toContain('Getting your location…');
   expect(toasts).not.toContain('Requesting location permission…');
+});
+
+// Sign-in centring: GPS when it's already allowed (no IP request, no city→street
+// jump), otherwise the IP location as before; never a prompt on load.
+async function signInCentring(page: Page) {
+  await page.goto('/');
+  await expect(page.locator('.leaflet-container')).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(1_500);
+  return { ...(await state(page)), ipRequests: ipRequests.get(page) ?? 0 };
+}
+
+test('sign-in, permission granted: centres on GPS, no IP request', async ({ page }) => {
+  await setup(page, { permission: 'granted', result: 'success' });
+  const s = await signInCentring(page);
+  expect(s.geoCalls).toBe(1);
+  expect(s.centers).toEqual([GPS]);
+  expect(s.ipRequests).toBe(0);
+});
+
+test('sign-in, no Permissions API but GPS allowed before: centres on GPS, no IP request', async ({ page }) => {
+  await setup(page, { permission: 'none', result: 'success', storage: { geolocation_granted: '1' } });
+  const s = await signInCentring(page);
+  expect(s.geoCalls).toBe(1);
+  expect(s.centers).toEqual([GPS]);
+  expect(s.ipRequests).toBe(0);
+});
+
+test('sign-in, GPS not allowed (prompt): IP centring, no prompt', async ({ page }) => {
+  await setup(page, { permission: 'prompt', result: 'success' });
+  const s = await signInCentring(page);
+  expect(s.geoCalls).toBe(0);
+  expect(s.centers).toEqual([IP]);
+  expect(s.ipRequests).toBe(1);
+});
+
+test('sign-in, no Permissions API and never allowed: IP centring, no prompt', async ({ page }) => {
+  await setup(page, { permission: 'none', result: 'success' });
+  const s = await signInCentring(page);
+  expect(s.geoCalls).toBe(0);
+  expect(s.centers).toEqual([IP]);
+});
+
+test('sign-in, GPS times out: falls back to IP centring once', async ({ page }) => {
+  await setup(page, { permission: 'granted', result: 'timeout' });
+  const s = await signInCentring(page);
+  expect(s.geoCalls).toBe(1);
+  expect(s.centers).toEqual([IP]);
+  expect(s.ipRequests).toBe(1);
 });
