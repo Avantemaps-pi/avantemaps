@@ -1,8 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { CircleCheck, ShieldCheck, Store } from 'lucide-react';
 import { Place } from '@/types/business';
 import { cn } from '@/lib/utils';
-import { useBookmark } from '@/hooks/useBookmark';
+import { useBusinessBookmarks } from '@/hooks/useBusinessBookmarks';
+import { useAuth } from '@/context/auth';
 import BookmarkButton from './buttons/BookmarkButton';
 import PlaceCardRating from '@/components/business/PlaceCardRating';
 import { todayHoursLabel } from '@/components/business/formatHours';
@@ -40,11 +42,10 @@ const StripCard: React.FC<{
   onOpen: () => void;
   onArrow: (dir: -1 | 1) => void;
   buttonRef: (el: HTMLButtonElement | null) => void;
-}> = ({ place, selected, onOpen, onArrow, buttonRef }) => {
-  const { isBookmarked, handleBookmarkToggle, isLoading } = useBookmark({
-    initialIsBookmarked: false,
-    id: place.id,
-  });
+  isBookmarked: boolean;
+  onBookmarkToggle: (e: React.MouseEvent) => void;
+  bookmarkLoading: boolean;
+}> = ({ place, selected, onOpen, onArrow, buttonRef, isBookmarked, onBookmarkToggle, bookmarkLoading }) => {
   const image = (place.images?.find((src) => src && src !== NO_IMAGE) ?? (place.image !== NO_IMAGE ? place.image : undefined)) || undefined;
   const summary = summaryOf(place);
 
@@ -103,7 +104,7 @@ const StripCard: React.FC<{
         {summary && <p className="line-clamp-2 text-[13px] leading-[18px] text-muted-foreground">{summary}</p>}
       </div>
       <div className="absolute right-1 top-1 z-10">
-        <BookmarkButton isBookmarked={isBookmarked} onToggle={handleBookmarkToggle} isLoading={isLoading} />
+        <BookmarkButton isBookmarked={isBookmarked} onToggle={onBookmarkToggle} isLoading={bookmarkLoading} />
       </div>
     </article>
   );
@@ -128,6 +129,28 @@ const MapCardStrip: React.FC<MapCardStripProps> = ({
   const targetRef = useRef<string | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+
+  // One bookmark source for the whole strip (not one fetch per card); optimistic
+  // updates and cross-tab sync come from the shared hook
+  const { isAuthenticated } = useAuth();
+  const { isBookmarked, toggleBookmark, isLoading: bookmarksLoading } = useBusinessBookmarks();
+  const [pendingBookmarkId, setPendingBookmarkId] = useState<string | null>(null);
+  const handleBookmarkToggle = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      toast.error('Please sign in to bookmark businesses');
+      return;
+    }
+    setPendingBookmarkId(id);
+    try {
+      await toggleBookmark(id);
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      toast.error('Failed to update bookmark');
+    } finally {
+      setPendingBookmarkId(null);
+    }
+  };
 
   const cardEl = (id: string) =>
     scrollerRef.current?.querySelector<HTMLElement>(`[data-strip-card="${CSS.escape(id)}"]`) ?? null;
@@ -211,6 +234,10 @@ const MapCardStrip: React.FC<MapCardStripProps> = ({
             selected={place.id === selectedId}
             onOpen={() => onOpen(place.id)}
             onArrow={moveBy}
+            isBookmarked={isBookmarked(place.id)}
+            onBookmarkToggle={(e) => handleBookmarkToggle(e, place.id)}
+            // While the list loads every card waits; during a toggle only that card does
+            bookmarkLoading={pendingBookmarkId ? pendingBookmarkId === place.id : bookmarksLoading}
             buttonRef={(el) => {
               if (el) buttonRefs.current.set(place.id, el);
               else buttonRefs.current.delete(place.id);

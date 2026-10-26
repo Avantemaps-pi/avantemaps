@@ -334,3 +334,47 @@ test('empty-map tap with the strip open only closes it: no country lookup, the m
   await page.touchscreen.tap(60, 330);
   await expect.poll(() => nominatim.length).toBeGreaterThan(0);
 });
+
+test('opening a strip of 20 cards makes at most one bookmarks request', async ({ page }) => {
+  // A signed-in Supabase session (fake, unexpired) so bookmarks are really loaded
+  const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const exp = Math.floor(Date.now() / 1000) + 3600;
+  const uid = mockUser.uid;
+  const session = {
+    access_token: `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub: uid, exp, role: 'authenticated', aud: 'authenticated' })}.sig`,
+    refresh_token: 'fake-refresh',
+    expires_in: 3600,
+    expires_at: exp,
+    token_type: 'bearer',
+    user: { id: uid, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() },
+  };
+  await page.route('**/auth/v1/**', (route) => route.fulfill({ json: session.user }));
+  await page.route('**/rest/v1/bookmarks*', (route) => route.fulfill({ json: [] }));
+  await page.route('**/rest/v1/users*', (route) => route.fulfill({ json: [] }));
+  await page.route('**/rest/v1/user_roles*', (route) => route.fulfill({ json: [] }));
+  await page.addInitScript((s) => localStorage.setItem('supabase.auth.token', JSON.stringify(s)), session);
+
+  const many = Array.from({ length: 24 }, (_, i) => ({
+    ...base,
+    id: 9700 + i,
+    name: `Grid Shop ${i + 1}`,
+    category: 'Retail',
+    business_types: ['Retail'],
+    latitude: CENTRE.lat - 0.0016 + Math.floor(i / 5) * 0.0008,
+    longitude: CENTRE.lng - 0.0012 + (i % 5) * 0.0006,
+  })) as unknown as typeof BUSINESSES;
+  await openMap(page, many);
+
+  const bookmarkRequests: string[] = [];
+  page.on('request', (r) => {
+    if (r.url().includes('/rest/v1/bookmarks')) bookmarkRequests.push(r.url());
+  });
+  await tapPin(page, 'Grid Shop 13');
+  await expect(page.locator('[data-strip-card]')).toHaveCount(20);
+  await page.waitForTimeout(1_500);
+  console.log(`bookmarks requests: ${bookmarkRequests.length}`);
+  // One fetch for the whole strip. The dev server runs React StrictMode (TanStack
+  // Start's default client entry), which mounts components twice, so 1 shows up
+  // as 2 here; with a hook per card it was 40 (20 x 2).
+  expect(bookmarkRequests.length).toBeLessThanOrEqual(2);
+});
