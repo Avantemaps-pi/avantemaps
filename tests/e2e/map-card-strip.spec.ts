@@ -308,3 +308,29 @@ test('more than 20 in view: the strip caps at 20, tapped business first', async 
   expect(await selectedName(page)).toMatch(/^Grid Shop 13/);
   expect((await order(page))[0]).toBe('9612');
 });
+
+test('empty-map tap with the strip open only closes it: no country lookup, the map stays put', async ({ page }) => {
+  const nominatim: string[] = [];
+  page.on('request', (r) => {
+    if (r.url().includes('nominatim.openstreetmap.org')) nominatim.push(r.url());
+  });
+  await openMap(page);
+  await tapPin(page, 'Table Bay Bookshop');
+  // The map pans to the selected pin after a pin tap; measure once it has settled
+  await page.waitForTimeout(800);
+  const pinBefore = (await pin(page, 'Harbour Light Coffee').boundingBox())!;
+
+  await page.touchscreen.tap(60, 330);
+  await expect(strip(page)).toHaveCount(0);
+  await page.waitForTimeout(1_500);
+  const pinAfter = (await pin(page, 'Harbour Light Coffee').boundingBox())!;
+  // Same centre and zoom: the pin is where it was, at the same size
+  expect(Math.abs(pinAfter.x - pinBefore.x)).toBeLessThanOrEqual(2);
+  expect(Math.abs(pinAfter.y - pinBefore.y)).toBeLessThanOrEqual(2);
+  expect(Math.round(pinAfter.width)).toBe(Math.round(pinBefore.width));
+  expect(nominatim).toEqual([]);
+
+  // Control: with the strip closed, the same tap still runs the country focus
+  await page.touchscreen.tap(60, 330);
+  await expect.poll(() => nominatim.length).toBeGreaterThan(0);
+});

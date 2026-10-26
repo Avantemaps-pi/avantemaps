@@ -72,6 +72,10 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const mapRef = useRef<L.Map | null>(null);
   const cardDrawerIdRef = useRef(cardDrawerId);
   cardDrawerIdRef.current = cardDrawerId;
+  // Read by CountryClickFocus at click time: a tap on empty map while the strip
+  // is open only closes the strip (no country fly)
+  const stripOpenRef = useRef(false);
+  stripOpenRef.current = !!stripSelectedId;
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
   const [showPopover, setShowPopover] = useState(false);
   const [mapCenter, setMapCenter] = useState<LatLngTuple>([defaultCenter.lat, defaultCenter.lng]); // San Francisco by default
@@ -277,7 +281,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         <AttributionControl position="bottomleft" prefix={false} />
         
         <MapViewUpdater center={mapCenter} zoom={zoom} />
-        <CountryClickFocus />
+        <CountryClickFocus skipRef={stripOpenRef} />
         <CountryZoomControl anchorKey={stripSelectedId ? 'strip' : 'fab'} />
         <StripMapSync
           places={displayPlaces}

@@ -284,7 +284,12 @@ const hydrateOnce = () => {
   hydrateTileCache();
 };
 
-const CountryClickFocus: React.FC = () => {
+interface CountryClickFocusProps {
+  /** Read at click time: when true (the card strip is open) a tap only closes the strip */
+  skipRef?: React.RefObject<boolean> | undefined;
+}
+
+const CountryClickFocus: React.FC<CountryClickFocusProps> = ({ skipRef }) => {
   const lastClickRef = useRef<number>(0);
   const lastCountryRef = useRef<string | null>(null);
   const layerRef = useRef<L.GeoJSON | null>(null);
@@ -298,6 +303,7 @@ const CountryClickFocus: React.FC = () => {
 
   const map = useMapEvents({
     click: async (e) => {
+      if (skipRef?.current) return;
       const target = e.originalEvent?.target as HTMLElement | null;
       if (
         target?.closest(
