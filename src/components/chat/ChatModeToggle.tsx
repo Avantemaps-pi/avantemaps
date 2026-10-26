@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Bot, MessageSquare } from 'lucide-react';
 import { ChatMode } from './ChatInterface';
 
@@ -8,37 +8,54 @@ interface ChatModeToggleProps {
   hasLiveChatAccess?: boolean;
 }
 
+const MODES: Array<{ value: ChatMode; label: string; icon: React.ElementType }> = [
+  { value: 'ai', label: 'Bot', icon: Bot },
+  { value: 'live', label: 'Messages', icon: MessageSquare },
+];
+
+// Slim full-width row: a segmented control with two equal 44px tabs
 const ChatModeToggle: React.FC<ChatModeToggleProps> = ({
   chatMode,
   onChatModeChange,
 }) => {
-  return (
-    <div className="flex items-center bg-muted rounded-full p-1 gap-0.5">
-      <button
-        type="button"
-        onClick={() => onChatModeChange('ai')}
-        className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-          chatMode === 'ai'
-            ? 'bg-primary text-primary-foreground shadow-xs'
-            : 'text-muted-foreground hover:text-foreground'
-        }`}
-      >
-        <Bot className="h-3.5 w-3.5" />
-        Bot
-      </button>
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-      <button
-        type="button"
-        onClick={() => onChatModeChange('live')}
-        className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-          chatMode === 'live'
-            ? 'bg-primary text-primary-foreground shadow-xs'
-            : 'text-muted-foreground hover:text-foreground'
-        }`}
-      >
-        <MessageSquare className="h-3.5 w-3.5" />
-        Messages
-      </button>
+  // Left/Right move between the tabs (and switch mode); the active tab is the one Tab stop
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const next = (index + (e.key === 'ArrowRight' ? 1 : -1) + MODES.length) % MODES.length;
+    const mode = MODES[next];
+    if (!mode) return;
+    onChatModeChange(mode.value);
+    tabRefs.current[next]?.focus();
+  };
+
+  return (
+    <div className="border-b border-border bg-background px-3 py-1">
+      <div role="tablist" aria-label="CommuniCon mode" className="flex w-full rounded-full bg-muted p-0.5">
+        {MODES.map(({ value, label, icon: Icon }, index) => {
+          const active = chatMode === value;
+          return (
+            <button
+              key={value}
+              ref={(el) => { tabRefs.current[index] = el; }}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              tabIndex={active ? 0 : -1}
+              onClick={() => onChatModeChange(value)}
+              onKeyDown={(e) => handleKeyDown(e, index)}
+              className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-full text-sm font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-muted ${
+                active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              {label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };

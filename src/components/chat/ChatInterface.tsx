@@ -6,7 +6,7 @@ import BusinessSelectionButtons from './BusinessSelectionButtons';
 import VerificationResultCard, { VerificationMetrics } from './VerificationResultCard';
 import MessagesPanel from '@/components/messages/MessagesPanel';
 import { useLocation } from '@/lib/router-compat';
-import { Send, Image, Video, MessagesSquare, Sparkles } from 'lucide-react';
+import { Send, Image, Video, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { isSafeForAI } from '@/utils/contentFilter';
@@ -112,25 +112,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   return (
     <Card className="flex flex-1 min-h-0 flex-col overflow-hidden border-none rounded-none shadow-none sm:rounded-lg sm:shadow-md">
       <div className="flex flex-1 min-h-0 flex-col">
-        {/* Branded header */}
-        <div className="border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 text-primary">
-                <MessagesSquare className="h-4 w-4" />
-              </div>
-              <div className="leading-tight">
-                <h3 className="font-semibold text-base">CommuniCon</h3>
-                <p className="text-[11px] text-muted-foreground">Avante Maps communication hub</p>
-              </div>
-            </div>
-            <ChatModeToggle
-              chatMode={chatMode}
-              onChatModeChange={onChatModeChange}
-              hasLiveChatAccess={hasLiveChatAccess}
-            />
-          </div>
-        </div>
+        {/* Bot/Messages switch; the page header is the only title */}
+        <ChatModeToggle
+          chatMode={chatMode}
+          onChatModeChange={onChatModeChange}
+          hasLiveChatAccess={hasLiveChatAccess}
+        />
 
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {chatMode === 'live' ? (
