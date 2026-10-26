@@ -43,3 +43,19 @@ export const formatHours = (hours: Record<string, string> | undefined): HoursGro
     hours: h,
   }));
 };
+
+/**
+ * Today's hours on the device's current weekday, normalised like formatHours:
+ * '07:00–17:00', 'closed', or null when there are no hours at all.
+ */
+export const todayHours = (
+  hours: Record<string, string> | undefined,
+  now: Date = new Date()
+): string | null => {
+  if (!hours || !Object.values(hours).some((v) => v && v.trim())) return null;
+  // getDay(): 0 = Sunday; DAYS starts on Monday
+  const day = DAYS[(now.getDay() + 6) % 7];
+  if (!day) return null;
+  const [key, short] = day;
+  return normalise(hours[key] ?? hours[short] ?? hours[key.charAt(0).toUpperCase() + key.slice(1)]);
+};
