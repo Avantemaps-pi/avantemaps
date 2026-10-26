@@ -40,7 +40,7 @@ const BusinessDropdownMenu = ({ businessId, businessName, onDeleted }: BusinessD
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label={businessName ? `Options for ${businessName}` : 'Business options'}>
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>

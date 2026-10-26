@@ -27,10 +27,16 @@ const LocationBanner: React.FC<Props> = ({ className }) => {
         if (sessionStorage.getItem(DISMISS_KEY) === '1') return false;
         if (localStorage.getItem(SETTING_KEY) === '0') return false;
         if (localStorage.getItem(PROMPTED_KEY) === '1') return false;
-        const status = await navigator.permissions?.query({ name: 'geolocation' as PermissionName });
-        return status?.state === 'prompt';
       } catch {
         return false;
+      }
+      // No Permissions API (or it throws): the checks above are all we can go on
+      if (!navigator.permissions?.query) return true;
+      try {
+        const status = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+        return status.state === 'prompt';
+      } catch {
+        return true;
       }
     };
 

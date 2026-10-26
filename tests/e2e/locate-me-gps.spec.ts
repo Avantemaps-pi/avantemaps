@@ -32,7 +32,8 @@ const GPS = { lat: 51.5007, lng: -0.1246 };
 const IP = { lat: 48.8566, lng: 2.3522 };
 
 type GeoMock = {
-  permission: 'granted' | 'prompt' | 'denied';
+  // 'none': the browser has no Permissions API (state reads as 'unknown')
+  permission: 'granted' | 'prompt' | 'denied' | 'none';
   // What getCurrentPosition does when called
   result: 'success' | 'denied';
   storage?: Record<string, string>;
@@ -74,7 +75,7 @@ async function setup(page: Page, mock: GeoMock) {
 
     Object.defineProperty(navigator, 'permissions', {
       configurable: true,
-      value: { query: async () => ({ state: m.permission }) },
+      value: m.permission === 'none' ? undefined : { query: async () => ({ state: m.permission }) },
     });
     Object.defineProperty(navigator, 'geolocation', {
       configurable: true,
@@ -130,7 +131,7 @@ test('permission granted: centres on device GPS', async ({ page }) => {
   await setup(page, { permission: 'granted', result: 'success' });
   await page.goto('/');
   const calls = await tapLocate(page);
-  await expect(page.getByText('Centered on your location', { exact: true })).toBeVisible();
+  await expect(page.getByText('Centred on your location', { exact: true })).toBeVisible();
   expect(await calls()).toBe(1);
   expect((await state(page)).centers.at(-1)).toEqual(GPS);
 });
@@ -139,7 +140,7 @@ test('permission denied in the prompt: toast, then IP location', async ({ page }
   await setup(page, { permission: 'prompt', result: 'denied' });
   await page.goto('/');
   const calls = await tapLocate(page);
-  await expect(page.getByText('Centered on your approximate location', { exact: true })).toBeVisible();
+  await expect(page.getByText('Centred on your approximate location', { exact: true })).toBeVisible();
   expect(await calls()).toBe(1);
   const s = await state(page);
   expect(s.toasts).toContain('Location permission denied');
@@ -150,7 +151,7 @@ test('prompt already dismissed once: IP location without a new prompt', async ({
   await setup(page, { permission: 'prompt', result: 'success', storage: { geolocation_prompted: '1' } });
   await page.goto('/');
   const calls = await tapLocate(page);
-  await expect(page.getByText('Centered on your approximate location', { exact: true })).toBeVisible();
+  await expect(page.getByText('Centred on your approximate location', { exact: true })).toBeVisible();
   expect(await calls()).toBe(0);
   expect((await state(page)).centers.at(-1)).toEqual(IP);
 });
@@ -184,7 +185,7 @@ test('"Use my location" off hides the button; turning it on asks once on the nex
 
   await page.goto('/');
   const calls = await tapLocate(page);
-  await expect(page.getByText('Centered on your location', { exact: true })).toBeVisible();
+  await expect(page.getByText('Centred on your location', { exact: true })).toBeVisible();
   expect(await calls()).toBe(1);
   expect(await page.evaluate(() => localStorage.getItem('geolocation_prompted'))).toBe('1');
 });
@@ -224,4 +225,35 @@ test('map load with "Use my location" off: no getCurrentPosition call', async ({
   await page.goto('/');
   await mapLoaded(page);
   expect((await state(page)).geoCalls).toBe(0);
+});
+
+// Browsers without a Permissions API: the GPS grant is remembered
+// (geolocation_granted), so later taps keep using GPS without a new prompt.
+test('no Permissions API, allowed: second tap uses GPS again', async ({ page }) => {
+  await setup(page, { permission: 'none', result: 'success' });
+  await page.goto('/');
+  const first = await tapLocate(page);
+  await expect(page.getByText('Centred on your location', { exact: true })).toBeVisible();
+  expect(await first()).toBe(1);
+  await expect(locate(page)).not.toHaveAttribute('aria-busy', 'true');
+
+  const second = await tapLocate(page);
+  await expect.poll(second).toBe(1);
+  await expect(locate(page)).not.toHaveAttribute('aria-busy', 'true');
+  expect((await state(page)).centers.at(-1)).toEqual(GPS);
+});
+
+test('no Permissions API, denied: IP location, and the next tap does not prompt', async ({ page }) => {
+  await setup(page, { permission: 'none', result: 'denied' });
+  await page.goto('/');
+  const first = await tapLocate(page);
+  await expect(page.getByText('Centred on your approximate location', { exact: true })).toBeVisible();
+  expect(await first()).toBe(1);
+  expect((await state(page)).toasts).toContain('Location permission denied');
+  await expect(locate(page)).not.toHaveAttribute('aria-busy', 'true');
+
+  const second = await tapLocate(page);
+  await expect(locate(page)).not.toHaveAttribute('aria-busy', 'true');
+  expect(await second()).toBe(0);
+  expect((await state(page)).centers.at(-1)).toEqual(IP);
 });

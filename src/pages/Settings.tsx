@@ -86,6 +86,8 @@ const Settings = () => {
       if (!value) {
         // Clear cached IP focus so disabling takes immediate effect on next login
         window.sessionStorage?.removeItem('ip_location_focused');
+        // Forget the GPS grant too, so turning it back on asks again
+        window.localStorage?.removeItem('geolocation_granted');
       }
     } catch {
       // ignore storage errors (private mode, quota, etc.)

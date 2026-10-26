@@ -279,6 +279,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
                         variant="destructive"
                         className="absolute top-1 right-1 h-6 w-6 rounded-full shadow-md"
                         onClick={() => handleRemoveExisting(index)}
+                        aria-label="Remove photo"
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -339,6 +340,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
                       variant="destructive"
                       className="absolute top-1 right-1 h-6 w-6 rounded-full shadow-md"
                       onClick={() => onRemoveImage(image.id)}
+                      aria-label="Remove photo"
                     >
                       <X className="h-3 w-3" />
                     </Button>

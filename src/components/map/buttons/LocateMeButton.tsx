@@ -88,6 +88,19 @@ const hasPrompted = () => {
 const markPrompted = () => {
   try { localStorage.setItem(PROMPTED_KEY, '1'); } catch { /* ignore */ }
 };
+// Remembers that the user allowed GPS, for browsers without a Permissions API
+// (permission state stays 'unknown', so the prompted flag alone would block GPS
+// on every later tap). Settings clears it when "Use my location" is turned off.
+const GRANTED_KEY = 'geolocation_granted';
+const hasGranted = () => {
+  try { return localStorage.getItem(GRANTED_KEY) === '1'; } catch { return false; }
+};
+const markGranted = () => {
+  try { localStorage.setItem(GRANTED_KEY, '1'); } catch { /* ignore */ }
+};
+const clearGranted = () => {
+  try { localStorage.removeItem(GRANTED_KEY); } catch { /* ignore */ }
+};
 const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
   const [loading, setLoading] = useState(false);
   // SSR-safe deterministic defaults; real prefs hydrate from localStorage in
@@ -117,7 +130,7 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
     if (res) {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ ...res, ts: Date.now() }));
       dispatchCenter(res.lat, res.lng);
-      toast.success('Centered on your approximate location', { id: TOAST_ID });
+      toast.success('Centred on your approximate location', { id: TOAST_ID });
     } else {
       secureLog.error('LocateMe: all IP fallback providers failed', logCtx());
       toast.error("Couldn't determine your location", {
@@ -141,8 +154,9 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
             accuracy: pos.coords.accuracy,
             ...logCtx(),
           });
+          markGranted();
           dispatchCenter(latitude, longitude);
-          toast.success('Centered on your location', { id: TOAST_ID });
+          toast.success('Centred on your location', { id: TOAST_ID });
           resolve(true);
         },
         (err) => {
@@ -158,6 +172,7 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
             ...logCtx(),
           });
           if (err.code === err.PERMISSION_DENIED) {
+            clearGranted();
             toast.message('Location permission denied', {
               id: TOAST_ID,
               description: 'Falling back to approximate IP-based location.',
@@ -195,11 +210,13 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
       // Show the browser prompt only when:
       //   - permission is already 'granted' (no prompt actually shown), OR
       //   - permission is 'prompt' AND we have never asked before / the
-      //     user just re-enabled the setting (flag cleared by Settings).
+      //     user just re-enabled the setting (flag cleared by Settings), OR
+      //   - permission can't be read ('unknown') and GPS last succeeded.
       const shouldRequest =
         permissionState === 'granted' ||
         (permissionState === 'prompt' && !hasPrompted()) ||
-        (permissionState !== 'denied' && permissionState !== 'prompt' && !hasPrompted());
+        (permissionState !== 'denied' && permissionState !== 'prompt' && !hasPrompted()) ||
+        (permissionState === 'unknown' && hasGranted());
 
       if (shouldRequest && 'geolocation' in navigator) {
         toast.loading(
@@ -220,7 +237,7 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
           const cached: CachedLocation = JSON.parse(raw);
           if (Date.now() - cached.ts < TTL_MS) {
             dispatchCenter(cached.lat, cached.lng);
-            toast.success('Centered on your approximate location', { id: TOAST_ID });
+            toast.success('Centred on your approximate location', { id: TOAST_ID });
             return;
           }
         }

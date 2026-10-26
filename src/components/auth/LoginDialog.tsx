@@ -361,8 +361,8 @@ const LoginDialog: React.FC<LoginDialogProps> = ({
             (() => {
               const tone =
                 preflight.status === 'offline' || preflight.status === 'not-pi-browser'
-                  ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
-                  : 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300';
+                  ? 'bg-destructive/10 border-destructive/40 text-foreground'
+                  : 'bg-secondary border-border text-secondary-foreground';
               const Icon =
                 preflight.status === 'offline'
                   ? WifiOff
@@ -417,7 +417,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({
             <div
               role="alert"
               aria-live="assertive"
-              className="w-full bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 p-3 rounded-md mb-4 flex items-start"
+              className="w-full bg-destructive/10 border border-destructive/40 text-foreground p-3 rounded-md mb-4 flex items-start"
             >
               <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
               <div className="text-sm flex-1">
