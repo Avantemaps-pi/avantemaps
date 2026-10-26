@@ -102,6 +102,9 @@ async function openDrawer(page: Page, row: object) {
   await page.waitForTimeout(1_500);
   const box = (await marker.boundingBox())!;
   await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+  // A pin tap shows the card strip; its first card (the tapped business) opens the drawer
+  const card = (await page.locator('[data-strip-card] p').first().boundingBox())!;
+  await page.touchscreen.tap(card.x + card.width / 2, card.y + card.height / 2);
   await expect(drawer(page)).toBeVisible();
   await page.waitForTimeout(900);
 }

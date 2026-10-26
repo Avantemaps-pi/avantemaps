@@ -70,6 +70,8 @@ async function openDrawer(page: Page) {
   }
   await page.waitForTimeout(1_500);
   await tapCentre(page, '.leaflet-marker-icon');
+  // A pin tap shows the card strip; its first card (the tapped business) opens the drawer
+  await tapCentre(page, '[data-strip-card] p');
   await expect(drawer(page)).toBeVisible();
   await page.waitForTimeout(800);
 }
@@ -113,7 +115,8 @@ for (const scheme of ['light', 'dark'] as const) {
       await openDrawer(page);
       await swipeDrawerDown(page);
       await expect(drawer(page)).toHaveCount(0);
-      await expect(page.locator('.leaflet-popup')).toHaveCount(1);
+      // Closing a drawer opened from a card returns to the card strip
+      await expect(page.locator('[data-map-strip]')).toBeVisible();
       await expectSearchFocusedOnFirstTap(page);
     });
 

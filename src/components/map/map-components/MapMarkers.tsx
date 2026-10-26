@@ -7,10 +7,13 @@ import { createMarkerIcon } from '../markerUtils';
 interface MapMarkersProps {
   places: Place[];
   activeMarkerId: string | null;
-  onMarkerClick: (id: string) => void;
+  /** fromKeyboard: the pin was activated with Enter/Space rather than a tap or click */
+  onMarkerClick: (id: string, fromKeyboard: boolean) => void;
+  /** Name popup on tap; off in card strip mode, where the card shows the name */
+  showPopups?: boolean;
 }
 
-const MapMarkers: React.FC<MapMarkersProps> = ({ places, activeMarkerId, onMarkerClick }) => {
+const MapMarkers: React.FC<MapMarkersProps> = ({ places, activeMarkerId, onMarkerClick, showPopups = true }) => {
   const markerIcons = useMemo(() => {
     const iconMap = new Map<string, L.Icon | L.DivIcon>();
     places.forEach(place => {
@@ -46,11 +49,13 @@ const MapMarkers: React.FC<MapMarkersProps> = ({ places, activeMarkerId, onMarke
               key={place.id}
               position={position}
               icon={markerIcon}
+              // Names the pin for screen readers (Leaflet's default alt is "Marker")
+              alt={place.name}
               eventHandlers={{
-                click: () => onMarkerClick(place.id)
+                click: (e) => onMarkerClick(place.id, e.originalEvent instanceof KeyboardEvent)
               }}
             >
-              <Popup>{place.name}</Popup>
+              {showPopups && <Popup>{place.name}</Popup>}
             </Marker>
           );
         }
@@ -64,6 +69,7 @@ export default React.memo(MapMarkers, (prev, next) => {
   return (
     prev.activeMarkerId === next.activeMarkerId &&
     prev.onMarkerClick === next.onMarkerClick &&
-    prev.places === next.places
+    prev.places === next.places &&
+    prev.showPopups === next.showPopups
   );
 });

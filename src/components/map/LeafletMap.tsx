@@ -9,6 +9,7 @@ import MapViewUpdater from './map-components/MapViewUpdater';
 import CountryClickFocus from './map-components/CountryClickFocus';
 import CountryZoomControl from './map-components/CountryZoomControl';
 import PlaceOverlay from './map-components/PlaceOverlay';
+import StripMapSync from './map-components/StripMapSync';
 import L, { LatLngTuple } from 'leaflet';
 import '@/lib/fix-leaflet-icons';
 import MarkerClusterGroup from 'react-leaflet-cluster';
@@ -40,6 +41,17 @@ interface LeafletMapProps {
   detailCardRef?: React.RefObject<HTMLDivElement>; 
   isLoading?: boolean; 
   suppressOverlay?: boolean;
+  /** Card strip mode: a pin tap goes here instead of opening the drawer */
+  onPinTap?: ((id: string, info: { bounds: L.LatLngBounds; fromKeyboard: boolean }) => void) | undefined;
+  /** Business the card strip is showing; its pin is highlighted */
+  stripSelectedId?: string | null | undefined;
+  /** Bumped on every strip selection so its pin is re-checked for visibility */
+  stripSelectionSeq?: number | undefined;
+  /** Drawer opened from a strip card: opens without moving the map */
+  cardDrawerId?: string | null | undefined;
+  onCardDrawerClose?: (() => void) | undefined;
+  onEmptyMapClick?: (() => void) | undefined;
+  onUserMoveEnd?: ((bounds: L.LatLngBounds) => void) | undefined;
 }
 
 const LeafletMap: React.FC<LeafletMapProps> = ({ 
@@ -48,8 +60,22 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   onMarkerClick,
   detailCardRef,
   isLoading = false,
-  suppressOverlay = false
+  suppressOverlay = false,
+  onPinTap,
+  stripSelectedId = null,
+  stripSelectionSeq = 0,
+  cardDrawerId = null,
+  onCardDrawerClose,
+  onEmptyMapClick,
+  onUserMoveEnd,
 }) => {
+  const mapRef = useRef<L.Map | null>(null);
+  const cardDrawerIdRef = useRef(cardDrawerId);
+  cardDrawerIdRef.current = cardDrawerId;
+  // Read by CountryClickFocus at click time: a tap on empty map while the strip
+  // is open only closes the strip (no country fly)
+  const stripOpenRef = useRef(false);
+  stripOpenRef.current = !!stripSelectedId;
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
   const [showPopover, setShowPopover] = useState(false);
   const [mapCenter, setMapCenter] = useState<LatLngTuple>([defaultCenter.lat, defaultCenter.lng]); // San Francisco by default
@@ -132,12 +158,21 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         setActiveMarker(selectedPlaceId);
         setShowPopover(true);
       }
-    } else {
-      // Don't reset map center when closing overlay - keep user's current view
+    } else if (!cardDrawerIdRef.current) {
+      // Don't reset map center when closing overlay - keep user's current view.
+      // A drawer opened from a strip card isn't driven by selectedPlaceId: leave it open.
       setActiveMarker(null);
       setShowPopover(false);
     }
   }, [selectedPlaceId, displayPlaces]);
+
+  // Drawer opened from a strip card: show it without recentring, so the strip's
+  // list and the map stay as they were when it closes
+  useEffect(() => {
+    if (!cardDrawerId) return;
+    setActiveMarker(cardDrawerId);
+    setShowPopover(true);
+  }, [cardDrawerId]);
 
   // Listen for zoom to place events
   useEffect(() => {
@@ -182,7 +217,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const MARKER_CLICK_THROTTLE_MS = 250;
   const lastMarkerClickRef = useRef<{ id: string | null; ts: number }>({ id: null, ts: 0 });
 
-  const handleMarkerClick = useCallback((id: string) => {
+  const handleMarkerClick = useCallback((id: string, fromKeyboard = false) => {
     const now = Date.now();
     const last = lastMarkerClickRef.current;
     // Drop the event if the same marker was clicked within the throttle window,
@@ -198,17 +233,24 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
       if (onMarkerClick) onMarkerClick(id);
       return;
     }
+    // Card strip mode: select in the strip, don't open the drawer
+    if (onPinTap && mapRef.current) {
+      onPinTap(id, { bounds: mapRef.current.getBounds(), fromKeyboard });
+      return;
+    }
     setActiveMarker(id);
     setShowPopover(true);
 
     if (onMarkerClick) {
       onMarkerClick(id);
     }
-  }, [onMarkerClick, suppressOverlay]);
+  }, [onMarkerClick, suppressOverlay, onPinTap]);
 
   const handleOverlayClick = () => {
     setActiveMarker(null);
     setShowPopover(false);
+    // Back to the strip, same card selected
+    if (cardDrawerId && onCardDrawerClose) onCardDrawerClose();
     
     if (onMarkerClick) {
       onMarkerClick("");
@@ -218,9 +260,10 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const selectedPlace = activeMarker ? (displayPlaces.find(place => place.id === activeMarker) ?? null) : null;
 
   return (
-    <div className={`w-full h-full relative${keyboardOpen ? ' keyboard-open' : ''}`}>
+    <div className={`w-full h-full relative${keyboardOpen ? ' keyboard-open' : ''}${stripSelectedId ? ' strip-open' : ''}`}>
       
       <MapContainer 
+        ref={mapRef}
         style={{ height: '100%', width: '100%', zIndex: 1 }}
         className="leaflet-container"
         center={mapCenter}
@@ -238,8 +281,15 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         <AttributionControl position="bottomleft" prefix={false} />
         
         <MapViewUpdater center={mapCenter} zoom={zoom} />
-        <CountryClickFocus />
-        <CountryZoomControl />
+        <CountryClickFocus skipRef={stripOpenRef} />
+        <CountryZoomControl anchorKey={stripSelectedId ? 'strip' : 'fab'} />
+        <StripMapSync
+          places={displayPlaces}
+          selectedId={stripSelectedId}
+          selectionSeq={stripSelectionSeq}
+          onEmptyMapClick={onEmptyMapClick}
+          onUserMoveEnd={onUserMoveEnd}
+        />
         
         <MarkerClusterGroup
           chunkedLoading
@@ -253,7 +303,12 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
           animate={displayPlaces.length < 500}
           iconCreateFunction={createClusterIcon}
         >
-          <MapMarkers places={displayPlaces} activeMarkerId={activeMarker} onMarkerClick={handleMarkerClick} />
+          <MapMarkers
+            places={displayPlaces}
+            activeMarkerId={activeMarker ?? stripSelectedId}
+            onMarkerClick={handleMarkerClick}
+            showPopups={!onPinTap}
+          />
         </MarkerClusterGroup>
       </MapContainer>
       

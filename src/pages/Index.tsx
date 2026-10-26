@@ -22,6 +22,9 @@ import { useIpLocationFocus } from '@/hooks/useIpLocationFocus';
 import '../styles/map.css';
 import { getOrigin } from '@/utils/browserEnv';
 import { Place } from '@/types/business';
+import type { LatLngBounds } from 'leaflet';
+import MapCardStrip, { type StripScrollRequest } from '@/components/map/MapCardStrip';
+import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
 const AddBusinessButton = lazy(() => import('@/components/map/buttons/AddBusinessButton'));
@@ -41,6 +44,35 @@ const matchesCategory = (place: Place, categoryId: string) => {
     .toLowerCase();
   return opt.match.some(m => haystack.includes(m));
 };
+
+// Max cards in the map card strip
+const STRIP_MAX = 20;
+
+const placeLatLng = (place: Place) => place.position ?? place.location ?? null;
+
+// Places inside the bounds, nearest to origin first (origin's own place leads), capped
+const buildStripIds = (places: Place[], bounds: LatLngBounds, origin: { lat: number; lng: number }) => {
+  const kx = Math.cos((origin.lat * Math.PI) / 180);
+  return places
+    .map((place) => ({ place, pos: placeLatLng(place) }))
+    .filter(({ pos }) => pos && bounds.contains([pos.lat, pos.lng]))
+    .map(({ place, pos }) => ({
+      id: place.id,
+      d: (pos!.lat - origin.lat) ** 2 + ((pos!.lng - origin.lng) * kx) ** 2,
+    }))
+    .sort((a, b) => a.d - b.d)
+    .slice(0, STRIP_MAX)
+    .map(({ id }) => id);
+};
+
+interface StripState {
+  /** Frozen card order; rebuilt only when the user moves the map */
+  ids: string[];
+  selectedId: string;
+  /** Bumped on each selection so the map re-checks the pin is in view */
+  selectionSeq: number;
+  scroll: StripScrollRequest;
+}
 
 const Index = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -134,6 +166,88 @@ const Index = () => {
     () => basePlaces.filter(p => matchesCategory(p, selectedCategoryId)),
     [basePlaces, selectedCategoryId]
   );
+
+  // Map card strip: a pin tap shows a swipeable strip of the businesses in view,
+  // starting with the one tapped; tapping a card opens the drawer
+  const [strip, setStrip] = useState<StripState | null>(null);
+  const [cardDrawerId, setCardDrawerId] = useState<string | null>(null);
+  const keyboardOpen = useKeyboardOpen();
+  const visiblePlacesRef = React.useRef(visiblePlaces);
+  visiblePlacesRef.current = visiblePlaces;
+
+  const stripPlaces = React.useMemo(() => {
+    if (!strip) return [];
+    const byId = new Map(visiblePlaces.map((p) => [p.id, p]));
+    return strip.ids.map((id) => byId.get(id)).filter((p): p is Place => !!p);
+  }, [strip, visiblePlaces]);
+
+  const handlePinTap = React.useCallback(
+    (id: string, { bounds, fromKeyboard }: { bounds: LatLngBounds; fromKeyboard: boolean }) => {
+      setStrip((prev) => {
+        const scroll = { seq: (prev?.scroll.seq ?? 0) + 1, focus: fromKeyboard };
+        const selectionSeq = (prev?.selectionSeq ?? 0) + 1;
+        // Already in the strip: scroll to its card, keep the list
+        if (prev?.ids.includes(id)) {
+          return { ...prev, selectedId: id, selectionSeq, scroll: { ...scroll, instant: false } };
+        }
+        const tapped = visiblePlacesRef.current.find((p) => p.id === id);
+        const origin = tapped ? placeLatLng(tapped) : null;
+        if (!origin) return prev;
+        const ids = buildStripIds(visiblePlacesRef.current, bounds, origin);
+        // The tapped pin can sit right on the edge of the bounds
+        if (ids[0] !== id) ids.unshift(...[id].filter((x) => !ids.includes(x)));
+        return { ids: ids.slice(0, STRIP_MAX), selectedId: id, selectionSeq, scroll: { ...scroll, instant: true } };
+      });
+    },
+    []
+  );
+
+  // The user dragged or zoomed: rebuild from what's in view, keeping the card if it's still there
+  const handleUserMoveEnd = React.useCallback((bounds: LatLngBounds) => {
+    setStrip((prev) => {
+      if (!prev) return prev;
+      const current = visiblePlacesRef.current.find((p) => p.id === prev.selectedId);
+      const currentPos = current ? placeLatLng(current) : null;
+      const keep = !!currentPos && bounds.contains([currentPos.lat, currentPos.lng]);
+      const ids = buildStripIds(visiblePlacesRef.current, bounds, keep && currentPos ? currentPos : bounds.getCenter());
+      const first = ids[0];
+      if (!first) return null;
+      return {
+        ids,
+        selectedId: keep ? prev.selectedId : first,
+        selectionSeq: prev.selectionSeq,
+        scroll: { seq: prev.scroll.seq + 1, instant: true, focus: false },
+      };
+    });
+  }, []);
+
+  const handleStripSelect = React.useCallback((id: string) => {
+    setStrip((prev) =>
+      prev && prev.selectedId !== id ? { ...prev, selectedId: id, selectionSeq: prev.selectionSeq + 1 } : prev
+    );
+  }, []);
+
+  const closeStrip = React.useCallback(() => setStrip(null), []);
+
+  // Search or category changes close the strip
+  useEffect(() => {
+    setStrip(null);
+  }, [searchTerm, selectedCategoryId]);
+
+  // Nothing left to show (data changed): close it
+  useEffect(() => {
+    if (strip && stripPlaces.length === 0) setStrip(null);
+  }, [strip, stripPlaces.length]);
+
+  // Escape closes the strip (the drawer handles Escape itself while it's open)
+  useEffect(() => {
+    if (!strip || cardDrawerId || selectedPlace) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setStrip(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [strip, cardDrawerId, selectedPlace]);
 
   // When the search results update, sync the map viewport to the best match the
   // map actually shows (first of visiblePlaces: search results, relevance order,
@@ -306,13 +420,20 @@ const Index = () => {
             selectedPlaceId={selectedPlace}
             onMarkerClick={handlePlaceClick}
             isLoading={isLoading}
+            onPinTap={handlePinTap}
+            stripSelectedId={strip?.selectedId ?? null}
+            stripSelectionSeq={strip?.selectionSeq ?? 0}
+            cardDrawerId={cardDrawerId}
+            onCardDrawerClose={() => setCardDrawerId(null)}
+            onEmptyMapClick={closeStrip}
+            onUserMoveEnd={handleUserMoveEnd}
           />
         </Suspense>
       </div>
       
       {/* Floating UI - responsive positioning with proper spacing for sidebar */}
       {/* pointer-events-none so the map stays draggable in the gaps; each row opts back in */}
-      <div className="absolute top-0 left-0 right-0 z-20 px-4 md:pl-[280px] lg:pl-[280px] pt-3 sm:pt-4 flex flex-col gap-3 pointer-events-none">
+      <div data-map-top-stack className="absolute top-0 left-0 right-0 z-20 px-4 md:pl-[280px] lg:pl-[280px] pt-3 sm:pt-4 flex flex-col gap-3 pointer-events-none">
         <div className="flex items-center gap-2 pointer-events-auto">
           <Button
             variant="ghost"
@@ -365,11 +486,25 @@ const Index = () => {
         </div>
       )}
       
+      {strip && stripPlaces.length > 0 && (
+        <MapCardStrip
+          places={stripPlaces}
+          selectedId={strip.selectedId}
+          scrollRequest={strip.scroll}
+          onSelect={handleStripSelect}
+          onOpen={setCardDrawerId}
+          hidden={keyboardOpen}
+        />
+      )}
+
       <Suspense fallback={null}>
-        <AddBusinessButton selectedPlace={selectedPlace} />
+        <AddBusinessButton selectedPlace={selectedPlace} hiddenByStrip={!!strip} />
       </Suspense>
-      {/* Top of the right-hand column: FAB (bottom 96px, 56px tall) + 12px gap + zoom group (90px) + 12px gap = 266px */}
-      <LocateMeButton className="absolute right-4 bottom-[calc(266px+env(safe-area-inset-bottom))] z-20" />
+      {/* Top of the right-hand column: FAB (bottom 96px, 56px tall) + 12px gap + zoom group (90px) + 12px gap = 266px.
+          Strip open: its top (76px + 124px = 200px) sits 48px above the FAB's (152px), so 314px */}
+      <LocateMeButton
+        className={`absolute right-4 z-20 ${strip ? 'bottom-[calc(314px+env(safe-area-inset-bottom))]' : 'bottom-[calc(266px+env(safe-area-inset-bottom))]'}`}
+      />
       <BottomNavBar />
     </div>
   );

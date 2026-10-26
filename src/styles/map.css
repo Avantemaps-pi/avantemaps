@@ -84,6 +84,11 @@
   pointer-events: none;
 }
 
+/* Card strip open: sit above it (strip top 200px + 12px gap) */
+.strip-open .leaflet-container .leaflet-bottom .leaflet-control-attribution {
+  margin-bottom: calc(212px + env(safe-area-inset-bottom));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .leaflet-container .leaflet-bottom .leaflet-control-attribution {
     transition: none;
