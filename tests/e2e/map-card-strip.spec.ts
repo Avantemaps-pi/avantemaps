@@ -61,6 +61,15 @@ const NO_PHOTO = BUSINESSES[2]!; // no photo, no hours, no reviews
 
 test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
 
+// Parsed request URL, or null for anything that doesn't parse (treated as no match)
+const parseUrl = (url: string): URL | null => {
+  try {
+    return new URL(url);
+  } catch {
+    return null;
+  }
+};
+
 const strip = (page: Page) => page.getByRole('region', { name: 'Businesses in this area' });
 const card = (page: Page, name: string) => page.locator('[data-strip-card]').filter({ has: page.getByRole('button', { name: new RegExp(`^${name}`) }) });
 const pin = (page: Page, name: string) => page.locator(`img.leaflet-marker-icon[alt="${name}"]`);
@@ -312,7 +321,7 @@ test('more than 20 in view: the strip caps at 20, tapped business first', async 
 test('empty-map tap with the strip open only closes it: no country lookup, the map stays put', async ({ page }) => {
   const nominatim: string[] = [];
   page.on('request', (r) => {
-    if (r.url().includes('nominatim.openstreetmap.org')) nominatim.push(r.url());
+    if (parseUrl(r.url())?.hostname === 'nominatim.openstreetmap.org') nominatim.push(r.url());
   });
   await openMap(page);
   await tapPin(page, 'Table Bay Bookshop');
@@ -367,7 +376,7 @@ test('opening a strip of 20 cards makes at most one bookmarks request', async ({
 
   const bookmarkRequests: string[] = [];
   page.on('request', (r) => {
-    if (r.url().includes('/rest/v1/bookmarks')) bookmarkRequests.push(r.url());
+    if (parseUrl(r.url())?.pathname.startsWith('/rest/v1/bookmarks')) bookmarkRequests.push(r.url());
   });
   await tapPin(page, 'Grid Shop 13');
   await expect(page.locator('[data-strip-card]')).toHaveCount(20);
