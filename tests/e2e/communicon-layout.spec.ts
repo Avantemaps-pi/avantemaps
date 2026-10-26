@@ -52,8 +52,33 @@ const SIZES = [
   { width: 375, height: 667 },
 ];
 
-async function setup(page: Page) {
+// A business owner needs a Supabase session (MessagesPanel loads owned businesses
+// with it). A fake, unexpired session in the client's storage key does that
+// without a network call; the session-dependent requests are mocked.
+const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString('base64url');
+const SESSION_EXP = Math.floor(Date.now() / 1000) + 3600;
+const fakeSession = {
+  access_token: `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub: UID, exp: SESSION_EXP, role: 'authenticated', aud: 'authenticated' })}.sig`,
+  refresh_token: 'fake-refresh',
+  expires_in: 3600,
+  expires_at: SESSION_EXP,
+  token_type: 'bearer',
+  user: { id: UID, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() },
+};
+
+async function setup(page: Page, opts: { owner?: boolean } = {}) {
   await page.route('**/pi-sdk.js', (route) => route.abort());
+  if (opts.owner) {
+    await page.route('**/auth/v1/**', (route) => route.fulfill({ json: fakeSession.user }));
+    await page.route('**/rest/v1/businesses*', (route) =>
+      route.fulfill({ json: [{ id: 9001, business_name: 'Harbour Light Coffee' }] }),
+    );
+    await page.route('**/rest/v1/users*', (route) => route.fulfill({ json: [] }));
+    await page.route('**/rest/v1/user_roles*', (route) => route.fulfill({ json: [] }));
+    await page.addInitScript((session) => {
+      localStorage.setItem('supabase.auth.token', JSON.stringify(session));
+    }, fakeSession);
+  }
   await page.route('**/functions/v1/chat-ai', (route) =>
     route.fulfill({
       status: 200,
@@ -75,7 +100,7 @@ async function setup(page: Page) {
     [SANDBOX_MOCK_KEY, STORAGE_KEY, mockUser],
   );
   await page.goto('/communicon');
-  await expect(page.getByRole('button', { name: 'Bot' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Bot' })).toBeVisible();
   await page.waitForLoadState('networkidle');
 }
 
@@ -140,7 +165,7 @@ for (const size of SIZES) {
 
     test('Messages inbox: the list reaches the bottom of the screen and scrolls on its own', async ({ page }) => {
       await setup(page);
-      await page.getByRole('button', { name: 'Messages' }).click();
+      await page.getByRole('tab', { name: 'Messages' }).click();
       await expect(page.getByText('Test Business 14')).toBeAttached();
       const list = page.locator('main ul').first().locator('xpath=..');
       expect(await bottomGap(page, list)).toBeLessThanOrEqual(32);
@@ -150,7 +175,7 @@ for (const size of SIZES) {
 
     test('open conversation: composer at the bottom, only the thread scrolls', async ({ page }) => {
       await setup(page);
-      await page.getByRole('button', { name: 'Messages' }).click();
+      await page.getByRole('tab', { name: 'Messages' }).click();
       await page.getByText('Test Business 1', { exact: true }).click();
       await expect(composer(page)).toBeVisible();
       await expect(page.getByText('Reply 24: yes, we accept Pi for that.')).toBeAttached();
@@ -189,7 +214,7 @@ for (const size of SIZES) {
     // scope), so this asserts the pinning rather than the bubble being on screen.
     test('keyboard open in a conversation: composer stays above it, thread pinned to the newest message', async ({ page }) => {
       await setup(page);
-      await page.getByRole('button', { name: 'Messages' }).click();
+      await page.getByRole('tab', { name: 'Messages' }).click();
       await page.getByText('Test Business 1', { exact: true }).click();
       await expect(page.getByText('Reply 24: yes, we accept Pi for that.')).toBeInViewport();
       await page.waitForTimeout(800);
@@ -204,3 +229,69 @@ for (const size of SIZES) {
     });
   });
 }
+
+// Message-list height with a conversation open at 375x667 on Dev before this
+// change (card header + inbox picker above it), measured with the same page.
+const DEV_THREAD_HEIGHT_667 = 344;
+
+test.describe('slim header at 375x667', () => {
+  test.use({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true });
+
+  test('one CommuniCon heading and a slim mode row', async ({ page }) => {
+    await setup(page);
+    await expect(page.getByRole('heading', { name: 'CommuniCon' })).toHaveCount(1);
+    await expect(page.getByText('Avante Maps communication hub')).toHaveCount(0);
+    const row = page.getByRole('tablist', { name: 'CommuniCon mode' }).locator('xpath=..');
+    expect((await row.boundingBox())!.height).toBeLessThanOrEqual(64);
+    for (const tab of await page.getByRole('tab').all()) {
+      expect(Math.round((await tab.boundingBox())!.height)).toBe(44);
+    }
+  });
+
+  test('conversation open: no inbox picker, message list at least 80px taller than on Dev', async ({ page }) => {
+    await setup(page, { owner: true });
+    await page.getByRole('tab', { name: 'Messages' }).click();
+    await expect(page.getByRole('combobox', { name: 'Inbox' })).toBeVisible();
+    await page.getByText('Test Business 1', { exact: true }).click();
+    await expect(composer(page)).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Inbox' })).toHaveCount(0);
+    const height = await page.locator('main .overflow-y-auto').last().evaluate((el) => el.clientHeight);
+    console.log(`thread height at 375x667: ${height}px (Dev: ${DEV_THREAD_HEIGHT_667}px)`);
+    expect(height).toBeGreaterThanOrEqual(DEV_THREAD_HEIGHT_667 + 80);
+
+    // Back arrow returns to the list with the picker
+    await page.getByRole('button', { name: 'Back to conversations' }).click();
+    await expect(page.getByRole('combobox', { name: 'Inbox' })).toBeVisible();
+  });
+
+  test('a user who owns no business: no inbox picker row', async ({ page }) => {
+    await setup(page);
+    await page.getByRole('tab', { name: 'Messages' }).click();
+    await expect(page.getByText('Test Business 14')).toBeAttached();
+    await expect(page.getByRole('combobox', { name: 'Inbox' })).toHaveCount(0);
+  });
+
+  test('keyboard: Tab reaches the mode tabs, arrows switch them, focus is visible', async ({ page }) => {
+    await setup(page);
+    const bot = page.getByRole('tab', { name: 'Bot' });
+    const messages = page.getByRole('tab', { name: 'Messages' });
+    await expect(bot).toHaveAttribute('aria-selected', 'true');
+    await expect(messages).toHaveAttribute('tabindex', '-1');
+
+    // Tab from the page header reaches the active tab
+    for (let i = 0; i < 12 && !(await bot.evaluate((el) => el === document.activeElement)); i++) {
+      await page.keyboard.press('Tab');
+    }
+    await expect(bot).toBeFocused();
+    expect(await bot.evaluate((el) => getComputedStyle(el).boxShadow)).not.toBe('none');
+
+    await page.keyboard.press('ArrowRight');
+    await expect(messages).toBeFocused();
+    await expect(messages).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByPlaceholder('Ask about your business...')).toHaveCount(0);
+
+    await page.keyboard.press('ArrowLeft');
+    await expect(bot).toBeFocused();
+    await expect(bot).toHaveAttribute('aria-selected', 'true');
+  });
+});
