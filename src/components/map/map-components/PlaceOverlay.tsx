@@ -10,7 +10,7 @@ import BookmarkButton from '../buttons/BookmarkButton';
 import PlaceRating from '../place/PlaceRating';
 import SwipeableImageGallery from '@/components/business/SwipeableImageGallery';
 import PlaceCardButtonRow from '@/components/business/PlaceCardButtonRow';
-import { formatHours } from '@/components/business/formatHours';
+import { formatHours, todayHours } from '@/components/business/formatHours';
 import { useSharePlace } from '@/hooks/useSharePlace';
 import { useBookmark } from '@/hooks/useBookmark';
 
@@ -56,13 +56,16 @@ const PlaceOverlay: React.FC<PlaceOverlayProps> = ({
 };
 
 const InfoRow: React.FC<{ icon: React.ElementType; children: React.ReactNode }> = ({ icon: Icon, children }) => (
-  <div className="flex items-start gap-3 border-b border-border py-3">
-    <span className="shrink-0 pt-0.5 text-muted-foreground">
-      <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+  <div className="flex min-h-12 items-center gap-3 border-b border-border py-2">
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-primary">
+      <Icon className="h-4 w-4" aria-hidden="true" />
     </span>
     <div className="min-w-0 flex-1 text-sm text-foreground">{children}</div>
   </div>
 );
+
+// Round 44px button floated over the photo
+const floatingButton = 'h-11 w-11 sm:h-11 sm:w-11 rounded-full bg-surface-float shadow-float text-foreground hover:bg-surface-float';
 
 const PlaceOverlayContent: React.FC<{
   place: Place;
@@ -85,6 +88,10 @@ const PlaceOverlayContent: React.FC<{
   const address = place.address && place.address !== NO_ADDRESS ? place.address : '';
   const description = place.description && place.description !== NO_DESCRIPTION ? place.description.trim() : '';
   const hours = formatHours(place.hours);
+  const today = todayHours(place.hours);
+  // No open/closed-now or distance: we don't know the business's time zone
+  const todayLabel = today === null ? '' : today === 'closed' ? 'Closed today' : `Today ${today}`;
+  const summary = [category, todayLabel].filter(Boolean).join(' · ');
   const trimmedName = place.name.trim();
   const lastSpace = trimmedName.lastIndexOf(' ');
   const nameHead = trimmedName.slice(0, lastSpace + 1);
@@ -109,144 +116,145 @@ const PlaceOverlayContent: React.FC<{
   };
 
   return (
-    <div className="flex min-h-0 flex-col gap-4 overflow-y-auto px-4 pt-2 pb-6">
-      {/* Header */}
-      <div className="flex items-start gap-1">
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <DrawerTitle className="text-xl leading-7 font-semibold tracking-normal text-foreground break-words">
-            {place.isVerified ? (
-              <>
-                {nameHead}
-                {/* Keep the check attached to the last word so it never wraps on its own */}
-                <span className="whitespace-nowrap">
-                  {nameLast}
-                  <CircleCheck className="ml-1 inline-block h-5 w-5 align-[-3px] text-primary" aria-hidden="true" />
-                </span>
-                <span className="sr-only"> (Verified)</span>
-              </>
-            ) : (
-              place.name
-            )}
-          </DrawerTitle>
-          <DrawerDescription className="sr-only">
-            {[category, address].filter(Boolean).join(' · ') || place.name}
-          </DrawerDescription>
-          <div className="flex flex-wrap items-center gap-2">
-            <PlaceRating rating={place.rating} totalReviews={place.totalReviews} onClick={handleReviews} />
-            {category && (
-              <>
-                <span className="text-border" aria-hidden="true">|</span>
-                <CategoryBadge category={category} />
-              </>
-            )}
-            {place.isCertified && <CategoryBadge category="Certified" tone="navy" icon={Shield} />}
-            {place.verificationStatus === 'pending' && (
-              <CategoryBadge category="Pending verification" tone="outline" />
-            )}
-          </div>
-        </div>
-        <div className="-mr-2.5 -mt-2 flex shrink-0 items-center">
-          <BookmarkButton
-            isBookmarked={isBookmarked}
-            onToggle={handleBookmarkToggle}
-            isLoading={isLoading}
-          />
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Body scrolls; the action row below stays put */}
+      <div className="min-h-0 flex-1 overflow-y-auto pb-4">
+        {/* Photo, edge to edge, with Close and Save floated over it */}
+        <div className="relative mt-2">
+          {images.length > 0 ? (
+            <div className="overflow-hidden bg-muted" data-vaul-no-drag>
+              <SwipeableImageGallery
+                images={images}
+                name={place.name}
+                isBookmarked={isBookmarked}
+                onBookmarkToggle={handleBookmarkToggle}
+                onShare={handleShare}
+                placeId={place.id}
+                previewMode={true}
+                imageClassName="h-[248px]"
+                className="rounded-none"
+                counterPosition="bottom-right"
+              />
+            </div>
+          ) : (
+            <div className="flex h-[248px] items-center justify-center bg-muted" role="img" aria-label="No photos yet">
+              <ImageIcon className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
+            </div>
+          )}
           <DrawerClose asChild>
             <Button
               variant="ghost"
               size="icon"
               aria-label="Close"
-              className="h-11 w-11 sm:h-11 sm:w-11 rounded-full text-muted-foreground [&_svg]:size-[22px] sm:[&_svg]:size-[22px]"
+              className={`absolute left-3 top-3 z-20 ${floatingButton} [&_svg]:size-[22px] sm:[&_svg]:size-[22px]`}
             >
               <X />
             </Button>
           </DrawerClose>
+          <BookmarkButton
+            isBookmarked={isBookmarked}
+            onToggle={handleBookmarkToggle}
+            isLoading={isLoading}
+            onPhoto
+            className={`absolute right-3 top-3 z-20 ${floatingButton}`}
+          />
+        </div>
+
+        <div className="flex flex-col gap-4 px-4 pt-3">
+          {/* Title block */}
+          <div className="flex flex-col gap-1">
+            <DrawerTitle className="text-2xl leading-[30px] font-bold tracking-normal text-foreground break-words">
+              {place.isVerified ? (
+                <>
+                  {nameHead}
+                  {/* Keep the check attached to the last word so it never wraps on its own */}
+                  <span className="whitespace-nowrap">
+                    {nameLast}
+                    <CircleCheck className="ml-1 inline-block h-5 w-5 align-[-2px] text-primary" aria-hidden="true" />
+                  </span>
+                  <span className="sr-only"> (Verified)</span>
+                </>
+              ) : (
+                place.name
+              )}
+            </DrawerTitle>
+            {summary && <p className="text-sm text-muted-foreground">{summary}</p>}
+            <DrawerDescription className="sr-only">
+              {[category, address].filter(Boolean).join(' · ') || place.name}
+            </DrawerDescription>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <PlaceRating rating={place.rating} totalReviews={place.totalReviews} onClick={handleReviews} />
+              {place.isCertified && <CategoryBadge category="Certified" tone="navy" icon={Shield} />}
+              {place.verificationStatus === 'pending' && (
+                <CategoryBadge category="Pending verification" tone="outline" />
+              )}
+            </div>
+          </div>
+
+          {/* Description */}
+          {description && (
+            <ExpandableDescription text={description} expandable className="leading-5 whitespace-pre-line" />
+          )}
+
+          {/* Info list */}
+          {(address || firstHours || place.phone || place.email) && (
+            <div className="border-t border-border">
+              {firstHours && (
+                <InfoRow icon={Clock}>
+                  <p className="leading-5">{firstHours.days} {firstHours.hours}</p>
+                  {otherHours.length > 0 && (
+                    <p className="leading-5 text-muted-foreground">
+                      {otherHours.map((g) => `${g.days} ${g.hours}`).join(' · ')}
+                    </p>
+                  )}
+                </InfoRow>
+              )}
+              {address && (
+                <InfoRow icon={MapPin}>
+                  <div className="flex items-center gap-3">
+                    <span className="min-w-0 flex-1 leading-5">{address}</span>
+                    <button
+                      type="button"
+                      onClick={handleShowOnMap}
+                      className="-my-2 inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-primary"
+                    >
+                      Show on map
+                    </button>
+                  </div>
+                </InfoRow>
+              )}
+              {place.phone && (
+                <InfoRow icon={Phone}>
+                  <a href={`tel:${place.phone}`} className="leading-5 text-primary break-all">{place.phone}</a>
+                </InfoRow>
+              )}
+              {place.email && (
+                <InfoRow icon={Mail}>
+                  <a href={`mailto:${place.email}`} className="leading-5 text-primary break-all">{place.email}</a>
+                </InfoRow>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Gallery */}
-      {images.length > 0 ? (
-        <div className="overflow-hidden rounded-xl bg-muted" data-vaul-no-drag>
-          <SwipeableImageGallery
-            images={images}
-            name={place.name}
-            isBookmarked={isBookmarked}
-            onBookmarkToggle={handleBookmarkToggle}
-            onShare={handleShare}
-            placeId={place.id}
-            previewMode={true}
-            imageClassName="h-[193px]"
-          />
-        </div>
-      ) : (
-        <div className="flex h-[193px] items-center justify-center rounded-xl bg-muted" role="img" aria-label="No photos yet">
-          <ImageIcon className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
-        </div>
-      )}
-
-      {/* Actions */}
-      <PlaceCardButtonRow
-        place={place}
-        secondaryAction={
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleReviews}
-            className="h-11 sm:h-11 rounded-md bg-transparent px-4 text-sm font-semibold [&_svg]:size-[18px] sm:[&_svg]:size-[18px]"
-          >
-            <Star />
-            Reviews
-          </Button>
-        }
-      />
-
-      {/* Info list */}
-      {(address || firstHours || place.phone || place.email) && (
-        <div className="border-t border-border">
-          {address && (
-            <InfoRow icon={MapPin}>
-              <div className="flex items-start gap-3">
-                <span className="min-w-0 flex-1 leading-5">{address}</span>
-                <button
-                  type="button"
-                  onClick={handleShowOnMap}
-                  className="-my-3 inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-primary"
-                >
-                  Show on map
-                </button>
-              </div>
-            </InfoRow>
-          )}
-          {firstHours && (
-            <InfoRow icon={Clock}>
-              <p className="leading-5">{firstHours.days} {firstHours.hours}</p>
-              {otherHours.length > 0 && (
-                <p className="leading-5 text-muted-foreground">
-                  {otherHours.map((g) => `${g.days} ${g.hours}`).join(' · ')}
-                </p>
-              )}
-            </InfoRow>
-          )}
-          {place.phone && (
-            <InfoRow icon={Phone}>
-              <a href={`tel:${place.phone}`} className="leading-5 text-primary break-all">{place.phone}</a>
-            </InfoRow>
-          )}
-          {place.email && (
-            <InfoRow icon={Mail}>
-              <a href={`mailto:${place.email}`} className="leading-5 text-primary break-all">{place.email}</a>
-            </InfoRow>
-          )}
-        </div>
-      )}
-
-      {/* About */}
-      {description && (
-        <section className="flex flex-col gap-1">
-          <h3 className="text-[17px] leading-6 font-semibold text-foreground">About</h3>
-          <ExpandableDescription text={description} className="leading-5 whitespace-pre-line" />
-        </section>
-      )}
+      {/* Actions, fixed below the scrolling body */}
+      <div className="shrink-0 border-t border-border bg-card px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <PlaceCardButtonRow
+          place={place}
+          secondaryAction={
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleReviews}
+              className="h-11 sm:h-11 rounded-md bg-transparent px-4 text-sm font-semibold [&_svg]:size-[18px] sm:[&_svg]:size-[18px]"
+            >
+              <Star />
+              Reviews
+            </Button>
+          }
+        />
+      </div>
     </div>
   );
 };
