@@ -219,8 +219,10 @@ const LocateMeButton: React.FC<{ className?: string }> = ({ className }) => {
         (permissionState === 'unknown' && hasGranted());
 
       if (shouldRequest && 'geolocation' in navigator) {
+        // No prompt will appear when permission is granted, or can't be read but GPS was allowed before
+        const noPrompt = permissionState === 'granted' || (permissionState === 'unknown' && hasGranted());
         toast.loading(
-          permissionState === 'granted' ? 'Getting your location…' : 'Requesting location permission…',
+          noPrompt ? 'Getting your location…' : 'Requesting location permission…',
           { id: TOAST_ID, description: permissionState === 'prompt' ? 'Please allow location access in the prompt.' : undefined }
         );
         if (permissionState !== 'granted') markPrompted();

@@ -257,3 +257,18 @@ test('no Permissions API, denied: IP location, and the next tap does not prompt'
   expect(await second()).toBe(0);
   expect((await state(page)).centers.at(-1)).toEqual(IP);
 });
+
+test('no Permissions API, GPS already allowed: the toast says "Getting your location…"', async ({ page }) => {
+  await setup(page, {
+    permission: 'none',
+    result: 'success',
+    storage: { geolocation_prompted: '1', geolocation_granted: '1' },
+  });
+  await page.goto('/');
+  const calls = await tapLocate(page);
+  await expect(page.getByText('Centred on your location', { exact: true })).toBeVisible();
+  expect(await calls()).toBe(1);
+  const { toasts } = await state(page);
+  expect(toasts).toContain('Getting your location…');
+  expect(toasts).not.toContain('Requesting location permission…');
+});
