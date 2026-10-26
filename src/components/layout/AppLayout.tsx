@@ -43,7 +43,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   const isMobile = useIsMobile();
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
-  const contentClasses = `flex min-w-0 flex-col ${fullHeight ? 'h-screen' : 'min-h-screen'} ${fullWidth ? 'w-full' : 'max-w-7xl mx-auto w-full'} ${className}`;
+  // fullHeight: exactly the visible screen (dvh; 100vh is taller on phones), and only the page's own lists scroll
+  const contentClasses = `flex min-w-0 flex-col ${fullHeight ? 'h-dvh' : 'min-h-screen'} ${fullWidth ? 'w-full' : 'max-w-7xl mx-auto w-full'} ${className}`;
 
   // Move focus to the page title (or main region) on route change so screen
   // readers announce the new page and keyboard users land in the new content.
@@ -64,7 +65,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full min-w-0 overflow-x-hidden">
+      <div className={`flex ${fullHeight ? 'min-h-dvh' : 'min-h-screen'} w-full min-w-0 overflow-x-hidden`}>
         {!hideSidebar && <AppSidebar />}
         
         <div className={contentClasses}>
@@ -84,7 +85,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             id="main-content"
             tabIndex={-1}
             aria-labelledby="page-title"
-            className={`flex-1 w-full min-w-0 overflow-x-hidden overflow-y-auto animate-fade-in outline-hidden ${isMobile && !hideBottomNav ? 'pb-24' : ''}`}
+            className={`flex-1 w-full min-w-0 overflow-x-hidden ${fullHeight ? 'flex flex-col min-h-0 overflow-hidden' : 'overflow-y-auto'} animate-fade-in outline-hidden ${isMobile && !hideBottomNav ? 'pb-24' : ''}`}
             style={isMobile && !hideBottomNav ? { paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' } : undefined}
           >
             {children}

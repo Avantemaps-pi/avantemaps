@@ -197,14 +197,14 @@ const Communicon = () => {
   };
 
   return (
-    <AppLayout title="CommuniCon" hideBottomNav={true}>
-      <div className="max-w-4xl mx-auto">
+    <AppLayout title="CommuniCon" hideBottomNav={true} fullHeight={true}>
+      <div className="max-w-4xl mx-auto flex flex-1 min-h-0 flex-col w-full">
         {!mounted ? (
-          <div className="flex items-center justify-center py-16" aria-busy="true">
+          <div className="flex flex-1 items-center justify-center py-16" aria-busy="true">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden="true" />
           </div>
         ) : isValidatingConversation ? (
-          <div className="flex flex-col items-center justify-center py-16">
+          <div className="flex flex-1 flex-col items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             <p className="mt-3 text-sm text-muted-foreground">Verifying conversation...</p>
           </div>

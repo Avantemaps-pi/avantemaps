@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { isSafeForAI } from '@/utils/contentFilter';
 import { toast } from 'sonner';
+import { useStickToBottom } from '@/hooks/useStickToBottom';
 
 export type ChatMode = 'ai' | 'live';
 
@@ -60,6 +61,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onVerifyContactOTP,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Keep the newest message in view when the keyboard shrinks the list
+  const listRef = useStickToBottom();
   const isInitialMount = useRef(true);
   const location = useLocation();
 
@@ -107,8 +110,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const showQuickChips = chatMode === 'ai' && messages.filter(m => m.sender === 'user').length === 0;
 
   return (
-    <Card className="overflow-hidden border-none shadow-md">
-      <div className="flex h-full flex-col">
+    <Card className="flex flex-1 min-h-0 flex-col overflow-hidden border-none rounded-none shadow-none sm:rounded-lg sm:shadow-md">
+      <div className="flex flex-1 min-h-0 flex-col">
         {/* Branded header */}
         <div className="border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3">
           <div className="flex items-center justify-between gap-2">
@@ -129,7 +132,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col min-h-[400px] max-h-[60vh] overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {chatMode === 'live' ? (
             <MessagesPanel
               initialConversationId={(location.state as any)?.openConversationId ?? null}
@@ -137,7 +140,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             />
           ) : (
             <>
-              <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+              <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
                 {messages.length === 0 ? (
                   <div className="flex h-full items-center justify-center">
                     <p className="text-center text-muted-foreground">No messages yet. Start a conversation!</p>
@@ -168,32 +171,33 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       </div>
                     ))}
 
-                    {showQuickChips && (
-                      <div className="flex flex-wrap gap-2 pt-2">
-                        {QUICK_REPLIES.map(text => (
-                          <button
-                            key={text}
-                            type="button"
-                            onClick={() => onChipClick(text)}
-                            className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
-                          >
-                            {text}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
                     <div ref={messagesEndRef} />
                   </>
                 )}
               </div>
+
+              {/* Quick replies sit with the input, above "Powered by" */}
+              {showQuickChips && (
+                <div className="flex flex-wrap gap-2 px-4 pt-2 pb-3">
+                  {QUICK_REPLIES.map(text => (
+                    <button
+                      key={text}
+                      type="button"
+                      onClick={() => onChipClick(text)}
+                      className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <div className="px-4 pt-2 pb-1 flex items-center justify-center gap-1 text-[10px] text-muted-foreground border-t">
                 <Sparkles className="h-3 w-3" />
                 <span>Powered by CommuniCon</span>
               </div>
 
-              <div className="p-3">
+              <div className="px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                 <div className="relative flex items-center">
                   <div className="flex w-full bg-muted/50 rounded-full px-4 py-3">
                     <Input

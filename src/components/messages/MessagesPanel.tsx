@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StateBlock } from '@/components/ui/state-block';
 import { toast } from 'sonner';
 import { useLocation, useNavigate } from '@/lib/router-compat';
+import { useStickToBottom } from '@/hooks/useStickToBottom';
 
 type OwnedBusiness = { id: number; business_name: string };
 
@@ -130,6 +131,8 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
   }, [initialConversationId, conversations, convsLoaded, openConversation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Keep the newest message in view when the keyboard shrinks the thread
+  const threadRef = useStickToBottom();
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, activeConvId]);
@@ -145,7 +148,7 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
 
   if (!uid) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8 min-h-[400px]">
+      <div className="flex-1 flex items-center justify-center p-8">
         <p className="text-sm text-muted-foreground">Sign in to use messages.</p>
       </div>
     );
@@ -178,10 +181,11 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
 
       {/* Body */}
       {!activeConvId ? (
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex flex-1 min-h-0 flex-col overflow-y-auto">
           {convsLoaded ? (
             conversations.length === 0 ? (
               <StateBlock
+                className="my-auto"
                 kind="empty"
                 icon={MessageSquare}
                 title="No conversations yet"
@@ -239,6 +243,7 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
             )
           ) : convsError ? (
             <StateBlock
+              className="my-auto"
               kind="error"
               icon={AlertCircle}
               title="Couldn't load conversations"
@@ -278,7 +283,7 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
             </p>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          <div ref={threadRef} className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
             {loadingMsgs ? (
               <div className="space-y-3" aria-busy="true" aria-label="Loading messages">
                 <Skeleton className="h-12 w-3/5 rounded-2xl" />
