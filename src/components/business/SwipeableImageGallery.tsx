@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useSwipeable } from 'react-swipeable';
 import PlaceCardImage from './PlaceCardImage';
 import PlaceCardActions from './PlaceCardActions';
+import { cn } from '@/lib/utils';
 
 interface SwipeableImageGalleryProps {
   images: string[];
@@ -16,6 +17,10 @@ interface SwipeableImageGalleryProps {
   hideIndicators?: boolean | undefined;
   /** No-op: photos only change on swipe or dot tap. Kept for existing callers. */
   paused?: boolean | undefined;
+  /** Where the "1 / 6" counter sits; bottom-right keeps it clear of buttons floated top-right */
+  counterPosition?: 'top-right' | 'bottom-right' | undefined;
+  /** Extra classes on the gallery root, e.g. rounded-none for an edge-to-edge photo */
+  className?: string | undefined;
 }
 
 const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
@@ -29,6 +34,8 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
   previewMode = false,
   imageClassName,
   hideIndicators = false,
+  counterPosition = 'top-right',
+  className,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -130,7 +137,7 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
 
   return (
     <div 
-      className="relative overflow-hidden rounded-lg" 
+      className={cn('relative overflow-hidden rounded-lg', className)}
       {...handlers}
       onClick={previewMode ? handleClick : undefined}
     >
@@ -169,7 +176,10 @@ const SwipeableImageGallery: React.FC<SwipeableImageGalleryProps> = ({
         <>
           <span
             aria-hidden="true"
-            className="absolute top-2 right-2 z-10 rounded-full bg-overlay px-2 py-0.5 text-xs text-white"
+            className={cn(
+              'absolute right-2 z-10 rounded-full bg-overlay px-2 py-0.5 text-xs text-white',
+              counterPosition === 'bottom-right' ? 'bottom-2' : 'top-2'
+            )}
           >
             {currentIndex + 1} / {images.length}
           </span>

@@ -7,9 +7,12 @@ interface BookmarkButtonProps {
   isBookmarked: boolean;
   onToggle: (e: React.MouseEvent) => void;
   isLoading?: boolean;
+  className?: string;
+  /** Floating over a photo: unsaved icon in text-foreground so it stays readable */
+  onPhoto?: boolean;
 }
 
-const BookmarkButton: React.FC<BookmarkButtonProps> = ({ isBookmarked, onToggle, isLoading }) => {
+const BookmarkButton: React.FC<BookmarkButtonProps> = ({ isBookmarked, onToggle, isLoading, className, onPhoto }) => {
   const { isAuthenticated } = useAuth();
   const disabled = !!isLoading || !isAuthenticated;
 
@@ -33,7 +36,8 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({ isBookmarked, onToggle,
       className={cn(
         'z-[101] inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-accent',
         disabled ? 'cursor-not-allowed' : 'cursor-pointer',
-        (isLoading || !isAuthenticated) && 'opacity-70'
+        (isLoading || !isAuthenticated) && 'opacity-70',
+        className
       )}
     >
       {isLoading ? (
@@ -47,7 +51,7 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({ isBookmarked, onToggle,
         <Bookmark
           className={cn(
             'h-[22px] w-[22px] transition-colors',
-            isBookmarked ? 'text-primary fill-current' : 'text-muted-foreground'
+            isBookmarked ? 'text-primary fill-current' : onPhoto ? 'text-foreground' : 'text-muted-foreground'
           )}
         />
       )}
