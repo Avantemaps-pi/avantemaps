@@ -221,6 +221,21 @@ test('quick actions open: the scrim dims the bottom nav, and tapping it closes t
   expect(new URL(page.url()).pathname).toBe('/');
 });
 
+test('quick actions open: the zoom group stays where it was', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('fab_first_visit', new Date(Date.now() - 2 * 86_400_000).toISOString());
+  });
+  await openMap(page);
+  const zoomGroup = zoom(page);
+  await page.waitForTimeout(500);
+  const before = await zoomGroup.boundingBox();
+
+  await page.getByRole('button', { name: 'Open quick actions' }).click();
+  await expect(fab(page).getByRole('button', { name: 'Close menu' })).toBeVisible();
+  await page.waitForTimeout(500);
+  expect(await zoomGroup.boundingBox()).toEqual(before);
+});
+
 test('Contact message box with the keyboard open hides the bottom nav', async ({ page }) => {
   await page.goto('/contact');
   await expect(nav(page)).toBeVisible();

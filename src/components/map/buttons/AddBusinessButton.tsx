@@ -135,6 +135,7 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
         {...keyboardProps}
       >
         <Button
+          data-add-business-fab
           disabled
           className="h-14 w-14 sm:h-14 sm:w-14 p-0 rounded-full bg-primary/60 opacity-70 shadow-float flex items-center justify-center cursor-not-allowed"
           aria-label="Loading"
@@ -151,6 +152,7 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
       <div data-add-business-button className={`absolute ${bottomClass} ${positionClass} z-20 transition-all duration-300 motion-reduce:transition-none ${keyboardClass}`} {...keyboardProps}>
         <Link to="/registration">
           <Button
+            data-add-business-fab
             className="h-14 sm:h-14 pl-4 pr-6 rounded-full bg-primary text-primary-foreground hover:bg-primary-hover shadow-float flex items-center gap-2 transition-all duration-300 [&_svg]:size-[18px] sm:[&_svg]:size-[18px]"
             aria-label="Register a business"
           >
@@ -196,6 +198,7 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
         {...keyboardProps}
       >
         <Button
+          data-add-business-fab
           disabled
           style={{ animation: 'fab-expand 600ms ease-out forwards' }}
           className="h-14 sm:h-14 pl-4 pr-6 rounded-full bg-primary text-primary-foreground shadow-float flex items-center gap-2 overflow-hidden [&_svg]:size-[18px] sm:[&_svg]:size-[18px]"
@@ -260,6 +263,7 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
           </div>
         )}
         <Button
+          data-add-business-fab
           onClick={() => setSpeedDialOpen((s) => !s)}
           aria-label={speedDialOpen ? 'Close menu' : 'Open quick actions'}
           aria-expanded={speedDialOpen}

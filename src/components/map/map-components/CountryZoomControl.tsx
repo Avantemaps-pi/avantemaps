@@ -92,6 +92,8 @@ const CountryZoomControl: React.FC = () => {
      * Returns the first match that is actually laid out (non-zero size).
      */
     const ADD_BTN_SELECTORS = [
+      // The 56px button itself: the container grows upward when quick actions open
+      '[data-add-business-fab]',
       '[data-add-business-button]',
       '[data-testid="add-business-button"]',
       'a[href="/registration"] button',
