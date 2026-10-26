@@ -23,7 +23,12 @@ const FALLBACK_BOTTOM = 152;
  *   - font scaling (which changes the + button's height)
  *   - the AddBusinessButton sliding when a place is selected
  */
-const CountryZoomControl: React.FC = () => {
+interface CountryZoomControlProps {
+  /** Changes when the lowest element in the column changes (card strip opened/closed): re-measure */
+  anchorKey?: string;
+}
+
+const CountryZoomControl: React.FC<CountryZoomControlProps> = ({ anchorKey }) => {
   const map = useMap();
   const [zoom, setZoom] = useState<number>(map.getZoom());
   const [bottom, setBottom] = useState<number>(FALLBACK_BOTTOM);
@@ -92,6 +97,8 @@ const CountryZoomControl: React.FC = () => {
      * Returns the first match that is actually laid out (non-zero size).
      */
     const ADD_BTN_SELECTORS = [
+      // Lowest element in the column while it's showing: the card strip
+      '[data-map-bottom-anchor]',
       // The 56px button itself: the container grows upward when quick actions open
       '[data-add-business-fab]',
       '[data-add-business-button]',
@@ -151,7 +158,10 @@ const CountryZoomControl: React.FC = () => {
 
       // Horizontal: mirror the Add Business button's right offset so the
       // control slides with it when a place is selected.
-      const rightPx = Math.max(EDGE_MARGIN, mapRect.right - btnRect.right);
+      // The card strip spans the full width: line up with Locate (right-4) instead
+      const rightPx = addBtn.hasAttribute('data-map-bottom-anchor')
+        ? 16
+        : Math.max(EDGE_MARGIN, mapRect.right - btnRect.right);
       setRight(rightPx);
 
       // Vertical: 16px above the + button, then clamped against obstacles.
@@ -272,7 +282,7 @@ const CountryZoomControl: React.FC = () => {
       if (debounceId !== null) window.clearTimeout(debounceId);
       trackedBtn?.removeEventListener('transitionend', scheduleRecompute);
     };
-  }, [map]);
+  }, [map, anchorKey]);
 
   // Dynamically compute a z-index that always beats Leaflet's panes/controls
   // and any other overlays currently mounted in the map container.

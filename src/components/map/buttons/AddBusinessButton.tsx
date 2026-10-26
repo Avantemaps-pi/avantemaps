@@ -8,6 +8,8 @@ import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
 
 interface AddBusinessButtonProps {
   selectedPlace: string | null;
+  /** Hidden but mounted while the map card strip is open */
+  hiddenByStrip?: boolean;
 }
 
 type FabState = 'expanded' | 'collapsed' | 'hasBusiness';
@@ -23,7 +25,7 @@ interface BusinessCountCache {
   timestamp: string;
 }
 
-const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) => {
+const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace, hiddenByStrip = false }) => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [fabState, setFabState] = useState<FabState | null>(null);
@@ -31,11 +33,12 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanding, setIsExpanding] = useState(false);
   const keyboardOpen = useKeyboardOpen();
+  const hidden = keyboardOpen || hiddenByStrip;
 
-  // Close the speed dial when the on-screen keyboard opens
+  // Close the speed dial when the on-screen keyboard opens or the card strip takes its place
   useEffect(() => {
-    if (keyboardOpen) setSpeedDialOpen(false);
-  }, [keyboardOpen]);
+    if (hidden) setSpeedDialOpen(false);
+  }, [hidden]);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,9 +126,9 @@ const AddBusinessButton: React.FC<AddBusinessButtonProps> = ({ selectedPlace }) 
   const positionClass = selectedPlace ? 'right-16 md:right-[calc(50%+200px)]' : 'right-4';
   // 96px clears the 64px bottom nav and the map attribution pill above it
   const bottomClass = 'bottom-[calc(6rem+env(safe-area-inset-bottom))]';
-  // Faded out, not unmounted, while the on-screen keyboard is open
-  const keyboardClass = keyboardOpen ? 'opacity-0 pointer-events-none' : '';
-  const keyboardProps = { 'aria-hidden': keyboardOpen || undefined, inert: keyboardOpen };
+  // Faded out, not unmounted, while the on-screen keyboard or the card strip is showing
+  const keyboardClass = hidden ? 'opacity-0 pointer-events-none' : '';
+  const keyboardProps = { 'aria-hidden': hidden || undefined, inert: hidden };
 
   if (isLoading) {
     return (

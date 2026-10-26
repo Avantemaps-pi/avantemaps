@@ -59,3 +59,9 @@ export const todayHours = (
   const [key, short] = day;
   return normalise(hours[key] ?? hours[short] ?? hours[key.charAt(0).toUpperCase() + key.slice(1)]);
 };
+
+/** "Today 07:00–17:00", "Closed today", or '' when there are no hours (as in the drawer). */
+export const todayHoursLabel = (hours: Record<string, string> | undefined): string => {
+  const today = todayHours(hours);
+  return today === null ? '' : today === 'closed' ? 'Closed today' : `Today ${today}`;
+};
