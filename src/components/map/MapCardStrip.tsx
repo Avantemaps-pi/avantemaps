@@ -88,8 +88,9 @@ const StripCard: React.FC<{
       </div>
       {/* 2-line name (40) + rating (20) + 2-line summary (36) + gaps (4) = the photo's 100px */}
       <div className="pointer-events-none flex min-w-0 flex-1 flex-col gap-0.5" aria-hidden="true">
-        {/* pr-8 keeps the name clear of Save in the top-right corner */}
-        <p className="line-clamp-2 pr-8 text-[15px] leading-5 font-semibold text-foreground break-words">
+        <p className="line-clamp-2 text-[15px] leading-5 font-semibold text-foreground break-words">
+          {/* Clears Save on the first line only, so line 2 uses the full width */}
+          <span aria-hidden="true" className="float-right h-5 w-8" />
           {nameHead}
           <span className="whitespace-nowrap">
             {nameLast}
@@ -103,7 +104,8 @@ const StripCard: React.FC<{
         </div>
         {summary && <p className="line-clamp-2 text-[13px] leading-[18px] text-muted-foreground">{summary}</p>}
       </div>
-      <div className="absolute right-1 top-1 z-10">
+      {/* In the corner, so its icon clears line 2 of the name */}
+      <div className="absolute right-0 top-0 z-10">
         <BookmarkButton isBookmarked={isBookmarked} onToggle={onBookmarkToggle} isLoading={bookmarkLoading} />
       </div>
     </article>

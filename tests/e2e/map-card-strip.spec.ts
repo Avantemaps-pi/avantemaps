@@ -378,3 +378,22 @@ test('opening a strip of 20 cards makes at most one bookmarks request', async ({
   // as 2 here; with a hook per card it was 40 (20 x 2).
   expect(bookmarkRequests.length).toBeLessThanOrEqual(2);
 });
+
+test('names wrap on the full card width: two-line names show in full', async ({ page }) => {
+  await openMap(page);
+  await tapPin(page, 'Table Bay Bookshop');
+  for (const name of ['Harbour Light Coffee', 'Table Bay Bookshop']) {
+    const p = card(page, name).locator('p').first();
+    await expect(p).toHaveText(name);
+    // Every line box fits inside the 2-line clamp (40px)
+    const height = await p.evaluate((el) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const rects = Array.from(range.getClientRects());
+      const top = Math.min(...rects.map((r) => r.top));
+      const bottom = Math.max(...rects.map((r) => r.bottom));
+      return bottom - top;
+    });
+    expect(height).toBeLessThanOrEqual(42);
+  }
+});
