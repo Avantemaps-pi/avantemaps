@@ -13,6 +13,13 @@ import L, { LatLngTuple } from 'leaflet';
 import '@/lib/fix-leaflet-icons';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
+import {
+  canAutoCentreWithGps,
+  markGranted,
+  clearGranted,
+  GPS_AUTOCENTRE_FAILED_KEY,
+  GPS_AUTOCENTRE_FAILED_EVENT,
+} from '@/lib/gpsGrant';
 
 // Cluster bubbles: token-styled in map.css, sized by count
 const createClusterIcon = (cluster: { getChildCount: () => number }) => {
@@ -65,34 +72,28 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   }, []);
 
   // Auto-center on user's geolocation once per session, only when "Use my
-  // location" is on and permission is already granted — never prompts.
+  // location" is on and GPS is already allowed (canAutoCentreWithGps) — never
+  // prompts. On failure, useIpLocationFocus falls back to the IP location.
   useEffect(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
     try {
-      if (localStorage.getItem('use_location_focus') === '0') return;
       if (sessionStorage.getItem('gps_autocentered') === '1') return;
     } catch {
-      // storage unavailable — setting defaults to on
+      // storage unavailable
     }
     let cancelled = false;
     (async () => {
-      let state: PermissionState | undefined;
-      try {
-        state = (
-          await navigator.permissions?.query({ name: 'geolocation' as PermissionName })
-        )?.state;
-      } catch {
-        // query unsupported — treat as not granted
-      }
+      const allowed = await canAutoCentreWithGps();
       if (cancelled) return;
       try {
         sessionStorage.setItem('gps_autocentered', '1');
       } catch {
         // ignore
       }
-      if (state !== 'granted') return;
+      if (!allowed) return;
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          markGranted();
           if (cancelled) return;
           window.dispatchEvent(
             new CustomEvent('centerMap', {
@@ -104,10 +105,16 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
             })
           );
         },
-        () => {
-          // silent fallback — keep default world view
+        (err) => {
+          if (err.code === err.PERMISSION_DENIED) clearGranted();
+          try {
+            sessionStorage.setItem(GPS_AUTOCENTRE_FAILED_KEY, '1');
+          } catch {
+            // ignore
+          }
+          window.dispatchEvent(new Event(GPS_AUTOCENTRE_FAILED_EVENT));
         },
-        { timeout: 8000, maximumAge: 300000, enableHighAccuracy: false }
+        { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true }
       );
     })();
     return () => {
