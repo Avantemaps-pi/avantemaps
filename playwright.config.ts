@@ -11,10 +11,14 @@ const baseURL = process.env.PREVIEW_URL ?? 'http://localhost:8080';
 
 export default defineConfig({
   testDir: './tests/e2e',
+  // A stuck test fails after 60s; a stuck run (or server) fails after 20 minutes
+  // instead of hanging. The full suite takes about 13 minutes.
   timeout: 60_000,
+  globalTimeout: 20 * 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
-  reporter: [['list']],
+  // The html report is written but never served, so nothing waits for Ctrl+C
+  reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL,
     trace: 'retain-on-failure',
