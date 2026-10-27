@@ -29,4 +29,10 @@ PREVIEW_URL=https://avantemaps.lovable.app bunx playwright test
 - `hero-cache.spec.ts` — verifies the hero logo (`avante-icon-*.webp`) and
   business/place hero images are served from the browser cache on the second
   visit to `/`. Fails if any hero asset is re-downloaded with a fresh
-  `200 OK` body after navigating away and back.
+  `200 OK` body after navigating away and back. Production builds only: it
+  is skipped unless `PREVIEW_URL` is set, because the dev server never caches
+  `/src/assets`.
+
+Map specs (`search-tap`, `reauth-false-success`, `place-drawer`,
+`map-card-strip`) mock the business list and sign in with the sandbox mock
+session through `helpers/mapMocks.ts`, so they don't depend on live data.
