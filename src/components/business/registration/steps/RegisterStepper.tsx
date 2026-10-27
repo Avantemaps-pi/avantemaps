@@ -80,7 +80,7 @@ const RegisterStepper: React.FC<RegisterStepperProps> = ({
         </div>
       </div>
 
-      <div ref={bodyRef} className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-6">
+      <div ref={bodyRef} data-register-body className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-6">
         <h1
           ref={titleRef}
           id="page-title"
@@ -93,7 +93,7 @@ const RegisterStepper: React.FC<RegisterStepperProps> = ({
         <div className="mt-6">{children}</div>
       </div>
 
-      <div className="border-t bg-background px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <div data-register-footer className="border-t bg-background px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         {next && (
           <p className="mb-2 text-sm text-muted-foreground">Next: {next.title}</p>
         )}
