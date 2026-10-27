@@ -14,10 +14,15 @@
  * The test fails if any hero asset is re-downloaded with a fresh 200 + body
  * on the second visit, which would indicate broken caching headers or a
  * cache-busting query string regression.
+ *
+ * Production builds only: run with PREVIEW_URL set. The dev server serves
+ * images as uncached Vite modules (/src/assets/…?import), so it always fails
+ * there and is skipped.
  */
 import { test, expect, Response, Request } from '@playwright/test';
 
-const HERO_LOGO_RE = /avante-icon-\d+\.webp(\?|$)/i;
+// Production builds add a content hash: avante-icon-144-pwxlNFwe.webp
+const HERO_LOGO_RE = /avante-icon-\d+(-[\w-]+)?\.webp(\?|$)/i;
 const HERO_IMAGE_RE = /\.(webp|jpe?g|png|avif)(\?|$)/i;
 
 type Hit = {
@@ -60,6 +65,8 @@ async function collectHeroResponses(page: import('@playwright/test').Page) {
 }
 
 test.describe('Hero asset caching on repeat navigation', () => {
+  test.skip(!process.env.PREVIEW_URL, 'Production builds only: set PREVIEW_URL (the dev server never caches /src/assets)');
+
   test('hero logo and hero images are not re-downloaded on second visit', async ({ page }) => {
     // --- First visit -------------------------------------------------------
     const first = await collectHeroResponses(page);

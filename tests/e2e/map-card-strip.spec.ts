@@ -5,25 +5,11 @@
  *
  * Touch input at 375x812. The business list is mocked through the
  * get_public_business_info RPC, the sandbox mock session signs in (localhost
- * only), as in place-drawer.spec.ts. The map is moved to zoom 17, where pins
+ * only), both through helpers/mapMocks.ts. The map is moved to zoom 17, where pins
  * stop clustering, so every business has its own pin.
  */
 import { test, expect, type Page, type Locator } from '@playwright/test';
-
-const SANDBOX_MOCK_KEY = 'avante_sandbox_mock_session';
-const STORAGE_KEY = 'avante_maps_auth';
-
-// Mirrors the loginAsSandbox() fallback user in AuthProvider.tsx.
-const mockUser = {
-  uid: '00000000-0000-0000-0000-000000000001',
-  pi_uid: 'sandbox-mock-pi-uid',
-  username: 'SandboxUser',
-  walletAddress: 'sandbox-mock-wallet',
-  roles: ['user'],
-  accessToken: 'sandbox-mock-token',
-  subscriptionTier: 'organization',
-  businessCount: 0,
-};
+import { CENTRE, mockMap, mockUser, pin, zoomToPins } from './helpers/mapMocks';
 
 const photo = (n: number) =>
   'data:image/svg+xml;utf8,' +
@@ -47,7 +33,6 @@ const base = {
   description: '',
 };
 
-const CENTRE = { lat: -33.92, lng: 18.4212 };
 // Within ~150m of the centre, so all six are in view at zoom 17
 const BUSINESSES = [
   { ...base, id: 9501, name: 'Harbour Light Coffee', category: 'Coffee Shop', business_types: ['Food'], latitude: -33.92, longitude: 18.421, images: [photo(1)], hours: everyDay(open('07:00', '17:00')), is_verified: true },
@@ -72,34 +57,11 @@ const parseUrl = (url: string): URL | null => {
 
 const strip = (page: Page) => page.getByRole('region', { name: 'Businesses in this area' });
 const card = (page: Page, name: string) => page.locator('[data-strip-card]').filter({ has: page.getByRole('button', { name: new RegExp(`^${name}`) }) });
-const pin = (page: Page, name: string) => page.locator(`img.leaflet-marker-icon[alt="${name}"]`);
 
 async function openMap(page: Page, rows: typeof BUSINESSES = BUSINESSES) {
-  await page.route('**/pi-sdk.js', (route) => route.abort());
-  await page.route('**/rest/v1/rpc/get_public_business_info*', (route) => route.fulfill({ json: rows }));
-  await page.route('https://ipwho.is/**', (route) =>
-    route.fulfill({ json: { success: true, latitude: CENTRE.lat, longitude: CENTRE.lng } }),
-  );
-  // Map clicks reverse-geocode for the country focus; answer "no country"
-  await page.route('https://nominatim.openstreetmap.org/**', (route) => route.fulfill({ json: {} }));
-  await page.addInitScript(
-    ([mockKey, storageKey, user]) => {
-      localStorage.setItem(mockKey as string, '1');
-      localStorage.setItem(storageKey as string, JSON.stringify({ ...(user as object), lastAuthenticated: Date.now() }));
-      localStorage.setItem('location_banner_seen', '1');
-    },
-    [SANDBOX_MOCK_KEY, STORAGE_KEY, mockUser],
-  );
+  await mockMap(page, rows);
   await page.goto('/');
-  await expect(page.locator('.leaflet-marker-icon').first()).toBeAttached();
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(1_000);
-  await page.evaluate(
-    (c) => window.dispatchEvent(new CustomEvent('centerMap', { detail: { lat: c.lat, lng: c.lng, zoom: 17 } })),
-    CENTRE,
-  );
-  for (const b of rows.slice(0, 6)) await expect(pin(page, b.name)).toBeVisible();
-  await page.waitForTimeout(800);
+  await zoomToPins(page, rows.slice(0, 6));
 }
 
 async function tapCentre(page: Page, locator: Locator) {
@@ -128,6 +90,8 @@ async function swipeStrip(page: Page, dx: number) {
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + (dx * i) / 10, y }] });
     await page.waitForTimeout(16);
   }
+  // Hold still before lifting: a release mid-move can fling past the next card
+  await page.waitForTimeout(150);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await page.waitForTimeout(900);
 }

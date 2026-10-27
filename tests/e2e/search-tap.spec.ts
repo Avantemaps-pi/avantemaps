@@ -8,26 +8,12 @@
  * one swipe down closes it.
  *
  * Touch input throughout (tap, CDP touch drag). The map needs a signed-in
- * user, so the sandbox mock session (honoured on localhost only) is used, as
- * in keyboard-open.spec.ts. Business markers come from live Supabase data;
- * tests that need one skip when none is available.
+ * user, so the sandbox mock session (honoured on localhost only) is used.
+ * Businesses are mocked and the map is moved to zoom 17, where each has its
+ * own pin (helpers/mapMocks.ts).
  */
 import { test, expect, type Page } from '@playwright/test';
-
-const SANDBOX_MOCK_KEY = 'avante_sandbox_mock_session';
-const STORAGE_KEY = 'avante_maps_auth';
-
-// Mirrors the loginAsSandbox() fallback user in AuthProvider.tsx.
-const mockUser = {
-  uid: '00000000-0000-0000-0000-000000000001',
-  pi_uid: 'sandbox-mock-pi-uid',
-  username: 'SandboxUser',
-  walletAddress: 'sandbox-mock-wallet',
-  roles: ['user'],
-  accessToken: 'sandbox-mock-token',
-  subscriptionTier: 'organization',
-  businessCount: 0,
-};
+import { NEARBY_BUSINESSES, mockMap, zoomToPins } from './helpers/mapMocks';
 
 test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
 
@@ -35,21 +21,7 @@ const search = (page: Page) => page.locator('input[aria-label="Search businesses
 const drawer = (page: Page) => page.locator('[role="dialog"]');
 
 async function openMap(page: Page, scheme: 'light' | 'dark') {
-  await page.route('**/pi-sdk.js', (route) => route.abort());
-  await page.route('https://ipwho.is/**', (route) =>
-    route.fulfill({ json: { success: true, latitude: 48.8566, longitude: 2.3522 } }),
-  );
-  await page.addInitScript(
-    ([mockKey, storageKey, user, s]) => {
-      localStorage.setItem(mockKey as string, '1');
-      localStorage.setItem(
-        storageKey as string,
-        JSON.stringify({ ...(user as object), lastAuthenticated: Date.now() }),
-      );
-      localStorage.setItem('colorScheme', s as string);
-    },
-    [SANDBOX_MOCK_KEY, STORAGE_KEY, mockUser, scheme],
-  );
+  await mockMap(page, NEARBY_BUSINESSES, { storage: { colorScheme: scheme } });
   await page.goto('/');
   await expect(search(page)).toBeVisible();
   await page.waitForLoadState('networkidle');
@@ -62,14 +34,8 @@ async function tapCentre(page: Page, selector: string) {
 }
 
 async function openDrawer(page: Page) {
-  const marker = page.locator('.leaflet-marker-icon').first();
-  try {
-    await marker.waitFor({ state: 'attached', timeout: 30_000 });
-  } catch {
-    test.skip(true, 'No business markers available on the map');
-  }
-  await page.waitForTimeout(1_500);
-  await tapCentre(page, '.leaflet-marker-icon');
+  await zoomToPins(page, NEARBY_BUSINESSES);
+  await tapCentre(page, `img.leaflet-marker-icon[alt="${NEARBY_BUSINESSES[0]!.name}"]`);
   // A pin tap shows the card strip; its first card (the tapped business) opens the drawer
   await tapCentre(page, '[data-strip-card] p');
   await expect(drawer(page)).toBeVisible();
