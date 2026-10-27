@@ -9,24 +9,11 @@
  *
  * Touch input at 375x812. The business list is mocked through the
  * get_public_business_info RPC; the map needs a signed-in user, so the
- * sandbox mock session (honoured on localhost only) is used.
+ * sandbox mock session (honoured on localhost only) is used. Both come from
+ * helpers/mapMocks.ts.
  */
 import { test, expect, type Page } from '@playwright/test';
-
-const SANDBOX_MOCK_KEY = 'avante_sandbox_mock_session';
-const STORAGE_KEY = 'avante_maps_auth';
-
-// Mirrors the loginAsSandbox() fallback user in AuthProvider.tsx.
-const mockUser = {
-  uid: '00000000-0000-0000-0000-000000000001',
-  pi_uid: 'sandbox-mock-pi-uid',
-  username: 'SandboxUser',
-  walletAddress: 'sandbox-mock-wallet',
-  roles: ['user'],
-  accessToken: 'sandbox-mock-token',
-  subscriptionTier: 'organization',
-  businessCount: 0,
-};
+import { mockMap } from './helpers/mapMocks';
 
 const photo = (n: number) =>
   'data:image/svg+xml;utf8,' +
@@ -82,19 +69,7 @@ const drawer = (page: Page) => page.locator('[role="dialog"]');
 const body = (page: Page) => drawer(page).locator('.overflow-y-auto').first();
 
 async function openDrawer(page: Page, row: object) {
-  await page.route('**/pi-sdk.js', (route) => route.abort());
-  await page.route('**/rest/v1/rpc/get_public_business_info*', (route) => route.fulfill({ json: [row] }));
-  await page.route('https://ipwho.is/**', (route) =>
-    route.fulfill({ json: { success: true, latitude: 10, longitude: 10 } }),
-  );
-  await page.addInitScript(
-    ([mockKey, storageKey, user]) => {
-      localStorage.setItem(mockKey as string, '1');
-      localStorage.setItem(storageKey as string, JSON.stringify({ ...(user as object), lastAuthenticated: Date.now() }));
-      localStorage.setItem('location_banner_seen', '1');
-    },
-    [SANDBOX_MOCK_KEY, STORAGE_KEY, mockUser],
-  );
+  await mockMap(page, [row], { centre: { lat: 10, lng: 10 } });
   await page.goto('/');
   const marker = page.locator('.leaflet-marker-icon').first();
   await marker.waitFor({ state: 'attached' });

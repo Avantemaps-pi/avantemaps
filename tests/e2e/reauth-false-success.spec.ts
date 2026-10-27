@@ -20,57 +20,31 @@
  * Pi Browser, so performLogin() proceeds and fails fast through its retry
  * loop). The sandbox mock session (honored on localhost / Lovable preview
  * hosts only) provides the "local user without a Supabase session"
- * starting state.
+ * starting state. Businesses are mocked and the map is moved to zoom 17, where
+ * each has its own pin (helpers/mapMocks.ts).
  */
 import { test, expect } from '@playwright/test';
-
-const SANDBOX_MOCK_KEY = 'avante_sandbox_mock_session';
-const STORAGE_KEY = 'avante_maps_auth';
-
-// Mirrors the loginAsSandbox() fallback user in AuthProvider.tsx.
-const mockUser = {
-  uid: '00000000-0000-0000-0000-000000000001',
-  pi_uid: 'sandbox-mock-pi-uid',
-  username: 'SandboxUser',
-  walletAddress: 'sandbox-mock-wallet',
-  roles: ['user'],
-  accessToken: 'sandbox-mock-token',
-  subscriptionTier: 'organization',
-  businessCount: 0,
-};
+import { NEARBY_BUSINESSES, mockMap, pin, zoomToPins } from './helpers/mapMocks';
 
 test('failed re-auth on Message tap shows honest failure, not false success', async ({ page }) => {
-  // Block the real Pi SDK so it can't overwrite the stub below.
-  await page.route('**/pi-sdk.js', (route) => route.abort());
+  // Mocked businesses and the sandbox session; the real Pi SDK is blocked so
+  // it can't overwrite the stub below.
+  await mockMap(page, NEARBY_BUSINESSES);
 
-  await page.addInitScript(
-    ([mockKey, storageKey, user]) => {
-      localStorage.setItem(mockKey as string, '1');
-      localStorage.setItem(
-        storageKey as string,
-        JSON.stringify({ ...(user as object), lastAuthenticated: Date.now() }),
-      );
-      // Stub Pi SDK: present (so the login flow proceeds) but authentication
-      // always fails fast — the "genuine auth failure" this test exercises.
-      (window as unknown as { Pi: object }).Pi = {
-        init: () => undefined,
-        authenticate: () => Promise.reject(new Error('User cancelled the authentication request')),
-      };
-      (window as unknown as { __piInitialized: boolean }).__piInitialized = true;
-    },
-    [SANDBOX_MOCK_KEY, STORAGE_KEY, mockUser],
-  );
+  await page.addInitScript(() => {
+    // Stub Pi SDK: present (so the login flow proceeds) but authentication
+    // always fails fast — the "genuine auth failure" this test exercises.
+    (window as unknown as { Pi: object }).Pi = {
+      init: () => undefined,
+      authenticate: () => Promise.reject(new Error('User cancelled the authentication request')),
+    };
+    (window as unknown as { __piInitialized: boolean }).__piInitialized = true;
+  });
 
   await page.goto('/');
+  await zoomToPins(page, NEARBY_BUSINESSES);
 
-  // Business markers come from live Supabase data (public RPC); skip rather
-  // than fail if none are available to click.
-  const marker = page.locator('.leaflet-marker-icon').first();
-  try {
-    await marker.waitFor({ state: 'visible', timeout: 20_000 });
-  } catch {
-    test.skip(true, 'No business markers available on the map');
-  }
+  const marker = pin(page, NEARBY_BUSINESSES[0]!.name);
   await marker.click({ force: true });
   // A pin tap shows the card strip; its first card opens the drawer with Message
   await page.locator('[data-strip-card] button').first().click({ force: true });
