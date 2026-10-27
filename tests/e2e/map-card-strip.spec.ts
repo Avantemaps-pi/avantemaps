@@ -90,6 +90,8 @@ async function swipeStrip(page: Page, dx: number) {
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + (dx * i) / 10, y }] });
     await page.waitForTimeout(16);
   }
+  // Hold still before lifting: a release mid-move can fling past the next card
+  await page.waitForTimeout(150);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await page.waitForTimeout(900);
 }
