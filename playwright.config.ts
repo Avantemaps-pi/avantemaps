@@ -25,6 +25,17 @@ export default defineConfig({
     // Keep the cache enabled — that is exactly what we are measuring.
     serviceWorkers: 'allow',
   },
+  // Playwright starts the dev server (port 8080, from the Lovable vite config)
+  // and stops it after the run; one that's already running is reused. Not
+  // used when PREVIEW_URL points at a deployed preview.
+  webServer: process.env.PREVIEW_URL
+    ? undefined
+    : {
+        command: 'bun run dev',
+        url: baseURL,
+        timeout: 120_000,
+        reuseExistingServer: !process.env.CI,
+      },
   projects: [
     {
       name: 'chromium-mobile',
