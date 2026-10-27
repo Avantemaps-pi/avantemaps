@@ -30,7 +30,7 @@ const PriorityFilter: React.FC<PriorityFilterProps> = ({
           variant={activePriority === priority.value ? "default" : "ghost"}
           size="sm"
           onClick={() => onPriorityChange(priority.value)}
-          className="text-[11px] h-6 px-1.5"
+          className="text-xs h-6 px-1.5"
         >
           <span className={activePriority !== priority.value ? priority.color : ''}>
             {priority.label}

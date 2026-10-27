@@ -169,7 +169,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
             <p className={`text-sm ${read ? 'text-muted-foreground' : 'font-medium text-foreground'}`}>{content}</p>
             <PriorityIndicator priority={notification.priority} variant="dot" />
           </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{time}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{time}</p>
         </div>
         
         {!read && !selectionMode && (

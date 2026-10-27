@@ -171,7 +171,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       key={text}
                       type="button"
                       onClick={() => onChipClick(text)}
-                      className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+                      className="inline-flex min-h-11 items-center rounded-full border border-primary/30 bg-primary/5 px-3 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
                     >
                       {text}
                     </button>
@@ -179,7 +179,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </div>
               )}
 
-              <div className="px-4 pt-2 pb-1 flex items-center justify-center gap-1 text-[10px] text-muted-foreground border-t">
+              <div className="px-4 pt-2 pb-1 flex items-center justify-center gap-1 text-xs text-muted-foreground border-t">
                 <Sparkles className="h-3 w-3" />
                 <span>Powered by CommuniCon</span>
               </div>

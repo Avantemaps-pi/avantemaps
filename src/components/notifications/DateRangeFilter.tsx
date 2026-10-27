@@ -29,7 +29,7 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
           variant={activeRange === range.value ? "default" : "ghost"}
           size="sm"
           onClick={() => onRangeChange(range.value)}
-          className="text-[11px] h-6 px-1.5"
+          className="text-xs h-6 px-1.5"
         >
           {range.label}
         </Button>

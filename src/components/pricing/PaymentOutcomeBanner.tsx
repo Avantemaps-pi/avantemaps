@@ -111,7 +111,7 @@ export const PaymentOutcomeBanner: React.FC<PaymentOutcomeBannerProps> = ({
               start a new one yet.
             </p>
             {paymentId && (
-              <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
+              <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
                 {paymentId}
               </p>
             )}
@@ -134,7 +134,7 @@ export const PaymentOutcomeBanner: React.FC<PaymentOutcomeBannerProps> = ({
           <h3 className="text-sm font-medium">{meta.title}</h3>
           <p className="mt-1 text-xs text-muted-foreground">{meta.description}</p>
           {paymentId && (
-            <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
+            <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
               {paymentId}
             </p>
           )}

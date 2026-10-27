@@ -295,3 +295,25 @@ test.describe('slim header at 375x667', () => {
     await expect(bot).toHaveAttribute('aria-selected', 'true');
   });
 });
+
+test.describe('text size at 375x812', () => {
+  test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+
+  test('quick replies are at least 44px tall with 14px text', async ({ page }) => {
+    await setup(page);
+    const chips = page.getByRole('button', { name: /^(Check verification status|Check certification status|My listings)$/ });
+    await expect(chips).toHaveCount(3);
+    const sizes = await chips.evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return { text: el.textContent, top: Math.round(r.top), height: Math.round(r.height), font: getComputedStyle(el).fontSize };
+      }),
+    );
+    console.log(`quick replies: ${JSON.stringify(sizes)}`);
+    for (const s of sizes) {
+      expect(s.height).toBeGreaterThanOrEqual(44);
+      expect(s.font).toBe('14px');
+    }
+    expect(await page.getByText('Powered by CommuniCon').evaluate((el) => getComputedStyle(el.parentElement!).fontSize)).toBe('12px');
+  });
+});

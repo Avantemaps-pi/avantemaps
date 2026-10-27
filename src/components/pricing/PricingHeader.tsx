@@ -50,7 +50,7 @@ const PricingHeader = ({
           >
             {option.charAt(0).toUpperCase() + option.slice(1)}
             {option === "yearly" && selectedBilling === option && (
-              <span className="absolute -right-12 flex h-6 items-center justify-center rounded-full bg-primary px-2 text-[10px] font-medium text-primary-foreground shadow-xs">
+              <span className="absolute -right-12 flex h-6 items-center justify-center rounded-full bg-primary px-2 text-xs font-medium text-primary-foreground shadow-xs">
                 Save 20%
               </span>
             )}
