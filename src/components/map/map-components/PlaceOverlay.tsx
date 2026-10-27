@@ -55,6 +55,9 @@ const PlaceOverlay: React.FC<PlaceOverlayProps> = ({
   );
 };
 
+// formatHours keeps closed days as 'closed' (todayHoursLabel relies on it); show "Closed"
+const hoursText = (hours: string) => (hours === 'closed' ? 'Closed' : hours);
+
 const InfoRow: React.FC<{ icon: React.ElementType; children: React.ReactNode }> = ({ icon: Icon, children }) => (
   <div className="flex min-h-12 items-center gap-3 border-b border-border py-2">
     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-primary">
@@ -201,10 +204,10 @@ const PlaceOverlayContent: React.FC<{
             <div className="border-t border-border">
               {firstHours && (
                 <InfoRow icon={Clock}>
-                  <p className="leading-5">{firstHours.days} {firstHours.hours}</p>
+                  <p className="leading-5">{firstHours.days} {hoursText(firstHours.hours)}</p>
                   {otherHours.length > 0 && (
                     <p className="leading-5 text-muted-foreground">
-                      {otherHours.map((g) => `${g.days} ${g.hours}`).join(' · ')}
+                      {otherHours.map((g) => `${g.days} ${hoursText(g.hours)}`).join(' · ')}
                     </p>
                   )}
                 </InfoRow>
