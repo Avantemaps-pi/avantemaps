@@ -66,13 +66,14 @@ const fakeSession = {
   user: { id: UID, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() },
 };
 
-async function setup(page: Page, opts: { owner?: boolean } = {}) {
+async function setup(page: Page, opts: { owner?: boolean; businessesDelayMs?: number } = {}) {
   await page.route('**/pi-sdk.js', (route) => route.abort());
   if (opts.owner) {
     await page.route('**/auth/v1/**', (route) => route.fulfill({ json: fakeSession.user }));
-    await page.route('**/rest/v1/businesses*', (route) =>
-      route.fulfill({ json: [{ id: 9001, business_name: 'Harbour Light Coffee' }] }),
-    );
+    await page.route('**/rest/v1/businesses*', async (route) => {
+      if (opts.businessesDelayMs) await new Promise((r) => setTimeout(r, opts.businessesDelayMs));
+      await route.fulfill({ json: [{ id: 9001, business_name: 'Harbour Light Coffee' }] });
+    });
     await page.route('**/rest/v1/users*', (route) => route.fulfill({ json: [] }));
     await page.route('**/rest/v1/user_roles*', (route) => route.fulfill({ json: [] }));
     await page.addInitScript((session) => {
@@ -315,5 +316,28 @@ test.describe('text size at 375x812', () => {
       expect(s.font).toBe('14px');
     }
     expect(await page.getByText('Powered by CommuniCon').evaluate((el) => getComputedStyle(el.parentElement!).fontSize)).toBe('12px');
+  });
+});
+
+test.describe('owner inbox picker', () => {
+  test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+
+  test("an owner's second visit shows the picker on the first frame, with no layout jump", async ({ page }) => {
+    // First visit fills the per-user cache (sessionStorage survives the reload below)
+    await setup(page, { owner: true });
+    await page.getByRole('tab', { name: 'Messages' }).click();
+    await expect(page.getByRole('combobox', { name: 'Inbox' })).toBeVisible();
+
+    // Second visit: the businesses query is slow, so only the cache can show the picker now
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await setup(page, { owner: true, businessesDelayMs: 1_500 });
+    await page.getByRole('tab', { name: 'Messages' }).click();
+    const list = page.locator('main ul').first();
+    await expect(list).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Inbox' })).toBeVisible({ timeout: 300 });
+    const topBefore = (await list.boundingBox())!.y;
+    await page.waitForTimeout(2_000);
+    expect((await list.boundingBox())!.y).toBe(topBefore);
+    await expect(page.getByRole('combobox', { name: 'Inbox' })).toBeVisible();
   });
 });
