@@ -27,6 +27,9 @@ const Registration = () => {
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       setShowLoginDialog(true);
+    } else if (isAuthenticated) {
+      // A saved session can be restored just after loading ends; don't leave the dialog over the form
+      setShowLoginDialog(false);
     }
   }, [isAuthenticated, authLoading]);
 
