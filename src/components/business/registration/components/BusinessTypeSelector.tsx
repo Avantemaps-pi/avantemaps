@@ -17,9 +17,22 @@ import { cn } from "@/lib/utils";
 
 interface BusinessTypeSelectorProps {
   disabled?: boolean | undefined;
+  /** 'chips': every type as a toggle chip (registration steps); default is the dropdown */
+  variant?: 'dropdown' | 'chips';
 }
 
-const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ disabled }) => {
+// The map's category chip look: 36px pill, ::after extends the hit area to 44px
+const chipClass = (pressed: boolean) => cn(
+  'relative flex h-9 items-center whitespace-nowrap rounded-full border px-3 text-sm font-semibold transition-colors',
+  "after:absolute after:inset-x-0 after:-inset-y-1 after:content-['']",
+  'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+  'disabled:pointer-events-none disabled:opacity-50',
+  pressed
+    ? 'bg-primary text-primary-foreground border-primary'
+    : 'bg-surface-float text-foreground border-input hover:bg-accent hover:text-accent-foreground'
+);
+
+const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ disabled, variant = 'dropdown' }) => {
   const form = useFormContext<FormValues>();
   const [selectedTypes, setSelectedTypes] = React.useState<string[]>([]);
   const [customBusinessType, setCustomBusinessType] = React.useState<string>('');
@@ -88,62 +101,106 @@ const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ disabled })
           <FormItem className="flex flex-col">
             <FormLabel className="text-base mb-1.5 whitespace-nowrap">Business type (Select all that apply) *</FormLabel>
             <div className="space-y-4">
-              {/* Selected types badges */}
-              {selectedTypes.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedTypes.map((type) => (
-                    <Badge
-                      key={type}
-                      variant="secondary"
-                      className="px-2 py-1.5 gap-1 text-sm"
-                    >
-                      {type}
-                      {!disabled && (
+              {variant === 'chips' ? (
+                <>
+                  {/* Every type as a toggle chip; "Other" opens the custom type input */}
+                  <FormControl>
+                    <div role="group" aria-label="Business type" className="flex flex-wrap gap-2">
+                      {businessTypes.map((type, index) => {
+                        const pressed = type === "Other" ? showCustomInput : selectedTypes.includes(type);
+                        return (
+                          <button
+                            key={type}
+                            ref={index === 0 ? field.ref : undefined}
+                            type="button"
+                            aria-pressed={pressed}
+                            disabled={disabled}
+                            onClick={() => {
+                              if (type === "Other") setShowCustomInput(!showCustomInput);
+                              else if (pressed) handleRemoveType(type);
+                              else handleSelectType(type);
+                            }}
+                            className={chipClass(pressed)}
+                          >
+                            {type}
+                          </button>
+                        );
+                      })}
+                      {selectedTypes.filter((type) => !businessTypes.includes(type)).map((type) => (
                         <button
-                          type="button"
-                          className="ml-1 rounded-full outline-hidden focus:ring-2 focus:ring-offset-1 focus:ring-primary"
-                          onClick={() => handleRemoveType(type)}
-                          disabled={disabled}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              
-              {/* Type selector dropdown */}
-              <FormControl>
-                <Select onValueChange={handleSelectType} disabled={disabled ?? false}>
-                  <SelectTrigger 
-                    className={cn(
-                      "w-full",
-                      !selectedTypes.length && "text-muted-foreground"
-                    )}
-                  >
-                    <SelectValue placeholder="Select business type" />
-                  </SelectTrigger>
-                  <SelectContent
-                    position="popper"
-                    align="start"
-                    className="max-h-[300px] overflow-y-auto z-50 bg-background"
-                    sideOffset={4}
-                  >
-                    {businessTypes
-                      .filter(type => !selectedTypes.includes(type))
-                      .map((type) => (
-                        <SelectItem
                           key={type}
-                          value={type}
-                          disabled={selectedTypes.includes(type) || (disabled ?? false)}
+                          type="button"
+                          aria-pressed={true}
+                          disabled={disabled}
+                          onClick={() => handleRemoveType(type)}
+                          className={chipClass(true)}
                         >
                           {type}
-                        </SelectItem>
+                        </button>
                       ))}
-                  </SelectContent>
-                </Select>
-              </FormControl>
+                    </div>
+                  </FormControl>
+                </>
+              ) : (
+                <>
+                  {/* Selected types badges */}
+                  {selectedTypes.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedTypes.map((type) => (
+                        <Badge
+                          key={type}
+                          variant="secondary"
+                          className="px-2 py-1.5 gap-1 text-sm"
+                        >
+                          {type}
+                          {!disabled && (
+                            <button
+                              type="button"
+                              className="ml-1 rounded-full outline-hidden focus:ring-2 focus:ring-offset-1 focus:ring-primary"
+                              onClick={() => handleRemoveType(type)}
+                              disabled={disabled}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Type selector dropdown */}
+                  <FormControl>
+                    <Select onValueChange={handleSelectType} disabled={disabled ?? false}>
+                      <SelectTrigger 
+                        className={cn(
+                          "w-full",
+                          !selectedTypes.length && "text-muted-foreground"
+                        )}
+                      >
+                        <SelectValue placeholder="Select business type" />
+                      </SelectTrigger>
+                      <SelectContent
+                        position="popper"
+                        align="start"
+                        className="max-h-[300px] overflow-y-auto z-50 bg-background"
+                        sideOffset={4}
+                      >
+                        {businessTypes
+                          .filter(type => !selectedTypes.includes(type))
+                          .map((type) => (
+                            <SelectItem
+                              key={type}
+                              value={type}
+                              disabled={selectedTypes.includes(type) || (disabled ?? false)}
+                            >
+                              {type}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                </>
+              )}
               
               {/* Custom business type input */}
               {showCustomInput && (

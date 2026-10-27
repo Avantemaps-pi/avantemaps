@@ -10,15 +10,16 @@ interface FormContainerProps {
   onInvalid?: SubmitErrorHandler<FormValues>;
   children: React.ReactNode;
   isSubmitting?: boolean;
+  className?: string;
 }
 
-const FormContainer = ({ form, onSubmit, onInvalid, children, isSubmitting }: FormContainerProps) => {
+const FormContainer = ({ form, onSubmit, onInvalid, children, isSubmitting, className = "space-y-6 w-full max-w-2xl mx-auto" }: FormContainerProps) => {
   return (
     <FormProvider {...form}>
       <Form {...form}>
         <form 
           onSubmit={form.handleSubmit(onSubmit, onInvalid)} 
-          className="space-y-6 w-full max-w-2xl mx-auto"
+          className={className}
         >
 
           {children}

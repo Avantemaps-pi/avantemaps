@@ -15,7 +15,9 @@ import { getOrigin } from '@/utils/browserEnv';
 const Registration = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+  // Signed in: the step flow takes the whole screen (its own header and footer)
+  const stepFlow = !!user;
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
@@ -25,6 +27,9 @@ const Registration = () => {
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       setShowLoginDialog(true);
+    } else if (isAuthenticated) {
+      // A saved session can be restored just after loading ends; don't leave the dialog over the form
+      setShowLoginDialog(false);
     }
   }, [isAuthenticated, authLoading]);
 
@@ -80,9 +85,11 @@ const Registration = () => {
   return (
     <AppLayout 
       title="Register Business"
-      fullHeight={false} 
+      withHeader={!stepFlow}
+      fullHeight={stepFlow} 
       fullWidth={true}
       hideSidebar={true}
+      hideBottomNav={stepFlow}
       onBackClick={handleBackClick}
     >
       <MetaTags
@@ -115,7 +122,7 @@ const Registration = () => {
         }}
       />
       <motion.div 
-        className="w-full py-2 md:py-6 overflow-visible form-container"
+        className={stepFlow ? "w-full flex-1 !min-h-0 form-container !pb-0" : "w-full py-2 md:py-6 overflow-visible form-container"}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -124,6 +131,7 @@ const Registration = () => {
         <BusinessRegistrationForm 
           onSuccess={handleFormSuccess}
           onFormChange={setHasUnsavedChanges}
+          onClose={handleBackClick}
         />
       </motion.div>
       
