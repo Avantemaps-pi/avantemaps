@@ -147,7 +147,7 @@ const PaymentHistory: React.FC = () => {
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <Badge variant={state.variant} className="text-[10px] uppercase">
+                    <Badge variant={state.variant} className="text-xs uppercase">
                       {state.label}
                     </Badge>
                     <span className="font-medium tabular-nums">
@@ -157,7 +157,7 @@ const PaymentHistory: React.FC = () => {
                   <p className="mt-0.5 truncate text-xs text-muted-foreground">
                     {row.memo || 'Pi payment'}
                   </p>
-                  <p className="truncate font-mono text-[10px] text-muted-foreground">
+                  <p className="truncate font-mono text-xs text-muted-foreground">
                     {row.payment_id}
                     {row.txid ? ` · tx ${row.txid.slice(0, 10)}…` : ''}
                   </p>

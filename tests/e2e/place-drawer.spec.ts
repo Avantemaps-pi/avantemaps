@@ -149,6 +149,19 @@ test('summary line shows the category and today’s hours', async ({ page }) => 
   await expect(drawer(page).getByText('Coffee Shop · Today 07:00–17:00', { exact: true })).toBeVisible();
 });
 
+test('hours rows show closed days as "Closed"', async ({ page }) => {
+  await openDrawer(page, {
+    ...base,
+    id: 9204,
+    name: 'Sea Point Bakery',
+    category: 'Food',
+    business_types: ['Food'],
+    hours: { ...everyDay(open('07:00', '17:00')), monday: { closed: true } },
+  });
+  await expect(drawer(page).getByText('Mon Closed', { exact: true })).toBeVisible();
+  await expect(drawer(page).getByText('Tue–Sun 07:00–17:00', { exact: true })).toBeVisible();
+});
+
 test('closed today: summary says "Closed today"', async ({ page }) => {
   await openDrawer(page, CLOSED);
   await expect(drawer(page).getByText('Retail · Closed today', { exact: true })).toBeVisible();

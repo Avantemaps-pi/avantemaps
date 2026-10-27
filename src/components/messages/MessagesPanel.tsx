@@ -21,6 +21,41 @@ import { useStickToBottom } from '@/hooks/useStickToBottom';
 
 type OwnedBusiness = { id: number; business_name: string };
 
+// Last owned-businesses result per Supabase user, so the inbox picker shows on the
+// first frame instead of popping in (and pushing the list down) after the query
+const OWNED_CACHE_PREFIX = 'avante_owned_businesses:';
+
+// Supabase user ID from the client's stored session (synchronous; never user.uid)
+const readSessionUserId = (): string | null => {
+  try {
+    const raw = localStorage.getItem('supabase.auth.token');
+    const id = raw ? (JSON.parse(raw) as { user?: { id?: unknown } })?.user?.id : null;
+    return typeof id === 'string' ? id : null;
+  } catch {
+    return null;
+  }
+};
+
+const readOwnedCache = (userId: string | null): OwnedBusiness[] => {
+  if (!userId) return [];
+  try {
+    const raw = sessionStorage.getItem(OWNED_CACHE_PREFIX + userId);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? (parsed as OwnedBusiness[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeOwnedCache = (userId: string, businesses: OwnedBusiness[]) => {
+  try {
+    if (businesses.length > 0) sessionStorage.setItem(OWNED_CACHE_PREFIX + userId, JSON.stringify(businesses));
+    else sessionStorage.removeItem(OWNED_CACHE_PREFIX + userId);
+  } catch {
+    // storage unavailable — the picker just loads late
+  }
+};
+
 interface MessagesPanelProps {
   initialConversationId?: string | null;
   initialInboxBusinessId?: number | null;
@@ -43,7 +78,10 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
   const uid = user?.uid;
   const navigate = useNavigate();
   const location = useLocation();
-  const [ownedBusinesses, setOwnedBusinesses] = useState<OwnedBusiness[]>([]);
+  // MessagesPanel renders client-side only (after CommuniCon's mount gate), so storage is readable here
+  const [ownedBusinesses, setOwnedBusinesses] = useState<OwnedBusiness[]>(() =>
+    typeof window === 'undefined' ? [] : readOwnedCache(readSessionUserId())
+  );
   const [inboxKey, setInboxKey] = useState<string>(
     initialInboxBusinessId ? `b:${initialInboxBusinessId}` : 'customer',
   );
@@ -60,12 +98,16 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
         setOwnedBusinesses([]);
         return;
       }
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('businesses')
         .select('id,business_name')
         .eq('owner_id', ownerId)
         .order('business_name');
-      setOwnedBusinesses(data ?? []);
+      // A failed refresh keeps what the cache showed
+      if (error) return;
+      const owned = data ?? [];
+      setOwnedBusinesses(owned);
+      writeOwnedCache(ownerId, owned);
     })();
   }, [uid]);
 

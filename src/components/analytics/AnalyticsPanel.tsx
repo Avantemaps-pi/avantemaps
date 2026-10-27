@@ -48,7 +48,7 @@ const ChartTooltip: React.FC<{ active?: boolean; payload?: TooltipEntry[]; label
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border border-analytics-border bg-analytics-surface px-3 py-2 shadow-xl">
-      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-analytics-text-muted">
+      <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-analytics-text-muted">
         {label}
       </p>
       {payload.map((entry) => (
@@ -70,7 +70,7 @@ const Stat: React.FC<{ label: string; value: number; trend?: number }> = ({ labe
   const TrendIcon = trend !== undefined && trend < 0 ? TrendingDown : TrendingUp;
   return (
     <div className="flex min-w-0 flex-col">
-      <span className="text-[11px] font-medium uppercase tracking-wide text-analytics-text-muted">
+      <span className="text-xs font-medium uppercase tracking-wide text-analytics-text-muted">
         {label}
       </span>
       <div className="flex items-baseline gap-2">
@@ -80,7 +80,7 @@ const Stat: React.FC<{ label: string; value: number; trend?: number }> = ({ labe
         {trend !== undefined && trend !== 0 && (
           <span
             className={cn(
-              'flex items-center gap-0.5 text-[11px] font-semibold',
+              'flex items-center gap-0.5 text-xs font-semibold',
               trend > 0 ? 'text-analytics-success' : 'text-analytics-text-muted'
             )}
           >
@@ -211,11 +211,11 @@ const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({
 
       {/* Legend */}
       <div className="mt-3 flex items-center gap-4">
-        <span className="flex items-center gap-1.5 text-[11px] text-analytics-text-muted">
+        <span className="flex items-center gap-1.5 text-xs text-analytics-text-muted">
           <span className="h-2 w-2 rounded-full bg-analytics-primary" />
           Views
         </span>
-        <span className="flex items-center gap-1.5 text-[11px] text-analytics-text-muted">
+        <span className="flex items-center gap-1.5 text-xs text-analytics-text-muted">
           <span className="h-2 w-2 rounded-full bg-analytics-secondary" />
           Bookmarks
         </span>
@@ -229,7 +229,7 @@ const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({
             type="button"
             onClick={() => onDateRangeChange(option.value)}
             className={cn(
-              'rounded-full px-3 py-1 text-[11px] font-medium transition-colors sm:text-xs',
+              'rounded-full px-3 py-1 text-xs font-medium transition-colors',
               dateRange === option.value
                 ? 'bg-analytics-surface text-analytics-text'
                 : 'text-analytics-text-muted'

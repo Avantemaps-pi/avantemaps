@@ -148,7 +148,7 @@ const MobileSidebar = ({
           
           {/* Compact Footer */}
           <div className="px-4 py-3 border-t border-sidebar-border bg-muted/30 space-y-2">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <Link 
                 to="/pricing" 
                 onClick={onLinkClick}
@@ -172,7 +172,7 @@ const MobileSidebar = ({
                 </React.Fragment>
               ))}
             </div>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               © {new Date().getFullYear()} Avante Maps Pty Ltd
             </p>
           </div>

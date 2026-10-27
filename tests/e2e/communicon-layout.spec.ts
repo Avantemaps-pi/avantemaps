@@ -66,13 +66,14 @@ const fakeSession = {
   user: { id: UID, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() },
 };
 
-async function setup(page: Page, opts: { owner?: boolean } = {}) {
+async function setup(page: Page, opts: { owner?: boolean; businessesDelayMs?: number } = {}) {
   await page.route('**/pi-sdk.js', (route) => route.abort());
   if (opts.owner) {
     await page.route('**/auth/v1/**', (route) => route.fulfill({ json: fakeSession.user }));
-    await page.route('**/rest/v1/businesses*', (route) =>
-      route.fulfill({ json: [{ id: 9001, business_name: 'Harbour Light Coffee' }] }),
-    );
+    await page.route('**/rest/v1/businesses*', async (route) => {
+      if (opts.businessesDelayMs) await new Promise((r) => setTimeout(r, opts.businessesDelayMs));
+      await route.fulfill({ json: [{ id: 9001, business_name: 'Harbour Light Coffee' }] });
+    });
     await page.route('**/rest/v1/users*', (route) => route.fulfill({ json: [] }));
     await page.route('**/rest/v1/user_roles*', (route) => route.fulfill({ json: [] }));
     await page.addInitScript((session) => {
@@ -293,5 +294,50 @@ test.describe('slim header at 375x667', () => {
     await page.keyboard.press('ArrowLeft');
     await expect(bot).toBeFocused();
     await expect(bot).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+test.describe('text size at 375x812', () => {
+  test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+
+  test('quick replies are at least 44px tall with 14px text', async ({ page }) => {
+    await setup(page);
+    const chips = page.getByRole('button', { name: /^(Check verification status|Check certification status|My listings)$/ });
+    await expect(chips).toHaveCount(3);
+    const sizes = await chips.evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return { text: el.textContent, top: Math.round(r.top), height: Math.round(r.height), font: getComputedStyle(el).fontSize };
+      }),
+    );
+    console.log(`quick replies: ${JSON.stringify(sizes)}`);
+    for (const s of sizes) {
+      expect(s.height).toBeGreaterThanOrEqual(44);
+      expect(s.font).toBe('14px');
+    }
+    expect(await page.getByText('Powered by CommuniCon').evaluate((el) => getComputedStyle(el.parentElement!).fontSize)).toBe('12px');
+  });
+});
+
+test.describe('owner inbox picker', () => {
+  test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+
+  test("an owner's second visit shows the picker on the first frame, with no layout jump", async ({ page }) => {
+    // First visit fills the per-user cache (sessionStorage survives the reload below)
+    await setup(page, { owner: true });
+    await page.getByRole('tab', { name: 'Messages' }).click();
+    await expect(page.getByRole('combobox', { name: 'Inbox' })).toBeVisible();
+
+    // Second visit: the businesses query is slow, so only the cache can show the picker now
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await setup(page, { owner: true, businessesDelayMs: 1_500 });
+    await page.getByRole('tab', { name: 'Messages' }).click();
+    const list = page.locator('main ul').first();
+    await expect(list).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Inbox' })).toBeVisible({ timeout: 300 });
+    const topBefore = (await list.boundingBox())!.y;
+    await page.waitForTimeout(2_000);
+    expect((await list.boundingBox())!.y).toBe(topBefore);
+    await expect(page.getByRole('combobox', { name: 'Inbox' })).toBeVisible();
   });
 });

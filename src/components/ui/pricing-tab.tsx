@@ -23,7 +23,7 @@ export function Tab({ text, selected, setSelected, discount = false, discountAmo
     >
       {text}
       {discount && (
-        <span className="flex h-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-medium text-primary-foreground">
+        <span className="flex h-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
           Save {discountAmount}
         </span>
       )}
