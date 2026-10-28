@@ -1,9 +1,7 @@
 import React from 'react';
 import { List } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-// Above this the label says "50+" (the list shows at most this many)
-export const LIST_MAX = 50;
+import { LIST_MAX } from './mapList';
 
 interface MapListButtonProps {
   count: number;

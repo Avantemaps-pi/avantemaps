@@ -13,7 +13,12 @@ const navItems = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
-const BottomNavBar: React.FC = () => {
+interface BottomNavBarProps {
+  /** A tab was tapped (also when it's the current page, e.g. Map while the list view is open) */
+  onItemClick?: ((to: string) => void) | undefined;
+}
+
+const BottomNavBar: React.FC<BottomNavBarProps> = ({ onItemClick }) => {
   const isMobile = useIsMobile();
   const location = useLocation();
   const [visible, setVisible] = useState(true);
@@ -58,6 +63,7 @@ const BottomNavBar: React.FC = () => {
               key={to}
               to={to}
               aria-label={label}
+              onClick={() => onItemClick?.(to)}
               className={cn(
                 'flex flex-col items-center justify-center gap-1 flex-1 h-full text-xs transition-colors',
                 isActive
