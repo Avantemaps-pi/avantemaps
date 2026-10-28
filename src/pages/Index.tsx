@@ -24,6 +24,7 @@ import { getOrigin } from '@/utils/browserEnv';
 import { Place } from '@/types/business';
 import type { LatLngBounds } from 'leaflet';
 import MapCardStrip, { type StripScrollRequest } from '@/components/map/MapCardStrip';
+import MapListButton from '@/components/map/MapListButton';
 import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
@@ -186,6 +187,11 @@ const Index = () => {
   const keyboardOpen = useKeyboardOpen();
   const visiblePlacesRef = React.useRef(visiblePlaces);
   visiblePlacesRef.current = visiblePlaces;
+
+  // "List · N": every business in view as a list
+  const [listOpen, setListOpen] = useState(false);
+  const listButtonRef = React.useRef<HTMLButtonElement>(null);
+  const drawerOpen = !!selectedPlace || !!cardDrawerId;
 
   const stripPlaces = React.useMemo(() => {
     if (!strip) return [];
@@ -507,6 +513,16 @@ const Index = () => {
           onSelect={handleStripSelect}
           onOpen={setCardDrawerId}
           hidden={keyboardOpen}
+        />
+      )}
+
+      {mapState === 'ok' && placesInView.length >= 1 && (
+        <MapListButton
+          ref={listButtonRef}
+          count={placesInView.length}
+          onClick={() => setListOpen(true)}
+          stripOpen={!!strip}
+          hidden={keyboardOpen || drawerOpen || listOpen}
         />
       )}
 
