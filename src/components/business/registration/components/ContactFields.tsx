@@ -4,6 +4,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { useFormContext } from 'react-hook-form';
 import { FormValues } from '../formSchema';
+import { STEP_LABEL_CLASS } from './stepLabel';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import {
@@ -194,9 +195,11 @@ const getCountryCodeFromCountry = (country: string): string => {
 
 interface ContactFieldsProps {
   disabled?: boolean | undefined;
+  /** Registration steps: sentence-case labels in the steps' label style */
+  stepLabels?: boolean | undefined;
 }
 
-const ContactFields: React.FC<ContactFieldsProps> = ({ disabled }) => {
+const ContactFields: React.FC<ContactFieldsProps> = ({ disabled, stepLabels }) => {
   const form = useFormContext<FormValues>();
 
   const [countryCode, setCountryCode] = React.useState(() => {
@@ -239,7 +242,7 @@ const ContactFields: React.FC<ContactFieldsProps> = ({ disabled }) => {
         name="phone"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-base mb-1.5">Contact Number *</FormLabel>
+            <FormLabel className={stepLabels ? STEP_LABEL_CLASS : "text-base mb-1.5"}>{stepLabels ? 'Contact number *' : 'Contact Number *'}</FormLabel>
             <div className="flex space-x-2">
               <Select
                 value={countryCode}
@@ -292,7 +295,7 @@ const ContactFields: React.FC<ContactFieldsProps> = ({ disabled }) => {
         name="email"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-base mb-1.5">Email Address *</FormLabel>
+            <FormLabel className={stepLabels ? STEP_LABEL_CLASS : "text-base mb-1.5"}>{stepLabels ? 'Email address *' : 'Email Address *'}</FormLabel>
             <FormControl>
               <Input
                 id="email"
@@ -312,7 +315,7 @@ const ContactFields: React.FC<ContactFieldsProps> = ({ disabled }) => {
         name="website"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-base mb-1.5">Pi Network Website URL (Optional)</FormLabel>
+            <FormLabel className={stepLabels ? STEP_LABEL_CLASS : "text-base mb-1.5"}>{stepLabels ? 'Pi Network website URL (optional)' : 'Pi Network Website URL (Optional)'}</FormLabel>
             <FormControl>
               <Input
                 id="website"

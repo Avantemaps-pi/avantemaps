@@ -14,11 +14,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { STEP_LABEL_CLASS } from './stepLabel';
 
 interface BusinessTypeSelectorProps {
   disabled?: boolean | undefined;
   /** 'chips': every type as a toggle chip (registration steps); default is the dropdown */
   variant?: 'dropdown' | 'chips';
+  /** Registration steps: sentence-case label in the steps' label style */
+  stepLabels?: boolean | undefined;
 }
 
 // The map's category chip look: 36px pill, ::after extends the hit area to 44px
@@ -32,7 +35,7 @@ const chipClass = (pressed: boolean) => cn(
     : 'bg-surface-float text-foreground border-input hover:bg-accent hover:text-accent-foreground'
 );
 
-const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ disabled, variant = 'dropdown' }) => {
+const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ disabled, variant = 'dropdown', stepLabels }) => {
   const form = useFormContext<FormValues>();
   const [selectedTypes, setSelectedTypes] = React.useState<string[]>([]);
   const [customBusinessType, setCustomBusinessType] = React.useState<string>('');
@@ -99,7 +102,7 @@ const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ disabled, v
         
         return (
           <FormItem className="flex flex-col">
-            <FormLabel className="text-base mb-1.5 whitespace-nowrap">Business type (Select all that apply) *</FormLabel>
+            <FormLabel className={stepLabels ? STEP_LABEL_CLASS : "text-base mb-1.5 whitespace-nowrap"}>{stepLabels ? 'Business type (select all that apply) *' : 'Business type (Select all that apply) *'}</FormLabel>
             <div className="space-y-4">
               {variant === 'chips' ? (
                 <>

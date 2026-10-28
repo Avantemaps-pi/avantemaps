@@ -4,15 +4,18 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescripti
 import { Textarea } from '@/components/ui/textarea';
 import { useFormContext } from 'react-hook-form';
 import { FormValues } from '../formSchema';
+import { STEP_LABEL_CLASS } from './stepLabel';
 
 const MAX_WORD_COUNT = 150;
 const MIN_WORD_COUNT = 10;
 
 interface BusinessDescriptionFieldProps {
   disabled?: boolean | undefined;
+  /** Registration steps: sentence-case label in the steps' label style */
+  stepLabels?: boolean | undefined;
 }
 
-const BusinessDescriptionField: React.FC<BusinessDescriptionFieldProps> = ({ disabled }) => {
+const BusinessDescriptionField: React.FC<BusinessDescriptionFieldProps> = ({ disabled, stepLabels }) => {
   const form = useFormContext<FormValues>();
   const [wordCount, setWordCount] = useState(0);
   
@@ -43,7 +46,7 @@ const BusinessDescriptionField: React.FC<BusinessDescriptionFieldProps> = ({ dis
       name="businessDescription"
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-base mb-1.5">Business Description *</FormLabel>
+          <FormLabel className={stepLabels ? STEP_LABEL_CLASS : "text-base mb-1.5"}>{stepLabels ? 'Business description *' : 'Business Description *'}</FormLabel>
           <FormControl>
             <Textarea 
               id="businessDescription"
