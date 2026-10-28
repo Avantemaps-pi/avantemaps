@@ -79,17 +79,31 @@ const getBookmarkChannel = (): BroadcastChannel | null => {
   return bookmarkChannel;
 };
 
-const broadcastBookmarkChange = (message: BookmarkSyncMessage) => {
+// Same tab: a BroadcastChannel never delivers to the object that posted, and every
+// instance here shares one, so the other instances in this tab hear about a change
+// through a window event instead (each skips its own)
+const SAME_TAB_EVENT = 'bookmarks-sync';
+interface SameTabDetail {
+  message: BookmarkSyncMessage;
+  source: object;
+}
+
+const broadcastBookmarkChange = (message: BookmarkSyncMessage, source: object) => {
   try {
     getBookmarkChannel()?.postMessage(message);
   } catch (e) {
     console.warn('Bookmark broadcast failed:', e);
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent<SameTabDetail>(SAME_TAB_EVENT, { detail: { message, source } }));
   }
 };
 
 export const useBusinessBookmarks = () => {
   const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
+  // Identifies this instance's own same-tab bookmark events
+  const instanceRef = useRef({});
   // SSR-safe: start empty and rehydrate ids from localStorage in the mount
   // effect below (a render-time read would mismatch server and client HTML
   // for users with persisted bookmarks).
@@ -179,8 +193,7 @@ export const useBusinessBookmarks = () => {
     const channel = getBookmarkChannel();
     if (!channel) return;
 
-    const handleMessage = (event: MessageEvent<BookmarkSyncMessage>) => {
-      const msg = event.data;
+    const applyChange = (msg: BookmarkSyncMessage | undefined) => {
       if (!msg || msg.userId !== user.uid) return;
 
       if (msg.type === 'added') {
@@ -202,7 +215,15 @@ export const useBusinessBookmarks = () => {
       }
     };
 
+    const handleMessage = (event: MessageEvent<BookmarkSyncMessage>) => applyChange(event.data);
     channel.addEventListener('message', handleMessage);
+
+    // Other instances in this tab (the strip, the list, the drawer)
+    const handleSameTab = (event: Event) => {
+      const { message, source } = (event as CustomEvent<SameTabDetail>).detail;
+      if (source !== instanceRef.current) applyChange(message);
+    };
+    window.addEventListener(SAME_TAB_EVENT, handleSameTab);
 
     // Fallback for browsers without BroadcastChannel parity: storage events
     // fire across tabs whenever localStorage changes.
@@ -219,6 +240,7 @@ export const useBusinessBookmarks = () => {
 
     return () => {
       channel.removeEventListener('message', handleMessage);
+      window.removeEventListener(SAME_TAB_EVENT, handleSameTab);
       window.removeEventListener('storage', handleStorage);
     };
   }, [isAuthenticated, user, queryClient, fetchBookmarks]);
@@ -275,7 +297,7 @@ export const useBusinessBookmarks = () => {
       if (existing) {
         setBookmarks(prev => prev.includes(businessId) ? prev : [...prev, businessId]);
         queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
-        broadcastBookmarkChange({ type: 'added', businessId, userId: user.uid });
+        broadcastBookmarkChange({ type: 'added', businessId, userId: user.uid }, instanceRef.current);
         return true;
       }
 
@@ -304,7 +326,7 @@ export const useBusinessBookmarks = () => {
       console.log('✅ Bookmark added (upsert):', data);
 
       queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
-      broadcastBookmarkChange({ type: 'added', businessId, userId: user.uid });
+      broadcastBookmarkChange({ type: 'added', businessId, userId: user.uid }, instanceRef.current);
       return true;
     } catch (error) {
       console.error('❌ Error adding bookmark:', error);
@@ -358,7 +380,7 @@ export const useBusinessBookmarks = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: BOOKMARKS_QUERY_KEY, exact: true });
-      broadcastBookmarkChange({ type: 'removed', businessId, userId: user.uid });
+      broadcastBookmarkChange({ type: 'removed', businessId, userId: user.uid }, instanceRef.current);
       return true;
     } catch (error) {
       console.error('Error removing bookmark:', error);
