@@ -23,7 +23,7 @@ const dispatchCenter = (lat: number, lng: number) => {
   window.dispatchEvent(new CustomEvent('centerMap', { detail: { lat, lng, zoom: 15 } }));
 };
 
-// CORS-friendly IP fallback (ipwho.is free plan blocks CORS)
+// IP fallback: ipapi.co, then geojs.io (both answer cross-origin requests)
 const fetchIpLocation = async (): Promise<{ lat: number; lng: number } | null> => {
   const endpoints: Array<{ name: string; fn: () => Promise<{ lat: number; lng: number } | null> }> = [
     {
