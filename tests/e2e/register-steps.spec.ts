@@ -34,7 +34,8 @@ interface Calls {
   writes: string[];
 }
 
-async function openRegistration(page: Page): Promise<Calls> {
+// ipCountry: what the mocked ipwho.is lookup returns; without it the lookup fails and the user picks
+async function openRegistration(page: Page, options: { ipCountry?: { country: string; country_code: string } } = {}): Promise<Calls> {
   const calls: Calls = { inserts: [], writes: [] };
   const session = fakeSession();
 
@@ -58,7 +59,11 @@ async function openRegistration(page: Page): Promise<Calls> {
     return route.fulfill({ json: { success: true, business: { id: 9999 } } });
   });
   await page.route('**/pi-sdk.js', (route) => route.abort());
-  await page.route('http://ip-api.com/**', (route) => route.abort());
+  await page.route('https://ipwho.is/**', (route) =>
+    options.ipCountry
+      ? route.fulfill({ json: { success: true, ...options.ipCountry }, headers: { 'access-control-allow-origin': '*' } })
+      : route.abort(),
+  );
 
   await page.addInitScript(
     ([mockKey, storageKey, user, s]) => {
@@ -205,6 +210,19 @@ test('the footer stays visible and each step’s last field scrolls fully above 
   await fillStep3(page);
   await next(page, 'Review');
   await expectLastFieldClearsFooter(page, body(page).locator('.max-w-md').last());
+});
+
+test('the country is filled in from the IP location (ipwho.is over https)', async ({ page }) => {
+  const ipApi: string[] = [];
+  page.on('request', (r) => {
+    if (new URL(r.url()).hostname === 'ip-api.com') ipApi.push(r.url());
+  });
+  await openRegistration(page, { ipCountry: { country: 'South Africa', country_code: 'ZA' } });
+  await fillStep1(page);
+  await next(page, 'Where to find you');
+  await expect(page.getByRole('combobox').first()).toHaveText('South Africa');
+  await expect(page.getByText('Address search will be filtered to South Africa')).toBeVisible();
+  expect(ipApi).toEqual([]);
 });
 
 test('business type chips toggle with Space and Enter', async ({ page }) => {

@@ -10,7 +10,8 @@ interface GeolocationResult {
 
 /**
  * Hook to detect user's country based on IP geolocation.
- * Uses ip-api.com (free, no API key required).
+ * Uses ipwho.is over HTTPS (free, no API key required), as useIpLocationFocus does.
+ * Its cache only holds coordinates, so the country needs its own request.
  */
 export function useCountryGeolocation(): GeolocationResult {
   const [result, setResult] = useState<GeolocationResult>({
@@ -23,8 +24,8 @@ export function useCountryGeolocation(): GeolocationResult {
   useEffect(() => {
     const detectCountry = async () => {
       try {
-        // ip-api.com is free and doesn't require an API key
-        const response = await fetch('http://ip-api.com/json/?fields=status,country,countryCode');
+        // HTTPS: the old http://ip-api.com request was blocked as mixed content on the https site
+        const response = await fetch('https://ipwho.is/?fields=success,country,country_code');
         
         if (!response.ok) {
           throw new Error('Failed to fetch geolocation');
@@ -32,10 +33,10 @@ export function useCountryGeolocation(): GeolocationResult {
 
         const data = await response.json();
         
-        if (data.status === 'success') {
+        if (data.success) {
           setResult({
             country: data.country,
-            countryCode: data.countryCode?.toLowerCase() || null,
+            countryCode: data.country_code?.toLowerCase() || null,
             isLoading: false,
             error: null,
           });
