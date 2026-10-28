@@ -30,11 +30,10 @@ interface MapCardStripProps {
   hidden?: boolean | undefined;
 }
 
-// Category plus today's hours, written as in the drawer
-const summaryOf = (place: Place) => {
-  const category = place.category?.split(',').map((c) => c.trim()).find(Boolean) ?? '';
-  return [category, todayHoursLabel(place.hours)].filter(Boolean).join(' · ');
-};
+const categoryOf = (place: Place) => place.category?.split(',').map((c) => c.trim()).find(Boolean) ?? '';
+
+// Category plus today's hours, written as in the drawer (the card's accessible name)
+const summaryOf = (place: Place) => [categoryOf(place), todayHoursLabel(place.hours)].filter(Boolean).join(' · ');
 
 const StripCard: React.FC<{
   place: Place;
@@ -48,6 +47,8 @@ const StripCard: React.FC<{
 }> = ({ place, selected, onOpen, onArrow, buttonRef, isBookmarked, onBookmarkToggle, bookmarkLoading }) => {
   const image = (place.images?.find((src) => src && src !== NO_IMAGE) ?? (place.image !== NO_IMAGE ? place.image : undefined)) || undefined;
   const summary = summaryOf(place);
+  const category = categoryOf(place);
+  const hours = todayHoursLabel(place.hours);
 
   // Keep the status icon attached to the last word so it never wraps on its own
   const trimmedName = place.name.trim();
@@ -86,7 +87,7 @@ const StripCard: React.FC<{
           <Store className="h-8 w-8 text-muted-foreground" />
         )}
       </div>
-      {/* 2-line name (40) + rating (20) + 2-line summary (36) + gaps (4) = the photo's 100px */}
+      {/* 2-line name (40) + rating (20) + category and hours lines (36) + gaps (4) = the photo's 100px */}
       <div className="pointer-events-none flex min-w-0 flex-1 flex-col gap-0.5" aria-hidden="true">
         <p className="line-clamp-2 text-[15px] leading-5 font-semibold text-foreground break-words">
           {/* Clears Save on the first line only, so line 2 uses the full width */}
@@ -102,7 +103,13 @@ const StripCard: React.FC<{
         <div className="whitespace-nowrap">
           <PlaceCardRating rating={place.rating} totalReviews={place.totalReviews} onClick={undefined} />
         </div>
-        {summary && <p className="line-clamp-2 text-[13px] leading-[18px] text-muted-foreground">{summary}</p>}
+        {/* Hours on their own line, so a long category can't push them out of view */}
+        {(category || hours) && (
+          <div className="text-[13px] leading-[18px] text-muted-foreground">
+            {category && <p className="truncate">{category}</p>}
+            {hours && <p className="whitespace-nowrap">{hours}</p>}
+          </div>
+        )}
       </div>
       {/* In the corner, so its icon clears line 2 of the name */}
       <div className="absolute right-0 top-0 z-10">
