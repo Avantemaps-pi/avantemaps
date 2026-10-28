@@ -108,6 +108,13 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange, onClose }: Business
     }
   }, [form.formState.isDirty, imageUpload.hasImages, onFormChange]);
 
+  // When the step flow appears (signed in), focus its title. On a direct load the
+  // signed-out view renders first and AppLayout focuses its title, which then goes away
+  const signedIn = !!user;
+  React.useEffect(() => {
+    if (signedIn) titleRef.current?.focus({ preventScroll: true });
+  }, [signedIn]);
+
   // On every step change: back to the top, focus on the step title (or the field to fix)
   React.useEffect(() => {
     if (isFirstRender.current) {
