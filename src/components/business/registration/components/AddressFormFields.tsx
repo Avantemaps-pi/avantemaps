@@ -9,15 +9,18 @@ import { buildStreetAddress, parseCity } from '../utils/addressParser';
 import { getCountryCode, allCountries, commonCountries } from '../utils/countryCodeMapping';
 import { useCountryGeolocation } from '@/hooks/useCountryGeolocation';
 import { cn } from '@/lib/utils';
+import { STEP_LABEL_CLASS } from './stepLabel';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface AddressFormFieldsProps {
   disabled?: boolean | undefined;
+  /** Registration steps: sentence-case labels without icons, in the steps' label style */
+  stepLabels?: boolean | undefined;
 }
 
-const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
+const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled, stepLabels }) => {
   const form = useFormContext<FormValues>();
   const { predictions, isLoading, getSuggestions, clearSuggestions } = useLocationIQAutocomplete();
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -171,8 +174,8 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
         name="country"
         render={({ field }) => (
           <FormItem className="flex flex-col">
-            <FormLabel className="text-base font-semibold flex items-center gap-2">
-              <Globe className="w-5 h-5 text-primary" />
+            <FormLabel className={stepLabels ? cn(STEP_LABEL_CLASS, "flex items-center gap-2") : "text-base font-semibold flex items-center gap-2"}>
+              {!stepLabels && <Globe className="w-5 h-5 text-primary" />}
               Country
               {isDetectingCountry && (
                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
@@ -263,9 +266,9 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
           name="streetAddress"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-base font-semibold flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-primary" />
-                Street Address
+              <FormLabel className={stepLabels ? STEP_LABEL_CLASS : "text-base font-semibold flex items-center gap-2"}>
+                {!stepLabels && <MapPin className="w-5 h-5 text-primary" />}
+                {stepLabels ? 'Street address' : 'Street Address'}
               </FormLabel>
               <FormControl>
                 <Input
@@ -334,9 +337,9 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
         name="apartment"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-base font-semibold flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-primary" />
-              Apartment, Suite, Unit (Optional)
+            <FormLabel className={stepLabels ? STEP_LABEL_CLASS : "text-base font-semibold flex items-center gap-2"}>
+              {!stepLabels && <Building2 className="w-5 h-5 text-primary" />}
+              {stepLabels ? 'Apartment, suite or unit (optional)' : 'Apartment, Suite, Unit (Optional)'}
             </FormLabel>
             <FormControl>
               <Input
@@ -365,8 +368,8 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
           name="city"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-base font-semibold flex items-center gap-2">
-                <MapPinned className="w-5 h-5 text-primary" />
+              <FormLabel className={stepLabels ? STEP_LABEL_CLASS : "text-base font-semibold flex items-center gap-2"}>
+                {!stepLabels && <MapPinned className="w-5 h-5 text-primary" />}
                 City
               </FormLabel>
               <FormControl>
@@ -394,9 +397,9 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
           name="state"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-base font-semibold flex items-center gap-2">
-                <MapPinned className="w-5 h-5 text-primary" />
-                Province/State
+              <FormLabel className={stepLabels ? STEP_LABEL_CLASS : "text-base font-semibold flex items-center gap-2"}>
+                {!stepLabels && <MapPinned className="w-5 h-5 text-primary" />}
+                {stepLabels ? 'Province or state' : 'Province/State'}
               </FormLabel>
               <FormControl>
                 <Input
@@ -423,9 +426,9 @@ const AddressFormFields: React.FC<AddressFormFieldsProps> = ({ disabled }) => {
           name="zipCode"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-base font-semibold flex items-center gap-2">
-                <Mail className="w-5 h-5 text-primary" />
-                Postal Code
+              <FormLabel className={stepLabels ? STEP_LABEL_CLASS : "text-base font-semibold flex items-center gap-2"}>
+                {!stepLabels && <Mail className="w-5 h-5 text-primary" />}
+                {stepLabels ? 'Postal code' : 'Postal Code'}
               </FormLabel>
               <FormControl>
                 <Input

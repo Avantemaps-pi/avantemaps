@@ -196,21 +196,22 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange, onClose }: Business
           titleRef={titleRef}
           bodyRef={bodyRef}
         >
-          <div onKeyDown={handleKeyDown}>
+          {/* text-foreground: the field labels inherit it (see stepLabel.ts) */}
+          <div onKeyDown={handleKeyDown} className="text-foreground">
             {step === 0 && (
               <div className="space-y-6">
-                <BusinessNameField disabled={isSubmitting} />
-                <BusinessTypeSelector variant="chips" disabled={isSubmitting} />
-                <BusinessDescriptionField disabled={isSubmitting} />
-                <OwnerUsernameField />
+                <BusinessNameField stepLabels disabled={isSubmitting} />
+                <BusinessTypeSelector variant="chips" stepLabels disabled={isSubmitting} />
+                <BusinessDescriptionField stepLabels disabled={isSubmitting} />
+                <OwnerUsernameField stepLabels />
               </div>
             )}
             {step === 1 && (
               <div className="space-y-6">
-                <AddressFormFields disabled={isSubmitting} />
+                <AddressFormFields stepLabels disabled={isSubmitting} />
                 <h2 className="pt-2 text-lg font-semibold text-foreground">Contact details</h2>
                 {/* Remount when the country changes, so the phone code follows it (as when contact was its own tab) */}
-                <ContactFields key={country} disabled={isSubmitting} />
+                <ContactFields key={country} stepLabels disabled={isSubmitting} />
               </div>
             )}
             {step === 2 && (
@@ -229,8 +230,9 @@ const BusinessRegistrationForm = ({ onSuccess, onFormChange, onClose }: Business
                   maxImages={3}
                   disabled={isSubmitting}
                   isProcessing={imageUpload.isProcessing}
+                  stepLabels
                 />
-                <WalletAddressField disabled={isSubmitting} />
+                <WalletAddressField stepLabels disabled={isSubmitting} />
               </div>
             )}
             {step === LAST_STEP && (

@@ -3,12 +3,15 @@ import { useFormContext } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { FormValues } from '../formSchema';
+import { STEP_LABEL_CLASS } from './stepLabel';
 
 interface BusinessNameFieldProps {
   disabled?: boolean | undefined;
+  /** Registration steps: sentence-case label in the steps' label style */
+  stepLabels?: boolean | undefined;
 }
 
-const BusinessNameField: React.FC<BusinessNameFieldProps> = ({ disabled }) => {
+const BusinessNameField: React.FC<BusinessNameFieldProps> = ({ disabled, stepLabels }) => {
   const form = useFormContext<FormValues>();
 
   return (
@@ -17,7 +20,7 @@ const BusinessNameField: React.FC<BusinessNameFieldProps> = ({ disabled }) => {
       name="businessName"
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-base mb-1.5">Business Name *</FormLabel>
+          <FormLabel className={stepLabels ? STEP_LABEL_CLASS : "text-base mb-1.5"}>{stepLabels ? 'Business name *' : 'Business Name *'}</FormLabel>
           <FormControl>
             <Input
               id="businessName"

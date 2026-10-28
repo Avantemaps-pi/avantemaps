@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { ImageUploadStatus } from '@/hooks/useImageUpload';
 import ImageUploadCounter from './ImageUploadCounter';
 import ImageCropper from './ImageCropper';
+import { STEP_LABEL_CLASS } from './stepLabel';
 
 interface BusinessImageUploadProps {
   images: ImageUploadStatus[];
@@ -19,6 +20,8 @@ interface BusinessImageUploadProps {
   isProcessing?: boolean | undefined;
   existingImages?: string[];
   onRemoveExistingImage?: ((index: number) => void) | undefined;
+  /** Registration steps: sentence-case label in the steps' label style */
+  stepLabels?: boolean | undefined;
 }
 
 // Component to handle image preview with proper blob URL regeneration
@@ -141,6 +144,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
   isProcessing = false,
   existingImages = [],
   onRemoveExistingImage,
+  stepLabels,
 }) => {
   const [imagesToRemove, setImagesToRemove] = useState<number[]>([]);
   const [cropperOpen, setCropperOpen] = useState(false);
@@ -201,7 +205,7 @@ const BusinessImageUpload: React.FC<BusinessImageUploadProps> = ({
 
   return (
     <FormItem>
-      <FormLabel className="text-base mb-1.5">Business Images</FormLabel>
+      <FormLabel className={stepLabels ? STEP_LABEL_CLASS : "text-base mb-1.5"}>{stepLabels ? 'Business images' : 'Business Images'}</FormLabel>
       <FormControl>
         <div className="space-y-4">
           {/* File Input */}

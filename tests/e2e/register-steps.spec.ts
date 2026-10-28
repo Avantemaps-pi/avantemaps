@@ -225,6 +225,43 @@ test('the country is filled in from the IP location (ipwho.is over https)', asyn
   expect(ipApi).toEqual([]);
 });
 
+// Every field label on the step: 14px semibold, the title's colour, no icon
+async function expectStepLabels(page: Page) {
+  const titleColour = await title(page).evaluate((el) => getComputedStyle(el).color);
+  const labels = await body(page).locator('label').evaluateAll((els) =>
+    els.map((el) => {
+      const cs = getComputedStyle(el);
+      return { text: el.textContent?.trim(), size: cs.fontSize, weight: cs.fontWeight, colour: cs.color, icons: el.querySelectorAll('svg:not(.animate-spin)').length };
+    }),
+  );
+  expect(labels.length).toBeGreaterThan(0);
+  for (const l of labels) expect(l, l.text).toEqual({ ...l, size: '14px', weight: '600', colour: titleColour, icons: 0 });
+  return labels.map((l) => l.text);
+}
+
+test('one label style on steps 1–3, sentence case, errors still red', async ({ page }) => {
+  await openRegistration(page);
+  expect(await expectStepLabels(page)).toEqual([
+    'Business name *',
+    'Business type (select all that apply) *',
+    'Business description *',
+    'Pi Network username',
+  ]);
+  await continueButton(page).click();
+  const nameLabel = body(page).locator('label', { hasText: 'Business name *' });
+  const errorColour = await page.getByText('Business name is required').evaluate((el) => getComputedStyle(el).color);
+  await expect(nameLabel).toHaveCSS('color', errorColour);
+
+  await fillStep1(page);
+  await next(page, 'Where to find you');
+  expect(await expectStepLabels(page)).toEqual(
+    expect.arrayContaining(['Street address', 'Apartment, suite or unit (optional)', 'City', 'Province or state', 'Postal code', 'Contact number *', 'Email address *', 'Pi Network website URL (optional)']),
+  );
+  await fillStep2(page);
+  await next(page, 'Hours, photos and payment');
+  expect(await expectStepLabels(page)).toEqual(expect.arrayContaining(['Business images', 'Pi wallet address (business)']));
+});
+
 test('business type chips toggle with Space and Enter', async ({ page }) => {
   await openRegistration(page);
   const chip = page.getByRole('button', { name: 'Retail Store' });
