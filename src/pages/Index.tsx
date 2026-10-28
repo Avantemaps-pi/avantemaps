@@ -50,20 +50,25 @@ const STRIP_MAX = 20;
 
 const placeLatLng = (place: Place) => place.position ?? place.location ?? null;
 
-// Places inside the bounds, nearest to origin first (origin's own place leads), capped
-const buildStripIds = (places: Place[], bounds: LatLngBounds, origin: { lat: number; lng: number }) => {
+// Places inside the bounds, nearest to origin first (origin's own place leads)
+const placesInBounds = (places: Place[], bounds: LatLngBounds, origin: { lat: number; lng: number }) => {
   const kx = Math.cos((origin.lat * Math.PI) / 180);
   return places
     .map((place) => ({ place, pos: placeLatLng(place) }))
     .filter(({ pos }) => pos && bounds.contains([pos.lat, pos.lng]))
     .map(({ place, pos }) => ({
-      id: place.id,
+      place,
       d: (pos!.lat - origin.lat) ** 2 + ((pos!.lng - origin.lng) * kx) ** 2,
     }))
     .sort((a, b) => a.d - b.d)
+    .map(({ place }) => place);
+};
+
+// The strip's cards: the same order, capped
+const buildStripIds = (places: Place[], bounds: LatLngBounds, origin: { lat: number; lng: number }) =>
+  placesInBounds(places, bounds, origin)
     .slice(0, STRIP_MAX)
     .map(({ id }) => id);
-};
 
 interface StripState {
   /** Frozen card order; rebuilt only when the user moves the map */
@@ -165,6 +170,13 @@ const Index = () => {
   const visiblePlaces = React.useMemo(
     () => basePlaces.filter(p => matchesCategory(p, selectedCategoryId)),
     [basePlaces, selectedCategoryId]
+  );
+
+  // Every business in view, nearest to the map centre first (kept current on every move)
+  const [viewBounds, setViewBounds] = useState<LatLngBounds | null>(null);
+  const placesInView = React.useMemo(
+    () => (viewBounds ? placesInBounds(visiblePlaces, viewBounds, viewBounds.getCenter()) : []),
+    [visiblePlaces, viewBounds]
   );
 
   // Map card strip: a pin tap shows a swipeable strip of the businesses in view,
@@ -427,6 +439,7 @@ const Index = () => {
             onCardDrawerClose={() => setCardDrawerId(null)}
             onEmptyMapClick={closeStrip}
             onUserMoveEnd={handleUserMoveEnd}
+            onBoundsChange={setViewBounds}
           />
         </Suspense>
       </div>
