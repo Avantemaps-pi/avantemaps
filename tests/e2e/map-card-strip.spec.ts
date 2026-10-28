@@ -370,3 +370,45 @@ test('names wrap on the full card width: two-line names show in full', async ({ 
     expect(height).toBeLessThanOrEqual(42);
   }
 });
+
+test.describe('at 360x780 (a typical Android phone)', () => {
+  test.use({ viewport: { width: 360, height: 780 } });
+
+  const LONG_CATEGORY = {
+    ...base,
+    id: 9507,
+    name: 'Kloof Consulting Group',
+    category: 'Professional Services',
+    business_types: ['Professional Services'],
+    hours: everyDay(open('07:00', '17:00')),
+    // Where Long Street Records is, so all six pins still fit in view
+    latitude: -33.9206,
+    longitude: 18.4228,
+  };
+  const ROWS = [...BUSINESSES.slice(0, 5), LONG_CATEGORY];
+
+  test('a long category leaves today’s hours in full on their own line; the card stays 124px', async ({ page }) => {
+    await openMap(page, ROWS);
+    await tapPin(page, LONG_CATEGORY.name);
+    const c = card(page, LONG_CATEGORY.name);
+    const hours = c.getByText('Today 07:00–17:00', { exact: true });
+    await expect(hours).toBeVisible();
+    const fits = await hours.evaluate((el) => el.scrollWidth <= el.clientWidth);
+    expect(fits).toBe(true);
+    await expect(c.getByText('Professional Services', { exact: true })).toBeVisible();
+    expect(Math.round((await c.boundingBox())!.height)).toBe(124);
+    // Accessible name unchanged: name plus "category · hours"
+    await expect(c.getByRole('button', { name: `${LONG_CATEGORY.name}, Professional Services · Today 07:00–17:00`, exact: true })).toBeAttached();
+  });
+
+  test('a business with no hours has no hours line', async ({ page }) => {
+    await openMap(page, ROWS);
+    await tapPin(page, NO_PHOTO.name);
+    const c = card(page, NO_PHOTO.name);
+    await expect(c.getByText('Services', { exact: true })).toBeVisible();
+    await expect(c.getByText(/^(Today |Closed today)/)).toHaveCount(0);
+    // Category is the only line under the rating
+    await expect(c.getByText('Services', { exact: true }).locator('xpath=..').locator('p')).toHaveCount(1);
+    expect(Math.round((await c.boundingBox())!.height)).toBe(124);
+  });
+});
