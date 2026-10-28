@@ -313,6 +313,19 @@ test.describe('375x812', () => {
     await expect(listView(page).getByRole('heading', { name: '56 businesses in this area' })).toBeVisible();
     await expect(rows(page)).toHaveCount(50);
     await expect(listView(page).getByText('Zoom in to see more businesses here.')).toBeAttached();
+
+    // Scrolled, rows pass under the sticky header without their Save showing through it
+    const body = listView(page).locator('.overflow-y-auto').first();
+    for (const y of [60, 100, 140, 180]) {
+      await body.evaluate((el, top) => el.scrollTo(0, top), y);
+      const inHeader = await page.evaluate(() => {
+        const header = document.querySelector('[data-map-list-view] header')!.getBoundingClientRect();
+        const save = document.querySelector('[data-map-list-view] [data-list-row] button[aria-pressed]')!.getBoundingClientRect();
+        const hit = document.elementFromPoint(save.left + save.width / 2, header.top + header.height / 2);
+        return !!hit?.closest('header');
+      });
+      expect(inHeader).toBe(true);
+    }
   });
 
   test('Save from a list row shows in the drawer and the strip; one bookmarks load per mount', async ({ page }) => {

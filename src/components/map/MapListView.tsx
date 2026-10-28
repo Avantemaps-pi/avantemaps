@@ -81,7 +81,7 @@ const MapListView: React.FC<MapListViewProps> = ({ places, subtitle, selectedId,
       className="fixed inset-0 z-40 flex flex-col bg-background text-foreground md:pl-[264px] animate-in slide-in-from-bottom-4 fade-in-0 duration-200 motion-reduce:animate-none"
     >
       <div ref={bodyRef} className="min-h-0 flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))]">
-        <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-background px-2 py-2">
+        <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-background px-2 py-2">
           <Button
             type="button"
             variant="ghost"
