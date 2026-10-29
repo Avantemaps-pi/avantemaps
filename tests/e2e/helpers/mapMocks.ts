@@ -42,15 +42,57 @@ export const NEARBY_BUSINESSES = [
   { ...row, id: 9603, name: 'Mzansi Mobile Repairs', category: 'Services', business_types: ['Services'], latitude: -33.9212, longitude: 18.4199 },
 ];
 
+export interface MockArea {
+  level: 'country' | 'state' | 'city' | 'suburb';
+  osmId: number;
+  name: string;
+  /** south, north, west, east; the polygon is this square */
+  box: [number, number, number, number];
+}
+
+const AREA_ZOOM = { 3: 'country', 5: 'state', 10: 'city', 14: 'suburb' } as const;
+
+// Nested squares well away from CENTRE's businesses. Each area contains its
+// parent's centre, so tapping the middle of the screen after each fly goes one
+// level deeper.
+export const AREA_FIXTURES: MockArea[] = [
+  { level: 'country', osmId: 1, name: 'Testland', box: [-32, -28, 22, 28] },
+  { level: 'state', osmId: 11, name: 'West Province', box: [-32, -28, 22, 25.5] },
+  { level: 'state', osmId: 12, name: 'East Province', box: [-32, -28, 25.5, 28] },
+  { level: 'city', osmId: 111, name: 'Riverton', box: [-30.5, -29.5, 23.25, 24.25] },
+  { level: 'suburb', osmId: 1111, name: 'Hillcrest', box: [-30.1, -29.9, 23.65, 23.85] },
+];
+
+export const areaCentre = (a: MockArea) => ({ lat: (a.box[0] + a.box[1]) / 2, lng: (a.box[2] + a.box[3]) / 2 });
+
+// A Nominatim reverse (jsonv2, polygon_geojson=1) answer for the area, or {} for nothing
+const reverseAnswer = (areas: MockArea[], url: URL) => {
+  const level = AREA_ZOOM[Number(url.searchParams.get('zoom')) as keyof typeof AREA_ZOOM];
+  const lat = Number(url.searchParams.get('lat'));
+  const lng = Number(url.searchParams.get('lon'));
+  const a = areas.find((x) => x.level === level && lat >= x.box[0] && lat <= x.box[1] && lng >= x.box[2] && lng <= x.box[3]);
+  if (!a) return {};
+  const [s, n, w, e] = a.box;
+  return {
+    osm_type: 'relation',
+    osm_id: a.osmId,
+    name: a.name,
+    address: { [a.level]: a.name },
+    boundingbox: [s, n, w, e].map(String),
+    geojson: { type: 'Polygon', coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] },
+  };
+};
+
 /**
  * Mocks the map's outside calls (Pi SDK blocked, business list, IP location,
  * reverse geocoding) and signs in with the sandbox mock session. `storage`
- * adds extra localStorage entries, e.g. the colour scheme.
+ * adds extra localStorage entries, e.g. the colour scheme. `areas`: what the
+ * Nominatim reverse lookup finds, by zoom level (nothing by default).
  */
 export async function mockMap(
   page: Page,
   rows: object[],
-  options: { centre?: { lat: number; lng: number }; storage?: Record<string, string> } = {},
+  options: { centre?: { lat: number; lng: number }; storage?: Record<string, string>; areas?: MockArea[] } = {},
 ) {
   const centre = options.centre ?? CENTRE;
   await page.route('**/pi-sdk.js', (route) => route.abort());
@@ -58,8 +100,10 @@ export async function mockMap(
   await page.route('https://ipwho.is/**', (route) =>
     route.fulfill({ json: { success: true, latitude: centre.lat, longitude: centre.lng } }),
   );
-  // Map clicks reverse-geocode for the country focus; answer "no country"
-  await page.route('https://nominatim.openstreetmap.org/**', (route) => route.fulfill({ json: {} }));
+  // Map taps reverse-geocode for the area drill-down
+  await page.route('https://nominatim.openstreetmap.org/**', (route) =>
+    route.fulfill({ json: reverseAnswer(options.areas ?? [], new URL(route.request().url())) }),
+  );
   await page.addInitScript(
     ([mockKey, storageKey, user, extra]) => {
       localStorage.setItem(mockKey as string, '1');
