@@ -10,6 +10,9 @@
  *   4. Area cache: level:osmKey → area, in memory and in storage
  *      (7-day TTL, stale-while-revalidate)
  *   5. In-flight de-dup per level + tile
+ *
+ * Nominatim usage policy: at most one request per second. A request waiting
+ * for its slot is dropped (resolves null) when a newer one arrives.
  */
 
 export type AreaLevel = 'country' | 'state' | 'city' | 'suburb';
@@ -42,10 +45,15 @@ const NAME_FIELDS: Record<AreaLevel, string[]> = {
 
 const STORAGE_PREFIX = 'area_focus_v2:';
 const TILE_STORAGE_KEY = `${STORAGE_PREFIX}tiles`;
+const OLD_KEYS_REMOVED = `${STORAGE_PREFIX}old_keys_removed`;
+const OLD_PREFIX = 'country_focus_v1';
 const TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MEMORY_CAP = 120;
 const TILE_MEMORY_CAP = 3000;
 const TILE_STORAGE_CAP = 2000;
+// Polygons bigger than this are stored without their geojson (the bbox is kept)
+const MAX_STORED_GEOJSON_CHARS = 300_000;
+const MIN_REQUEST_GAP_MS = 1000;
 
 // ---------- LRU-ish caches (Map keeps insertion order) ----------
 
@@ -99,18 +107,29 @@ const loadArea = (key: string): { area: Area; stale: boolean } | null => {
 
 const saveArea = (area: Area) => {
   try {
-    localStorage.setItem(STORAGE_PREFIX + areaKey(area), JSON.stringify({ ts: Date.now(), area }));
+    const geojsonSize = area.geojson ? JSON.stringify(area.geojson).length : 0;
+    const stored = geojsonSize > MAX_STORED_GEOJSON_CHARS ? { ...area, geojson: null } : area;
+    localStorage.setItem(STORAGE_PREFIX + areaKey(area), JSON.stringify({ ts: Date.now(), area: stored }));
   } catch {
     /* quota — ignore */
   }
 };
 
 let hydrated = false;
-/** Loads the tile cache. Client only. */
+/** Loads the tile cache and removes the old country-only cache keys (once). Client only. */
 export const hydrateAreaCache = () => {
   if (hydrated) return;
   hydrated = true;
   try {
+    if (!localStorage.getItem(OLD_KEYS_REMOVED)) {
+      const old: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k?.startsWith(OLD_PREFIX)) old.push(k);
+      }
+      old.forEach((k) => localStorage.removeItem(k));
+      localStorage.setItem(OLD_KEYS_REMOVED, '1');
+    }
     const raw = localStorage.getItem(TILE_STORAGE_KEY);
     if (raw) for (const [k, v] of JSON.parse(raw) as [string, string | null][]) tileCache.set(k, v);
   } catch {
@@ -171,7 +190,29 @@ const findCachedArea = (level: AreaLevel, lat: number, lng: number): Area | null
   );
 };
 
-// ---------- Network ----------
+// ---------- Network (one request per second, newest waiting request wins) ----------
+
+let lastRequestAt = 0;
+let waiting: { resolve: (res: Response | null) => void; timer: ReturnType<typeof setTimeout> } | null = null;
+
+const rateLimitedFetch = (url: string): Promise<Response | null> => {
+  // A newer request replaces the one waiting for its slot
+  if (waiting) {
+    clearTimeout(waiting.timer);
+    waiting.resolve(null);
+    waiting = null;
+  }
+  const wait = Math.max(0, lastRequestAt + MIN_REQUEST_GAP_MS - Date.now());
+  return new Promise((resolve, reject) => {
+    const send = () => {
+      waiting = null;
+      lastRequestAt = Date.now();
+      fetch(url, { headers: { Accept: 'application/json' } }).then(resolve, reject);
+    };
+    if (wait === 0) send();
+    else waiting = { resolve, timer: setTimeout(send, wait) };
+  });
+};
 
 interface NominatimReverse {
   osm_type?: string;
@@ -190,7 +231,8 @@ const fetchAreaNetwork = async (
   parentKey: string | null
 ): Promise<Area | null | undefined> => {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=${ZOOM[level]}&addressdetails=1&polygon_geojson=1`;
-  const res = await fetch(url, { headers: { Accept: 'application/json' } });
+  const res = await rateLimitedFetch(url);
+  if (!res) return undefined;
   if (!res.ok) throw new Error('reverse geocode failed');
   const json = (await res.json()) as NominatimReverse;
   const name = json.name || NAME_FIELDS[level].map((f) => json.address?.[f]).find(Boolean);
