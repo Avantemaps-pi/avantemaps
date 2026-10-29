@@ -26,7 +26,9 @@ import type { LatLngBounds } from 'leaflet';
 import MapCardStrip, { type StripScrollRequest } from '@/components/map/MapCardStrip';
 import MapListButton from '@/components/map/MapListButton';
 import MapListView from '@/components/map/MapListView';
+import MapAreaLabel from '@/components/map/MapAreaLabel';
 import type { AreaSelection } from '@/components/map/map-components/AreaClickFocus';
+import { getCachedArea } from '@/components/map/area/areaLookup';
 import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
@@ -192,6 +194,8 @@ const Index = () => {
 
   // The map area tapped into (country → state → city → suburb)
   const [areaSelection, setAreaSelection] = useState<AreaSelection | null>(null);
+  const area = areaSelection?.area ?? null;
+  const parentArea = area ? getCachedArea(area.parentKey) : null;
 
   // "List · N": every business in view as a list
   const [listOpen, setListOpen] = useState(false);
@@ -518,6 +522,13 @@ const Index = () => {
               </div>
             </div>
           )}
+          <MapAreaLabel
+            name={area?.name ?? null}
+            parentName={parentArea?.name ?? null}
+            onUp={() => parentArea && setAreaSelection({ area: parentArea, fly: true })}
+            onClear={() => setAreaSelection(null)}
+            hidden={mapState !== 'ok' || keyboardOpen}
+          />
           <LocationBanner className="pointer-events-auto" />
         </div>
 
