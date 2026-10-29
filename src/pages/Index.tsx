@@ -24,6 +24,8 @@ import { getOrigin } from '@/utils/browserEnv';
 import { Place } from '@/types/business';
 import type { LatLngBounds } from 'leaflet';
 import MapCardStrip, { type StripScrollRequest } from '@/components/map/MapCardStrip';
+import MapListButton from '@/components/map/MapListButton';
+import MapListView from '@/components/map/MapListView';
 import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
@@ -50,20 +52,25 @@ const STRIP_MAX = 20;
 
 const placeLatLng = (place: Place) => place.position ?? place.location ?? null;
 
-// Places inside the bounds, nearest to origin first (origin's own place leads), capped
-const buildStripIds = (places: Place[], bounds: LatLngBounds, origin: { lat: number; lng: number }) => {
+// Places inside the bounds, nearest to origin first (origin's own place leads)
+const placesInBounds = (places: Place[], bounds: LatLngBounds, origin: { lat: number; lng: number }) => {
   const kx = Math.cos((origin.lat * Math.PI) / 180);
   return places
     .map((place) => ({ place, pos: placeLatLng(place) }))
     .filter(({ pos }) => pos && bounds.contains([pos.lat, pos.lng]))
     .map(({ place, pos }) => ({
-      id: place.id,
+      place,
       d: (pos!.lat - origin.lat) ** 2 + ((pos!.lng - origin.lng) * kx) ** 2,
     }))
     .sort((a, b) => a.d - b.d)
+    .map(({ place }) => place);
+};
+
+// The strip's cards: the same order, capped
+const buildStripIds = (places: Place[], bounds: LatLngBounds, origin: { lat: number; lng: number }) =>
+  placesInBounds(places, bounds, origin)
     .slice(0, STRIP_MAX)
     .map(({ id }) => id);
-};
 
 interface StripState {
   /** Frozen card order; rebuilt only when the user moves the map */
@@ -167,6 +174,13 @@ const Index = () => {
     [basePlaces, selectedCategoryId]
   );
 
+  // Every business in view, nearest to the map centre first (kept current on every move)
+  const [viewBounds, setViewBounds] = useState<LatLngBounds | null>(null);
+  const placesInView = React.useMemo(
+    () => (viewBounds ? placesInBounds(visiblePlaces, viewBounds, viewBounds.getCenter()) : []),
+    [visiblePlaces, viewBounds]
+  );
+
   // Map card strip: a pin tap shows a swipeable strip of the businesses in view,
   // starting with the one tapped; tapping a card opens the drawer
   const [strip, setStrip] = useState<StripState | null>(null);
@@ -174,6 +188,22 @@ const Index = () => {
   const keyboardOpen = useKeyboardOpen();
   const visiblePlacesRef = React.useRef(visiblePlaces);
   visiblePlacesRef.current = visiblePlaces;
+
+  // "List · N": every business in view as a list
+  const [listOpen, setListOpen] = useState(false);
+  const listButtonRef = React.useRef<HTMLButtonElement>(null);
+  const drawerOpen = !!selectedPlace || !!cardDrawerId;
+  const closeList = React.useCallback(() => setListOpen(false), []);
+
+  // Closing the list returns focus to the List button (once it's no longer inert)
+  const wasListOpen = React.useRef(false);
+  useEffect(() => {
+    const closed = wasListOpen.current && !listOpen;
+    wasListOpen.current = listOpen;
+    if (!closed) return undefined;
+    const frame = requestAnimationFrame(() => listButtonRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [listOpen]);
 
   const stripPlaces = React.useMemo(() => {
     if (!strip) return [];
@@ -239,15 +269,15 @@ const Index = () => {
     if (strip && stripPlaces.length === 0) setStrip(null);
   }, [strip, stripPlaces.length]);
 
-  // Escape closes the strip (the drawer handles Escape itself while it's open)
+  // Escape closes the strip (the drawer handles Escape itself while it's open, the list view while it's open)
   useEffect(() => {
-    if (!strip || cardDrawerId || selectedPlace) return;
+    if (!strip || cardDrawerId || selectedPlace || listOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setStrip(null);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [strip, cardDrawerId, selectedPlace]);
+  }, [strip, cardDrawerId, selectedPlace, listOpen]);
 
   // When the search results update, sync the map viewport to the best match the
   // map actually shows (first of visiblePlaces: search results, relevance order,
@@ -353,6 +383,12 @@ const Index = () => {
   };
   const stateCard = getStateCard();
 
+  // List view subtitle: the active category and search, e.g. 'Food · matching "coffee"'
+  const listSubtitle = [
+    hasCategory ? CATEGORY_OPTIONS.find(o => o.id === selectedCategoryId)?.label : undefined,
+    hasSearch ? `matching "${searchTerm.trim()}"` : undefined,
+  ].filter(Boolean).join(' · ');
+
   // Find the selected place for SEO
   const selectedPlaceData = [...places, ...filteredPlaces].find(place => place.id === selectedPlace);
 
@@ -412,100 +448,125 @@ const Index = () => {
 
       <AppSidebar />
 
-      {/* Map container with consistent sizing across all screens */}
-      <div className="absolute inset-0 w-full h-full">
-        <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
-          <LeafletMap
-            places={visiblePlaces}
-            selectedPlaceId={selectedPlace}
-            onMarkerClick={handlePlaceClick}
-            isLoading={isLoading}
-            onPinTap={handlePinTap}
-            stripSelectedId={strip?.selectedId ?? null}
-            stripSelectionSeq={strip?.selectionSeq ?? 0}
-            cardDrawerId={cardDrawerId}
-            onCardDrawerClose={() => setCardDrawerId(null)}
-            onEmptyMapClick={closeStrip}
-            onUserMoveEnd={handleUserMoveEnd}
-          />
-        </Suspense>
-      </div>
-      
-      {/* Floating UI - responsive positioning with proper spacing for sidebar */}
-      {/* pointer-events-none so the map stays draggable in the gaps; each row opts back in */}
-      <div data-map-top-stack className="absolute top-0 left-0 right-0 z-20 px-4 md:pl-[280px] lg:pl-[280px] pt-3 sm:pt-4 flex flex-col gap-3 pointer-events-none">
-        <div className="flex items-center gap-2 pointer-events-auto">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleMenuClick}
-            aria-label="Open menu"
-            className="h-11 w-11 sm:h-11 sm:w-11 rounded-full flex-shrink-0 bg-surface-float border border-border shadow-float text-foreground sm:hidden [&_svg]:size-5 sm:[&_svg]:size-5"
-          >
-            <Menu />
-          </Button>
-          <div className="flex-1 min-w-0">
-            <SearchBar 
-              key={searchResetKey}
-              onSearch={handleSearchChange}
-              onPlaceSelect={handlePlaceSelect}
-              onBusinessSelect={handleBusinessSelect}
-              enableAutocomplete={true}
-              autocompleteMode="business"
-              businesses={places}
+      {/* The map screen; inert behind the list view (the drawer's portal isn't inside it) */}
+      <div className="contents" inert={listOpen} aria-hidden={listOpen || undefined}>
+        {/* Map container with consistent sizing across all screens */}
+        <div className="absolute inset-0 w-full h-full">
+          <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
+            <LeafletMap
+              places={visiblePlaces}
+              selectedPlaceId={selectedPlace}
+              onMarkerClick={handlePlaceClick}
+              isLoading={isLoading}
+              onPinTap={handlePinTap}
+              stripSelectedId={strip?.selectedId ?? null}
+              stripSelectionSeq={strip?.selectionSeq ?? 0}
+              cardDrawerId={cardDrawerId}
+              onCardDrawerClose={() => setCardDrawerId(null)}
+              onEmptyMapClick={closeStrip}
+              onUserMoveEnd={handleUserMoveEnd}
+              onBoundsChange={setViewBounds}
             />
-          </div>
+          </Suspense>
         </div>
-        {/* Chips bleed to the right edge; -ml-1/pl-1 leaves room for the focus ring */}
-        <CategoryFilter
-          selectedCategoryId={selectedCategoryId}
-          onSelect={setSelectedCategoryId}
-          className="-ml-1 pl-1 -mr-4 pr-4 -my-1 pointer-events-auto"
-        />
-        {mapState === 'loading' && (
-          <div className="flex justify-center">
-            <div
-              role="status"
-              className="flex h-10 items-center gap-2 rounded-full border border-border bg-surface-float px-4 shadow-float"
+      
+        {/* Floating UI - responsive positioning with proper spacing for sidebar */}
+        {/* pointer-events-none so the map stays draggable in the gaps; each row opts back in */}
+        <div data-map-top-stack className="absolute top-0 left-0 right-0 z-20 px-4 md:pl-[280px] lg:pl-[280px] pt-3 sm:pt-4 flex flex-col gap-3 pointer-events-none">
+          <div className="flex items-center gap-2 pointer-events-auto">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleMenuClick}
+              aria-label="Open menu"
+              className="h-11 w-11 sm:h-11 sm:w-11 rounded-full flex-shrink-0 bg-surface-float border border-border shadow-float text-foreground sm:hidden [&_svg]:size-5 sm:[&_svg]:size-5"
             >
-              <Loader2 className="h-[18px] w-[18px] text-primary motion-safe:animate-spin" aria-hidden="true" />
-              <span className="text-sm font-semibold text-foreground">Loading businesses…</span>
+              <Menu />
+            </Button>
+            <div className="flex-1 min-w-0">
+              <SearchBar 
+                key={searchResetKey}
+                onSearch={handleSearchChange}
+                onPlaceSelect={handlePlaceSelect}
+                onBusinessSelect={handleBusinessSelect}
+                enableAutocomplete={true}
+                autocompleteMode="business"
+                businesses={places}
+              />
+            </div>
+          </div>
+          {/* Chips bleed to the right edge; -ml-1/pl-1 leaves room for the focus ring */}
+          <CategoryFilter
+            selectedCategoryId={selectedCategoryId}
+            onSelect={setSelectedCategoryId}
+            className="-ml-1 pl-1 -mr-4 pr-4 -my-1 pointer-events-auto"
+          />
+          {mapState === 'loading' && (
+            <div className="flex justify-center">
+              <div
+                role="status"
+                className="flex h-10 items-center gap-2 rounded-full border border-border bg-surface-float px-4 shadow-float"
+              >
+                <Loader2 className="h-[18px] w-[18px] text-primary motion-safe:animate-spin" aria-hidden="true" />
+                <span className="text-sm font-semibold text-foreground">Loading businesses…</span>
+              </div>
+            </div>
+          )}
+          <LocationBanner className="pointer-events-auto" />
+        </div>
+
+        {/* Error / empty / no-match card: below the top stack, only the card takes taps.
+            Mobile: pr-[76px] keeps it left of the Locate/zoom column (44px + 16px edge + gap) */}
+        {stateCard && (
+          <div className="absolute inset-x-0 top-[248px] z-10 flex justify-center pl-4 pr-[76px] md:pr-4 md:pl-[280px] pointer-events-none">
+            <div className="pointer-events-auto w-full max-w-sm rounded-xl border border-border bg-card text-card-foreground shadow-float">
+              <StateBlock {...stateCard} />
             </div>
           </div>
         )}
-        <LocationBanner className="pointer-events-auto" />
+      
+        {strip && stripPlaces.length > 0 && (
+          <MapCardStrip
+            places={stripPlaces}
+            selectedId={strip.selectedId}
+            scrollRequest={strip.scroll}
+            onSelect={handleStripSelect}
+            onOpen={setCardDrawerId}
+            hidden={keyboardOpen}
+          />
+        )}
+
+        {mapState === 'ok' && placesInView.length >= 1 && (
+          <MapListButton
+            ref={listButtonRef}
+            count={placesInView.length}
+            onClick={() => setListOpen(true)}
+            stripOpen={!!strip}
+            hidden={keyboardOpen || drawerOpen || listOpen}
+          />
+        )}
+
+        <Suspense fallback={null}>
+          <AddBusinessButton selectedPlace={selectedPlace} hiddenByStrip={!!strip} />
+        </Suspense>
+        {/* Top of the right-hand column: FAB (bottom 96px, 56px tall) + 12px gap + zoom group (90px) + 12px gap = 266px.
+            Strip open: its top (76px + 124px = 200px) sits 48px above the FAB's (152px), so 314px */}
+        <LocateMeButton
+          className={`absolute right-4 z-20 ${strip ? 'bottom-[calc(314px+env(safe-area-inset-bottom))]' : 'bottom-[calc(266px+env(safe-area-inset-bottom))]'}`}
+        />
       </div>
 
-      {/* Error / empty / no-match card: below the top stack, only the card takes taps.
-          Mobile: pr-[76px] keeps it left of the Locate/zoom column (44px + 16px edge + gap) */}
-      {stateCard && (
-        <div className="absolute inset-x-0 top-[248px] z-10 flex justify-center pl-4 pr-[76px] md:pr-4 md:pl-[280px] pointer-events-none">
-          <div className="pointer-events-auto w-full max-w-sm rounded-xl border border-border bg-card text-card-foreground shadow-float">
-            <StateBlock {...stateCard} />
-          </div>
-        </div>
-      )}
-      
-      {strip && stripPlaces.length > 0 && (
-        <MapCardStrip
-          places={stripPlaces}
-          selectedId={strip.selectedId}
-          scrollRequest={strip.scroll}
-          onSelect={handleStripSelect}
+      {listOpen && (
+        <MapListView
+          places={placesInView}
+          subtitle={listSubtitle || undefined}
+          selectedId={strip?.selectedId ?? null}
+          drawerOpen={drawerOpen}
           onOpen={setCardDrawerId}
-          hidden={keyboardOpen}
+          onClose={closeList}
         />
       )}
-
-      <Suspense fallback={null}>
-        <AddBusinessButton selectedPlace={selectedPlace} hiddenByStrip={!!strip} />
-      </Suspense>
-      {/* Top of the right-hand column: FAB (bottom 96px, 56px tall) + 12px gap + zoom group (90px) + 12px gap = 266px.
-          Strip open: its top (76px + 124px = 200px) sits 48px above the FAB's (152px), so 314px */}
-      <LocateMeButton
-        className={`absolute right-4 z-20 ${strip ? 'bottom-[calc(314px+env(safe-area-inset-bottom))]' : 'bottom-[calc(266px+env(safe-area-inset-bottom))]'}`}
-      />
-      <BottomNavBar />
+      <BottomNavBar onItemClick={(to) => to === '/' && closeList()} />
     </div>
   );
 };

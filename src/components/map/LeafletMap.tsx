@@ -10,6 +10,7 @@ import CountryClickFocus from './map-components/CountryClickFocus';
 import CountryZoomControl from './map-components/CountryZoomControl';
 import PlaceOverlay from './map-components/PlaceOverlay';
 import StripMapSync from './map-components/StripMapSync';
+import BoundsReporter from './map-components/BoundsReporter';
 import L, { LatLngTuple } from 'leaflet';
 import '@/lib/fix-leaflet-icons';
 import MarkerClusterGroup from 'react-leaflet-cluster';
@@ -52,6 +53,8 @@ interface LeafletMapProps {
   onCardDrawerClose?: (() => void) | undefined;
   onEmptyMapClick?: (() => void) | undefined;
   onUserMoveEnd?: ((bounds: L.LatLngBounds) => void) | undefined;
+  /** The map's bounds once it's ready and after every move (user or code), debounced */
+  onBoundsChange?: ((bounds: L.LatLngBounds) => void) | undefined;
 }
 
 const LeafletMap: React.FC<LeafletMapProps> = ({ 
@@ -68,6 +71,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   onCardDrawerClose,
   onEmptyMapClick,
   onUserMoveEnd,
+  onBoundsChange,
 }) => {
   const mapRef = useRef<L.Map | null>(null);
   const cardDrawerIdRef = useRef(cardDrawerId);
@@ -290,6 +294,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
           onEmptyMapClick={onEmptyMapClick}
           onUserMoveEnd={onUserMoveEnd}
         />
+        <BoundsReporter onBoundsChange={onBoundsChange} />
         
         <MarkerClusterGroup
           chunkedLoading

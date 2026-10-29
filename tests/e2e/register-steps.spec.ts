@@ -142,6 +142,13 @@ test('step 1 shows "Step 1 of 4" and the progress bar', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Close registration' })).toBeVisible();
 });
 
+test('a direct load of /registration focuses the step title', async ({ page }) => {
+  await openRegistration(page);
+  await expect(title(page)).toHaveText('About your business');
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe('page-title');
+  await expect(title(page)).toBeFocused();
+});
+
 test('Continue with an empty business name stays on step 1 and focuses it', async ({ page }) => {
   await openRegistration(page);
   await continueButton(page).click();
