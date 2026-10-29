@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { defaultCenter, defaultZoom, minZoom, maxZoom, OSM_TILE_LAYER, worldBounds, maxBoundsViscosity } from './mapConfig';
 import MapMarkers from './map-components/MapMarkers';
 import MapViewUpdater from './map-components/MapViewUpdater';
-import CountryClickFocus from './map-components/CountryClickFocus';
+import AreaClickFocus, { type AreaSelection } from './map-components/AreaClickFocus';
 import CountryZoomControl from './map-components/CountryZoomControl';
 import PlaceOverlay from './map-components/PlaceOverlay';
 import StripMapSync from './map-components/StripMapSync';
@@ -55,6 +55,9 @@ interface LeafletMapProps {
   onUserMoveEnd?: ((bounds: L.LatLngBounds) => void) | undefined;
   /** The map's bounds once it's ready and after every move (user or code), debounced */
   onBoundsChange?: ((bounds: L.LatLngBounds) => void) | undefined;
+  /** The highlighted area (tap to drill down); owned by the page, which shows its label */
+  areaSelection?: AreaSelection | null | undefined;
+  onAreaSelect?: ((selection: AreaSelection | null) => void) | undefined;
 }
 
 const LeafletMap: React.FC<LeafletMapProps> = ({ 
@@ -72,11 +75,13 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   onEmptyMapClick,
   onUserMoveEnd,
   onBoundsChange,
+  areaSelection = null,
+  onAreaSelect,
 }) => {
   const mapRef = useRef<L.Map | null>(null);
   const cardDrawerIdRef = useRef(cardDrawerId);
   cardDrawerIdRef.current = cardDrawerId;
-  // Read by CountryClickFocus at click time: a tap on empty map while the strip
+  // Read by AreaClickFocus at click time: a tap on empty map while the strip
   // is open only closes the strip (no country fly)
   const stripOpenRef = useRef(false);
   stripOpenRef.current = !!stripSelectedId;
@@ -285,7 +290,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         <AttributionControl position="bottomleft" prefix={false} />
         
         <MapViewUpdater center={mapCenter} zoom={zoom} />
-        <CountryClickFocus skipRef={stripOpenRef} />
+        <AreaClickFocus selection={areaSelection} onSelect={(sel) => onAreaSelect?.(sel)} skipRef={stripOpenRef} />
         <CountryZoomControl anchorKey={stripSelectedId ? 'strip' : 'fab'} />
         <StripMapSync
           places={displayPlaces}

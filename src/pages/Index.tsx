@@ -26,6 +26,7 @@ import type { LatLngBounds } from 'leaflet';
 import MapCardStrip, { type StripScrollRequest } from '@/components/map/MapCardStrip';
 import MapListButton from '@/components/map/MapListButton';
 import MapListView from '@/components/map/MapListView';
+import type { AreaSelection } from '@/components/map/map-components/AreaClickFocus';
 import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
 
 const LeafletMap = lazy(() => import('@/components/map/LeafletMap'));
@@ -188,6 +189,9 @@ const Index = () => {
   const keyboardOpen = useKeyboardOpen();
   const visiblePlacesRef = React.useRef(visiblePlaces);
   visiblePlacesRef.current = visiblePlaces;
+
+  // The map area tapped into (country → state → city → suburb)
+  const [areaSelection, setAreaSelection] = useState<AreaSelection | null>(null);
 
   // "List · N": every business in view as a list
   const [listOpen, setListOpen] = useState(false);
@@ -466,6 +470,8 @@ const Index = () => {
               onEmptyMapClick={closeStrip}
               onUserMoveEnd={handleUserMoveEnd}
               onBoundsChange={setViewBounds}
+              areaSelection={areaSelection}
+              onAreaSelect={setAreaSelection}
             />
           </Suspense>
         </div>

@@ -269,3 +269,75 @@ export const lookupArea = async (
   }
 };
 
+// ---------- Tap rules ----------
+
+export type TapResult =
+  | { kind: 'select'; area: Area }
+  | { kind: 'clear' }
+  | { kind: 'none' }
+  /** A newer tap replaced this one */
+  | { kind: 'dropped' };
+
+const ancestorsOf = (area: Area | null): Area[] => {
+  const chain: Area[] = [];
+  const seen = new Set<string>();
+  for (let a = area; a && !seen.has(areaKey(a)); a = getCachedArea(a.parentKey)) {
+    seen.add(areaKey(a));
+    chain.push(a);
+  }
+  return chain;
+};
+
+/**
+ * The first area from `level` down whose OSM object isn't one already in the
+ * chain (no separate province: skip to the next level). null: nothing there.
+ */
+const pickFrom = async (
+  level: AreaLevel,
+  lat: number,
+  lng: number,
+  parent: Area | null,
+  chain: Area[]
+): Promise<Area | null | undefined> => {
+  const taken = new Set(chain.map((a) => a.osmKey));
+  for (let i = AREA_LEVELS.indexOf(level); i < AREA_LEVELS.length; i++) {
+    const found = await lookupArea(AREA_LEVELS[i]!, lat, lng, parent ? areaKey(parent) : null);
+    if (found === undefined || found === null) return found;
+    if (!taken.has(found.osmKey)) return found;
+  }
+  return null;
+};
+
+const nextLevel = (level: AreaLevel): AreaLevel | null => AREA_LEVELS[AREA_LEVELS.indexOf(level) + 1] ?? null;
+
+/**
+ * What a tap at this point selects, given the highlighted area:
+ * - nothing highlighted: the country
+ * - inside the highlighted area: one level deeper (nothing at suburb level)
+ * - outside it: the area under the tap one level below the nearest ancestor that
+ *   contains the tap (the same level when the parent does); outside every
+ *   ancestor, a new country
+ * Ocean or no country result clears the highlight.
+ */
+export const resolveTap = async (current: Area | null, lat: number, lng: number): Promise<TapResult> => {
+  const chain = ancestorsOf(current);
+  const done = (area: Area | null | undefined, ifNone: TapResult): TapResult =>
+    area === undefined ? { kind: 'dropped' } : area ? { kind: 'select', area } : ifNone;
+
+  if (current && areaContains(current, lat, lng)) {
+    const deeper = nextLevel(current.level);
+    if (!deeper) return { kind: 'none' };
+    return done(await pickFrom(deeper, lat, lng, current, chain), { kind: 'none' });
+  }
+
+  const container = chain.slice(1).find((a) => areaContains(a, lat, lng));
+  if (container) {
+    const level = nextLevel(container.level)!;
+    const area = await pickFrom(level, lat, lng, container, chain.slice(chain.indexOf(container)));
+    // The lookup can disagree with our hit-test right on a border
+    if (area && current && areaKey(area) === areaKey(current)) return { kind: 'none' };
+    return done(area, { kind: 'none' });
+  }
+
+  return done(await pickFrom('country', lat, lng, null, []), { kind: 'clear' });
+};
