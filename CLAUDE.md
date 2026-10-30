@@ -102,6 +102,7 @@ Known policy behavior as of this writing:
 - **Edge functions read `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY`**; Supabase fills them with the new keys. Don't add custom secrets with those names.
 - **Merging to `Dev` doesn't deploy edge functions or apply migrations** — they're deployed separately (`supabase functions deploy <name> --project-ref xvpwbocwasbtzrzrxyvu`, and migrations applied by hand).
 - **Cron-triggered functions authenticate with the `X-Cron-Secret` header**, checked via `public.verify_cron_secret` (`supabase/functions/_shared/cronAuth.ts`). pg_cron jobs read the secret from Vault (`cron_shared_secret`); don't send an `Authorization` header from cron.
+- In triggers and functions, detect the service role with auth.role() = 'service_role', never current_setting('request.jwt.claim.role') (current PostgREST doesn't set it).
 
 ---
 
