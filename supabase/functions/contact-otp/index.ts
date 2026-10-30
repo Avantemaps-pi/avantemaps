@@ -9,8 +9,34 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const brevoApiKey = Deno.env.get('BREVO_API_KEY')!;
 
+const OTP_TTL_MS = 10 * 60 * 1000;
+const RESEND_COOLDOWN_MS = 60 * 1000;
+// Wrong guesses allowed per code; after that it's dead until a new one is sent
+const MAX_ATTEMPTS = 5;
+
+type ErrorCode = 'cooldown' | 'email_failed' | 'not_contact_email' | 'too_many_attempts' | 'expired' | 'invalid';
+
+const json = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+
+const fail = (status: number, error: string, error_code?: ErrorCode) =>
+  json(error_code ? { error, error_code } : { error }, status);
+
+// Emails are compared and stored lower-cased and trimmed
+const normaliseEmail = (email: unknown) => (typeof email === 'string' ? email.trim().toLowerCase() : '');
+
+// Uniform 6-digit code from a CSPRNG (rejection sampling avoids modulo bias)
 function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  const range = 900000;
+  const limit = Math.floor(0x100000000 / range) * range;
+  const buf = new Uint32Array(1);
+  do {
+    crypto.getRandomValues(buf);
+  } while (buf[0] >= limit);
+  return String(100000 + (buf[0] % range));
 }
 
 async function sendOTPEmail(email: string, otp: string): Promise<boolean> {
@@ -64,54 +90,52 @@ Deno.serve(async (req) => {
     // ✅ SECURITY: Require authenticated caller
     const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return fail(401, 'Unauthorized');
     }
     const callerToken = authHeader.replace('Bearer ', '');
     const authClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!);
     const { data: authData, error: authError } = await authClient.auth.getUser(callerToken);
     if (authError || !authData?.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return fail(401, 'Unauthorized');
     }
     const authenticatedUserId = authData.user.id;
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body = await req.json();
-    const { action, email, otp, business_id } = body;
+    const { action, otp, business_id } = body;
+    const email = normaliseEmail(body.email);
 
     if (!action || !email) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return fail(400, 'Missing required fields');
+    }
+    if (action !== 'send' && action !== 'verify') {
+      return fail(400, 'Unknown action');
+    }
+    if (!business_id) {
+      return fail(400, 'Missing business_id');
+    }
+    if (action === 'verify' && !otp) {
+      return fail(400, 'Missing otp');
+    }
+
+    // ✅ SECURITY: the caller must own the business, and the email must be its current contact
+    // email, so codes can't be sent to (or confirmed for) any other address
+    const { data: biz, error: bizError } = await supabase
+      .from('businesses')
+      .select('owner_id, contact_info')
+      .eq('id', business_id)
+      .maybeSingle();
+    if (bizError || !biz || biz.owner_id !== authenticatedUserId) {
+      return fail(403, 'Forbidden: not the business owner');
+    }
+    const contactEmail = normaliseEmail(
+      typeof biz.contact_info === 'object' && biz.contact_info !== null ? biz.contact_info.email : null,
+    );
+    if (!contactEmail || email !== contactEmail) {
+      return fail(400, "This isn't the business's contact email", 'not_contact_email');
     }
 
     if (action === 'send') {
-      // ✅ SECURITY: require business_id and verify caller owns it (prevents email-bombing arbitrary addresses)
-      if (!business_id) {
-        return new Response(JSON.stringify({ error: 'Missing business_id' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      const { data: ownerCheck, error: ownerError } = await supabase
-        .from('businesses')
-        .select('owner_id')
-        .eq('id', business_id)
-        .maybeSingle();
-      if (ownerError || !ownerCheck || ownerCheck.owner_id !== authenticatedUserId) {
-        return new Response(JSON.stringify({ error: 'Forbidden: not the business owner' }), {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
       // ✅ SECURITY: per-email cooldown (60s) to prevent spamming
       const { data: existing } = await supabase
         .from('contact_otps')
@@ -119,134 +143,96 @@ Deno.serve(async (req) => {
         .eq('email', email)
         .maybeSingle();
       if (existing?.expires_at) {
-        const issuedAtMs = new Date(existing.expires_at).getTime() - 10 * 60 * 1000;
-        if (Date.now() - issuedAtMs < 60 * 1000) {
-          return new Response(JSON.stringify({ error: 'Please wait before requesting another code' }), {
-            status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+        const issuedAtMs = new Date(existing.expires_at).getTime() - OTP_TTL_MS;
+        if (Date.now() - issuedAtMs < RESEND_COOLDOWN_MS) {
+          return fail(429, 'Please wait before requesting another code', 'cooldown');
         }
       }
 
       const code = generateOTP();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      const expiresAt = new Date(Date.now() + OTP_TTL_MS).toISOString();
 
+      // A new code starts with no wrong attempts
       const { error: upsertError } = await supabase
         .from('contact_otps')
-        .upsert({ email, otp: code, expires_at: expiresAt, verified: false }, { onConflict: 'email' });
+        .upsert({ email, otp: code, expires_at: expiresAt, verified: false, attempts: 0 }, { onConflict: 'email' });
 
       if (upsertError) {
         console.error('OTP upsert error:', upsertError);
-        return new Response(JSON.stringify({ error: 'Failed to store OTP' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return fail(500, 'Failed to store OTP');
       }
 
       const sent = await sendOTPEmail(email, code);
       if (!sent) {
-        return new Response(JSON.stringify({ error: 'Failed to send OTP email' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return fail(500, 'Failed to send OTP email', 'email_failed');
       }
 
-      return new Response(JSON.stringify({ success: true, message: 'OTP sent' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ success: true, message: 'OTP sent' });
     }
 
-    if (action === 'verify') {
-      if (!otp || !business_id) {
-        return new Response(JSON.stringify({ error: 'Missing otp or business_id' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    // action === 'verify'
+    const { data: stored, error: fetchError } = await supabase
+      .from('contact_otps')
+      .select('otp, expires_at, verified, attempts')
+      .eq('email', email)
+      .maybeSingle();
 
-      // ✅ SECURITY: Verify caller owns this business
-      const { data: ownerCheck, error: ownerError } = await supabase
-        .from('businesses')
-        .select('owner_id')
-        .eq('id', business_id)
-        .maybeSingle();
-      if (ownerError || !ownerCheck || ownerCheck.owner_id !== authenticatedUserId) {
-        return new Response(JSON.stringify({ error: 'Forbidden: not the business owner' }), {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      const { data: stored, error: fetchError } = await supabase
-        .from('contact_otps')
-        .select('*')
-        .eq('email', email)
-        .single();
-
-      if (fetchError || !stored) {
-        return new Response(JSON.stringify({ error: 'No OTP found for this email' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (stored.verified) {
-        return new Response(JSON.stringify({ error: 'OTP already used' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (new Date(stored.expires_at) < new Date()) {
-        return new Response(JSON.stringify({ error: 'OTP expired' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (stored.otp !== otp) {
-        return new Response(JSON.stringify({ error: 'Invalid OTP' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      await supabase
-        .from('contact_otps')
-        .update({ verified: true })
-        .eq('email', email);
-
-      const { data: biz } = await supabase
-        .from('businesses')
-        .select('contact_info')
-        .eq('id', business_id)
-        .single();
-
-      if (biz) {
-        const updatedContactInfo = {
-          ...(typeof biz.contact_info === 'object' && biz.contact_info !== null ? biz.contact_info : {}),
-          email_verified: true,
-        };
-        await supabase
-          .from('businesses')
-          .update({ contact_info: updatedContactInfo })
-          .eq('id', business_id);
-      }
-
-      return new Response(JSON.stringify({ success: true, message: 'Contact info verified' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (fetchError || !stored) {
+      return fail(400, 'No code was requested for this email', 'invalid');
+    }
+    if (stored.verified) {
+      return fail(400, 'That code has already been used', 'expired');
+    }
+    if (new Date(stored.expires_at) < new Date()) {
+      return fail(400, 'OTP expired', 'expired');
+    }
+    const attempts = Number(stored.attempts ?? 0);
+    if (attempts >= MAX_ATTEMPTS) {
+      return fail(429, 'Too many attempts. Request a new code', 'too_many_attempts');
     }
 
-    return new Response(JSON.stringify({ error: 'Unknown action' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    // ✅ SECURITY: take this attempt before comparing the code. The update only applies if no
+    // other request took it first, so parallel guesses can't get more than MAX_ATTEMPTS tries.
+    const { data: claimed, error: claimError } = await supabase
+      .from('contact_otps')
+      .update({ attempts: attempts + 1 })
+      .eq('email', email)
+      .eq('attempts', attempts)
+      .select('email');
+    if (claimError || !claimed || claimed.length === 0) {
+      return fail(400, 'Invalid OTP', 'invalid');
+    }
+
+    if (stored.otp !== String(otp).trim()) {
+      return fail(400, 'Invalid OTP', 'invalid');
+    }
+
+    // Single use: only the request that flips verified records the confirmation
+    const { data: used } = await supabase
+      .from('contact_otps')
+      .update({ verified: true })
+      .eq('email', email)
+      .eq('verified', false)
+      .select('email');
+    if (!used || used.length === 0) {
+      return fail(400, 'That code has already been used', 'expired');
+    }
+
+    // The confirmation lives in columns only the service role can write (see the
+    // contact_email_confirmation migration); verify-business compares it with the
+    // current contact email
+    const { error: confirmError } = await supabase
+      .from('businesses')
+      .update({ contact_email_verified_at: new Date().toISOString(), contact_email_verified_for: email })
+      .eq('id', business_id);
+    if (confirmError) {
+      console.error('Contact confirmation update error:', confirmError);
+      return fail(500, 'Failed to record the confirmation');
+    }
+
+    return json({ success: true, message: 'Contact info verified' });
   } catch (err) {
     console.error('contact-otp error:', err);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return fail(500, 'Internal server error');
   }
 });
