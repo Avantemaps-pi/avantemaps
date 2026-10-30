@@ -20,6 +20,29 @@ interface VerifyBusinessRequest {
   verification_type?: 'verification' | 'certification';
 }
 
+interface ContactCheck {
+  contactConfirmed: boolean;
+  reason: string | null;
+}
+
+/**
+ * The contact email counts only while the confirmed address (recorded by contact-otp, which
+ * owners can't write: see the contact_email_confirmation migration) equals the current
+ * contact_info email. Changing the email undoes it until it's confirmed again.
+ */
+function checkContactEmail(biz: {
+  contact_info: unknown;
+  contact_email_verified_for: string | null;
+}): ContactCheck {
+  const info = typeof biz.contact_info === 'object' && biz.contact_info !== null
+    ? (biz.contact_info as Record<string, unknown>)
+    : {};
+  const email = typeof info.email === 'string' ? info.email.trim().toLowerCase() : '';
+  if (!email) return { contactConfirmed: false, reason: 'Add and confirm a contact email' };
+  const contactConfirmed = biz.contact_email_verified_for === email;
+  return { contactConfirmed, reason: contactConfirmed ? null : 'Contact email not confirmed' };
+}
+
 interface BlockchainVerificationResult {
   meetsRequirements: boolean;
   totalTransactions: number;
@@ -174,7 +197,7 @@ Deno.serve(async (req: Request) => {
     // Fetch businesses and validate ownership
     const { data: businesses, error: fetchError } = await supabaseAdmin
       .from('businesses')
-      .select('id, owner_id, business_name, pi_wallet_address')
+      .select('id, owner_id, business_name, pi_wallet_address, contact_info, contact_email_verified_for, contact_email_verified_at')
       .in('id', idsToVerify);
 
     if (fetchError) {
@@ -208,16 +231,23 @@ Deno.serve(async (req: Request) => {
       .update({ verification_status: 'pending' })
       .in('id', idsToVerify);
 
-    // Verify each business against the Pi blockchain
+    // Both verification and certification need a confirmed contact email as well as the wallet
+    // checks: certification is the higher level, so it can't need less than verification.
+    // (Certification doesn't otherwise require being verified first; that's unchanged.)
     const results = [];
     for (const biz of businesses) {
+      const contact = checkContactEmail(biz);
+      const withContactReason = (reasons: string[]) =>
+        [...reasons, ...(contact.reason ? [contact.reason] : [])].join('; ') || null;
+
       if (!biz.pi_wallet_address) {
         console.warn(`[${traceId}] Business ${biz.id} (${biz.business_name}) has no Pi wallet address`);
         results.push({
           id: biz.id,
           name: biz.business_name,
           verified: false,
-          reason: 'No Pi wallet address registered for this business',
+          contactConfirmed: contact.contactConfirmed,
+          reason: withContactReason(['No Pi wallet address registered for this business']),
         });
         continue;
       }
@@ -231,10 +261,9 @@ Deno.serve(async (req: Request) => {
         results.push({
           id: biz.id,
           name: biz.business_name,
-          verified: verification.meetsRequirements,
-          reason: verification.meetsRequirements
-            ? null
-            : verification.failureReasons.join('; '),
+          verified: verification.meetsRequirements && contact.contactConfirmed,
+          contactConfirmed: contact.contactConfirmed,
+          reason: withContactReason(verification.failureReasons),
           totalTransactions: verification.totalTransactions,
           uniqueWallets: verification.uniqueWallets,
           creditedTransactions: verification.creditedTransactions,
@@ -245,7 +274,8 @@ Deno.serve(async (req: Request) => {
           id: biz.id,
           name: biz.business_name,
           verified: false,
-          reason: 'Blockchain verification service unavailable. Please try again later.',
+          contactConfirmed: contact.contactConfirmed,
+          reason: withContactReason(['Blockchain verification service unavailable. Please try again later.']),
         });
       }
     }
