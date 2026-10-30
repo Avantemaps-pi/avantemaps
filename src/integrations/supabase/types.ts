@@ -114,6 +114,8 @@ export type Database = {
           business_types: string[] | null
           category: string | null
           city: string | null
+          contact_email_verified_at: string | null
+          contact_email_verified_for: string | null
           contact_info: Json | null
           coordinates: string | null
           country: string | null
@@ -144,6 +146,8 @@ export type Database = {
           business_types?: string[] | null
           category?: string | null
           city?: string | null
+          contact_email_verified_at?: string | null
+          contact_email_verified_for?: string | null
           contact_info?: Json | null
           coordinates?: string | null
           country?: string | null
@@ -174,6 +178,8 @@ export type Database = {
           business_types?: string[] | null
           category?: string | null
           city?: string | null
+          contact_email_verified_at?: string | null
+          contact_email_verified_for?: string | null
           contact_info?: Json | null
           coordinates?: string | null
           country?: string | null

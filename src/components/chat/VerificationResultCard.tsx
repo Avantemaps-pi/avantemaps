@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2, XCircle, Loader2, ChevronDown } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import ContactOTPVerification from './ContactOTPVerification';
+import ContactOTPVerification, { type ContactOTPResult } from './ContactOTPVerification';
+import { Link } from '@/lib/router-compat';
 
 export interface VerificationMetrics {
   contactInfoConfirmed: boolean;
@@ -71,8 +72,8 @@ interface VerificationResultCardProps {
   metrics: VerificationMetrics;
   contactEmail?: string | undefined;
   contactBusinessId?: number | undefined;
-  onSendContactOTP?: ((email: string, businessId: number) => Promise<boolean>) | undefined;
-  onVerifyContactOTP?: ((email: string, otp: string, businessId: number) => Promise<boolean>) | undefined;
+  onSendContactOTP?: ((email: string, businessId: number) => Promise<ContactOTPResult>) | undefined;
+  onVerifyContactOTP?: ((email: string, otp: string, businessId: number) => Promise<ContactOTPResult>) | undefined;
   animate?: boolean | undefined;
 }
 
@@ -92,6 +93,7 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
     verified,
     businessName,
     walletMissing,
+    reason,
   } = metrics;
 
   const [contactInfoConfirmed, setContactInfoConfirmed] = useState(initialContactInfoConfirmed);
@@ -121,6 +123,8 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
 
   const canShowOTP = !contactInfoConfirmed && contactEmail && contactBusinessId && onSendContactOTP && onVerifyContactOTP;
 
+  // The code goes to the business's contact email only; without one, say where to add it
+  const needsContactEmail = !contactInfoConfirmed && !!contactBusinessId && !contactEmail;
   const confirmButton = canShowOTP ? (
     <button
       onClick={() => setOtpDialogOpen(true)}
@@ -128,6 +132,13 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
     >
       Confirm
     </button>
+  ) : needsContactEmail ? (
+    <p className="text-xs text-muted-foreground">
+      Add a contact email to your business first.{' '}
+      <Link to="/registered-business" className="font-semibold text-primary underline underline-offset-2">
+        Your businesses
+      </Link>
+    </p>
   ) : undefined;
 
   const items = walletMissing
@@ -173,6 +184,10 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
           {verified ? '✓ Verification Approved' : 'Verification Not Approved'}
         </h4>
         <p className="text-sm text-muted-foreground mb-3">{businessName}</p>
+        {/* The server's reasons, e.g. "Contact email not confirmed" */}
+        {!verified && reason && (
+          <p data-verification-reason className="text-xs text-muted-foreground mb-3">{reason}</p>
+        )}
 
         <div className="space-y-1">
           {items.map((item, i) => (

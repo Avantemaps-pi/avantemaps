@@ -4,6 +4,7 @@ import ChatModeToggle from './ChatModeToggle';
 import ChatMessage from './ChatMessage';
 import BusinessSelectionButtons from './BusinessSelectionButtons';
 import VerificationResultCard, { VerificationMetrics } from './VerificationResultCard';
+import type { ContactOTPResult } from './ContactOTPVerification';
 import MessagesPanel from '@/components/messages/MessagesPanel';
 import { useLocation } from '@/lib/router-compat';
 import { Send, Image, Video, Sparkles } from 'lucide-react';
@@ -38,8 +39,8 @@ interface ChatInterfaceProps {
   handleAttachmentOption?: () => void;
   showAttachmentIcon?: boolean;
   hasLiveChatAccess?: boolean;
-  onSendContactOTP?: (email: string, businessId: number) => Promise<boolean>;
-  onVerifyContactOTP?: (email: string, otp: string, businessId: number) => Promise<boolean>;
+  onSendContactOTP?: (email: string, businessId: number) => Promise<ContactOTPResult>;
+  onVerifyContactOTP?: (email: string, otp: string, businessId: number) => Promise<ContactOTPResult>;
 }
 
 const QUICK_REPLIES = [
