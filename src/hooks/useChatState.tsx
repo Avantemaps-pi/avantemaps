@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from '@/lib/router-compat';
 import { filterInappropriateContent, isSafeForAI } from '@/utils/contentFilter';
 import { VerificationMetrics } from '@/components/chat/VerificationResultCard';
+import type { ContactOTPResult } from '@/components/chat/ContactOTPVerification';
 import { useToast } from '@/hooks/use-toast';
 import { ChatMode } from '@/components/chat/ChatInterface';
 import { supabase } from '@/integrations/supabase/client';
@@ -636,6 +637,7 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              apikey: SUPABASE_CONFIG.anonKey,
               'Authorization': `Bearer ${accessToken}`,
             },
             body: JSON.stringify({
@@ -655,21 +657,30 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
 
         // Handle blockchain verification results
         const bizResult = result.results?.[0];
-        const hasContactInfo = !!(business.business_name); // business exists = contact info confirmed
-        
-        // Get business contact email for OTP flow
-        const { data: bizData } = await supabase
+
+        // The business's contact email (the code only goes there) and its server-recorded
+        // confirmation: it counts only while it matches the current email, as in verify-business
+        const { data: bizData, error: bizError } = await supabase
           .from('businesses')
-          .select('contact_info')
+          .select('contact_info, contact_email_verified_for')
           .eq('id', business.id)
           .single();
-        
-        const contactEmail = (bizData?.contact_info as any)?.email || sessionData?.session?.user?.email || '';
-        const emailVerified = (bizData?.contact_info as any)?.email_verified === true;
-        const contactInfoConfirmed = hasContactInfo && (emailVerified || !contactEmail);
+        // Before the contact_email_confirmation migration is applied the column doesn't exist:
+        // still read the contact email, and leave confirmation to verify-business's answer
+        const { data: contactOnly } = bizError
+          ? await supabase.from('businesses').select('contact_info').eq('id', business.id).single()
+          : { data: null };
+
+        const contactInfo = (bizData ?? contactOnly)?.contact_info as { email?: unknown } | null | undefined;
+        const contactEmail = typeof contactInfo?.email === 'string' ? contactInfo.email.trim() : '';
+        const confirmedFor = bizData?.contact_email_verified_for ?? null;
+        const contactInfoConfirmed = typeof bizResult?.contactConfirmed === 'boolean'
+          ? bizResult.contactConfirmed
+          : !!contactEmail && confirmedFor === contactEmail.toLowerCase();
 
         const metrics: VerificationMetrics = {
           contactInfoConfirmed,
+          reason: bizResult?.reason ?? null,
           totalTransactions: bizResult?.totalTransactions ?? 0,
           creditedTransactions: bizResult?.creditedTransactions ?? 0,
           uniqueWallets: bizResult?.uniqueWallets ?? 0,
@@ -701,8 +712,8 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             verificationMetrics: metrics,
             animateVerification: true,
-            // Attach OTP prompt if contact info is not confirmed and we have an email
-            ...(!contactInfoConfirmed && contactEmail
+            // Contact not confirmed: the card offers the code (or asks for a contact email first)
+            ...(!contactInfoConfirmed
               ? { contactVerification: { email: contactEmail, businessId: business.id } }
               : {}),
           };
@@ -795,7 +806,8 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
     setAwaitingVerificationBusinessSelection(true);
   }, [fetchUserBusinesses, navigate]);
 
-  const sendContactOTP = useCallback(async (email: string, businessId: number): Promise<boolean> => {
+  // contact-otp: { ok } or the error_code it returned, for the card to explain
+  const callContactOTP = useCallback(async (body: Record<string, unknown>): Promise<ContactOTPResult> => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
@@ -805,50 +817,42 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            apikey: SUPABASE_CONFIG.anonKey,
             ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
           },
-          body: JSON.stringify({ action: 'send', email, business_id: businessId }),
+          body: JSON.stringify(body),
         }
       );
-      return response.ok;
+      if (response.ok) return { ok: true, errorCode: null };
+      const data = (await response.json().catch(() => null)) as { error_code?: unknown } | null;
+      return { ok: false, errorCode: typeof data?.error_code === 'string' ? data.error_code : null };
     } catch {
-      return false;
+      return { ok: false, errorCode: null };
     }
   }, []);
 
-  const verifyContactOTP = useCallback(async (email: string, otp: string, businessId: number): Promise<boolean> => {
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
-      const response = await fetch(
-        'https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/contact-otp',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
-          },
-          body: JSON.stringify({ action: 'verify', email, otp, business_id: businessId }),
-        }
-      );
-      if (response.ok) {
-        // Update the message to mark contact info as confirmed
-        setMessages(prev => prev.map(msg =>
-          msg.contactVerification?.email === email && msg.contactVerification?.businessId === businessId
-            ? {
-                ...msg,
-                verificationMetrics: msg.verificationMetrics
-                  ? { ...msg.verificationMetrics, contactInfoConfirmed: true }
-                  : msg.verificationMetrics,
-              }
-            : msg
-        ));
-      }
-      return response.ok;
-    } catch {
-      return false;
+  const sendContactOTP = useCallback(
+    (email: string, businessId: number) => callContactOTP({ action: 'send', email, business_id: businessId }),
+    [callContactOTP]
+  );
+
+  const verifyContactOTP = useCallback(async (email: string, otp: string, businessId: number): Promise<ContactOTPResult> => {
+    const result = await callContactOTP({ action: 'verify', email, otp, business_id: businessId });
+    if (result.ok) {
+      // Update the message to mark contact info as confirmed
+      setMessages(prev => prev.map(msg =>
+        msg.contactVerification?.email === email && msg.contactVerification?.businessId === businessId
+          ? {
+              ...msg,
+              verificationMetrics: msg.verificationMetrics
+                ? { ...msg.verificationMetrics, contactInfoConfirmed: true }
+                : msg.verificationMetrics,
+            }
+          : msg
+      ));
     }
-  }, []);
+    return result;
+  }, [callContactOTP]);
 
   return {
     message,

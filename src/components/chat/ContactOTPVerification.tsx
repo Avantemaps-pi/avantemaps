@@ -3,12 +3,29 @@ import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Loader2, Mail } from 'lucide-react';
 
+/** The contact-otp function's answer: ok, or the error_code it gave (null if none) */
+export interface ContactOTPResult {
+  ok: boolean;
+  errorCode: string | null;
+}
+
+// What to tell the owner for each contact-otp error_code
+const ERROR_MESSAGES: Record<string, string> = {
+  cooldown: 'Please wait a minute before requesting another code.',
+  email_failed: "We couldn't send the email right now. Please try again later.",
+  not_contact_email: "This isn't the business's contact email.",
+  too_many_attempts: 'Too many attempts. Request a new code.',
+  expired: 'That code has expired. Request a new one.',
+  invalid: 'Incorrect code. Please try again.',
+};
+const errorMessage = (code: string | null) => (code && ERROR_MESSAGES[code]) || 'Something went wrong. Please try again.';
+
 interface ContactOTPVerificationProps {
   email: string;
   businessId: number;
   onVerified: () => void;
-  onSendOTP: (email: string, businessId: number) => Promise<boolean>;
-  onVerifyOTP: (email: string, otp: string, businessId: number) => Promise<boolean>;
+  onSendOTP: (email: string, businessId: number) => Promise<ContactOTPResult>;
+  onVerifyOTP: (email: string, otp: string, businessId: number) => Promise<ContactOTPResult>;
 }
 
 const ContactOTPVerification: React.FC<ContactOTPVerificationProps> = ({
@@ -26,11 +43,11 @@ const ContactOTPVerification: React.FC<ContactOTPVerificationProps> = ({
   const handleSend = async () => {
     setStep('loading');
     setErrorMsg('');
-    const ok = await onSendOTP(email, businessId);
+    const { ok, errorCode } = await onSendOTP(email, businessId);
     if (ok) {
       setStep('verify');
     } else {
-      setErrorMsg('Failed to send OTP. Please try again.');
+      setErrorMsg(errorMessage(errorCode));
       setStep('error');
     }
   };
@@ -39,12 +56,12 @@ const ContactOTPVerification: React.FC<ContactOTPVerificationProps> = ({
     if (otp.length < 6) return;
     setStep('loading');
     setErrorMsg('');
-    const ok = await onVerifyOTP(email, otp, businessId);
+    const { ok, errorCode } = await onVerifyOTP(email, otp, businessId);
     if (ok) {
       setStep('done');
       onVerified();
     } else {
-      setErrorMsg('Incorrect code. Please try again.');
+      setErrorMsg(errorMessage(errorCode));
       setOtp('');
       setStep('verify');
     }
@@ -54,9 +71,9 @@ const ContactOTPVerification: React.FC<ContactOTPVerificationProps> = ({
     setResending(true);
     setErrorMsg('');
     setOtp('');
-    const ok = await onSendOTP(email, businessId);
+    const { ok, errorCode } = await onSendOTP(email, businessId);
     setResending(false);
-    if (!ok) setErrorMsg('Failed to resend. Please try again.');
+    if (!ok) setErrorMsg(errorMessage(errorCode));
   };
 
   if (step === 'done') {
