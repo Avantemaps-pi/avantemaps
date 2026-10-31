@@ -1,7 +1,6 @@
 
 import React, { ReactNode, useEffect, useRef } from 'react';
 import { useLocation } from '@/lib/router-compat';
-import { Toaster } from '@/components/ui/sonner';
 import PageHeader from '@/components/layout/PageHeader';
 
 import { SidebarProvider } from '@/components/ui/sidebar';
@@ -106,7 +105,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({
 
           
           {!hideBottomNav && <BottomNavBar />}
-          <Toaster />
         </div>
       </div>
     </SidebarProvider>
