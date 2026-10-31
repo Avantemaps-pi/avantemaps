@@ -374,8 +374,8 @@ test('an expired code clears the pending code', async ({ page }) => {
 
 // The email's "Confirm in Avante Maps" link
 const LINK = '/communicon?confirm_code=482913&business=9001';
-// Sonner toasts render twice (the root and AppLayout each mount a Toaster)
-const toast = (page: Page, text: string) => page.getByText(text, { exact: true }).first();
+// A Sonner toast (only __root mounts a Toaster, so each toast is on the page once)
+const toast = (page: Page, text: string) => page.getByText(text, { exact: true });
 const otpBodies = (calls: Request[]) => calls.map((r) => r.postDataJSON() as Record<string, unknown>);
 
 test('the confirm link verifies the code by itself: Confirmed, and the code leaves the URL', async ({ page }) => {
@@ -449,4 +449,12 @@ test('a wrong code from the link: the message, and the boxes are cleared for typ
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByText('Incorrect code. Please try again.')).toBeVisible();
   await expect(dialog.locator('input').first()).toHaveValue('');
+});
+
+test('a toast shows once: exactly one "Email confirmed"', async ({ page }) => {
+  await openVerification(page);
+  await page.goto(LINK);
+  await expect(toast(page, 'Email confirmed')).toBeVisible();
+  await expect(toast(page, 'Email confirmed')).toHaveCount(1);
+  await expect(page.locator('[data-sonner-toaster]')).toHaveCount(1);
 });
