@@ -364,7 +364,7 @@ const MessagesPanel: React.FC<MessagesPanelProps> = ({
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="sticky bottom-0 border-t border-border bg-background px-3 pt-3 pb-3">
+          <div className="sticky bottom-0 border-t border-border bg-background px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <div className="flex items-center gap-2">
               <Input
                 value={draft}
