@@ -32,6 +32,10 @@ interface Setup {
   reason?: string | null;
   send?: { status: number; body: object };
   verify?: { status: number; body: object };
+  /** Wallet figures from verify-business (default: 13 transactions, 4 received, 9 wallets) */
+  counts?: { totalTransactions: number; creditedTransactions: number; uniqueWallets: number };
+  /** Per-call overrides of verify-business's result (index 0 = first call) */
+  verifyReplies?: Record<string, unknown>[];
 }
 
 async function openVerification(page: Page, opts: Setup = {}) {
@@ -55,6 +59,7 @@ async function openVerification(page: Page, opts: Setup = {}) {
   });
   await page.route('**/functions/v1/verify-business', (route) => {
     verifyCalls.push(route.request());
+    const override = opts.verifyReplies?.[verifyCalls.length - 1] ?? {};
     return route.fulfill({
       json: {
         success: true,
@@ -64,9 +69,8 @@ async function openVerification(page: Page, opts: Setup = {}) {
           verified: false,
           contactConfirmed: opts.contactConfirmed ?? false,
           reason: opts.reason === undefined ? 'Contact email not confirmed' : opts.reason,
-          totalTransactions: 120,
-          creditedTransactions: 80,
-          uniqueWallets: 14,
+          ...(opts.counts ?? { totalTransactions: 13, creditedTransactions: 4, uniqueWallets: 9 }),
+          ...override,
         }],
       },
     });
@@ -89,17 +93,18 @@ async function openVerification(page: Page, opts: Setup = {}) {
   await page.goto('/communicon');
   await page.getByRole('button', { name: 'Check verification status' }).tap();
   await page.getByRole('button', { name: /Harbour Light Coffee/ }).tap();
-  await expect(page.getByText('Verification Not Approved').last()).toBeVisible();
+  await expect(card(page).getByRole('heading', { name: 'Not verified yet' })).toBeVisible();
   // The card reveals its rows one by one
   await page.waitForTimeout(1_800);
   return { otpCalls, verifyCalls };
 }
 
-const contactRow = (page: Page) => page.getByText(/^Contact Information: /).locator('xpath=ancestor::div[contains(@class,"flex items-center gap-2")][1]');
+// The latest result card
+const card = (page: Page) => page.getByRole('region', { name: 'Verification progress for Harbour Light Coffee' }).last();
+const progressLine = (page: Page) => card(page).locator('[data-verification-progress]');
 
 async function openCodeDialog(page: Page) {
-  await contactRow(page).getByRole('button').tap();
-  await page.getByRole('button', { name: 'Confirm', exact: true }).tap();
+  await card(page).getByRole('button', { name: 'Confirm', exact: true }).tap();
   await expect(page.getByRole('dialog')).toBeVisible();
 }
 
@@ -111,21 +116,53 @@ async function sendAndEnterCode(page: Page) {
   await page.getByRole('button', { name: 'Confirm Code' }).tap();
 }
 
-test('the card follows verify-business: unconfirmed contact and its reason', async ({ page }) => {
+test('the card shows progress: rows, counts, bars, masked email; no reason text', async ({ page }) => {
   const { verifyCalls } = await openVerification(page);
-  await expect(page.getByText('Contact Information: unconfirmed')).toBeVisible();
-  await expect(page.locator('[data-verification-reason]')).toHaveText('Contact email not confirmed');
+  const c = card(page);
+  await expect(progressLine(page)).toHaveText('Harbour Light Coffee · 0 of 3 done');
+  await expect(c.getByText('Not confirmed', { exact: true })).toBeVisible();
+  await expect(c.getByText('he•••@harbour.example')).toBeVisible();
+  await expect(c.getByText('13 of 100')).toBeVisible();
+  await expect(c.getByText('Received: 4 of 50')).toBeVisible();
+  await expect(c.getByText('9 of 10')).toBeVisible();
+  await expect(c.getByText('1 more to go')).toBeVisible();
+  await expect(c.getByRole('progressbar', { name: 'Transactions' })).toHaveAttribute('aria-valuenow', '13');
+  await expect(c.getByRole('progressbar', { name: 'Wallets traded with' })).toHaveAttribute('aria-valuenow', '9');
+  // The server's reason string is never printed
+  await expect(page.getByText('Contact email not confirmed')).toHaveCount(0);
+  await expect(page.locator('[data-verification-reason]')).toHaveCount(0);
+  // No "not approved" bubble: the card is the message; the toast is neutral
+  await expect(page.getByText(/was not approved/)).toHaveCount(0);
+  await expect(page.getByText("0 of 3 done. Check the card for what's left.")).toBeVisible();
   expect(verifyCalls[0]!.headers()['apikey']).toMatch(/^sb_publishable_/);
 });
 
-test('a confirmed code turns the Contact information line green', async ({ page }) => {
+test('nothing in the card is red', async ({ page }) => {
+  await openVerification(page);
+  await expect(card(page).locator('[class*="destructive"]')).toHaveCount(0);
+});
+
+test('"Check again" re-runs verify-business for the same business, without the picker', async ({ page }) => {
+  const { verifyCalls } = await openVerification(page);
+  await card(page).getByRole('button', { name: 'Check again' }).tap();
+  await expect.poll(() => verifyCalls.length).toBe(2);
+  expect(verifyCalls.map((r) => (r.postDataJSON() as { business_id: number }).business_id)).toEqual([BUSINESS.id, BUSINESS.id]);
+  await expect(page.getByText('Select your business:')).toHaveCount(1);
+  await expect(page.getByRole('region', { name: 'Verification progress for Harbour Light Coffee' })).toHaveCount(2);
+});
+
+test('confirming the code: the row turns Confirmed, the count goes up by one, no stale reason', async ({ page }) => {
   const { otpCalls } = await openVerification(page);
   await openCodeDialog(page);
   await sendAndEnterCode(page);
   // The card closes the dialog once the code is confirmed
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByText('Contact Information: confirmed')).toBeVisible();
-  await expect(contactRow(page).locator('svg.text-primary')).toBeVisible();
+  await expect(card(page).getByText('Confirmed', { exact: true })).toBeVisible();
+  // The count goes up by one, and nothing still says the email isn't confirmed
+  await expect(progressLine(page)).toHaveText('Harbour Light Coffee · 1 of 3 done');
+  await expect(page.getByText('Contact email not confirmed')).toHaveCount(0);
+  await expect(card(page).getByText('Not confirmed', { exact: true })).toHaveCount(0);
+  await expect(card(page).getByText('Your contact email stays confirmed unless you change it.', { exact: false })).toBeVisible();
 
   // The code went to the business's contact email, with the publishable key and the user's token
   expect(otpCalls.map((r) => (r.postDataJSON() as { action: string; email: string }).action)).toEqual(['send', 'verify']);
@@ -134,6 +171,29 @@ test('a confirmed code turns the Contact information line green', async ({ page 
     expect(call.headers()['apikey']).toMatch(/^sb_publishable_/);
     expect(call.headers()['authorization']).toBe(`Bearer ${fakeSession.access_token}`);
   }
+});
+
+test('confirming the last missing check runs verification again by itself: the new card says Verified', async ({ page }) => {
+  const { verifyCalls } = await openVerification(page, {
+    // Everything met except the contact email; once confirmed, the server says Verified
+    counts: { totalTransactions: 120, creditedTransactions: 80, uniqueWallets: 14 },
+    verifyReplies: [{}, { verified: true, contactConfirmed: true, reason: null }],
+  });
+  await expect(progressLine(page)).toHaveText('Harbour Light Coffee · 2 of 3 done');
+  await openCodeDialog(page);
+  await sendAndEnterCode(page);
+
+  // No button tap: the card checks again for the same business
+  await expect.poll(() => verifyCalls.length).toBe(2);
+  expect((verifyCalls[1]!.postDataJSON() as { business_id: number }).business_id).toBe(BUSINESS.id);
+  await expect(card(page).getByRole('heading', { name: 'Verified' })).toBeVisible();
+
+  // The first card, all done but not verified by its own result, never says "Not verified yet"
+  await expect(page.getByRole('heading', { name: 'Not verified yet' })).toHaveCount(0);
+  const first = page.getByRole('region', { name: 'Verification progress for Harbour Light Coffee' }).first();
+  await expect(first.getByRole('heading', { name: 'Ready to verify' })).toBeVisible();
+  await expect(first.getByText('Harbour Light Coffee · All done')).toBeVisible();
+  await expect(first.getByText("Everything's done. Tap Check again to get verified.")).toBeVisible();
 });
 
 const SEND_ERRORS: [string, number, string][] = [
@@ -163,15 +223,14 @@ for (const [code, status, message] of VERIFY_ERRORS) {
     await sendAndEnterCode(page);
     await expect(page.getByRole('dialog').getByText(message)).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.getByText('Contact Information: unconfirmed')).toBeVisible();
+    await expect(card(page).getByText('Not confirmed', { exact: true })).toBeVisible();
   });
 }
 
 test('no contact email: asks for one first, no Confirm button', async ({ page }) => {
   await openVerification(page, { contactEmail: null, reason: 'Add and confirm a contact email' });
-  await contactRow(page).getByRole('button').tap();
-  await expect(page.getByText('Add a contact email to your business first.')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Your businesses' })).toHaveAttribute('href', '/registered-business');
+  await expect(card(page).getByText('Add a contact email to your business first.')).toBeVisible();
+  await expect(card(page).getByRole('link', { name: 'Your businesses' })).toHaveAttribute('href', '/registered-business');
   await expect(page.getByRole('button', { name: 'Confirm', exact: true })).toHaveCount(0);
-  await expect(page.locator('[data-verification-reason]')).toHaveText('Add and confirm a contact email');
+  await expect(page.getByText('Add and confirm a contact email')).toHaveCount(0);
 });

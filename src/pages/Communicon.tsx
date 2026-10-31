@@ -32,6 +32,7 @@ const Communicon = () => {
     showMyListings,
     sendContactOTP,
     verifyContactOTP,
+    checkVerificationAgain,
     isValidatingConversation,
     conversationValidated,
     validateConversation,
@@ -221,6 +222,7 @@ const Communicon = () => {
             hasLiveChatAccess={true}
             onSendContactOTP={sendContactOTP}
             onVerifyContactOTP={verifyContactOTP}
+            onCheckVerificationAgain={checkVerificationAgain}
           />
         )}
       </div>
