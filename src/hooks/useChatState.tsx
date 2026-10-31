@@ -848,23 +848,48 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
     [callContactOTP]
   );
 
+  // A business the signed-in user owns, with its contact email (for the email's confirm link).
+  // null if it isn't theirs (RLS and the owner filter) or there's no session.
+  const loadOwnedBusinessContact = useCallback(async (businessId: number) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) return null;
+    const { data, error } = await supabase
+      .from('businesses')
+      .select('id, business_name, contact_info, contact_email_verified_for')
+      .eq('id', businessId)
+      .eq('owner_id', userId)
+      .maybeSingle();
+    if (error || !data) return null;
+    const contactInfo = data.contact_info as { email?: unknown } | null;
+    const email = typeof contactInfo?.email === 'string' ? contactInfo.email.trim() : '';
+    return {
+      businessId: data.id,
+      businessName: data.business_name,
+      email,
+      confirmedFor: data.contact_email_verified_for ?? null,
+    };
+  }, []);
+
+  // Marks the stored cards for this email and business as confirmed
+  const markContactConfirmed = useCallback((email: string, businessId: number) => {
+    setMessages(prev => prev.map(msg =>
+      msg.contactVerification?.email.toLowerCase() === email.toLowerCase() && msg.contactVerification?.businessId === businessId
+        ? {
+            ...msg,
+            verificationMetrics: msg.verificationMetrics
+              ? { ...msg.verificationMetrics, contactInfoConfirmed: true }
+              : msg.verificationMetrics,
+          }
+        : msg
+    ));
+  }, []);
+
   const verifyContactOTP = useCallback(async (email: string, otp: string, businessId: number): Promise<ContactOTPResult> => {
     const result = await callContactOTP({ action: 'verify', email, otp, business_id: businessId });
-    if (result.ok) {
-      // Update the message to mark contact info as confirmed
-      setMessages(prev => prev.map(msg =>
-        msg.contactVerification?.email === email && msg.contactVerification?.businessId === businessId
-          ? {
-              ...msg,
-              verificationMetrics: msg.verificationMetrics
-                ? { ...msg.verificationMetrics, contactInfoConfirmed: true }
-                : msg.verificationMetrics,
-            }
-          : msg
-      ));
-    }
+    if (result.ok) markContactConfirmed(email, businessId);
     return result;
-  }, [callContactOTP]);
+  }, [callContactOTP, markContactConfirmed]);
 
   return {
     message,
@@ -883,6 +908,8 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
     showMyListings,
     sendContactOTP,
     verifyContactOTP,
+    markContactConfirmed,
+    loadOwnedBusinessContact,
     checkVerificationAgain,
     isValidatingConversation,
     conversationValidated,

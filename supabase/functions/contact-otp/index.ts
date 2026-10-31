@@ -9,6 +9,12 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const brevoApiKey = Deno.env.get('BREVO_API_KEY')!;
 
+// The Pi Browser app link (opens Avante Maps in the Pi Browser, signed in). Mainnet will get its
+// own pinet address through PI_APP_LINK_BASE; read per email so it can change without a redeploy
+// of the code
+const DEFAULT_APP_LINK_BASE = 'https://avantemapsaebbcf9516.pinet.com';
+const appLinkBase = () => Deno.env.get('PI_APP_LINK_BASE') ?? DEFAULT_APP_LINK_BASE;
+
 const OTP_TTL_MS = 15 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 // Wrong guesses allowed per code; after that it's dead until a new one is sent
@@ -39,7 +45,16 @@ function generateOTP(): string {
   return String(100000 + (buf[0] % range));
 }
 
-async function sendOTPEmail(email: string, otp: string): Promise<boolean> {
+// CommuniCon reads confirm_code and business from this link and confirms the code by itself
+function confirmLink(otp: string, businessId: number): string {
+  const url = new URL('/communicon', appLinkBase());
+  url.search = new URLSearchParams({ confirm_code: otp, business: String(businessId) }).toString();
+  return url.toString();
+}
+
+async function sendOTPEmail(email: string, otp: string, businessId: number): Promise<boolean> {
+  // & has to be &amp; inside an HTML attribute
+  const link = confirmLink(otp, businessId).replaceAll('&', '&amp;');
   try {
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
@@ -64,6 +79,10 @@ async function sendOTPEmail(email: string, otp: string): Promise<boolean> {
             <p style="color: #555;">Use the code below to verify your business contact email on Avante Maps. This code expires in <strong>15 minutes</strong>.</p>
             <div style="background: #f4f4f4; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0;">
               <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #1a1a1a;">${otp}</span>
+            </div>
+            <div style="text-align: center; margin: 0 0 24px;">
+              <a href="${link}" style="display: inline-block; background: #2563EB; color: #ffffff; border-radius: 8px; padding: 14px 24px; font-size: 16px; font-weight: bold; text-decoration: none;">Confirm in Avante Maps</a>
+              <p style="color: #6b7280; font-size: 13px; margin: 12px 0 0;">Opens Avante Maps in the Pi Browser. Or type the code above.</p>
             </div>
             <p style="color: #999; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
           </div>
@@ -117,6 +136,11 @@ Deno.serve(async (req) => {
     if (!business_id) {
       return fail(400, 'Missing business_id');
     }
+    // A positive whole number (it goes into the confirm link)
+    const businessId = Number(business_id);
+    if (!Number.isSafeInteger(businessId) || businessId <= 0) {
+      return fail(400, 'Invalid business_id');
+    }
     if (action === 'verify' && !otp) {
       return fail(400, 'Missing otp');
     }
@@ -126,7 +150,7 @@ Deno.serve(async (req) => {
     const { data: biz, error: bizError } = await supabase
       .from('businesses')
       .select('owner_id, contact_info')
-      .eq('id', business_id)
+      .eq('id', businessId)
       .maybeSingle();
     if (bizError || !biz || biz.owner_id !== authenticatedUserId) {
       return fail(403, 'Forbidden: not the business owner');
@@ -186,7 +210,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      const sent = await sendOTPEmail(email, code);
+      const sent = await sendOTPEmail(email, code, businessId);
       if (!sent) {
         return fail(500, 'Failed to send OTP email', 'email_failed');
       }
@@ -248,7 +272,7 @@ Deno.serve(async (req) => {
     const { error: confirmError } = await supabase
       .from('businesses')
       .update({ contact_email_verified_at: new Date().toISOString(), contact_email_verified_for: email })
-      .eq('id', business_id);
+      .eq('id', businessId);
     if (confirmError) {
       console.error('Contact confirmation update error:', confirmError);
       return fail(500, 'Failed to record the confirmation');
