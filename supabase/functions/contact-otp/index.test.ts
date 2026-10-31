@@ -183,9 +183,11 @@ test('the code is in the subject and the first line, and lasts 15 minutes', asyn
   try {
     await call({ action: 'send', email: 'hello@harbour.example', business_id: 7 });
     assertEquals(sentEmails[0]!.subject, `Your Avante Maps code: ${sentCodes[0]}`);
-    // The first paragraph, tags stripped
-    const firstLine = /<p[^>]*>(.*?)<\/p>/s.exec(sentEmails[0]!.html)![1]!.replace(/<[^>]+>/g, '');
-    assertEquals(firstLine, `Your code is ${sentCodes[0]}`);
+    // The code line comes first, before the heading
+    const html = sentEmails[0]!.html;
+    const codeLine = `Your code is <strong>${sentCodes[0]}</strong>`;
+    assert(html.includes(codeLine));
+    assert(html.indexOf(codeLine) < html.indexOf('Verify Your Contact Information'));
     assert(sentEmails[0]!.html.includes('15 minutes'));
     const left = expiresInMs(fake.tables.contact_otps[0]!);
     assert(left > 14.9 * MINUTE && left <= 15 * MINUTE, `expires in ${left}ms`);
