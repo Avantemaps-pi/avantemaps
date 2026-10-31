@@ -10,16 +10,36 @@ import { Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import ContactOTPVerification from '@/components/chat/ContactOTPVerification';
 import { verificationProgress } from '@/components/chat/verificationProgress';
-import {
-  OPEN_PENDING_CONTACT_CODE_EVENT,
-  loadPendingContactCode,
-  type PendingContactCode,
-} from '@/components/chat/pendingContactCode';
+import type { ContactOTPResult } from '@/components/chat/ContactOTPVerification';
+import { OPEN_PENDING_CONTACT_CODE_EVENT, loadPendingContactCode } from '@/components/chat/pendingContactCode';
+
+// The code entry dialog: a pending code being resumed, or a code from the email's confirm link
+interface CodeDialogState {
+  email: string;
+  businessId: number;
+  businessName: string;
+  /** From the link: filled in and submitted by itself */
+  initialCode?: string;
+  /** The address the business's contact email is already confirmed for (from the link's lookup) */
+  confirmedFor?: string | null;
+}
+
+// The email's "Confirm in Avante Maps" link: ?confirm_code=<6 digits>&business=<id>
+const readConfirmLink = (search: string) => {
+  // router-compat's search can start with "??"; URLSearchParams only drops one
+  const params = new URLSearchParams(search.replace(/^\?+/, ''));
+  const code = params.get('confirm_code') ?? '';
+  const business = params.get('business') ?? '';
+  const present = params.has('confirm_code') || params.has('business');
+  const businessId = /^[1-9]\d{0,15}$/.test(business) ? Number(business) : NaN;
+  const valid = /^\d{6}$/.test(code) && Number.isSafeInteger(businessId);
+  return { present, link: valid ? { code, businessId } : null };
+};
 
 const Communicon = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   // Always start in 'ai' so the first client render matches the server, which has no
   // history state. An incoming chatMode: 'live' is applied after mount by the effect below.
   const [mounted, setMounted] = useState(false);
@@ -40,6 +60,8 @@ const Communicon = () => {
     showMyListings,
     sendContactOTP,
     verifyContactOTP,
+    markContactConfirmed,
+    loadOwnedBusinessContact,
     checkVerificationAgain,
     isValidatingConversation,
     conversationValidated,
@@ -59,29 +81,72 @@ const Communicon = () => {
     };
   }, [sendVerificationRequest, handleBusinessSelection]);
 
-  // A contact email code sent before a reload (or from another page): open its entry again,
-  // without sending a new one
-  const [resumeCode, setResumeCode] = useState<PendingContactCode | null>(null);
+  const [codeDialog, setCodeDialog] = useState<CodeDialogState | null>(null);
+  // The confirm link's code, kept until the user is signed in
+  const [linkConfirm, setLinkConfirm] = useState<{ code: string; businessId: number } | null>(null);
+
+  // On arrival: take the confirm link's values (and take them out of the address bar and history
+  // right away), or else reopen a code sent before a reload, without sending a new one
   useEffect(() => {
-    const open = () => setResumeCode(loadPendingContactCode());
-    open();
+    const { present, link } = readConfirmLink(location.search);
+    if (present) navigate(location.pathname, { replace: true, state: location.state });
+    if (link) {
+      setLinkConfirm(link);
+    } else {
+      const pending = loadPendingContactCode();
+      if (pending) setCodeDialog(pending);
+    }
+    const open = () => {
+      const pending = loadPendingContactCode();
+      if (pending) setCodeDialog(pending);
+    };
     window.addEventListener(OPEN_PENDING_CONTACT_CODE_EVENT, open);
     return () => window.removeEventListener(OPEN_PENDING_CONTACT_CODE_EVENT, open);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // verifyContactOTP marks the stored cards Confirmed; if that was all the latest card
-  // for the business was missing, get the server's answer straight away
-  const handleResumedCodeVerified = () => {
-    const pending = resumeCode;
-    setResumeCode(null);
-    if (!pending) return;
-    toast.success('Contact email confirmed');
-    const latest = [...messages].reverse().find((m) => m.verificationMetrics?.businessId === pending.businessId);
+  // Once the Pi session has restored (or the user signs in), check the link is for one of
+  // their businesses and open the code entry with its code
+  useEffect(() => {
+    if (!linkConfirm || authLoading || !user) return;
+    const { code, businessId } = linkConfirm;
+    setLinkConfirm(null);
+    (async () => {
+      const business = await loadOwnedBusinessContact(businessId);
+      if (!business || !business.email) {
+        toast.error("This link isn't for your account");
+        return;
+      }
+      setCodeDialog({ ...business, initialCode: code });
+    })();
+  }, [linkConfirm, authLoading, user, loadOwnedBusinessContact]);
+
+  // A link tapped twice: the code is used up, but the email is confirmed already
+  const alreadyConfirmedRef = useRef(false);
+  const verifyFromDialog = async (email: string, otp: string, businessId: number): Promise<ContactOTPResult> => {
+    const result = await verifyContactOTP(email, otp, businessId);
+    if (!result.ok && result.errorCode === 'expired' && codeDialog?.confirmedFor === email.toLowerCase()) {
+      alreadyConfirmedRef.current = true;
+      markContactConfirmed(email, businessId);
+      return { ok: true, errorCode: null };
+    }
+    return result;
+  };
+
+  // The stored cards are marked Confirmed; if that was all the latest card for the business
+  // was missing, get the server's answer straight away
+  const handleCodeVerified = () => {
+    const confirmed = codeDialog;
+    setCodeDialog(null);
+    if (!confirmed) return;
+    toast.success(alreadyConfirmedRef.current ? 'Email already confirmed' : 'Email confirmed');
+    alreadyConfirmedRef.current = false;
+    const latest = [...messages].reverse().find((m) => m.verificationMetrics?.businessId === confirmed.businessId);
     const metrics = latest?.verificationMetrics;
     if (!metrics || metrics.verified) return;
     const progress = verificationProgress({ ...metrics, contactInfoConfirmed: true });
     if (progress.done === progress.total) {
-      void checkVerificationAgain(pending.businessId, metrics.businessName);
+      void checkVerificationAgain(confirmed.businessId, metrics.businessName);
     }
   };
 
@@ -260,17 +325,19 @@ const Communicon = () => {
           />
         )}
       </div>
-      {resumeCode && (
-        <Dialog open onOpenChange={(open) => !open && setResumeCode(null)}>
+      {codeDialog && (
+        <Dialog open onOpenChange={(open) => !open && setCodeDialog(null)}>
           <DialogContent className="sm:max-w-md">
             <DialogTitle className="sr-only">Verify Contact Information</DialogTitle>
             <ContactOTPVerification
-              email={resumeCode.email}
-              businessId={resumeCode.businessId}
-              businessName={resumeCode.businessName}
+              key={`${codeDialog.businessId}:${codeDialog.initialCode ?? 'resume'}`}
+              email={codeDialog.email}
+              businessId={codeDialog.businessId}
+              businessName={codeDialog.businessName}
+              initialCode={codeDialog.initialCode}
               onSendOTP={sendContactOTP}
-              onVerifyOTP={verifyContactOTP}
-              onVerified={handleResumedCodeVerified}
+              onVerifyOTP={verifyFromDialog}
+              onVerified={handleCodeVerified}
             />
           </DialogContent>
         </Dialog>

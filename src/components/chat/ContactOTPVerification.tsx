@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
@@ -24,6 +24,8 @@ const errorMessage = (code: string | null) => (code && ERROR_MESSAGES[code]) || 
 // The code can't be used any more (or never could): stop offering to resume it
 const TERMINAL_ERRORS = ['expired', 'too_many_attempts', 'not_contact_email'];
 const digitsOnly = (text: string) => text.replace(/\D/g, '').slice(0, 6);
+// The code can't be used any more: offer a new one instead of a resend
+const DEAD_CODE_ERRORS = ['expired', 'too_many_attempts'];
 
 // A code was already sent for this email and business and hasn't expired
 const hasPendingCode = (email: string, businessId: number) => {
@@ -36,6 +38,8 @@ interface ContactOTPVerificationProps {
   businessId: number;
   /** Shown in the reminder banner while a code is pending */
   businessName?: string | undefined;
+  /** A code from the email's confirm link: filled in and submitted by itself */
+  initialCode?: string | undefined;
   onVerified: () => void;
   onSendOTP: (email: string, businessId: number) => Promise<ContactOTPResult>;
   onVerifyOTP: (email: string, otp: string, businessId: number) => Promise<ContactOTPResult>;
@@ -45,17 +49,20 @@ const ContactOTPVerification: React.FC<ContactOTPVerificationProps> = ({
   email,
   businessId,
   businessName,
+  initialCode,
   onVerified,
   onSendOTP,
   onVerifyOTP,
 }) => {
-  // With a code already on its way (e.g. after a reload), go straight to entering it
+  // With a code already on its way (e.g. after a reload, or from the link), go straight to entering it
   const [step, setStep] = useState<'send' | 'verify' | 'loading' | 'done' | 'error'>(() =>
-    hasPendingCode(email, businessId) ? 'verify' : 'send'
+    initialCode || hasPendingCode(email, businessId) ? 'verify' : 'send'
   );
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState(initialCode ?? '');
   const [errorMsg, setErrorMsg] = useState('');
   const [resending, setResending] = useState(false);
+  const [codeDead, setCodeDead] = useState(false);
+  const submittedInitialRef = useRef(false);
 
   const rememberCode = () => savePendingContactCode({ businessId, email, businessName: businessName ?? '' });
 
@@ -84,11 +91,20 @@ const ContactOTPVerification: React.FC<ContactOTPVerificationProps> = ({
       onVerified();
     } else {
       if (errorCode && TERMINAL_ERRORS.includes(errorCode)) clearPendingContactCode();
+      setCodeDead(!!errorCode && DEAD_CODE_ERRORS.includes(errorCode));
       setErrorMsg(errorMessage(errorCode));
       setOtp('');
       setStep('verify');
     }
   };
+
+  // The link's code is submitted once, as if typed
+  useEffect(() => {
+    if (!initialCode || submittedInitialRef.current) return;
+    submittedInitialRef.current = true;
+    void handleVerify(initialCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCode]);
 
   // The server sends the same code again while it still works, and restarts its 15 minutes
   const handleResend = async () => {
@@ -99,6 +115,7 @@ const ContactOTPVerification: React.FC<ContactOTPVerificationProps> = ({
     setResending(false);
     if (ok) {
       rememberCode();
+      setCodeDead(false);
     } else {
       if (errorCode && TERMINAL_ERRORS.includes(errorCode)) clearPendingContactCode();
       setErrorMsg(errorMessage(errorCode));
@@ -200,7 +217,7 @@ const ContactOTPVerification: React.FC<ContactOTPVerificationProps> = ({
             disabled={resending}
             className="text-xs text-primary underline underline-offset-2 w-full text-center disabled:opacity-50"
           >
-            {resending ? 'Resending…' : "Didn't receive it? Resend"}
+            {resending ? 'Resending…' : codeDead ? 'Send a new code' : "Didn't receive it? Resend"}
           </button>
         </>
       )}
