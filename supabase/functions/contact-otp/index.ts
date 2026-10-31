@@ -9,7 +9,7 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const brevoApiKey = Deno.env.get('BREVO_API_KEY')!;
 
-const OTP_TTL_MS = 10 * 60 * 1000;
+const OTP_TTL_MS = 15 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 // Wrong guesses allowed per code; after that it's dead until a new one is sent
 const MAX_ATTEMPTS = 5;
@@ -54,11 +54,14 @@ async function sendOTPEmail(email: string, otp: string): Promise<boolean> {
           email: 'support@avantemaps.com',
         },
         to: [{ email }],
-        subject: 'Your Contact Verification Code',
+        // The code is in the subject and the first line, so it can be copied from the inbox
+        // list or the notification without opening the email
+        subject: `Your Avante Maps code: ${otp}`,
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+            <p style="color: #1a1a1a; font-size: 16px;">Your code is <strong>${otp}</strong></p>
             <h2 style="color: #1a1a1a;">Verify Your Contact Information</h2>
-            <p style="color: #555;">Use the code below to verify your business contact email on Avante Maps. This code expires in <strong>10 minutes</strong>.</p>
+            <p style="color: #555;">Use the code below to verify your business contact email on Avante Maps. This code expires in <strong>15 minutes</strong>.</p>
             <div style="background: #f4f4f4; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0;">
               <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #1a1a1a;">${otp}</span>
             </div>
@@ -137,9 +140,10 @@ Deno.serve(async (req) => {
 
     if (action === 'send') {
       // ✅ SECURITY: per-email cooldown (60s) to prevent spamming
+      // (expires_at - OTP_TTL_MS is when the code was last sent)
       const { data: existing } = await supabase
         .from('contact_otps')
-        .select('expires_at')
+        .select('otp, expires_at, verified, attempts')
         .eq('email', email)
         .maybeSingle();
       if (existing?.expires_at) {
@@ -149,17 +153,37 @@ Deno.serve(async (req) => {
         }
       }
 
-      const code = generateOTP();
       const expiresAt = new Date(Date.now() + OTP_TTL_MS).toISOString();
+      // A resend while the code still works sends the same code again (an older email stays
+      // valid) and restarts its 15 minutes. Its wrong attempts carry over, so resending never
+      // buys more guesses; a used, expired or locked code gets replaced.
+      const reusable =
+        existing &&
+        !existing.verified &&
+        new Date(existing.expires_at).getTime() > Date.now() &&
+        Number(existing.attempts ?? 0) < MAX_ATTEMPTS;
 
-      // A new code starts with no wrong attempts
-      const { error: upsertError } = await supabase
-        .from('contact_otps')
-        .upsert({ email, otp: code, expires_at: expiresAt, verified: false, attempts: 0 }, { onConflict: 'email' });
-
-      if (upsertError) {
-        console.error('OTP upsert error:', upsertError);
-        return fail(500, 'Failed to store OTP');
+      let code: string;
+      if (reusable) {
+        code = existing.otp;
+        const { error: updateError } = await supabase
+          .from('contact_otps')
+          .update({ expires_at: expiresAt })
+          .eq('email', email);
+        if (updateError) {
+          console.error('OTP update error:', updateError);
+          return fail(500, 'Failed to store OTP');
+        }
+      } else {
+        code = generateOTP();
+        // A new code starts with no wrong attempts
+        const { error: upsertError } = await supabase
+          .from('contact_otps')
+          .upsert({ email, otp: code, expires_at: expiresAt, verified: false, attempts: 0 }, { onConflict: 'email' });
+        if (upsertError) {
+          console.error('OTP upsert error:', upsertError);
+          return fail(500, 'Failed to store OTP');
+        }
       }
 
       const sent = await sendOTPEmail(email, code);
