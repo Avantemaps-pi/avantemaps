@@ -458,3 +458,12 @@ test('a toast shows once: exactly one "Email confirmed"', async ({ page }) => {
   await expect(toast(page, 'Email confirmed')).toHaveCount(1);
   await expect(page.locator('[data-sonner-toaster]')).toHaveCount(1);
 });
+
+test('once the card has revealed its rows, the chat ends at the bottom with Check again in view', async ({ page }) => {
+  await openVerification(page);
+  const list = page.locator('main .overflow-y-auto').first();
+  await expect
+    .poll(() => list.evaluate((el) => Math.round(el.scrollHeight - el.scrollTop - el.clientHeight)))
+    .toBeLessThanOrEqual(2);
+  await expect(card(page).getByRole('button', { name: 'Check again' })).toBeInViewport();
+});

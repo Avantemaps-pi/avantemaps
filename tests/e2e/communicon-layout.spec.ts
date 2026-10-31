@@ -379,3 +379,46 @@ test.describe('owner inbox picker', () => {
     await expect(page.getByRole('combobox', { name: 'Inbox' })).toBeVisible();
   });
 });
+
+test.describe('back to the Bot tab at 375x812', () => {
+  test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+
+  // Enough stored bot history to overflow the list
+  const history = Array.from({ length: 30 }, (_, i) => ({
+    id: i + 1,
+    text: `Seeded message ${i + 1}: opening hours, photos and how verification works.`,
+    sender: i % 2 ? 'ai' : 'user',
+    timestamp: '10:00 AM',
+  }));
+  const botList = (page: Page) => page.locator('main .overflow-y-auto').first();
+  const lastMessage = (page: Page) => page.getByText('Seeded message 30:', { exact: false });
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(
+      ([key, messages]) => localStorage.setItem(key as string, JSON.stringify(messages)),
+      [`avante-chat-messages-v2:${UID}`, history],
+    );
+  });
+
+  test('a fresh load opens at the newest message', async ({ page }) => {
+    await setup(page);
+    await expect(lastMessage(page)).toBeVisible();
+    expect(await botList(page).evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+    await expectPinnedToNewest(page, botList(page));
+    await expect(lastMessage(page)).toBeInViewport();
+  });
+
+  test('Messages and back to Bot: still at the newest message', async ({ page }) => {
+    await setup(page);
+    await expect(lastMessage(page)).toBeInViewport();
+    await page.getByRole('tab', { name: 'Messages' }).tap();
+    await expect(page.getByText('Test Business 1', { exact: true })).toBeAttached();
+    await page.getByRole('tab', { name: 'Bot' }).tap();
+    await expect(lastMessage(page)).toBeVisible();
+    // Straight away, not after a scroll animation
+    await page.waitForTimeout(150);
+    const gap = await botList(page).evaluate((el) => Math.round(el.scrollHeight - el.scrollTop - el.clientHeight));
+    expect(gap).toBeLessThanOrEqual(2);
+    await expect(lastMessage(page)).toBeInViewport();
+  });
+});
