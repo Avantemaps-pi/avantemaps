@@ -200,7 +200,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <span>Powered by CommuniCon</span>
               </div>
 
-              <div className="px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              <div className="px-3 pt-3 pb-3" data-chat-input-bar>
                 <div className="relative flex items-center">
                   <div className="flex w-full bg-muted/50 rounded-full px-4 py-3">
                     <Input

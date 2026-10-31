@@ -8,6 +8,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import AppSidebar from './AppSidebar';
 import BottomNavBar from './BottomNavBar';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -41,6 +42,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   
 }) => {
   const isMobile = useIsMobile();
+  const keyboardOpen = useKeyboardOpen();
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
   // fullHeight: exactly the visible screen (dvh; 100vh is taller on phones), and only the page's own lists scroll
@@ -62,6 +64,15 @@ const AppLayout: React.FC<AppLayoutProps> = ({
     };
     focusTarget.addEventListener('blur', handleBlur);
   }, [location.pathname]);
+
+  // Room for the fixed bottom nav. A fullHeight page ends exactly at its top edge (h-16, its 1px
+  // border and the safe area), with nothing while the keyboard hides it; scrolling pages keep
+  // some extra space at the end.
+  const navClearance = !isMobile || hideBottomNav
+    ? undefined
+    : fullHeight
+      ? (keyboardOpen ? '0px' : 'calc(4rem + 1px + env(safe-area-inset-bottom))')
+      : 'calc(6rem + env(safe-area-inset-bottom))';
 
   return (
     <SidebarProvider>
@@ -85,8 +96,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             id="main-content"
             tabIndex={-1}
             aria-labelledby="page-title"
-            className={`flex-1 w-full min-w-0 overflow-x-hidden ${fullHeight ? 'flex flex-col min-h-0 overflow-hidden' : 'overflow-y-auto'} animate-fade-in outline-hidden ${isMobile && !hideBottomNav ? 'pb-24' : ''}`}
-            style={isMobile && !hideBottomNav ? { paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' } : undefined}
+            className={`flex-1 w-full min-w-0 overflow-x-hidden ${fullHeight ? 'flex flex-col min-h-0 overflow-hidden' : 'overflow-y-auto'} animate-fade-in outline-hidden ${isMobile && !hideBottomNav && !fullHeight ? 'pb-24' : ''}`}
+            style={navClearance ? { paddingBottom: navClearance } : undefined}
           >
             {children}
           </main>
