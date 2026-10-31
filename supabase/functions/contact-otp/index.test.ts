@@ -256,3 +256,45 @@ test('resend after the code expired or was used: a new code with no attempts', a
     fake.restore();
   }
 });
+
+test('the email has a "Confirm in Avante Maps" button linking to CommuniCon with the code and business', async () => {
+  const { fake, sentCodes, sentEmails } = setup();
+  try {
+    await call({ action: 'send', email: 'hello@harbour.example', business_id: 7 });
+    const html = sentEmails[0]!.html;
+    const href = `https://avantemapsaebbcf9516.pinet.com/communicon?confirm_code=${sentCodes[0]}&amp;business=7`;
+    assert(html.includes(`<a href="${href}"`), 'button link');
+    assert(html.includes('>Confirm in Avante Maps</a>'));
+    assert(html.includes('background: #2563EB'));
+    assert(html.includes('Opens Avante Maps in the Pi Browser. Or type the code above.'));
+    // Under the big code
+    assert(html.indexOf('letter-spacing: 8px') < html.indexOf('Confirm in Avante Maps'));
+  } finally {
+    fake.restore();
+  }
+});
+
+test('PI_APP_LINK_BASE overrides the link base', async () => {
+  Deno.env.set('PI_APP_LINK_BASE', 'https://mainnet-example.pinet.com');
+  const { fake, sentCodes, sentEmails } = setup();
+  try {
+    await call({ action: 'send', email: 'hello@harbour.example', business_id: '7' });
+    assert(sentEmails[0]!.html.includes(`href="https://mainnet-example.pinet.com/communicon?confirm_code=${sentCodes[0]}&amp;business=7"`));
+  } finally {
+    Deno.env.delete('PI_APP_LINK_BASE');
+    fake.restore();
+  }
+});
+
+test('a business_id that is not a positive whole number is refused, and nothing is sent', async () => {
+  const { fake, sentCodes } = setup();
+  try {
+    for (const business_id of ['7&x=1', -7, 7.5]) {
+      const res = await call({ action: 'send', email: 'hello@harbour.example', business_id });
+      assertEquals(res.status, 400);
+    }
+    assertEquals(sentCodes, []);
+  } finally {
+    fake.restore();
+  }
+});
