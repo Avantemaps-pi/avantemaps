@@ -198,7 +198,7 @@ const Communicon = () => {
   };
 
   return (
-    <AppLayout title="CommuniCon" fullHeight={true}>
+    <AppLayout title="CommuniCon" fullHeight={true} hideBottomNav={true}>
       <div className="max-w-4xl mx-auto flex flex-1 min-h-0 flex-col w-full">
         {!mounted ? (
           <div className="flex flex-1 items-center justify-center py-16" aria-busy="true">
