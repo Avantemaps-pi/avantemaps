@@ -17,6 +17,7 @@ interface MobileSidebarProps {
     icon: React.ElementType;
     label: string;
     badge?: number | null;
+    desktopOnly?: boolean;
   }>;
   currentPath: string;
   onClose: () => void;
@@ -132,7 +133,7 @@ const MobileSidebar = ({
             
             <nav>
               <ul className="space-y-1 px-2">
-                {navItems.map(item => <NavItem key={item.to} to={item.to} icon={item.icon} label={item.label} isActive={currentPath === item.to} onClick={onLinkClick} {...(item.badge !== undefined ? { badge: item.badge } : {})} />)}
+                {navItems.filter(item => !item.desktopOnly).map(item => <NavItem key={item.to} to={item.to} icon={item.icon} label={item.label} isActive={currentPath === item.to} onClick={onLinkClick} {...(item.badge !== undefined ? { badge: item.badge } : {})} />)}
               </ul>
             </nav>
 

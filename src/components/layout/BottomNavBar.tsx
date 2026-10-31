@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from '@/lib/router-compat';
-import { Map, LayoutGrid, Bookmark, Wallet, Settings } from 'lucide-react';
+import { Map, LayoutGrid, Bookmark, MessageSquare, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
@@ -9,7 +9,7 @@ const navItems = [
   { to: '/recommendations', icon: LayoutGrid, label: 'Discover' },
   { to: '/bookmarks', icon: Bookmark, label: 'Saved' },
   { to: '/', icon: Map, label: 'Map' },
-  { to: '/wallet', icon: Wallet, label: 'Wallet' },
+  { to: '/communicon', icon: MessageSquare, label: 'CommuniCon' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
