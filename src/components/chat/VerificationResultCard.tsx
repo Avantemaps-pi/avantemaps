@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, Info, Loader2, Shield, ShieldCheck } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -113,13 +113,17 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
   const [revealed, setRevealed] = useState<boolean[]>(animate ? [false, false, false] : [true, true, true]);
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
   const [checking, setChecking] = useState(false);
+  // Set when the code is confirmed here; the automatic check runs at most once
+  const [confirmedHere, setConfirmedHere] = useState(false);
+  const autoCheckedRef = useRef(false);
 
   const handleVerified = () => {
     setContactInfoConfirmed(true);
+    setConfirmedHere(true);
     setOtpDialogOpen(false);
   };
 
-  const handleCheckAgain = async () => {
+  const handleCheckAgain = useCallback(async () => {
     if (!onCheckAgain) return;
     setChecking(true);
     try {
@@ -127,7 +131,7 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
     } finally {
       setChecking(false);
     }
-  };
+  }, [onCheckAgain]);
 
   useEffect(() => {
     const timers = REVEAL_DELAYS.map((delay, i) =>
@@ -144,6 +148,15 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
 
   const progress = verificationProgress({ ...metrics, contactInfoConfirmed });
   const walletsLeft = Math.max(MIN_WALLETS - uniqueWallets, 0);
+  // Every row done but the server hasn't said Verified (yet): never "Not verified yet" then
+  const readyToVerify = !verified && progress.done === progress.total;
+
+  // Confirming the email was the last thing missing: go straight to the server's answer
+  useEffect(() => {
+    if (!confirmedHere || !readyToVerify || !onCheckAgain || autoCheckedRef.current) return;
+    autoCheckedRef.current = true;
+    void handleCheckAgain();
+  }, [confirmedHere, readyToVerify, onCheckAgain, handleCheckAgain]);
 
   const canShowOTP = !contactInfoConfirmed && contactEmail && contactBusinessId && onSendContactOTP && onVerifyContactOTP;
   // The code goes to the business's contact email only; without one, say where to add it
@@ -166,9 +179,15 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
             {verified ? <ShieldCheck className="h-5 w-5" /> : <Shield className="h-5 w-5" />}
           </span>
           <div className="min-w-0">
-            <h4 className="text-lg font-bold leading-6">{verified ? 'Verified' : 'Not verified yet'}</h4>
+            <h4 className="text-lg font-bold leading-6">
+              {verified ? 'Verified' : readyToVerify ? 'Ready to verify' : 'Not verified yet'}
+            </h4>
             <p data-verification-progress className="text-sm text-muted-foreground">
-              {verified ? businessName : `${businessName} · ${progress.done} of ${progress.total} done`}
+              {verified
+                ? businessName
+                : readyToVerify
+                  ? `${businessName} · All done`
+                  : `${businessName} · ${progress.done} of ${progress.total} done`}
             </p>
           </div>
         </div>
@@ -236,10 +255,14 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
           <>
             <div className="flex gap-2.5 rounded-lg bg-accent p-3 text-[13px] leading-[18px] text-accent-foreground">
               <Info className="mt-px h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-              <p>
-                Verification counts payments on your business's Pi wallet. Keep trading in Pi, then check again.
-                {contactInfoConfirmed && ' Your contact email stays confirmed unless you change it.'}
-              </p>
+              {readyToVerify ? (
+                <p>Everything's done. Tap Check again to get verified.</p>
+              ) : (
+                <p>
+                  Verification counts payments on your business's Pi wallet. Keep trading in Pi, then check again.
+                  {contactInfoConfirmed && ' Your contact email stays confirmed unless you change it.'}
+                </p>
+              )}
             </div>
             {onCheckAgain && (
               <Button type="button" className="w-full" onClick={handleCheckAgain} disabled={checking}>

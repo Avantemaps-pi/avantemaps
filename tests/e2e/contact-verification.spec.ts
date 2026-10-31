@@ -34,6 +34,8 @@ interface Setup {
   verify?: { status: number; body: object };
   /** Wallet figures from verify-business (default: 13 transactions, 4 received, 9 wallets) */
   counts?: { totalTransactions: number; creditedTransactions: number; uniqueWallets: number };
+  /** Per-call overrides of verify-business's result (index 0 = first call) */
+  verifyReplies?: Record<string, unknown>[];
 }
 
 async function openVerification(page: Page, opts: Setup = {}) {
@@ -57,6 +59,7 @@ async function openVerification(page: Page, opts: Setup = {}) {
   });
   await page.route('**/functions/v1/verify-business', (route) => {
     verifyCalls.push(route.request());
+    const override = opts.verifyReplies?.[verifyCalls.length - 1] ?? {};
     return route.fulfill({
       json: {
         success: true,
@@ -67,6 +70,7 @@ async function openVerification(page: Page, opts: Setup = {}) {
           contactConfirmed: opts.contactConfirmed ?? false,
           reason: opts.reason === undefined ? 'Contact email not confirmed' : opts.reason,
           ...(opts.counts ?? { totalTransactions: 13, creditedTransactions: 4, uniqueWallets: 9 }),
+          ...override,
         }],
       },
     });
@@ -167,6 +171,29 @@ test('confirming the code: the row turns Confirmed, the count goes up by one, no
     expect(call.headers()['apikey']).toMatch(/^sb_publishable_/);
     expect(call.headers()['authorization']).toBe(`Bearer ${fakeSession.access_token}`);
   }
+});
+
+test('confirming the last missing check runs verification again by itself: the new card says Verified', async ({ page }) => {
+  const { verifyCalls } = await openVerification(page, {
+    // Everything met except the contact email; once confirmed, the server says Verified
+    counts: { totalTransactions: 120, creditedTransactions: 80, uniqueWallets: 14 },
+    verifyReplies: [{}, { verified: true, contactConfirmed: true, reason: null }],
+  });
+  await expect(progressLine(page)).toHaveText('Harbour Light Coffee · 2 of 3 done');
+  await openCodeDialog(page);
+  await sendAndEnterCode(page);
+
+  // No button tap: the card checks again for the same business
+  await expect.poll(() => verifyCalls.length).toBe(2);
+  expect((verifyCalls[1]!.postDataJSON() as { business_id: number }).business_id).toBe(BUSINESS.id);
+  await expect(card(page).getByRole('heading', { name: 'Verified' })).toBeVisible();
+
+  // The first card, all done but not verified by its own result, never says "Not verified yet"
+  await expect(page.getByRole('heading', { name: 'Not verified yet' })).toHaveCount(0);
+  const first = page.getByRole('region', { name: 'Verification progress for Harbour Light Coffee' }).first();
+  await expect(first.getByRole('heading', { name: 'Ready to verify' })).toBeVisible();
+  await expect(first.getByText('Harbour Light Coffee · All done')).toBeVisible();
+  await expect(first.getByText("Everything's done. Tap Check again to get verified.")).toBeVisible();
 });
 
 const SEND_ERRORS: [string, number, string][] = [
