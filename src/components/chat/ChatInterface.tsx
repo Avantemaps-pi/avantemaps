@@ -41,6 +41,8 @@ interface ChatInterfaceProps {
   hasLiveChatAccess?: boolean;
   onSendContactOTP?: (email: string, businessId: number) => Promise<ContactOTPResult>;
   onVerifyContactOTP?: (email: string, otp: string, businessId: number) => Promise<ContactOTPResult>;
+  /** Re-runs verification for a result card's business */
+  onCheckVerificationAgain?: (businessId: number, businessName: string) => Promise<void>;
 }
 
 const QUICK_REPLIES = [
@@ -60,8 +62,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   hasLiveChatAccess = false,
   onSendContactOTP,
   onVerifyContactOTP,
+  onCheckVerificationAgain,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // "Check again" for a result card's business (none if the card doesn't know which)
+  const checkAgainFor = (metrics: VerificationMetrics) => {
+    const businessId = metrics.businessId;
+    if (!onCheckVerificationAgain || businessId == null) return undefined;
+    return () => onCheckVerificationAgain(businessId, metrics.businessName);
+  };
   // Keep the newest message in view when the keyboard shrinks the list
   const listRef = useStickToBottom();
   const isInitialMount = useRef(true);
@@ -137,22 +147,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   <>
                     {messages.map(msg => (
                       <div key={msg.id}>
-                        <ChatMessage
-                          id={msg.id}
-                          text={msg.text}
-                          sender={msg.sender}
-                          timestamp={msg.timestamp}
-                        />
+                        {/* A verification result is just its card, no bubble */}
+                        {!(msg.verificationMetrics && !msg.text) && (
+                          <ChatMessage
+                            id={msg.id}
+                            text={msg.text}
+                            sender={msg.sender}
+                            timestamp={msg.timestamp}
+                          />
+                        )}
                         {msg.verificationMetrics && (
-                          <div className="mt-2">
+                          <div className={msg.text ? 'mt-2' : undefined}>
                             <VerificationResultCard
                               metrics={msg.verificationMetrics}
                               contactEmail={msg.contactVerification?.email}
                               contactBusinessId={msg.contactVerification?.businessId}
                               onSendContactOTP={onSendContactOTP}
                               onVerifyContactOTP={onVerifyContactOTP}
+                              onCheckAgain={checkAgainFor(msg.verificationMetrics)}
                               animate={msg.animateVerification ?? false}
                             />
+                            {!msg.text && <p className="mt-1 text-xs text-muted-foreground">{msg.timestamp}</p>}
                           </div>
                         )}
                         {renderBusinessSelectionButtons(msg)}

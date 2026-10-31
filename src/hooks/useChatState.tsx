@@ -4,6 +4,7 @@ import { useNavigate } from '@/lib/router-compat';
 import { filterInappropriateContent, isSafeForAI } from '@/utils/contentFilter';
 import { VerificationMetrics } from '@/components/chat/VerificationResultCard';
 import type { ContactOTPResult } from '@/components/chat/ContactOTPVerification';
+import { verificationProgress } from '@/components/chat/verificationProgress';
 import { useToast } from '@/hooks/use-toast';
 import { ChatMode } from '@/components/chat/ChatInterface';
 import { supabase } from '@/integrations/supabase/client';
@@ -583,6 +584,137 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
     setAwaitingVerificationBusinessSelection(true);
   }, [fetchUserBusinesses, navigate]);
 
+  // Runs verify-business for one business and posts the result card (after a business is
+  // picked, and from the card's "Check again")
+  const runVerification = useCallback(async (business: { id: number; business_name: string }) => {
+    const processingMessage = {
+      id: Date.now() + 1,
+      text: `Processing verification request for "${business.business_name}"...`,
+      sender: "support",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMessages(prev => [...prev, processingMessage]);
+
+    try {
+      // Get current session for auth token
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+
+      if (!accessToken) {
+        throw new Error('Not authenticated. Please log in and try again.');
+      }
+
+      // Call the verify-business edge function
+      const response = await fetch(
+        'https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/verify-business',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_CONFIG.anonKey,
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            business_id: business.id,
+            verification_type: 'verification'
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Verification request failed');
+      }
+
+      // Audit trail belongs in the verify-business edge function (service role); RLS blocks client inserts and it doesn't log it today.
+
+      // Handle blockchain verification results
+      const bizResult = result.results?.[0];
+
+      // The business's contact email (the code only goes there) and its server-recorded
+      // confirmation: it counts only while it matches the current email, as in verify-business
+      const { data: bizData, error: bizError } = await supabase
+        .from('businesses')
+        .select('contact_info, contact_email_verified_for')
+        .eq('id', business.id)
+        .single();
+      // Before the contact_email_confirmation migration is applied the column doesn't exist:
+      // still read the contact email, and leave confirmation to verify-business's answer
+      const { data: contactOnly } = bizError
+        ? await supabase.from('businesses').select('contact_info').eq('id', business.id).single()
+        : { data: null };
+
+      const contactInfo = (bizData ?? contactOnly)?.contact_info as { email?: unknown } | null | undefined;
+      const contactEmail = typeof contactInfo?.email === 'string' ? contactInfo.email.trim() : '';
+      const confirmedFor = bizData?.contact_email_verified_for ?? null;
+      const contactInfoConfirmed = typeof bizResult?.contactConfirmed === 'boolean'
+        ? bizResult.contactConfirmed
+        : !!contactEmail && confirmedFor === contactEmail.toLowerCase();
+
+      const metrics: VerificationMetrics = {
+        contactInfoConfirmed,
+        reason: bizResult?.reason ?? null,
+        totalTransactions: bizResult?.totalTransactions ?? 0,
+        creditedTransactions: bizResult?.creditedTransactions ?? 0,
+        uniqueWallets: bizResult?.uniqueWallets ?? 0,
+        verified: bizResult?.verified ?? false,
+        businessName: business.business_name,
+        walletMissing: !bizResult?.totalTransactions && !bizResult?.uniqueWallets && bizResult?.reason?.includes('wallet'),
+        businessId: business.id,
+      };
+
+      if (bizResult?.verified) {
+        const successMessage: ChatMessage = {
+          id: Date.now() + 2,
+          // The card is the message: no bubble text
+          text: '',
+          sender: "support",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          verificationMetrics: metrics,
+          animateVerification: true,
+          contactVerification: { email: contactEmail, businessId: business.id },
+        };
+        setMessages(prev => [...prev, successMessage]);
+
+        toast({
+          title: "Verified!",
+          description: `"${business.business_name}" is now verified.`,
+        });
+      } else {
+        const failMessage: ChatMessage = {
+          id: Date.now() + 2,
+          // The card is the message: no bubble text. It shows the masked contact email and,
+          // while it isn't confirmed, offers the code (or asks for a contact email first)
+          text: '',
+          sender: "support",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          verificationMetrics: metrics,
+          animateVerification: true,
+          contactVerification: { email: contactEmail, businessId: business.id },
+        };
+        setMessages(prev => [...prev, failMessage]);
+
+        const { done, total } = verificationProgress(metrics);
+        toast({
+          title: "Not verified yet",
+          description: `${done} of ${total} done. Check the card for what's left.`,
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Verification request error:', error);
+      
+      const errorMessage = {
+        id: Date.now() + 2,
+        text: `Verification failed for "${business.business_name}". ${error.message || 'Please try again.'}`,
+        sender: "support",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    }
+  }, [toast]);
+
   // Handle business selection from buttons
   const handleBusinessSelection = useCallback(async (business: any) => {
     if (awaitingVerificationBusinessSelection) {
@@ -611,136 +743,16 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
       }
       
       // If pending from a previous attempt, allow re-triggering verification
-      
-      // New verification request - call the verify-business edge function
-      const processingMessage = {
-        id: Date.now() + 1,
-        text: `Processing verification request for "${business.business_name}"...`,
-        sender: "support",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, processingMessage]);
-
-      try {
-        // Get current session for auth token
-        const { data: sessionData } = await supabase.auth.getSession();
-        const accessToken = sessionData?.session?.access_token;
-
-        if (!accessToken) {
-          throw new Error('Not authenticated. Please log in and try again.');
-        }
-
-        // Call the verify-business edge function
-        const response = await fetch(
-          'https://xvpwbocwasbtzrzrxyvu.supabase.co/functions/v1/verify-business',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              apikey: SUPABASE_CONFIG.anonKey,
-              'Authorization': `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({
-              business_id: business.id,
-              verification_type: 'verification'
-            }),
-          }
-        );
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Verification request failed');
-        }
-
-        // Audit trail belongs in the verify-business edge function (service role); RLS blocks client inserts and it doesn't log it today.
-
-        // Handle blockchain verification results
-        const bizResult = result.results?.[0];
-
-        // The business's contact email (the code only goes there) and its server-recorded
-        // confirmation: it counts only while it matches the current email, as in verify-business
-        const { data: bizData, error: bizError } = await supabase
-          .from('businesses')
-          .select('contact_info, contact_email_verified_for')
-          .eq('id', business.id)
-          .single();
-        // Before the contact_email_confirmation migration is applied the column doesn't exist:
-        // still read the contact email, and leave confirmation to verify-business's answer
-        const { data: contactOnly } = bizError
-          ? await supabase.from('businesses').select('contact_info').eq('id', business.id).single()
-          : { data: null };
-
-        const contactInfo = (bizData ?? contactOnly)?.contact_info as { email?: unknown } | null | undefined;
-        const contactEmail = typeof contactInfo?.email === 'string' ? contactInfo.email.trim() : '';
-        const confirmedFor = bizData?.contact_email_verified_for ?? null;
-        const contactInfoConfirmed = typeof bizResult?.contactConfirmed === 'boolean'
-          ? bizResult.contactConfirmed
-          : !!contactEmail && confirmedFor === contactEmail.toLowerCase();
-
-        const metrics: VerificationMetrics = {
-          contactInfoConfirmed,
-          reason: bizResult?.reason ?? null,
-          totalTransactions: bizResult?.totalTransactions ?? 0,
-          creditedTransactions: bizResult?.creditedTransactions ?? 0,
-          uniqueWallets: bizResult?.uniqueWallets ?? 0,
-          verified: bizResult?.verified ?? false,
-          businessName: business.business_name,
-          walletMissing: !bizResult?.totalTransactions && !bizResult?.uniqueWallets && bizResult?.reason?.includes('wallet'),
-        };
-
-        if (bizResult?.verified) {
-          const successMessage: ChatMessage = {
-            id: Date.now() + 2,
-            text: `✓ "${business.business_name}" has been verified successfully!`,
-            sender: "support",
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            verificationMetrics: metrics,
-            animateVerification: true,
-          };
-          setMessages(prev => [...prev, successMessage]);
-
-          toast({
-            title: "Verified!",
-            description: `"${business.business_name}" is now verified.`,
-          });
-        } else {
-          const failMessage: ChatMessage = {
-            id: Date.now() + 2,
-            text: `Verification for "${business.business_name}" was not approved.`,
-            sender: "support",
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            verificationMetrics: metrics,
-            animateVerification: true,
-            // Contact not confirmed: the card offers the code (or asks for a contact email first)
-            ...(!contactInfoConfirmed
-              ? { contactVerification: { email: contactEmail, businessId: business.id } }
-              : {}),
-          };
-          setMessages(prev => [...prev, failMessage]);
-
-          toast({
-            title: "Verification Not Approved",
-            description: bizResult?.reason || 'Requirements not met.',
-            variant: "destructive",
-          });
-        }
-
-      } catch (error: any) {
-        console.error('Verification request error:', error);
-        
-        const errorMessage = {
-          id: Date.now() + 2,
-          text: `Verification failed for "${business.business_name}". ${error.message || 'Please try again.'}`,
-          sender: "support",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages(prev => [...prev, errorMessage]);
-      }
-      
+      await runVerification(business);
       setAwaitingVerificationBusinessSelection(false);
     }
-  }, [awaitingVerificationBusinessSelection, updateVerificationStatus, toast]);
+  }, [awaitingVerificationBusinessSelection, updateVerificationStatus, toast, runVerification]);
+
+  // "Check again" on a result card: the same business, no picker
+  const checkVerificationAgain = useCallback(
+    (businessId: number, businessName: string) => runVerification({ id: businessId, business_name: businessName }),
+    [runVerification]
+  );
 
   // Show certification "coming soon" message
   const triggerCertificationFlow = useCallback(() => {
@@ -871,6 +883,7 @@ export function useChatState(initialChatMode: ChatMode = "ai") {
     showMyListings,
     sendContactOTP,
     verifyContactOTP,
+    checkVerificationAgain,
     isValidatingConversation,
     conversationValidated,
     validateConversation,

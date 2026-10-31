@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, Loader2, ChevronDown } from 'lucide-react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Check, Info, Loader2, Shield, ShieldCheck } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import ContactOTPVerification, { type ContactOTPResult } from './ContactOTPVerification';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Link } from '@/lib/router-compat';
+import ContactOTPVerification, { type ContactOTPResult } from './ContactOTPVerification';
+import { MIN_CREDITED, MIN_TRANSACTIONS, MIN_WALLETS, verificationProgress } from './verificationProgress';
 
 export interface VerificationMetrics {
   contactInfoConfirmed: boolean;
@@ -12,59 +14,71 @@ export interface VerificationMetrics {
   uniqueWallets: number;
   verified: boolean;
   businessName: string;
+  /** The server's reasons; kept for the record, not shown (the rows say the same, and stay current) */
   reason?: string | null;
   walletMissing?: boolean;
+  /** The business checked, for "Check again" */
+  businessId?: number;
 }
 
-interface CheckItemProps {
-  passed: boolean;
+// jo•••@gmail.com: enough to recognise the address without showing it
+const maskEmail = (email: string) => {
+  const at = email.lastIndexOf('@');
+  if (at < 1) return email;
+  return `${email.slice(0, Math.min(2, at))}•••@${email.slice(at + 1)}`;
+};
+
+const ProgressBar: React.FC<{ value: number; max: number; label: string; thin?: boolean }> = ({ value, max, label, thin }) => (
+  <div
+    role="progressbar"
+    aria-label={label}
+    aria-valuemin={0}
+    aria-valuemax={max}
+    aria-valuenow={Math.min(value, max)}
+    className={cn('overflow-hidden rounded-full bg-muted', thin ? 'h-1' : 'h-1.5')}
+  >
+    <div
+      className={cn('h-full rounded-full', thin ? 'bg-brand-navy' : 'bg-primary')}
+      style={{ width: `${Math.min(value / max, 1) * 100}%` }}
+    />
+  </div>
+);
+
+interface RowProps {
+  done: boolean;
   loading: boolean;
   label: string;
-  detail?: string | undefined;
-  collapsibleContent?: React.ReactNode | undefined;
+  value: string;
+  children?: React.ReactNode;
 }
 
-const CheckItem: React.FC<CheckItemProps> = ({ passed, loading, label, detail, collapsibleContent }) => {
-  const [open, setOpen] = useState(false);
-  const hasExpandable = !!detail || !!collapsibleContent;
-
-  return (
-    <Collapsible open={open} onOpenChange={setOpen} disabled={!hasExpandable || loading}>
-      <div className="flex items-center gap-2 py-1">
-        <div className="flex-shrink-0">
-          {loading ? (
-            <Loader2 size={18} className="animate-spin text-muted-foreground" />
-          ) : passed ? (
-            <CheckCircle2 size={18} className="text-primary" />
-          ) : (
-            <XCircle size={18} className="text-destructive" />
-          )}
-        </div>
-        <span className="text-sm font-medium flex-1 break-words whitespace-pre-line">
-          {label}
+// Status circle, label and value on one line, then the row's bars and sub-lines
+const Row: React.FC<RowProps> = ({ done, loading, label, value, children }) => (
+  <div className="flex items-start gap-3 border-t py-3">
+    {loading ? (
+      <Loader2 className="h-6 w-6 shrink-0 animate-spin text-muted-foreground" aria-hidden="true" />
+    ) : (
+      <span
+        className={cn(
+          'flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
+          done ? 'bg-primary text-primary-foreground' : 'border-2 border-input'
+        )}
+        aria-hidden="true"
+      >
+        {done && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+      </span>
+    )}
+    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <div className="flex justify-between gap-2 text-[15px] font-semibold">
+        <span>{label}</span>
+        <span className={cn('whitespace-nowrap', done ? 'text-primary' : 'text-foreground')}>
+          {loading ? '' : value}
         </span>
-        {hasExpandable && !loading && (
-          <CollapsibleTrigger asChild>
-            <button className="flex-shrink-0 w-7 h-7 rounded-full bg-muted flex items-center justify-center transition-colors hover:bg-muted/80">
-              <ChevronDown
-                size={14}
-                className={`text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-              />
-            </button>
-          </CollapsibleTrigger>
-        )}
       </div>
-      <CollapsibleContent>
-        {detail && (
-          <p className="text-muted-foreground text-xs whitespace-pre-line pl-7 pb-1">{detail}</p>
-        )}
-        {collapsibleContent && (
-          <div className="pl-7 pb-2">{collapsibleContent}</div>
-        )}
-      </CollapsibleContent>
-    </Collapsible>
-  );
-};
+      {!loading && children}
+    </div>
+  </div>
+);
 
 const REVEAL_DELAYS = [300, 900, 1500];
 
@@ -74,35 +88,45 @@ interface VerificationResultCardProps {
   contactBusinessId?: number | undefined;
   onSendContactOTP?: ((email: string, businessId: number) => Promise<ContactOTPResult>) | undefined;
   onVerifyContactOTP?: ((email: string, otp: string, businessId: number) => Promise<ContactOTPResult>) | undefined;
+  /** Re-runs verification for this business; the button is hidden without it */
+  onCheckAgain?: (() => void | Promise<void>) | undefined;
   animate?: boolean | undefined;
 }
 
+/**
+ * The result of a verification check, as progress towards Verified. Everything on it comes
+ * from its own state, so confirming the contact email here updates the row, the count and
+ * the tip at once.
+ */
 const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
   metrics,
   contactEmail,
   contactBusinessId,
   onSendContactOTP,
   onVerifyContactOTP,
+  onCheckAgain,
   animate = true,
 }) => {
-  const {
-    contactInfoConfirmed: initialContactInfoConfirmed,
-    totalTransactions,
-    creditedTransactions,
-    uniqueWallets,
-    verified,
-    businessName,
-    walletMissing,
-    reason,
-  } = metrics;
+  const { totalTransactions, creditedTransactions, uniqueWallets, verified, businessName, walletMissing } = metrics;
 
-  const [contactInfoConfirmed, setContactInfoConfirmed] = useState(initialContactInfoConfirmed);
+  const [contactInfoConfirmed, setContactInfoConfirmed] = useState(metrics.contactInfoConfirmed);
   const [revealed, setRevealed] = useState<boolean[]>(animate ? [false, false, false] : [true, true, true]);
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+  const [checking, setChecking] = useState(false);
 
   const handleVerified = () => {
     setContactInfoConfirmed(true);
     setOtpDialogOpen(false);
+  };
+
+  const handleCheckAgain = async () => {
+    if (!onCheckAgain) return;
+    setChecking(true);
+    try {
+      await onCheckAgain();
+    } finally {
+      setChecking(false);
+    }
   };
 
   useEffect(() => {
@@ -118,90 +142,114 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  const txPassed = totalTransactions >= 100 && creditedTransactions >= 50;
-  const walletsPassed = uniqueWallets >= 10;
+  const progress = verificationProgress({ ...metrics, contactInfoConfirmed });
+  const walletsLeft = Math.max(MIN_WALLETS - uniqueWallets, 0);
 
   const canShowOTP = !contactInfoConfirmed && contactEmail && contactBusinessId && onSendContactOTP && onVerifyContactOTP;
-
   // The code goes to the business's contact email only; without one, say where to add it
   const needsContactEmail = !contactInfoConfirmed && !!contactBusinessId && !contactEmail;
-  const confirmButton = canShowOTP ? (
-    <button
-      onClick={() => setOtpDialogOpen(true)}
-      className="text-xs font-semibold px-3 py-1 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
-    >
-      Confirm
-    </button>
-  ) : needsContactEmail ? (
-    <p className="text-xs text-muted-foreground">
-      Add a contact email to your business first.{' '}
-      <Link to="/registered-business" className="font-semibold text-primary underline underline-offset-2">
-        Your businesses
-      </Link>
-    </p>
-  ) : undefined;
 
-  const items = walletMissing
-    ? [
-        {
-          passed: contactInfoConfirmed,
-          label: `Contact Information: ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'}`,
-          detail: undefined,
-          collapsibleContent: confirmButton,
-        },
-        {
-          passed: false,
-          label: 'Pi Wallet: not registered',
-          detail: 'Please add a Pi wallet address to your business.',
-          collapsibleContent: undefined,
-        },
-      ]
-    : [
-        {
-          passed: contactInfoConfirmed,
-          label: `Contact Information: ${contactInfoConfirmed ? 'confirmed' : 'unconfirmed'}`,
-          detail: undefined,
-          collapsibleContent: confirmButton,
-        },
-        {
-          passed: txPassed,
-          label: `Current\nTransactions: ${totalTransactions} (${creditedTransactions} credited)`,
-          detail: `Required\nTransactions: 100+ total, 50+ credited`,
-          collapsibleContent: undefined,
-        },
-        {
-          passed: walletsPassed,
-          label: `Current\nWallets Transacted: ${uniqueWallets}`,
-          detail: `Required\nWallets Transacted: 10+`,
-          collapsibleContent: undefined,
-        },
-      ];
+  const businessesLink = (
+    <Link to="/registered-business" className="font-semibold text-primary underline underline-offset-2">
+      Your businesses
+    </Link>
+  );
 
   return (
     <>
-      <div className="bg-card border rounded-lg p-4 overflow-hidden">
-        <h4 className="font-bold text-lg mb-1">
-          {verified ? '✓ Verification Approved' : 'Verification Not Approved'}
-        </h4>
-        <p className="text-sm text-muted-foreground mb-3">{businessName}</p>
-        {/* The server's reasons, e.g. "Contact email not confirmed" */}
-        {!verified && reason && (
-          <p data-verification-reason className="text-xs text-muted-foreground mb-3">{reason}</p>
-        )}
-
-        <div className="space-y-1">
-          {items.map((item, i) => (
-            <CheckItem
-              key={i}
-              passed={item.passed}
-              loading={!revealed[i]}
-              label={item.label}
-              detail={item.detail}
-              collapsibleContent={item.collapsibleContent}
-            />
-          ))}
+      <section
+        aria-label={`Verification progress for ${businessName}`}
+        className="flex flex-col gap-3.5 rounded-xl border bg-card p-4 text-card-foreground"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-primary" aria-hidden="true">
+            {verified ? <ShieldCheck className="h-5 w-5" /> : <Shield className="h-5 w-5" />}
+          </span>
+          <div className="min-w-0">
+            <h4 className="text-lg font-bold leading-6">{verified ? 'Verified' : 'Not verified yet'}</h4>
+            <p data-verification-progress className="text-sm text-muted-foreground">
+              {verified ? businessName : `${businessName} · ${progress.done} of ${progress.total} done`}
+            </p>
+          </div>
         </div>
-      </div>
+
+        <div className="flex flex-col">
+          <Row
+            done={contactInfoConfirmed}
+            loading={!revealed[0]}
+            label="Contact email"
+            value={contactInfoConfirmed ? 'Confirmed' : 'Not confirmed'}
+          >
+            {contactEmail && <p className="text-[13px] leading-[18px] text-muted-foreground">{maskEmail(contactEmail)}</p>}
+            {canShowOTP && (
+              <button
+                type="button"
+                onClick={() => setOtpDialogOpen(true)}
+                className="self-start rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                Confirm
+              </button>
+            )}
+            {needsContactEmail && (
+              <p className="text-[13px] leading-[18px] text-muted-foreground">
+                Add a contact email to your business first. {businessesLink}
+              </p>
+            )}
+          </Row>
+
+          {walletMissing ? (
+            <Row done={false} loading={!revealed[1]} label="Pi wallet" value="Not added">
+              <p className="text-[13px] leading-[18px] text-muted-foreground">
+                Add a Pi wallet address to your business. {businessesLink}
+              </p>
+            </Row>
+          ) : (
+            <>
+              <Row
+                done={progress.transactionsDone}
+                loading={!revealed[1]}
+                label="Transactions"
+                value={`${totalTransactions} of ${MIN_TRANSACTIONS}`}
+              >
+                <ProgressBar value={totalTransactions} max={MIN_TRANSACTIONS} label="Transactions" />
+                <p className="text-[13px] leading-[18px] text-muted-foreground">
+                  Received: {creditedTransactions} of {MIN_CREDITED}
+                </p>
+                <ProgressBar value={creditedTransactions} max={MIN_CREDITED} label="Payments received" thin />
+              </Row>
+              <Row
+                done={progress.walletsDone}
+                loading={!revealed[2]}
+                label="Wallets traded with"
+                value={`${uniqueWallets} of ${MIN_WALLETS}`}
+              >
+                <ProgressBar value={uniqueWallets} max={MIN_WALLETS} label="Wallets traded with" />
+                <p className="text-[13px] leading-[18px] text-muted-foreground">
+                  {walletsLeft === 0 ? 'Done' : `${walletsLeft} more to go`}
+                </p>
+              </Row>
+            </>
+          )}
+        </div>
+
+        {!verified && (
+          <>
+            <div className="flex gap-2.5 rounded-lg bg-accent p-3 text-[13px] leading-[18px] text-accent-foreground">
+              <Info className="mt-px h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              <p>
+                Verification counts payments on your business's Pi wallet. Keep trading in Pi, then check again.
+                {contactInfoConfirmed && ' Your contact email stays confirmed unless you change it.'}
+              </p>
+            </div>
+            {onCheckAgain && (
+              <Button type="button" className="w-full" onClick={handleCheckAgain} disabled={checking}>
+                {checking && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                Check again
+              </Button>
+            )}
+          </>
+        )}
+      </section>
 
       {canShowOTP && (
         <Dialog open={otpDialogOpen} onOpenChange={setOtpDialogOpen}>
