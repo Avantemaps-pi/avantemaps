@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import ChatModeToggle from './ChatModeToggle';
 import ChatMessage from './ChatMessage';
@@ -74,7 +74,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return () => onCheckVerificationAgain(businessId, metrics.businessName);
   };
   // Keep the newest message in view when the keyboard shrinks the list
-  const listRef = useStickToBottom();
+  const stickToBottomRef = useStickToBottom();
+  const listElRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useCallback((el: HTMLDivElement | null) => {
+    listElRef.current = el;
+    stickToBottomRef(el);
+  }, [stickToBottomRef]);
   const isInitialMount = useRef(true);
   const location = useLocation();
 
@@ -82,6 +87,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: isInitialMount.current ? 'instant' : 'smooth' });
     isInitialMount.current = false;
   }, [messages]);
+
+  // The bot list is unmounted on the Messages tab; coming back, open it at the newest message
+  // (messages haven't changed, so the effect above doesn't run). After layout, no animation
+  useEffect(() => {
+    if (chatMode !== 'ai') return;
+    const frame = requestAnimationFrame(() => {
+      const el = listElRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [chatMode]);
 
   const handleValidatedSendMessage = () => {
     if (!isSafeForAI(message)) {
