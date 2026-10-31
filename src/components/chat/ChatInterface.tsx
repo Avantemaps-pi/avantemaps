@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import ChatModeToggle from './ChatModeToggle';
 import ChatMessage from './ChatMessage';
@@ -7,7 +7,8 @@ import VerificationResultCard, { VerificationMetrics } from './VerificationResul
 import type { ContactOTPResult } from './ContactOTPVerification';
 import MessagesPanel from '@/components/messages/MessagesPanel';
 import { useLocation } from '@/lib/router-compat';
-import { Send, Image, Video, Sparkles } from 'lucide-react';
+import { Send, Image, Video, Sparkles, Plus, ShieldCheck, Store, MessageSquare, Award } from 'lucide-react';
+import QuickActionsSheet, { type QuickAction } from './QuickActionsSheet';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { isSafeForAI } from '@/utils/contentFilter';
@@ -96,6 +97,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     } else {
       setMessage(text);
     }
+  };
+
+  // The + in the message box: the bot's actions, one tap away after the chips have gone.
+  // One row per entry (keep it to 3–5); no onSelect = "Coming soon"
+  const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const plusRef = useRef<HTMLButtonElement>(null);
+  const ranQuickActionRef = useRef(false);
+  const quickActions: QuickAction[] = [
+    { icon: ShieldCheck, label: 'Check verification status', description: "See what's done and what's left", onSelect: () => onChipClick('Check verification status') },
+    { icon: Store, label: 'My listings', description: 'Your businesses and their status', onSelect: () => onChipClick('My listings') },
+    { icon: MessageSquare, label: 'Message a business', description: 'Opens Messages', onSelect: () => onChatModeChange('live') },
+    { icon: Award, label: 'Certification', description: 'Request it here once it launches' },
+  ];
+  const runQuickAction = (action: QuickAction) => {
+    ranQuickActionRef.current = true;
+    setQuickActionsOpen(false);
+    action.onSelect?.();
+  };
+  // Closed without an action: focus back on the +. After an action, leave focus to it
+  const handleQuickActionsCloseFocus = (event: Event) => {
+    event.preventDefault();
+    if (!ranQuickActionRef.current) plusRef.current?.focus();
+    ranQuickActionRef.current = false;
   };
 
   const renderBusinessSelectionButtons = (msg: any) => {
@@ -202,24 +226,43 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
               <div className="px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]" data-chat-input-bar>
                 <div className="relative flex items-center">
-                  <div className="flex w-full bg-muted/50 rounded-full px-4 py-3">
+                  <div className="flex w-full items-center gap-1 bg-muted/50 rounded-full py-1 pl-1 pr-4">
+                    <button
+                      ref={plusRef}
+                      type="button"
+                      onClick={() => setQuickActionsOpen(true)}
+                      aria-label="Quick actions"
+                      aria-haspopup="dialog"
+                      aria-expanded={quickActionsOpen}
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${quickActionsOpen ? 'bg-primary text-primary-foreground' : 'bg-background text-primary'}`}
+                    >
+                      <Plus size={22} aria-hidden="true" />
+                    </button>
                     <Input
                       value={message}
                       onChange={e => setMessage(e.target.value)}
-                      className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground"
+                      className="min-w-0 flex-1 bg-transparent border-0 px-2 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground"
                       placeholder="Ask about your business..."
                       onKeyDown={e => e.key === 'Enter' && handleValidatedSendMessage()}
                     />
                     <button
                       onClick={handleValidatedSendMessage}
                       disabled={!message.trim()}
-                      className="text-primary hover:text-primary/80 ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Send"
+                      className="shrink-0 text-primary hover:text-primary/80 ml-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send size={20} className="transform rotate-45" />
                     </button>
                   </div>
                 </div>
               </div>
+              <QuickActionsSheet
+                open={quickActionsOpen}
+                onOpenChange={setQuickActionsOpen}
+                actions={quickActions}
+                onAction={runQuickAction}
+                onCloseAutoFocus={handleQuickActionsCloseFocus}
+              />
             </>
           )}
         </div>
