@@ -132,9 +132,22 @@ async function expectPinnedToNewest(page: Page, list: ReturnType<Page['locator']
     .toBeLessThanOrEqual(2);
 }
 
+// Simulated on-screen keyboard height. 250px, not 300: at 375x667 a 300px keyboard leaves a
+// viewport wider than it's tall, which counts as a rotation and resets keyboard detection
+// (useKeyboardOpen), so the bottom nav would wrongly stay. 250px is still well over its 150px threshold.
+const KEYBOARD = 250;
+
+// The bottom nav, while it's on screen (it slides away with the keyboard open)
+const nav = (page: Page) => page.locator('nav.fixed');
+async function navTop(page: Page) {
+  const hidden = await nav(page).evaluate((el) => el.getAttribute('aria-hidden') === 'true');
+  return hidden ? page.viewportSize()!.height : (await nav(page).boundingBox())!.y;
+}
+
+// Space between the element and the bottom nav (or the screen's bottom when the nav is hidden)
 async function bottomGap(page: Page, selector: ReturnType<Page['locator']>) {
   const box = (await selector.boundingBox())!;
-  return page.viewportSize()!.height - (box.y + box.height);
+  return (await navTop(page)) - (box.y + box.height);
 }
 
 for (const size of SIZES) {
@@ -189,7 +202,7 @@ for (const size of SIZES) {
     });
 
     test('keyboard open (viewport shrinks): input stays just above it, newest message in view', async ({ page }) => {
-      // ~300px keyboard
+      // ~250px keyboard
       await setup(page);
       for (let i = 1; i <= 6; i++) {
         await botInput(page).fill(`Keyboard test ${i}`);
@@ -197,7 +210,7 @@ for (const size of SIZES) {
         await expect(page.getByText(`Keyboard test ${i}`)).toBeVisible();
       }
       await botInput(page).focus();
-      await page.setViewportSize({ width: size.width, height: size.height - 300 });
+      await page.setViewportSize({ width: size.width, height: size.height - KEYBOARD });
       await page.waitForTimeout(500);
       const gap = await bottomGap(page, botInput(page));
       expect(gap).toBeGreaterThanOrEqual(0);
@@ -210,7 +223,7 @@ for (const size of SIZES) {
       await expectPageDoesNotScroll(page);
     });
 
-    // The thread stays pinned to the newest message. At 375x667 with a ~300px keyboard
+    // The thread stays pinned to the newest message. At 375x667 with a ~250px keyboard
     // the stacked headers leave the thread only ~44px tall (header design is out of
     // scope), so this asserts the pinning rather than the bubble being on screen.
     test('keyboard open in a conversation: composer stays above it, thread pinned to the newest message', async ({ page }) => {
@@ -220,7 +233,7 @@ for (const size of SIZES) {
       await expect(page.getByText('Reply 24: yes, we accept Pi for that.')).toBeInViewport();
       await page.waitForTimeout(800);
       await composer(page).focus();
-      await page.setViewportSize({ width: size.width, height: size.height - 300 });
+      await page.setViewportSize({ width: size.width, height: size.height - KEYBOARD });
       await page.waitForTimeout(500);
       const gap = await bottomGap(page, composer(page));
       expect(gap).toBeGreaterThanOrEqual(0);
@@ -230,6 +243,32 @@ for (const size of SIZES) {
     });
   });
 }
+
+test.describe('the bottom nav at 375x812', () => {
+  test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+  const inputBar = (page: Page) => page.locator('[data-chat-input-bar]');
+
+  test('the input bar sits right on the nav, CommuniCon active', async ({ page }) => {
+    await setup(page);
+    await expect(nav(page)).toBeVisible();
+    await expect(nav(page).getByRole('link', { name: 'CommuniCon' })).toHaveClass(/text-primary/);
+    const bar = (await inputBar(page).boundingBox())!;
+    const top = (await nav(page).boundingBox())!.y;
+    expect(Math.abs(bar.y + bar.height - top)).toBeLessThanOrEqual(1);
+    await expectPageDoesNotScroll(page);
+  });
+
+  test('keyboard open: the nav is hidden and the input bar sits at the bottom', async ({ page }) => {
+    await setup(page);
+    await botInput(page).focus();
+    await page.setViewportSize({ width: 375, height: 812 - KEYBOARD });
+    await expect(nav(page)).toHaveAttribute('aria-hidden', 'true');
+    await page.waitForTimeout(400);
+    const bar = (await inputBar(page).boundingBox())!;
+    expect(Math.abs(bar.y + bar.height - (812 - KEYBOARD))).toBeLessThanOrEqual(1);
+    await expect(botInput(page)).toBeFocused();
+  });
+});
 
 // Message-list height with a conversation open at 375x667 on Dev before this
 // change (card header + inbox picker above it), measured with the same page.
@@ -257,8 +296,11 @@ test.describe('slim header at 375x667', () => {
     await expect(composer(page)).toBeVisible();
     await expect(page.getByRole('combobox', { name: 'Inbox' })).toHaveCount(0);
     const height = await page.locator('main .overflow-y-auto').last().evaluate((el) => el.clientHeight);
-    console.log(`thread height at 375x667: ${height}px (Dev: ${DEV_THREAD_HEIGHT_667}px)`);
-    expect(height).toBeGreaterThanOrEqual(DEV_THREAD_HEIGHT_667 + 80);
+    // The bottom nav now shows on CommuniCon too (it didn't when DEV_THREAD_HEIGHT_667 was
+    // measured), so the 80px gain is measured with its height taken back out
+    const navHeight = (await nav(page).boundingBox())!.height;
+    console.log(`thread height at 375x667: ${height}px + nav ${navHeight}px (Dev: ${DEV_THREAD_HEIGHT_667}px)`);
+    expect(height + navHeight).toBeGreaterThanOrEqual(DEV_THREAD_HEIGHT_667 + 80);
 
     // Back arrow returns to the list with the picker
     await page.getByRole('button', { name: 'Back to conversations' }).click();

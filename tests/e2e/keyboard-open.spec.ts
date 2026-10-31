@@ -211,12 +211,12 @@ test('quick actions open: the scrim dims the bottom nav, and tapping it closes t
       return hit === el || el.contains(hit) ? 'self' : String(hit?.className ?? '');
     });
   // Nav sits under the scrim; the dial's actions and × stay above it
-  expect(await topAt('nav a[aria-label="Wallet"]')).toContain('bg-overlay');
+  expect(await topAt('nav a[aria-label="Settings"]')).toContain('bg-overlay');
   expect(await topAt('[data-add-business-button] button[aria-label="CommuniCon"]')).toBe('self');
   expect(await topAt('[data-add-business-button] button[aria-label="Close menu"]')).toBe('self');
 
-  const wallet = (await page.locator('nav a[aria-label="Wallet"]').boundingBox())!;
-  await page.mouse.click(wallet.x + wallet.width / 2, wallet.y + wallet.height / 2);
+  const settings = (await page.locator('nav a[aria-label="Settings"]').boundingBox())!;
+  await page.mouse.click(settings.x + settings.width / 2, settings.y + settings.height / 2);
   await expect(dial).toHaveAttribute('aria-expanded', 'false');
   expect(new URL(page.url()).pathname).toBe('/');
 });
