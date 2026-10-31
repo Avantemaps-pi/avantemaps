@@ -4,6 +4,7 @@ import {
   MessageSquare,
   Info,
   Bell,
+  Wallet,
 } from 'lucide-react';
 
 import { getUnreadNotificationsCount } from '@/utils/notificationUtils';
@@ -19,10 +20,18 @@ export const navItems = [
     icon: Building,
     label: 'Registered Business',
   },
+  // Plans are upgraded from the Wallet, so it sits with the business items
+  {
+    to: '/wallet',
+    icon: Wallet,
+    label: 'Wallet',
+  },
+  // On phones CommuniCon is in the bottom nav; the desktop side menu still lists it
   {
     to: '/communicon',
     icon: MessageSquare,
     label: 'CommuniCon',
+    desktopOnly: true,
   },
   {
     to: '/about',
