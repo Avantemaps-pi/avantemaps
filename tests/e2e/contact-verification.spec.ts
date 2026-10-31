@@ -40,9 +40,11 @@ interface Setup {
   counts?: { totalTransactions: number; creditedTransactions: number; uniqueWallets: number };
   /** Per-call overrides of verify-business's result (index 0 = first call) */
   verifyReplies?: Record<string, unknown>[];
+  /** contact_email_verified_for on the business row */
+  confirmedFor?: string | null;
 }
 
-async function openVerification(page: Page, opts: Setup = {}) {
+async function mockBackend(page: Page, opts: Setup = {}) {
   const otpCalls: Request[] = [];
   const verifyCalls: Request[] = [];
   const contactInfo = opts.contactEmail === null ? {} : { email: opts.contactEmail ?? 'hello@harbour.example' };
@@ -55,11 +57,14 @@ async function openVerification(page: Page, opts: Setup = {}) {
   await page.route('**/rest/v1/businesses*', (route) => {
     const req = route.request();
     if (req.method() !== 'GET') return route.fulfill({ json: [] });
-    // .single() for the contact details; the owner's list otherwise
+    // .single() for the contact details; the owner's list otherwise (one id for maybeSingle)
+    const confirmedFor = opts.confirmedFor ?? null;
     if ((req.headers()['accept'] ?? '').includes('vnd.pgrst.object')) {
-      return route.fulfill({ json: { contact_info: contactInfo, contact_email_verified_for: null } });
+      return route.fulfill({ json: { contact_info: contactInfo, contact_email_verified_for: confirmedFor } });
     }
-    return route.fulfill({ json: [BUSINESS] });
+    const id = new URL(req.url()).searchParams.get('id');
+    if (id && id !== `eq.${BUSINESS.id}`) return route.fulfill({ json: [] });
+    return route.fulfill({ json: [{ ...BUSINESS, contact_info: contactInfo, contact_email_verified_for: confirmedFor }] });
   });
   await page.route('**/functions/v1/verify-business', (route) => {
     verifyCalls.push(route.request());
@@ -93,14 +98,18 @@ async function openVerification(page: Page, opts: Setup = {}) {
     },
     [SANDBOX_MOCK_KEY, STORAGE_KEY, mockUser, fakeSession],
   );
+  return { otpCalls, verifyCalls };
+}
 
+async function openVerification(page: Page, opts: Setup = {}) {
+  const calls = await mockBackend(page, opts);
   await page.goto('/communicon');
   await page.getByRole('button', { name: 'Check verification status' }).tap();
   await page.getByRole('button', { name: /Harbour Light Coffee/ }).tap();
   await expect(card(page).getByRole('heading', { name: 'Not verified yet' })).toBeVisible();
   // The card reveals its rows one by one
   await page.waitForTimeout(1_800);
-  return { otpCalls, verifyCalls };
+  return calls;
 }
 
 // The latest result card
@@ -361,4 +370,83 @@ test('an expired code clears the pending code', async ({ page }) => {
   await sendAndEnterCode(page);
   await expect(page.getByRole('dialog').getByText('That code has expired. Request a new one.')).toBeVisible();
   expect(await pendingCode(page)).toBeNull();
+});
+
+// The email's "Confirm in Avante Maps" link
+const LINK = '/communicon?confirm_code=482913&business=9001';
+// Sonner toasts render twice (the root and AppLayout each mount a Toaster)
+const toast = (page: Page, text: string) => page.getByText(text, { exact: true }).first();
+const otpBodies = (calls: Request[]) => calls.map((r) => r.postDataJSON() as Record<string, unknown>);
+
+test('the confirm link verifies the code by itself: Confirmed, and the code leaves the URL', async ({ page }) => {
+  const { otpCalls } = await openVerification(page);
+  await page.goto(LINK);
+  await expect(toast(page, 'Email confirmed')).toBeVisible();
+  expect(otpBodies(otpCalls)).toEqual([{ action: 'verify', email: 'hello@harbour.example', otp: '482913', business_id: 9001 }]);
+  expect(otpCalls[0]!.headers()['authorization']).toBe(`Bearer ${fakeSession.access_token}`);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(card(page).getByText('Confirmed', { exact: true })).toBeVisible();
+  await expect(progressLine(page)).toHaveText('Harbour Light Coffee · 1 of 3 done');
+  await expect(page).toHaveURL(/\/communicon$/);
+  expect(await page.evaluate(() => window.location.search)).toBe('');
+});
+
+test('the confirm link when the email was the last check: verification runs again, Verified', async ({ page }) => {
+  const { verifyCalls } = await openVerification(page, {
+    counts: { totalTransactions: 120, creditedTransactions: 80, uniqueWallets: 14 },
+    verifyReplies: [{}, { verified: true, contactConfirmed: true, reason: null }],
+  });
+  await page.goto(LINK);
+  await expect.poll(() => verifyCalls.length).toBe(2);
+  expect((verifyCalls[1]!.postDataJSON() as { business_id: number }).business_id).toBe(BUSINESS.id);
+  await expect(card(page).getByRole('heading', { name: 'Verified' })).toBeVisible();
+});
+
+test("a confirm link for someone else's business: no verify call, a toast", async ({ page }) => {
+  const { otpCalls } = await mockBackend(page);
+  await page.goto('/communicon?confirm_code=482913&business=9002');
+  await expect(toast(page, "This link isn't for your account")).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(otpCalls).toHaveLength(0);
+  expect(await page.evaluate(() => window.location.search)).toBe('');
+});
+
+test('a malformed confirm_code is ignored (and still leaves the URL)', async ({ page }) => {
+  const { otpCalls } = await mockBackend(page);
+  await page.goto('/communicon?confirm_code=12ab&business=9001');
+  await expect(page.getByRole('tab', { name: 'Bot' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.location.search)).toBe('');
+  await page.waitForTimeout(1_000);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(otpCalls).toHaveLength(0);
+});
+
+test('a used code when the email is already confirmed: "Email already confirmed", no error', async ({ page }) => {
+  const { otpCalls } = await mockBackend(page, {
+    confirmedFor: 'hello@harbour.example',
+    verify: { status: 400, body: { error: 'That code has already been used', error_code: 'expired' } },
+  });
+  await page.goto(LINK);
+  await expect(toast(page, 'Email already confirmed')).toBeVisible();
+  expect(otpCalls).toHaveLength(1);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByText('That code has expired. Request a new one.')).toHaveCount(0);
+});
+
+test('an expired code from the link: the dialog stays with the message and "Send a new code"', async ({ page }) => {
+  const { otpCalls } = await mockBackend(page, { verify: { status: 400, body: { error: 'x', error_code: 'expired' } } });
+  await page.goto(LINK);
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByText('That code has expired. Request a new one.')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Send a new code' }).tap();
+  await expect.poll(() => otpBodies(otpCalls).map((b) => b.action)).toEqual(['verify', 'send']);
+  await expect(dialog.getByRole('button', { name: "Didn't receive it? Resend" })).toBeVisible();
+});
+
+test('a wrong code from the link: the message, and the boxes are cleared for typing', async ({ page }) => {
+  await mockBackend(page, { verify: { status: 400, body: { error: 'x', error_code: 'invalid' } } });
+  await page.goto(LINK);
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByText('Incorrect code. Please try again.')).toBeVisible();
+  await expect(dialog.locator('input').first()).toHaveValue('');
 });
