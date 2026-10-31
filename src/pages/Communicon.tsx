@@ -7,6 +7,14 @@ import { useNavigate, useLocation } from '@/lib/router-compat';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/auth';
 import { Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import ContactOTPVerification from '@/components/chat/ContactOTPVerification';
+import { verificationProgress } from '@/components/chat/verificationProgress';
+import {
+  OPEN_PENDING_CONTACT_CODE_EVENT,
+  loadPendingContactCode,
+  type PendingContactCode,
+} from '@/components/chat/pendingContactCode';
 
 const Communicon = () => {
   const navigate = useNavigate();
@@ -50,6 +58,32 @@ const Communicon = () => {
       }
     };
   }, [sendVerificationRequest, handleBusinessSelection]);
+
+  // A contact email code sent before a reload (or from another page): open its entry again,
+  // without sending a new one
+  const [resumeCode, setResumeCode] = useState<PendingContactCode | null>(null);
+  useEffect(() => {
+    const open = () => setResumeCode(loadPendingContactCode());
+    open();
+    window.addEventListener(OPEN_PENDING_CONTACT_CODE_EVENT, open);
+    return () => window.removeEventListener(OPEN_PENDING_CONTACT_CODE_EVENT, open);
+  }, []);
+
+  // verifyContactOTP marks the stored cards Confirmed; if that was all the latest card
+  // for the business was missing, get the server's answer straight away
+  const handleResumedCodeVerified = () => {
+    const pending = resumeCode;
+    setResumeCode(null);
+    if (!pending) return;
+    toast.success('Contact email confirmed');
+    const latest = [...messages].reverse().find((m) => m.verificationMetrics?.businessId === pending.businessId);
+    const metrics = latest?.verificationMetrics;
+    if (!metrics || metrics.verified) return;
+    const progress = verificationProgress({ ...metrics, contactInfoConfirmed: true });
+    if (progress.done === progress.total) {
+      void checkVerificationAgain(pending.businessId, metrics.businessName);
+    }
+  };
 
   const hasTriggeredVerification = useRef(false);
 
@@ -226,6 +260,21 @@ const Communicon = () => {
           />
         )}
       </div>
+      {resumeCode && (
+        <Dialog open onOpenChange={(open) => !open && setResumeCode(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogTitle className="sr-only">Verify Contact Information</DialogTitle>
+            <ContactOTPVerification
+              email={resumeCode.email}
+              businessId={resumeCode.businessId}
+              businessName={resumeCode.businessName}
+              onSendOTP={sendContactOTP}
+              onVerifyOTP={verifyContactOTP}
+              onVerified={handleResumedCodeVerified}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </AppLayout>
   );
 };

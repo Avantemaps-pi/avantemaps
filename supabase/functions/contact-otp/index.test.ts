@@ -18,6 +18,7 @@ const test = (name: string, fn: () => Promise<void>) =>
 
 function setup(options: { brevoOk?: boolean; contactEmail?: string | null } = {}) {
   const sentCodes: string[] = [];
+  const sentEmails: { subject: string; html: string }[] = [];
   const business: Row = {
     id: 7,
     owner_id: OWNER,
@@ -32,10 +33,11 @@ function setup(options: { brevoOk?: boolean; contactEmail?: string | null } = {}
       if (url.host !== 'api.brevo.com') return undefined;
       const body = JSON.parse(String(init?.body));
       sentCodes.push(/>(\d{6})</.exec(body.htmlContent)![1]!);
+      sentEmails.push({ subject: body.subject, html: body.htmlContent });
       return options.brevoOk === false ? new Response('quota exceeded', { status: 402 }) : Response.json({ messageId: 'm1' });
     },
   });
-  return { fake, business, sentCodes };
+  return { fake, business, sentCodes, sentEmails };
 }
 
 const call = async (body: Record<string, unknown>, token = 'owner-token') => {
@@ -166,5 +168,91 @@ test('error codes: cooldown, email_failed, expired', async () => {
     assertEquals(res.body.error_code, 'email_failed');
   } finally {
     failing.fake.restore();
+  }
+});
+
+const MINUTE = 60 * 1000;
+const expiresInMs = (row: Row) => new Date(String(row.expires_at)).getTime() - Date.now();
+// Moves the last send back in time, past the 60s cooldown, keeping the 15-minute window
+const sentMinutesAgo = (row: Row, minutes: number) => {
+  row.expires_at = new Date(Date.now() + (15 - minutes) * MINUTE).toISOString();
+};
+
+test('the code is in the subject and the first line, and lasts 15 minutes', async () => {
+  const { fake, sentCodes, sentEmails } = setup();
+  try {
+    await call({ action: 'send', email: 'hello@harbour.example', business_id: 7 });
+    assertEquals(sentEmails[0]!.subject, `Your Avante Maps code: ${sentCodes[0]}`);
+    // The code line comes first, before the heading
+    const html = sentEmails[0]!.html;
+    const codeLine = `Your code is <strong>${sentCodes[0]}</strong>`;
+    assert(html.includes(codeLine));
+    assert(html.indexOf(codeLine) < html.indexOf('Verify Your Contact Information'));
+    assert(sentEmails[0]!.html.includes('15 minutes'));
+    const left = expiresInMs(fake.tables.contact_otps[0]!);
+    assert(left > 14.9 * MINUTE && left <= 15 * MINUTE, `expires in ${left}ms`);
+  } finally {
+    fake.restore();
+  }
+});
+
+test('resend while the code still works: the same code, 15 minutes again, attempts kept', async () => {
+  const { fake, business, sentCodes } = setup();
+  try {
+    await call({ action: 'send', email: 'hello@harbour.example', business_id: 7 });
+    const wrong = sentCodes[0] === '111111' ? '222222' : '111111';
+    for (let i = 0; i < 2; i++) await call({ action: 'verify', email: 'hello@harbour.example', business_id: 7, otp: wrong });
+    const row = fake.tables.contact_otps[0]!;
+    sentMinutesAgo(row, 9);
+
+    const res = await call({ action: 'send', email: 'hello@harbour.example', business_id: 7 });
+    assertEquals(res.status, 200);
+    assertEquals(sentCodes.length, 2);
+    assertEquals(sentCodes[1], sentCodes[0]);
+    assertEquals(row.otp, sentCodes[0]);
+    assertEquals(row.attempts, 2);
+    assert(expiresInMs(row) > 14.9 * MINUTE);
+
+    // The code from the first email still confirms
+    const ok = await call({ action: 'verify', email: 'hello@harbour.example', business_id: 7, otp: sentCodes[0] });
+    assertEquals(ok.status, 200);
+    assertEquals(business.contact_email_verified_for, 'hello@harbour.example');
+  } finally {
+    fake.restore();
+  }
+});
+
+test('resend keeps the cooldown, even when it would reuse the code', async () => {
+  const { fake, sentCodes } = setup();
+  try {
+    await call({ action: 'send', email: 'hello@harbour.example', business_id: 7 });
+    sentMinutesAgo(fake.tables.contact_otps[0]!, 0.5);
+    const soon = await call({ action: 'send', email: 'hello@harbour.example', business_id: 7 });
+    assertEquals(soon.body.error_code, 'cooldown');
+    assertEquals(sentCodes.length, 1);
+  } finally {
+    fake.restore();
+  }
+});
+
+test('resend after the code expired or was used: a new code with no attempts', async () => {
+  const { fake, sentCodes } = setup();
+  try {
+    await call({ action: 'send', email: 'hello@harbour.example', business_id: 7 });
+    const row = fake.tables.contact_otps[0]!;
+    row.attempts = 3;
+    row.expires_at = new Date(Date.now() - 1000).toISOString();
+    await call({ action: 'send', email: 'hello@harbour.example', business_id: 7 });
+    assertEquals(row.attempts, 0);
+    assertEquals(row.otp, sentCodes[1]);
+
+    row.verified = true;
+    sentMinutesAgo(row, 5);
+    await call({ action: 'send', email: 'hello@harbour.example', business_id: 7 });
+    assertEquals(row.verified, false);
+    assertEquals(row.otp, sentCodes[2]);
+    assertEquals(sentCodes.length, 3);
+  } finally {
+    fake.restore();
   }
 });

@@ -4,6 +4,10 @@
  * goes to the business's contact email, and each contact-otp error_code gets
  * its own message.
  *
+ * A sent code survives a reload (the Pi Browser reloads when the owner switches
+ * to their email app): it's remembered for 15 minutes and its entry reopens
+ * without sending again.
+ *
  * 375x812 with the sandbox session and a fake Supabase session (the bot loads
  * the owner's businesses with it). verify-business and contact-otp are mocked.
  */
@@ -108,13 +112,25 @@ async function openCodeDialog(page: Page) {
   await expect(page.getByRole('dialog')).toBeVisible();
 }
 
-async function sendAndEnterCode(page: Page) {
+async function sendCode(page: Page) {
   await page.getByRole('button', { name: 'Send Verification Code' }).tap();
   await expect(page.getByText(/Enter the 6-digit code/)).toBeVisible();
-  await page.getByRole('dialog').locator('input').first().focus();
-  await page.keyboard.type('123456');
-  await page.getByRole('button', { name: 'Confirm Code' }).tap();
 }
+
+// The 6th digit submits the code by itself
+async function enterCode(page: Page, code = '123456') {
+  await page.getByRole('dialog').locator('input').first().focus();
+  await page.keyboard.type(code);
+}
+
+async function sendAndEnterCode(page: Page) {
+  await sendCode(page);
+  await enterCode(page);
+}
+
+const PENDING_KEY = 'avante:pending-contact-code';
+const pendingCode = (page: Page) => page.evaluate((key) => localStorage.getItem(key), PENDING_KEY);
+const banner = (page: Page) => page.locator('[data-pending-code-banner]');
 
 test('the card shows progress: rows, counts, bars, masked email; no reason text', async ({ page }) => {
   const { verifyCalls } = await openVerification(page);
@@ -233,4 +249,116 @@ test('no contact email: asks for one first, no Confirm button', async ({ page })
   await expect(card(page).getByRole('link', { name: 'Your businesses' })).toHaveAttribute('href', '/registered-business');
   await expect(page.getByRole('button', { name: 'Confirm', exact: true })).toHaveCount(0);
   await expect(page.getByText('Add and confirm a contact email')).toHaveCount(0);
+});
+
+test('the code entry: numeric keypad, one-time-code autofill, a tip about the subject line', async ({ page }) => {
+  await openVerification(page);
+  await openCodeDialog(page);
+  await sendCode(page);
+  const input = page.getByRole('dialog').locator('input').first();
+  await expect(input).toHaveAttribute('inputmode', 'numeric');
+  await expect(input).toHaveAttribute('autocomplete', 'one-time-code');
+  await expect(page.getByRole('dialog').getByText("Tip: the code is in the email's subject.", { exact: false })).toBeVisible();
+});
+
+test('after a reload the code entry reopens by itself, with no second send, and confirms', async ({ page }) => {
+  const { otpCalls } = await openVerification(page);
+  await openCodeDialog(page);
+  await sendCode(page);
+  const stored = JSON.parse((await pendingCode(page))!) as Record<string, unknown>;
+  expect(stored).toMatchObject({ businessId: BUSINESS.id, email: 'hello@harbour.example', businessName: BUSINESS.business_name });
+  expect(typeof stored.sentAt).toBe('number');
+
+  // The Pi Browser reloads while the owner is in their email app
+  await page.reload();
+  await expect(page.getByRole('dialog').getByText(/Enter the 6-digit code/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Send Verification Code' })).toHaveCount(0);
+  await expect(banner(page)).toContainText('Finish confirming your email');
+  await enterCode(page);
+
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(otpCalls.map((r) => (r.postDataJSON() as { action: string }).action)).toEqual(['send', 'verify']);
+  // The stored card turns Confirmed, and the reminder is gone
+  await expect(card(page).getByText('Confirmed', { exact: true })).toBeVisible();
+  await expect(progressLine(page)).toHaveText('Harbour Light Coffee · 1 of 3 done');
+  await expect(banner(page)).toHaveCount(0);
+  expect(await pendingCode(page)).toBeNull();
+});
+
+test('resumed after a reload and it was the last check: verification runs again by itself', async ({ page }) => {
+  const { verifyCalls } = await openVerification(page, {
+    counts: { totalTransactions: 120, creditedTransactions: 80, uniqueWallets: 14 },
+    verifyReplies: [{}, { verified: true, contactConfirmed: true, reason: null }],
+  });
+  await openCodeDialog(page);
+  await sendCode(page);
+  await page.reload();
+  await enterCode(page);
+  await expect.poll(() => verifyCalls.length).toBe(2);
+  expect((verifyCalls[1]!.postDataJSON() as { business_id: number }).business_id).toBe(BUSINESS.id);
+  await expect(card(page).getByRole('heading', { name: 'Verified' })).toBeVisible();
+});
+
+test('the banner on another page leads back to the code entry', async ({ page }) => {
+  const { otpCalls } = await openVerification(page);
+  await openCodeDialog(page);
+  await sendCode(page);
+  await page.keyboard.press('Escape');
+  await page.goto('/settings');
+  await expect(banner(page)).toContainText('Finish confirming your email · Enter code');
+  await banner(page).getByRole('button', { name: 'Enter code' }).tap();
+  await page.waitForURL('**/communicon');
+  await expect(page.getByRole('dialog').getByText(/Enter the 6-digit code/)).toBeVisible();
+  expect(otpCalls).toHaveLength(1);
+});
+
+test('a code sent 16 minutes ago is forgotten: no banner, no code entry, back to sending', async ({ page }) => {
+  await page.addInitScript((key) => {
+    localStorage.setItem(
+      key,
+      JSON.stringify({ businessId: 9001, email: 'hello@harbour.example', businessName: 'Harbour Light Coffee', sentAt: Date.now() - 16 * 60 * 1000 }),
+    );
+  }, PENDING_KEY);
+  await openVerification(page);
+  await expect(banner(page)).toHaveCount(0);
+  expect(await pendingCode(page)).toBeNull();
+  await openCodeDialog(page);
+  await expect(page.getByRole('button', { name: 'Send Verification Code' })).toBeVisible();
+});
+
+test('pasting "482 913" keeps the digits and submits 482913', async ({ page }) => {
+  const { otpCalls } = await openVerification(page);
+  await openCodeDialog(page);
+  await sendCode(page);
+  // Into the boxes (long-press, Paste)
+  await page.getByRole('dialog').locator('input').first().evaluate((input) => {
+    const data = new DataTransfer();
+    data.setData('text/plain', '482 913');
+    input.focus();
+    input.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+  });
+  await expect.poll(() => otpCalls.length).toBe(2);
+  expect((otpCalls[1]!.postDataJSON() as { otp: string }).otp).toBe('482913');
+});
+
+test('the Paste button reads "482 913" from the clipboard and submits 482913', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const { otpCalls } = await openVerification(page, { verify: { status: 400, body: { error: 'x', error_code: 'invalid' } } });
+  await openCodeDialog(page);
+  await sendCode(page);
+  await page.evaluate(() => navigator.clipboard.writeText('482 913'));
+  await page.getByRole('dialog').getByRole('button', { name: 'Paste' }).tap();
+  await expect.poll(() => otpCalls.length).toBe(2);
+  expect((otpCalls[1]!.postDataJSON() as { otp: string }).otp).toBe('482913');
+  // A wrong code keeps the pending code (it can still be resumed)
+  await expect(page.getByRole('dialog').getByText('Incorrect code. Please try again.')).toBeVisible();
+  expect(await pendingCode(page)).not.toBeNull();
+});
+
+test('an expired code clears the pending code', async ({ page }) => {
+  await openVerification(page, { verify: { status: 400, body: { error: 'x', error_code: 'expired' } } });
+  await openCodeDialog(page);
+  await sendAndEnterCode(page);
+  await expect(page.getByRole('dialog').getByText('That code has expired. Request a new one.')).toBeVisible();
+  expect(await pendingCode(page)).toBeNull();
 });

@@ -123,6 +123,11 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
     setOtpDialogOpen(false);
   };
 
+  // Confirmed elsewhere (the resumed code entry after a reload updates the stored card)
+  useEffect(() => {
+    if (metrics.contactInfoConfirmed) setContactInfoConfirmed(true);
+  }, [metrics.contactInfoConfirmed]);
+
   const handleCheckAgain = useCallback(async () => {
     if (!onCheckAgain) return;
     setChecking(true);
@@ -281,6 +286,7 @@ const VerificationResultCard: React.FC<VerificationResultCardProps> = ({
             <ContactOTPVerification
               email={contactEmail}
               businessId={contactBusinessId}
+              businessName={businessName}
               onSendOTP={onSendContactOTP}
               onVerifyOTP={onVerifyContactOTP}
               onVerified={handleVerified}
