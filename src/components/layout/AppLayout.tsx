@@ -7,6 +7,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AppSidebar from './AppSidebar';
 import BottomNavBar from './BottomNavBar';
+import PendingContactCodeBanner from './PendingContactCodeBanner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useKeyboardOpen } from '@/hooks/useKeyboardOpen';
 
@@ -90,6 +91,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
               onBackClick={onBackClick}
             />
           )}
+          <PendingContactCodeBanner />
           
           <main
             ref={mainRef}
