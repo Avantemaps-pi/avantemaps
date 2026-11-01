@@ -7,7 +7,7 @@ import VerificationResultCard, { VerificationMetrics } from './VerificationResul
 import type { ContactOTPResult } from './ContactOTPVerification';
 import MessagesPanel from '@/components/messages/MessagesPanel';
 import { useLocation } from '@/lib/router-compat';
-import { Send, Image, Video, Sparkles, Plus, ShieldCheck, Store, MessageSquare, Award } from 'lucide-react';
+import { Send, Image, Video, Plus, ShieldCheck, Store, MessageSquare, Award } from 'lucide-react';
 import QuickActionsSheet, { type QuickAction } from './QuickActionsSheet';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -219,7 +219,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 )}
               </div>
 
-              {/* Quick replies sit with the input, above "Powered by" */}
+              {/* Quick replies sit right above the input */}
               {showQuickChips && (
                 <div className="flex flex-wrap gap-2 px-4 pt-2 pb-3">
                   {QUICK_REPLIES.map(text => (
@@ -235,12 +235,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </div>
               )}
 
-              <div className="px-4 pt-2 pb-1 flex items-center justify-center gap-1 text-xs text-muted-foreground border-t">
-                <Sparkles className="h-3 w-3" />
-                <span>Powered by CommuniCon</span>
-              </div>
-
-              <div className="px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]" data-chat-input-bar>
+              <div className="border-t px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]" data-chat-input-bar>
                 <div className="relative flex items-center">
                   <div className="flex w-full items-center gap-1 bg-muted/50 rounded-full py-1 pl-1 pr-4">
                     <button
