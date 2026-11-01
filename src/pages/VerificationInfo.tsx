@@ -10,7 +10,7 @@ const VerificationInfo = () => {
     window.scrollTo(0, 0);
   }, []);
   const navigate = useNavigate();
-  return <AppLayout title="Verification & Certification">
+  return <AppLayout title="Verification & Certification" hideBottomNav={true} backButton={true}>
       <div className="flex-1 p-4">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">

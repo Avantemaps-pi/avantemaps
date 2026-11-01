@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { useNavigate } from '@/lib/router-compat';
 import AppLayout from '@/components/layout/AppLayout';
 import AnalyticsMainView from '@/components/analytics/AnalyticsMainView';
 import SubscriptionPrompt from '@/components/analytics/SubscriptionPrompt';
@@ -12,7 +11,6 @@ interface AnalyticsViewProps {
 }
 
 const AnalyticsView: React.FC<AnalyticsViewProps> = ({ handleExport }) => {
-  const navigate = useNavigate();
   const { hasPermission, isLoading } = useFeatureAccess(
     SubscriptionTier.SMALL_BUSINESS,
     { redirectTo: '' } // We'll handle redirection within the component
@@ -21,11 +19,11 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ handleExport }) => {
   return (
     <AppLayout 
       title="Business Analytics"
-      backButton={!hasPermission}
+      backButton={true}
+      hideBottomNav={true}
       withHeader={true}
       fullHeight={false}
       hideSidebar={false}
-      {...(!hasPermission ? { onBackClick: () => navigate(-1) } : {})}
     >
       {!isLoading && !hasPermission ? (
         <SubscriptionPrompt />

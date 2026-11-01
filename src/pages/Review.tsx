@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from '@/lib/router-compat';
+import { hasInAppHistory } from '@/lib/inAppHistory';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { StarIcon, ChevronLeft, Loader2, Lock } from 'lucide-react';
+import { StarIcon, Loader2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import ReviewList from '@/components/reviews/ReviewList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -140,7 +141,7 @@ const Review = () => {
 
   // Safe back navigation - falls back to recommendations if no history
   const handleGoBack = () => {
-    if (window.history.length > 1) {
+    if (hasInAppHistory()) {
       navigate(-1);
     } else {
       navigate('/recommendations');
@@ -193,8 +194,9 @@ const Review = () => {
   if (!user && (isLoading || !restoreWindowOver)) {
     return (
       <AppLayout 
-        title="Loading..."
-        withHeader={false} 
+        title="Write a Review"
+        hideBottomNav={true}
+        backButton={true}
         fullHeight={false}
         fullWidth={true}
         className="px-0"
@@ -213,7 +215,8 @@ const Review = () => {
     return (
       <AppLayout 
         title="Write a Review"
-        withHeader={false} 
+        hideBottomNav={true}
+        backButton={true}
         fullHeight={false}
         fullWidth={true}
         className="px-0"
@@ -236,8 +239,9 @@ const Review = () => {
   if (businessLoading) {
     return (
       <AppLayout 
-        title="Loading..."
-        withHeader={false} 
+        title="Write a Review"
+        hideBottomNav={true}
+        backButton={true}
         fullHeight={false}
         fullWidth={true}
         className="px-0"
@@ -257,7 +261,8 @@ const Review = () => {
     return (
       <AppLayout 
         title="Business Not Found"
-        withHeader={false} 
+        hideBottomNav={true}
+        backButton={true}
         fullHeight={false}
         fullWidth={true}
         className="px-0"
@@ -276,21 +281,14 @@ const Review = () => {
 
   return (
     <AppLayout 
-      title={`Review ${business.name}`}
-      withHeader={false} 
+      title="Write a Review"
+      hideBottomNav={true}
+      backButton={true}
       fullHeight={false}
       fullWidth={true}
       className="px-0"
     >
       <div className="w-full pb-8 px-4 pt-4">
-        <Button 
-          variant="ghost" 
-          className="mb-4" 
-          onClick={handleGoBack}
-        >
-          <ChevronLeft className="h-4 w-4 mr-2" /> Back
-        </Button>
-        
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full mb-4 h-auto">
             <TabsTrigger value="review" className="flex-1 min-h-11 text-sm">Write Review</TabsTrigger>
