@@ -9,6 +9,13 @@ import { useSidebar } from '@/components/ui/sidebar';
 import AuthStatus from '@/components/auth/AuthStatus';
 import SearchBar from '@/components/map/SearchBar';
 
+// TanStack Router numbers its history entries (__TSR_index, 0 = the first page the app loaded).
+// history.length can't tell: it counts pages from before the app too
+const hasInAppHistory = () => {
+  const index = (window.history.state as { __TSR_index?: unknown } | null)?.__TSR_index;
+  return typeof index === 'number' && index > 0;
+};
+
 interface PageHeaderProps {
   title?: string | undefined;
   hideSidebar?: boolean | undefined;
@@ -78,6 +85,8 @@ const PageHeader = ({
   };
   
   const pageTitle = getPageTitle();
+  // A page with a back button (e.g. CommuniCon, which has no bottom nav) shows it instead of ☰
+  const showMenuButtons = !backButton && !isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && !isVerificationInfoPage && !isUpdateRegistrationPage;
   
   const handleMenuClick = () => {
     setOpenMobile(true);
@@ -86,8 +95,11 @@ const PageHeader = ({
   const handleBackClick = () => {
     if (onBackClick) {
       onBackClick();
-    } else {
+    } else if (hasInAppHistory()) {
       navigate(-1);
+    } else {
+      // Opened directly (a link from an email, a fresh load): no dead end, go to the map
+      navigate('/', { replace: true });
     }
   };
   
@@ -96,8 +108,8 @@ const PageHeader = ({
       <div className="flex h-full items-center px-[14px] bg-transparent">
         <div className="flex items-center">
           {/* Show menu buttons only on pages without back button */}
-          {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && !isVerificationInfoPage && !isUpdateRegistrationPage && <MobileMenuButton />}
-          {!isAnalyticsPage && !hideSidebar && !isRegistrationPage && !isIndexPage && !isVerificationInfoPage && !isUpdateRegistrationPage && <DesktopMenuButton onClick={() => console.log('Desktop menu clicked')} />}
+          {showMenuButtons && <MobileMenuButton />}
+          {showMenuButtons && <DesktopMenuButton onClick={() => console.log('Desktop menu clicked')} />}
           
           {/* Index page menu button */}
           {isIndexPage && (
@@ -108,7 +120,7 @@ const PageHeader = ({
           
           {/* Consolidated back button for all pages that need it */}
           {(isAnalyticsPage || isRegistrationPage || isUpdateRegistrationPage || isVerificationInfoPage || backButton) && (
-            <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-2" aria-label="Go back">
+            <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-2 h-11 w-11" aria-label="Go back">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
