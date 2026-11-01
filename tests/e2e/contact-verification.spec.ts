@@ -467,3 +467,11 @@ test('once the card has revealed its rows, the chat ends at the bottom with Chec
     .toBeLessThanOrEqual(2);
   await expect(card(page).getByRole('button', { name: 'Check again' })).toBeInViewport();
 });
+
+test('after the confirm link, Go back lands on the map (no earlier page in the app)', async ({ page }) => {
+  await mockBackend(page);
+  await page.goto(LINK);
+  await expect(toast(page, 'Email confirmed')).toBeVisible();
+  await page.getByRole('button', { name: 'Go back' }).tap();
+  await expect(page).toHaveURL(/localhost:\d+\/$/);
+});

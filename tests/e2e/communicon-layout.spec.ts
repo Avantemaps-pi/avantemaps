@@ -353,7 +353,8 @@ test.describe('text size at 375x812', () => {
       expect(s.height).toBeGreaterThanOrEqual(44);
       expect(s.font).toBe('14px');
     }
-    expect(await page.getByText('Powered by CommuniCon').evaluate((el) => getComputedStyle(el.parentElement!).fontSize)).toBe('12px');
+    // The "Powered by CommuniCon" line above the input is gone
+    await expect(page.getByText('Powered by CommuniCon')).toHaveCount(0);
   });
 });
 
