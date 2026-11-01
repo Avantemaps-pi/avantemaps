@@ -47,6 +47,7 @@ const UpdateRegistration = () => {
     <AppLayout 
       title="Update Business" 
       backButton={true}
+      hideBottomNav={true}
       onBackClick={handleGoBack}
       className="prevent-overflow"
     >

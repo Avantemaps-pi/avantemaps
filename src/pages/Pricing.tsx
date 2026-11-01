@@ -83,7 +83,7 @@ const Pricing = () => {
   };
 
   return (
-    <AppLayout title="Pricing">
+    <AppLayout title="Pricing" hideBottomNav={true} backButton={true}>
       <MetaTags
         title="Pricing & Subscriptions"
         description="Choose the perfect subscription plan for your needs. Pay with Pi Network cryptocurrency. Individual, small business, and organization tiers available."

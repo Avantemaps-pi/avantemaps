@@ -67,10 +67,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({
 
   // Room for the fixed bottom nav. A fullHeight page ends exactly at its top edge (h-16, its 1px
   // border and the safe area), with nothing while the keyboard hides it; scrolling pages keep
-  // some extra space at the end.
-  const navClearance = !isMobile || hideBottomNav
+  // some extra space at the end. A scrolling page without the nav (a task page) ends above the
+  // home bar; fullHeight pages without it pad their own bottom bar.
+  const navClearance = !isMobile
     ? undefined
-    : fullHeight
+    : hideBottomNav
+      ? (fullHeight ? undefined : 'max(1rem, env(safe-area-inset-bottom))')
+      : fullHeight
       ? (keyboardOpen ? '0px' : 'calc(4rem + 1px + env(safe-area-inset-bottom))')
       : 'calc(6rem + env(safe-area-inset-bottom))';
 
